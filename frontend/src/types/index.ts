@@ -1,0 +1,94 @@
+export type TransactionType = 'income' | 'expense'
+
+export interface Category {
+  id: number
+  name: string
+  type: TransactionType
+  color: string
+  icon: string
+  transactions_count?: number
+  created_at: string
+  updated_at: string
+}
+
+export interface Transaction {
+  id: number
+  category_id: number
+  category: Category
+  type: TransactionType
+  amount: string
+  description: string | null
+  date: string
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface Budget {
+  id: number
+  category_id: number
+  category: Category
+  amount: string
+  month: number
+  year: number
+  spent?: number
+  remaining?: number
+  percentage?: number
+  created_at: string
+  updated_at: string
+}
+
+export interface PaginationMeta {
+  current_page: number
+  from: number | null
+  last_page: number
+  per_page: number
+  to: number | null
+  total: number
+}
+
+export interface PaginationLinks {
+  first: string | null
+  last: string | null
+  prev: string | null
+  next: string | null
+}
+
+export interface Paginated<T> {
+  data: T[]
+  links: PaginationLinks
+  meta: PaginationMeta
+}
+
+export interface DashboardStats {
+  total_income: number
+  total_expense: number
+  balance: number
+  recent_transactions: Transaction[]
+  expense_by_category: Array<{
+    category_id: number
+    total: string
+    category: Pick<Category, 'id' | 'name' | 'color' | 'icon'>
+  }>
+  monthly_trend: Array<{
+    month: number
+    year: number
+    type: TransactionType
+    total: string
+  }>
+}
+
+export interface TransactionFilters {
+  type?: TransactionType | ''
+  category_id?: number | ''
+  date_from?: string
+  date_to?: string
+  search?: string
+  per_page?: number
+  page?: number
+}
+
+export interface ApiError {
+  message: string
+  errors?: Record<string, string[]>
+}

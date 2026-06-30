@@ -38,16 +38,18 @@ export function ToastContainer() {
           className={[
             'flex items-start gap-3 rounded-xl p-4 shadow-lg text-sm',
             'animate-in slide-in-from-right-5 duration-200',
-            t.type === 'success' ? 'bg-emerald-50 border border-emerald-200' : 'bg-red-50 border border-red-200',
+            t.type === 'success'
+              ? 'bg-emerald-50 border border-emerald-200 dark:bg-emerald-950 dark:border-emerald-800'
+              : 'bg-red-50 border border-red-200 dark:bg-red-950 dark:border-red-800',
           ].join(' ')}
         >
           {t.type === 'success'
-            ? <CheckCircle className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
-            : <XCircle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />}
-          <span className={t.type === 'success' ? 'text-emerald-800' : 'text-red-800'}>
+            ? <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+            : <XCircle className="h-4 w-4 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />}
+          <span className={t.type === 'success' ? 'text-emerald-800 dark:text-emerald-300' : 'text-red-800 dark:text-red-300'}>
             {t.message}
           </span>
-          <button onClick={() => dismiss(t.id)} className="ml-auto text-gray-400 hover:text-gray-600">
+          <button onClick={() => dismiss(t.id)} className="ml-auto text-gray-400 hover:text-gray-600 dark:text-gray-600 dark:hover:text-gray-400">
             <X className="h-3.5 w-3.5" />
           </button>
         </div>

@@ -57,21 +57,21 @@ export function Categories() {
       </div>
 
       {loading ? (
-        <div className="py-16 text-center text-sm text-gray-400 animate-pulse">Loading categories…</div>
+        <div className="py-16 text-center text-sm text-gray-400 dark:text-gray-500 animate-pulse">Loading categories…</div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {[{ label: 'Income', items: income }, { label: 'Expense', items: expense }].map(({ label, items }) => (
             <Card key={label}>
-              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-                <h2 className="text-sm font-semibold text-gray-900">{label} Categories</h2>
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
+                <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{label} Categories</h2>
                 <Badge variant={label.toLowerCase() as 'income' | 'expense'}>{items.length}</Badge>
               </div>
-              <div className="divide-y divide-gray-50">
+              <div className="divide-y divide-gray-50 dark:divide-gray-700/40">
                 {items.length === 0 && (
-                  <p className="px-5 py-6 text-sm text-gray-400 text-center">No {label.toLowerCase()} categories yet.</p>
+                  <p className="px-5 py-6 text-sm text-gray-400 dark:text-gray-500 text-center">No {label.toLowerCase()} categories yet.</p>
                 )}
                 {items.map((cat) => (
-                  <div key={cat.id} className="flex items-center gap-3 px-5 py-3.5 hover:bg-gray-50 transition-colors group">
+                  <div key={cat.id} className="flex items-center gap-3 px-5 py-3.5 hover:bg-gray-50 transition-colors group dark:hover:bg-gray-800/40">
                     <div
                       className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white text-sm font-bold"
                       style={{ backgroundColor: cat.color }}
@@ -79,14 +79,14 @@ export function Categories() {
                       {cat.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900">{cat.name}</p>
-                      <p className="text-xs text-gray-400">{cat.transactions_count ?? 0} transactions</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{cat.name}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500">{cat.transactions_count ?? 0} transactions</p>
                     </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => openEdit(cat)} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-indigo-600 transition-colors">
+                      <button onClick={() => openEdit(cat)} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-indigo-600 transition-colors dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-indigo-400">
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
-                      <button onClick={() => { setDeleteError(null); setDeleteTarget(cat) }} className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors">
+                      <button onClick={() => { setDeleteError(null); setDeleteTarget(cat) }} className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors dark:text-gray-500 dark:hover:bg-red-900/20 dark:hover:text-red-400">
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>

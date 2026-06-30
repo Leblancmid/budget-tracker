@@ -76,7 +76,7 @@ export function Transactions() {
         />
         <div className="flex items-center gap-2">
           <Input type="date" value={filters.date_from ?? ''} onChange={(e) => applyFilters({ date_from: e.target.value })} className="w-36" />
-          <span className="text-gray-400 text-sm">to</span>
+          <span className="text-gray-400 dark:text-gray-600 text-sm">to</span>
           <Input type="date" value={filters.date_to ?? ''} onChange={(e) => applyFilters({ date_to: e.target.value })} className="w-36" />
         </div>
         <Select
@@ -90,7 +90,7 @@ export function Transactions() {
           size="sm"
           icon={<Filter className="h-4 w-4" />}
           onClick={() => applyFilters({ type: '', category_id: '', date_from: '', date_to: '', search: '' })}
-          className="text-gray-500"
+          className="text-gray-500 dark:text-gray-400"
         >
           Clear
         </Button>
@@ -101,45 +101,45 @@ export function Transactions() {
 
       <Card>
         {loading ? (
-          <div className="py-16 text-center text-sm text-gray-400 animate-pulse">Loading transactions…</div>
+          <div className="py-16 text-center text-sm text-gray-400 dark:text-gray-500 animate-pulse">Loading transactions…</div>
         ) : transactions.length === 0 ? (
           <div className="py-16 text-center">
-            <p className="text-sm text-gray-500">No transactions found.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">No transactions found.</p>
             <Button className="mt-4" onClick={openAdd} icon={<Plus className="h-4 w-4" />}>Add your first</Button>
           </div>
         ) : (
           <div className="overflow-x-auto scrollbar-thin">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-100">
+              <thead className="bg-gray-50 border-b border-gray-100 dark:bg-gray-800/60 dark:border-gray-700/60">
                 <tr>
                   {['Date', 'Category', 'Description', 'Type', 'Amount', ''].map((h) => (
-                    <th key={h} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">{h}</th>
+                    <th key={h} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap dark:text-gray-400">{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-gray-50 dark:divide-gray-700/40">
                 {transactions.map((tx) => (
-                  <tr key={tx.id} className="hover:bg-gray-50 transition-colors group">
-                    <td className="px-5 py-3.5 whitespace-nowrap text-gray-600">{formatDate(tx.date)}</td>
+                  <tr key={tx.id} className="hover:bg-gray-50 transition-colors group dark:hover:bg-gray-800/40">
+                    <td className="px-5 py-3.5 whitespace-nowrap text-gray-600 dark:text-gray-400">{formatDate(tx.date)}</td>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-2">
                         <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: tx.category.color }} />
-                        <span className="text-gray-700 font-medium">{tx.category.name}</span>
+                        <span className="text-gray-700 font-medium dark:text-gray-300">{tx.category.name}</span>
                       </div>
                     </td>
-                    <td className="px-5 py-3.5 text-gray-600 max-w-xs truncate">{tx.description ?? '—'}</td>
+                    <td className="px-5 py-3.5 text-gray-600 max-w-xs truncate dark:text-gray-400">{tx.description ?? '—'}</td>
                     <td className="px-5 py-3.5">
                       <Badge variant={tx.type}>{tx.type}</Badge>
                     </td>
-                    <td className={['px-5 py-3.5 font-semibold whitespace-nowrap', tx.type === 'income' ? 'text-emerald-600' : 'text-red-600'].join(' ')}>
+                    <td className={['px-5 py-3.5 font-semibold whitespace-nowrap', tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'].join(' ')}>
                       {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
                     </td>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => openEdit(tx)} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-indigo-600 transition-colors">
+                        <button onClick={() => openEdit(tx)} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-indigo-600 transition-colors dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-indigo-400">
                           <Pencil className="h-3.5 w-3.5" />
                         </button>
-                        <button onClick={() => setDeleteTarget(tx)} className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors">
+                        <button onClick={() => setDeleteTarget(tx)} className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors dark:text-gray-500 dark:hover:bg-red-900/20 dark:hover:text-red-400">
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </div>

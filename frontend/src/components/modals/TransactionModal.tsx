@@ -97,9 +97,9 @@ export function TransactionModal({ open, onClose, onSubmit, categories, transact
                 'flex-1 rounded-lg border py-2 text-sm font-medium transition-colors capitalize',
                 form.type === t
                   ? t === 'income'
-                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                    : 'border-red-500 bg-red-50 text-red-700'
-                  : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50',
+                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-700'
+                    : 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400 dark:border-red-700'
+                  : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
               ].join(' ')}
             >
               {t}
@@ -143,13 +143,13 @@ export function TransactionModal({ open, onClose, onSubmit, categories, transact
         />
 
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium text-gray-700">Notes</label>
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Notes</label>
           <textarea
             rows={3}
             value={form.notes}
             onChange={(e) => set('notes', e.target.value)}
             placeholder="Additional notes (optional)"
-            className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none scrollbar-thin"
+            className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none scrollbar-thin dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 dark:hover:border-gray-500"
           />
         </div>
 

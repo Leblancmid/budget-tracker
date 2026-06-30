@@ -15,7 +15,7 @@ export function Pagination({ meta, onPageChange }: PaginationProps) {
 
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-1 py-3">
-      <p className="text-sm text-gray-500">
+      <p className="text-sm text-gray-500 dark:text-gray-500">
         {from ?? 0}–{to ?? 0} of {total} results
       </p>
 
@@ -29,7 +29,7 @@ export function Pagination({ meta, onPageChange }: PaginationProps) {
 
         {pages.map((p, i) =>
           p === '...' ? (
-            <span key={`ellipsis-${i}`} className="px-2 text-gray-400 select-none">…</span>
+            <span key={`ellipsis-${i}`} className="px-2 text-gray-400 dark:text-gray-600 select-none">…</span>
           ) : (
             <button
               key={p}
@@ -37,8 +37,8 @@ export function Pagination({ meta, onPageChange }: PaginationProps) {
               className={[
                 'h-8 min-w-[2rem] rounded-lg px-2.5 text-sm font-medium transition-colors',
                 p === current_page
-                  ? 'bg-indigo-600 text-white'
-                  : 'text-gray-600 hover:bg-gray-100',
+                  ? 'bg-indigo-600 text-white dark:bg-indigo-500'
+                  : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800',
               ].join(' ')}
             >
               {p}
@@ -68,7 +68,7 @@ function NavBtn({ onClick, disabled, title, children }: {
       onClick={onClick}
       disabled={disabled}
       title={title}
-      className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+      className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors dark:text-gray-400 dark:hover:bg-gray-800"
     >
       {children}
     </button>

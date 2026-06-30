@@ -79,39 +79,39 @@ export function Budgets() {
         <Card className="px-5 py-4">
           <div className="flex items-center justify-between mb-3">
             <div>
-              <p className="text-xs text-gray-500 font-medium">Total Budget</p>
-              <p className="text-xl font-bold text-gray-900">{formatCurrency(totalBudget)}</p>
+              <p className="text-xs text-gray-500 font-medium dark:text-gray-400">Total Budget</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{formatCurrency(totalBudget)}</p>
             </div>
             <div className="text-right">
-              <p className="text-xs text-gray-500 font-medium">Spent</p>
-              <p className={['text-xl font-bold', totalSpent > totalBudget ? 'text-red-600' : 'text-gray-900'].join(' ')}>
+              <p className="text-xs text-gray-500 font-medium dark:text-gray-400">Spent</p>
+              <p className={['text-xl font-bold', totalSpent > totalBudget ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'].join(' ')}>
                 {formatCurrency(totalSpent)}
               </p>
             </div>
             <div className="text-right">
-              <p className="text-xs text-gray-500 font-medium">Remaining</p>
-              <p className={['text-xl font-bold', (totalBudget - totalSpent) < 0 ? 'text-red-600' : 'text-emerald-600'].join(' ')}>
+              <p className="text-xs text-gray-500 font-medium dark:text-gray-400">Remaining</p>
+              <p className={['text-xl font-bold', (totalBudget - totalSpent) < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'].join(' ')}>
                 {formatCurrency(Math.max(0, totalBudget - totalSpent))}
               </p>
             </div>
           </div>
-          <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+          <div className="h-2 rounded-full bg-gray-100 overflow-hidden dark:bg-gray-700">
             <div
               className={['h-full rounded-full transition-all duration-700', totalSpent > totalBudget ? 'bg-red-500' : 'bg-indigo-500'].join(' ')}
               style={{ width: `${Math.min(100, (totalSpent / totalBudget) * 100)}%` }}
             />
           </div>
-          <p className="mt-1.5 text-xs text-gray-400 text-right">
+          <p className="mt-1.5 text-xs text-gray-400 dark:text-gray-500 text-right">
             {Math.round((totalSpent / totalBudget) * 100)}% used
           </p>
         </Card>
       )}
 
       {loading ? (
-        <div className="py-16 text-center text-sm text-gray-400 animate-pulse">Loading budgets…</div>
+        <div className="py-16 text-center text-sm text-gray-400 dark:text-gray-500 animate-pulse">Loading budgets…</div>
       ) : budgets.length === 0 ? (
         <div className="py-16 text-center">
-          <p className="text-sm text-gray-500">No budgets set for {MONTHS[month - 1]} {year}.</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">No budgets set for {MONTHS[month - 1]} {year}.</p>
           <Button className="mt-4" onClick={openAdd} icon={<Plus className="h-4 w-4" />}>Set your first budget</Button>
         </div>
       ) : (
@@ -126,22 +126,22 @@ export function Budgets() {
                       {b.category.name.charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-gray-900">{b.category.name}</p>
-                      <p className="text-xs text-gray-400">Budget: {formatCurrency(b.amount)}</p>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{b.category.name}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500">Budget: {formatCurrency(b.amount)}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
-                    {over && <AlertTriangle className="h-4 w-4 text-red-500" />}
-                    <button onClick={() => openEdit(b)} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-indigo-600 transition-colors">
+                    {over && <AlertTriangle className="h-4 w-4 text-red-500 dark:text-red-400" />}
+                    <button onClick={() => openEdit(b)} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-indigo-600 transition-colors dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-indigo-400">
                       <Pencil className="h-3.5 w-3.5" />
                     </button>
-                    <button onClick={() => setDeleteTarget(b)} className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors">
+                    <button onClick={() => setDeleteTarget(b)} className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors dark:text-gray-500 dark:hover:bg-red-900/20 dark:hover:text-red-400">
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 </div>
 
-                <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                <div className="h-2 rounded-full bg-gray-100 overflow-hidden dark:bg-gray-700">
                   <div
                     className={['h-full rounded-full transition-all duration-700', over ? 'bg-red-500' : (b.percentage ?? 0) >= 80 ? 'bg-amber-500' : 'bg-emerald-500'].join(' ')}
                     style={{ width: `${Math.min(100, b.percentage ?? 0)}%` }}
@@ -149,17 +149,17 @@ export function Budgets() {
                 </div>
 
                 <div className="flex items-center justify-between text-xs">
-                  <span className={over ? 'text-red-600 font-medium' : 'text-gray-500'}>
+                  <span className={over ? 'text-red-600 font-medium dark:text-red-400' : 'text-gray-500 dark:text-gray-400'}>
                     {over ? 'Over budget by ' + formatCurrency((b.spent ?? 0) - parseFloat(b.amount)) : formatCurrency(b.remaining ?? 0) + ' remaining'}
                   </span>
-                  <span className={['font-semibold', over ? 'text-red-600' : 'text-gray-700'].join(' ')}>
+                  <span className={['font-semibold', over ? 'text-red-600 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'].join(' ')}>
                     {b.percentage ?? 0}%
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between text-xs text-gray-500 border-t border-gray-50 pt-2">
-                  <span>Spent: <span className="font-medium text-gray-700">{formatCurrency(b.spent ?? 0)}</span></span>
-                  <span>Budget: <span className="font-medium text-gray-700">{formatCurrency(b.amount)}</span></span>
+                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 border-t border-gray-50 dark:border-gray-700/40 pt-2">
+                  <span>Spent: <span className="font-medium text-gray-700 dark:text-gray-300">{formatCurrency(b.spent ?? 0)}</span></span>
+                  <span>Budget: <span className="font-medium text-gray-700 dark:text-gray-300">{formatCurrency(b.amount)}</span></span>
                 </div>
               </Card>
             )

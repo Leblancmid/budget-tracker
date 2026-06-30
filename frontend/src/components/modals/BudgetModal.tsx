@@ -87,9 +87,9 @@ export function BudgetModal({ open, onClose, onSubmit, categories, budget, curre
         )}
 
         {budget && (
-          <div className="rounded-lg bg-gray-50 px-4 py-3 text-sm">
-            <span className="text-gray-500">Category: </span>
-            <span className="font-medium text-gray-900">{budget.category?.name}</span>
+          <div className="rounded-lg bg-gray-50 px-4 py-3 text-sm dark:bg-gray-800">
+            <span className="text-gray-500 dark:text-gray-400">Category: </span>
+            <span className="font-medium text-gray-900 dark:text-gray-100">{budget.category?.name}</span>
           </div>
         )}
 

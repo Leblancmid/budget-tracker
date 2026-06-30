@@ -15,7 +15,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
     return (
       <div className="flex flex-col gap-1">
         {label && (
-          <label htmlFor={selectId} className="text-sm font-medium text-gray-700">
+          <label htmlFor={selectId} className="text-sm font-medium text-gray-700 dark:text-gray-300">
             {label}
           </label>
         )}
@@ -26,7 +26,10 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             className={[
               'block w-full appearance-none rounded-lg border bg-white px-3 py-2 pr-9 text-sm text-gray-900',
               'transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent',
-              error ? 'border-red-400' : 'border-gray-300 hover:border-gray-400',
+              'dark:bg-gray-800 dark:text-gray-100',
+              error
+                ? 'border-red-400 dark:border-red-500'
+                : 'border-gray-300 hover:border-gray-400 dark:border-gray-600 dark:hover:border-gray-500',
               className,
             ].join(' ')}
             {...props}
@@ -38,9 +41,9 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
               </option>
             ))}
           </select>
-          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
         </div>
-        {error && <p className="text-xs text-red-600">{error}</p>}
+        {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
       </div>
     )
   }

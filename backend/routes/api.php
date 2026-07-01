@@ -24,6 +24,8 @@ Route::prefix('v1')->group(function () {
     Route::prefix('rucoy')->group(function () {
         Route::get('dashboard', [RucoyDashboardController::class, 'index']);
         Route::apiResource('golds', GoldController::class)->except(['show', 'create', 'edit']);
+        Route::post('golds/sell', [GoldController::class, 'sell']);
+        Route::get('gold-logs', [GoldController::class, 'logs']);
         Route::apiResource('trades', TradeController::class)->except(['show', 'create', 'edit']);
         Route::apiResource('accounts', RucoyAccountController::class)
             ->except(['show', 'create', 'edit'])

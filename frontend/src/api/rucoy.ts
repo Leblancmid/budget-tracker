@@ -1,5 +1,5 @@
 import api from './axios'
-import type { Gold, RucoyAccount, RucoyDashboardStats, Trade, TradeCurrency, TradePaymentMethod, TradeStatus } from '@/types'
+import type { Gold, GoldLog, RucoyAccount, RucoyDashboardStats, Trade, TradeCurrency, TradePaymentMethod, TradeStatus } from '@/types'
 
 export interface TradePayload {
   description?: string
@@ -28,6 +28,12 @@ export const goldsApi = {
     api.put<Gold>(`/rucoy/golds/${id}`, data).then((r) => r.data),
   delete: (id: number) =>
     api.delete<{ message: string }>(`/rucoy/golds/${id}`).then((r) => r.data),
+  sell: (amount: number, description?: string) =>
+    api.post<Gold[]>('/rucoy/golds/sell', { amount, description }).then((r) => r.data),
+}
+
+export const goldLogsApi = {
+  getAll: () => api.get<GoldLog[]>('/rucoy/gold-logs').then((r) => r.data),
 }
 
 export const tradesApi = {

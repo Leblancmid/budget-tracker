@@ -132,6 +132,17 @@ export interface RucoyAccount {
   updated_at: string
 }
 
+export type GoldLogType = 'add' | 'sell'
+
+export interface GoldLog {
+  id: number
+  type: GoldLogType
+  amount: string
+  description: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface RucoyDashboardStats {
   total_gold: number
   manual_gold: number

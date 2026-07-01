@@ -70,7 +70,7 @@ export default function Trades() {
       if (!db) return -1
       return dateSort === 'asc' ? da.localeCompare(db) : db.localeCompare(da)
     })
-  }, [trades, dateSort])
+  }, [filteredTrades, dateSort])
 
   const totalPages = Math.max(1, Math.ceil(sortedTrades.length / PER_PAGE))
 
@@ -126,31 +126,20 @@ export default function Trades() {
             {trades.length} trade{trades.length !== 1 ? 's' : ''} total
           </p>
         </div>
-        <Button onClick={openCreate}>
-          <Plus size={16} className="mr-1" /> New Trade
-        </Button>
-      </div>
-
-      {/* Type filter */}
-      <div className="flex gap-2">
-        {(['all', 'kks', 'cash'] as const).map((f) => (
-          <button
-            key={f}
-            onClick={() => changeFilter(f)}
-            className={[
-              'rounded-lg border px-3 py-1.5 text-xs font-semibold uppercase transition-colors',
-              typeFilter === f
-                ? f === 'kks'
-                  ? 'border-amber-500 bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-700'
-                  : f === 'cash'
-                  ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-700'
-                  : 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400 dark:border-indigo-700'
-                : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
-            ].join(' ')}
+        <div className="flex items-center gap-2">
+          <select
+            value={typeFilter}
+            onChange={(e) => changeFilter(e.target.value as typeof typeFilter)}
+            className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
           >
-            {f === 'all' ? 'All' : f.toUpperCase()}
-          </button>
-        ))}
+            <option value="all">All Types</option>
+            <option value="kks">KKS</option>
+            <option value="cash">CASH</option>
+          </select>
+          <Button onClick={openCreate}>
+            <Plus size={16} className="mr-1" /> New Trade
+          </Button>
+        </div>
       </div>
 
       {loading && <div className="text-center text-gray-400 py-10">Loading…</div>}

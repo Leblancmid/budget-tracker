@@ -27,48 +27,76 @@ function GoldInput({ value, onChange }: { value: string; onChange: (v: string) =
   )
 }
 
-function RateInput({
-  label, symbol, value, onChange,
-}: {
-  label: string; symbol: string; value: string; onChange: (v: string) => void
-}) {
+function NumInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{label} Rate</label>
-      <div className="flex items-center rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 overflow-hidden focus-within:ring-2 focus-within:ring-amber-500 focus-within:border-transparent transition-colors">
-        <span className="px-3 py-2 text-sm font-semibold text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 border-r border-gray-200 dark:border-gray-600">
-          {symbol}
-        </span>
-        <input
-          type="text"
-          inputMode="decimal"
-          value={value}
-          onChange={(e) => {
-            const v = e.target.value
-            if (v === '' || /^\d*\.?\d*$/.test(v)) onChange(v)
-          }}
-          className="flex-1 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-transparent focus:outline-none"
-        />
-      </div>
-    </div>
+    <input
+      type="text"
+      inputMode="decimal"
+      value={value}
+      onChange={(e) => {
+        const stripped = e.target.value.replace(/,/g, '')
+        if (stripped === '' || /^\d*\.?\d*$/.test(stripped)) onChange(stripped)
+      }}
+      className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-1.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors"
+    />
   )
 }
 
-function ResultCard({
-  label, symbol, amount, color,
+interface CurrencyConfig {
+  symbol: string
+  label: string
+  divisor: string
+  multiplier: string
+  color: string
+  resultColor: string
+}
+
+function CurrencyCard({
+  config,
+  goldNum,
+  onDivisorChange,
+  onMultiplierChange,
 }: {
-  label: string; symbol: string; amount: number | null; color: string
+  config: CurrencyConfig
+  goldNum: number | null
+  onDivisorChange: (v: string) => void
+  onMultiplierChange: (v: string) => void
 }) {
-  const formatted = amount === null
+  const result = useMemo(() => {
+    if (goldNum === null) return null
+    const d = parseFloat(config.divisor)
+    const m = parseFloat(config.multiplier)
+    if (isNaN(d) || isNaN(m) || d === 0) return null
+    return (goldNum / d) * m
+  }, [goldNum, config.divisor, config.multiplier])
+
+  const formatted = result === null
     ? '—'
-    : symbol === '₱'
-      ? `₱${amount.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-      : `${symbol}${amount.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    : `${config.symbol}${result.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
   return (
-    <Card className="flex flex-col gap-1 px-5 py-4">
-      <p className={`text-xs font-semibold uppercase tracking-wide ${color}`}>{label}</p>
-      <p className={`text-2xl font-bold ${color}`}>{formatted}</p>
+    <Card className="flex flex-col gap-4 p-5">
+      <div className="flex items-center justify-between">
+        <p className={`text-xs font-semibold uppercase tracking-wide ${config.color}`}>{config.label}</p>
+        <span className={`text-xs font-mono text-gray-400 dark:text-gray-500`}>
+          gold ÷ div × rate
+        </span>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Divisor</p>
+          <NumInput value={config.divisor} onChange={onDivisorChange} />
+        </div>
+        <div>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Rate ({config.symbol})</p>
+          <NumInput value={config.multiplier} onChange={onMultiplierChange} />
+        </div>
+      </div>
+
+      <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+        <p className={`text-2xl font-bold ${config.resultColor}`}>{formatted}</p>
+      </div>
     </Card>
   )
 }
@@ -77,20 +105,20 @@ export default function GoldCalculator() {
   const { totalGold } = useGolds()
 
   const [gold, setGold] = useState('')
-  const [phpRate, setPhpRate] = useState('9.5')
-  const [usdRate, setUsdRate] = useState('0.18')
-  const [eurRate, setEurRate] = useState('0.17')
+
+  const [configs, setConfigs] = useState<CurrencyConfig[]>([
+    { symbol: '₱', label: 'Philippine Peso', divisor: '95000000', multiplier: '10',   color: 'text-blue-600 dark:text-blue-400',    resultColor: 'text-blue-700 dark:text-blue-400'    },
+    { symbol: '$', label: 'US Dollar',        divisor: '1000000000', multiplier: '0.18', color: 'text-emerald-600 dark:text-emerald-400', resultColor: 'text-emerald-700 dark:text-emerald-400' },
+    { symbol: '€', label: 'Euro',             divisor: '1000000000', multiplier: '0.17', color: 'text-indigo-600 dark:text-indigo-400',  resultColor: 'text-indigo-700 dark:text-indigo-400'  },
+  ])
 
   const goldNum = useMemo(() => {
     const n = parseFloat(gold.replace(/,/g, ''))
     return isNaN(n) ? null : n
   }, [gold])
 
-  const calc = (rate: string) => {
-    if (goldNum === null) return null
-    const r = parseFloat(rate)
-    if (isNaN(r)) return null
-    return (goldNum / 1_000_000_000) * r
+  const updateConfig = (i: number, field: 'divisor' | 'multiplier', value: string) => {
+    setConfigs((prev) => prev.map((c, idx) => idx === i ? { ...c, [field]: value } : c))
   }
 
   const loadCurrentGold = () => {
@@ -114,7 +142,6 @@ export default function GoldCalculator() {
         </button>
       </div>
 
-      {/* Gold Input */}
       <Card className="flex flex-col gap-3 p-5">
         <div className="flex items-center gap-2 mb-1">
           <Calculator size={16} className="text-amber-500" />
@@ -126,21 +153,16 @@ export default function GoldCalculator() {
         </p>
       </Card>
 
-      {/* Rate Inputs */}
-      <Card className="p-5">
-        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Exchange Rates <span className="text-xs font-normal text-gray-400">(per 100M G — edit to update)</span></p>
-        <div className="grid grid-cols-3 gap-4">
-          <RateInput label="PHP" symbol="₱" value={phpRate} onChange={setPhpRate} />
-          <RateInput label="USD" symbol="$" value={usdRate} onChange={setUsdRate} />
-          <RateInput label="EUR" symbol="€" value={eurRate} onChange={setEurRate} />
-        </div>
-      </Card>
-
-      {/* Results */}
       <div className="grid grid-cols-3 gap-4">
-        <ResultCard label="Philippine Peso" symbol="₱" amount={calc(phpRate)} color="text-blue-700 dark:text-blue-400" />
-        <ResultCard label="US Dollar" symbol="$" amount={calc(usdRate)} color="text-emerald-700 dark:text-emerald-400" />
-        <ResultCard label="Euro" symbol="€" amount={calc(eurRate)} color="text-indigo-700 dark:text-indigo-400" />
+        {configs.map((cfg, i) => (
+          <CurrencyCard
+            key={cfg.symbol}
+            config={cfg}
+            goldNum={goldNum}
+            onDivisorChange={(v) => updateConfig(i, 'divisor', v)}
+            onMultiplierChange={(v) => updateConfig(i, 'multiplier', v)}
+          />
+        ))}
       </div>
     </div>
   )

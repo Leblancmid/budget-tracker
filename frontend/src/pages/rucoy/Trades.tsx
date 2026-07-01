@@ -10,6 +10,14 @@ import { formatCurrency } from '@/utils/format'
 import type { TradePayload } from '@/api/rucoy'
 import type { Trade, TradeCurrency, TradeStatus } from '@/types'
 
+function formatDate(iso: string | null): string {
+  if (!iso) return '—'
+  const [year, month, day] = iso.split('-').map(Number)
+  return new Date(year, month - 1, day).toLocaleDateString('en-US', {
+    month: 'long', day: 'numeric', year: 'numeric',
+  })
+}
+
 const CURRENCY_SYMBOLS: Record<TradeCurrency, string> = {
   PHP: '₱',
   USD: '$',
@@ -123,7 +131,7 @@ export default function Trades() {
                     {formatAmount(t)}
                   </td>
                   <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                    {t.completion_date ?? <span className="italic">—</span>}
+                    {formatDate(t.completion_date)}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">

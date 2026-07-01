@@ -5,10 +5,23 @@ import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { TradeModal } from '@/components/modals/TradeModal'
 import { useTrades } from '@/hooks/useTrades'
-import { useGolds } from '@/hooks/useGolds'
 import { toast } from '@/components/ui/Toast'
 import { formatCurrency } from '@/utils/format'
-import type { Trade, TradeStatus } from '@/types'
+import type { TradePayload } from '@/api/rucoy'
+import type { Trade, TradeCurrency, TradeStatus } from '@/types'
+
+const CURRENCY_SYMBOLS: Record<TradeCurrency, string> = {
+  PHP: '₱',
+  USD: '$',
+  EUR: '€',
+}
+
+function formatAmount(t: Trade) {
+  if (t.status === 'kks') return `${Number(t.amount).toLocaleString()} G`
+  const symbol = t.currency ? CURRENCY_SYMBOLS[t.currency] : '₱'
+  if (symbol === '₱') return formatCurrency(parseFloat(t.amount))
+  return `${symbol}${Number(t.amount).toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
 
 function StatusPill({ status }: { status: TradeStatus }) {
   return status === 'cash' ? (
@@ -24,7 +37,6 @@ function StatusPill({ status }: { status: TradeStatus }) {
 
 export default function Trades() {
   const { trades, loading, error, create, update, remove } = useTrades()
-  const { golds } = useGolds()
 
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<Trade | null>(null)
@@ -34,7 +46,7 @@ export default function Trades() {
   const openCreate = () => { setEditing(null); setModalOpen(true) }
   const openEdit = (t: Trade) => { setEditing(t); setModalOpen(true) }
 
-  const handleSubmit = async (data: { gold_id: number; description?: string; status: TradeStatus; amount: number }) => {
+  const handleSubmit = async (data: TradePayload) => {
     if (editing) {
       await update(editing.id, data)
       toast.success('Trade updated.')
@@ -88,10 +100,12 @@ export default function Trades() {
             <thead>
               <tr className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">ID</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Gold</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Description</th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Status</th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Type</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Payment</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Amount</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Start</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Done</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -99,13 +113,21 @@ export default function Trades() {
               {trades.map((t) => (
                 <tr key={t.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                   <td className="px-4 py-3 font-mono text-gray-500 dark:text-gray-400">#{t.id}</td>
-                  <td className="px-4 py-3 text-amber-600 dark:text-amber-400 font-medium">#{t.gold_id}</td>
-                  <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                  <td className="px-4 py-3 text-gray-700 dark:text-gray-300 max-w-[180px] truncate">
                     {t.description || <span className="text-gray-400 italic">—</span>}
                   </td>
                   <td className="px-4 py-3 text-center"><StatusPill status={t.status} /></td>
-                  <td className="px-4 py-3 text-right font-semibold text-gray-800 dark:text-gray-100">
-                    {formatCurrency(parseFloat(t.amount))}
+                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400 capitalize">
+                    {t.payment_method || <span className="italic">—</span>}
+                  </td>
+                  <td className="px-4 py-3 text-right font-semibold text-gray-800 dark:text-gray-100 whitespace-nowrap">
+                    {formatAmount(t)}
+                  </td>
+                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                    {t.start_date ?? <span className="italic">—</span>}
+                  </td>
+                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                    {t.completion_date ?? <span className="italic">—</span>}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">
@@ -128,7 +150,6 @@ export default function Trades() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         onSubmit={handleSubmit}
-        golds={golds}
         trade={editing}
       />
 

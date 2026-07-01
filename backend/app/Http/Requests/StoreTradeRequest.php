@@ -11,10 +11,13 @@ class StoreTradeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'gold_id'     => ['required', 'exists:golds,id'],
-            'description' => ['nullable', 'string', 'max:255'],
-            'status'      => ['required', 'in:kks,cash'],
-            'amount'      => ['required', 'numeric', 'min:0.01', 'max:999999999.99'],
+            'description'     => ['nullable', 'string', 'max:255'],
+            'status'          => ['required', 'in:kks,cash'],
+            'amount'          => ['required', 'numeric', 'min:0'],
+            'currency'        => ['nullable', 'in:USD,EUR,PHP'],
+            'payment_method'  => ['nullable', 'in:binance,paypal'],
+            'start_date'      => ['nullable', 'date'],
+            'completion_date' => ['nullable', 'date'],
         ];
     }
 }

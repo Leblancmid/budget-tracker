@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { tradesApi } from '@/api/rucoy'
-import type { Trade, TradeStatus } from '@/types'
+import { tradesApi, type TradePayload } from '@/api/rucoy'
+import type { Trade } from '@/types'
 
 export function useTrades() {
   const [trades, setTrades] = useState<Trade[]>([])
@@ -21,13 +21,13 @@ export function useTrades() {
 
   useEffect(() => { fetch() }, [fetch])
 
-  const create = async (data: { gold_id: number; description?: string; status: TradeStatus; amount: number }) => {
+  const create = async (data: TradePayload) => {
     const trade = await tradesApi.create(data)
     setTrades((prev) => [trade, ...prev])
     return trade
   }
 
-  const update = async (id: number, data: Partial<Parameters<typeof create>[0]>) => {
+  const update = async (id: number, data: TradePayload) => {
     const trade = await tradesApi.update(id, data)
     setTrades((prev) => prev.map((t) => (t.id === id ? trade : t)))
     return trade

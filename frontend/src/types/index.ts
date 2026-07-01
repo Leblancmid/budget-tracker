@@ -96,6 +96,8 @@ export interface ApiError {
 // ── Rucoy ────────────────────────────────────────────────────────────────────
 
 export type TradeStatus = 'kks' | 'cash'
+export type TradeCurrency = 'USD' | 'EUR' | 'PHP'
+export type TradePaymentMethod = 'binance' | 'paypal'
 
 export interface Gold {
   id: number
@@ -107,11 +109,14 @@ export interface Gold {
 
 export interface Trade {
   id: number
-  gold_id: number
-  gold?: Gold
+  gold_id?: number | null
   description: string | null
   status: TradeStatus
   amount: string
+  currency: TradeCurrency | null
+  payment_method: TradePaymentMethod | null
+  start_date: string | null
+  completion_date: string | null
   created_at: string
   updated_at: string
 }

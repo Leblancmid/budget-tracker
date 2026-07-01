@@ -12,21 +12,21 @@ class TradeController extends Controller
 {
     public function index(): JsonResponse
     {
-        return response()->json(Trade::with('gold')->latest()->get());
+        return response()->json(Trade::latest()->get());
     }
 
     public function store(StoreTradeRequest $request): JsonResponse
     {
         $trade = Trade::create($request->validated());
 
-        return response()->json($trade->load('gold'), 201);
+        return response()->json($trade, 201);
     }
 
     public function update(UpdateTradeRequest $request, Trade $trade): JsonResponse
     {
         $trade->update($request->validated());
 
-        return response()->json($trade->load('gold'));
+        return response()->json($trade->fresh());
     }
 
     public function destroy(Trade $trade): JsonResponse

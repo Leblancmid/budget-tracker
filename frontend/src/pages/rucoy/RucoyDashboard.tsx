@@ -1,16 +1,25 @@
+import { useMemo } from 'react'
 import { Coins, ArrowLeftRight, TrendingUp, ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Card } from '@/components/ui/Card'
 import { useRucoyDashboard } from '@/hooks/useRucoyDashboard'
 import { useTrades } from '@/hooks/useTrades'
+import { useGoldLogs } from '@/hooks/useGoldLogs'
+import { formatCurrency } from '@/utils/format'
 import type { TradeCurrency, TradeStatus } from '@/types'
 
 const CURRENCY_SYMBOLS: Record<TradeCurrency, string> = { PHP: '₱', USD: '$', EUR: '€' }
 
 function formatTradeAmount(status: TradeStatus, amount: string, currency: TradeCurrency | null) {
-  if (status === 'kks') return `${Number(amount).toLocaleString()} G`
+  if (status === 'kks') return `+${Number(amount).toLocaleString()} G`
   const symbol = currency ? CURRENCY_SYMBOLS[currency] : '₱'
-  return `${symbol}${Number(amount).toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  if (symbol === '₱') return `+${formatCurrency(parseFloat(amount))}`
+  return `+${symbol}${Number(amount).toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+
+function formatDate(iso: string): string {
+  const date = new Date(iso)
+  return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 }
 
 function StatCard({ icon, label, value, bg, textColor }: {
@@ -50,10 +59,41 @@ function SkeletonCard() {
 export default function RucoyDashboard() {
   const { stats, loading: statsLoading, error: statsError } = useRucoyDashboard()
   const { trades, loading: tradesLoading } = useTrades()
+  const { logs, loading: logsLoading } = useGoldLogs()
 
-  const recentTrades = [...trades]
-    .sort((a, b) => b.id - a.id)
-    .slice(0, 5)
+  const recentActivity = useMemo(() => {
+    const tradeItems = trades.map((t) => ({
+      key: `trade-${t.id}`,
+      iconBg: t.status === 'kks' ? 'bg-amber-500' : 'bg-emerald-500',
+      iconChar: t.status === 'kks' ? 'K' : 'C',
+      title: t.description || (t.status === 'kks' ? 'KKS Trade' : 'CASH Trade'),
+      subtitle: t.status === 'kks' ? 'KKS' : `CASH · ${t.payment_method ?? ''}`.trimEnd().replace(/·\s*$/, ''),
+      amount: formatTradeAmount(t.status, t.amount, t.currency),
+      amountColor: t.status === 'kks'
+        ? 'text-amber-600 dark:text-amber-400'
+        : 'text-emerald-600 dark:text-emerald-400',
+      date: t.created_at,
+    }))
+
+    const logItems = logs.map((l) => ({
+      key: `log-${l.id}`,
+      iconBg: l.type === 'add' ? 'bg-emerald-500' : 'bg-red-500',
+      iconChar: l.type === 'add' ? '+' : '−',
+      title: l.description || (l.type === 'add' ? 'Gold Added' : 'Gold Sold'),
+      subtitle: 'Gold Stash',
+      amount: `${l.type === 'add' ? '+' : '-'}${Number(l.amount).toLocaleString()} G`,
+      amountColor: l.type === 'add'
+        ? 'text-emerald-600 dark:text-emerald-400'
+        : 'text-red-600 dark:text-red-400',
+      date: l.created_at,
+    }))
+
+    return [...tradeItems, ...logItems]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 8)
+  }, [trades, logs])
+
+  const activityLoading = tradesLoading || logsLoading
 
   if (statsError) return (
     <div className="text-red-500 text-center py-10">{statsError}</div>
@@ -67,11 +107,11 @@ export default function RucoyDashboard() {
       </div>
 
       {statsLoading ? (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => <SkeletonCard key={i} />)}
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-4 gap-4">
           <StatCard
             icon={<Coins className="h-5 w-5 text-amber-600 dark:text-amber-400" />}
             label="Total Gold"
@@ -80,11 +120,11 @@ export default function RucoyDashboard() {
             textColor="text-amber-700 dark:text-amber-400"
           />
           <StatCard
-            icon={<ArrowLeftRight className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />}
-            label="Total Trades"
-            value={stats?.trade_count ?? 0}
-            bg="bg-indigo-50 dark:bg-indigo-900/20"
-            textColor="text-indigo-700 dark:text-indigo-400"
+            icon={<TrendingUp className="h-5 w-5 text-orange-600 dark:text-orange-400" />}
+            label="Trades Gold"
+            value={`${Number(stats?.kks_gold ?? 0).toLocaleString()} G`}
+            bg="bg-orange-50 dark:bg-orange-900/20"
+            textColor="text-orange-700 dark:text-orange-400"
           />
           <StatCard
             icon={<Coins className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />}
@@ -94,53 +134,47 @@ export default function RucoyDashboard() {
             textColor="text-yellow-700 dark:text-yellow-400"
           />
           <StatCard
-            icon={<TrendingUp className="h-5 w-5 text-orange-600 dark:text-orange-400" />}
-            label="KKS Trades Gold"
-            value={`${Number(stats?.kks_gold ?? 0).toLocaleString()} G`}
-            bg="bg-orange-50 dark:bg-orange-900/20"
-            textColor="text-orange-700 dark:text-orange-400"
+            icon={<ArrowLeftRight className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />}
+            label="Total Trades"
+            value={stats?.trade_count ?? 0}
+            bg="bg-indigo-50 dark:bg-indigo-900/20"
+            textColor="text-indigo-700 dark:text-indigo-400"
           />
         </div>
       )}
 
       <Card className="flex flex-col">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
-          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Recent Trades</h2>
-          <Link
-            to="/rucoy/trades"
-            className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium dark:text-indigo-400 dark:hover:text-indigo-300"
-          >
-            View all <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Recent Activity</h2>
+          <div className="flex items-center gap-3">
+            <Link to="/rucoy/golds" className="flex items-center gap-1 text-xs text-amber-600 hover:text-amber-800 font-medium dark:text-amber-400 dark:hover:text-amber-300">
+              Golds <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+            <Link to="/rucoy/trades" className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium dark:text-indigo-400 dark:hover:text-indigo-300">
+              Trades <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
         </div>
-        <div className="divide-y divide-gray-50 dark:divide-gray-700/40">
-          {tradesLoading && (
+        <div className="divide-y divide-gray-50 overflow-y-auto scrollbar-thin max-h-72 dark:divide-gray-700/40">
+          {activityLoading && (
             <p className="px-5 py-8 text-center text-sm text-gray-400 dark:text-gray-500">Loading…</p>
           )}
-          {!tradesLoading && recentTrades.length === 0 && (
-            <p className="px-5 py-8 text-center text-sm text-gray-400 dark:text-gray-500">No trades yet.</p>
+          {!activityLoading && recentActivity.length === 0 && (
+            <p className="px-5 py-8 text-center text-sm text-gray-400 dark:text-gray-500">No activity yet.</p>
           )}
-          {!tradesLoading && recentTrades.map((t) => (
-            <div key={t.id} className="flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition-colors dark:hover:bg-gray-800/50">
+          {!activityLoading && recentActivity.map((item) => (
+            <div key={item.key} className="flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition-colors dark:hover:bg-gray-800/50">
               <div className="flex items-center gap-3 min-w-0">
-                <div className={[
-                  'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white text-xs font-bold',
-                  t.status === 'kks' ? 'bg-amber-500' : 'bg-emerald-500',
-                ].join(' ')}>
-                  {t.status.toUpperCase().charAt(0)}
+                <div className={['flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white text-xs font-bold', item.iconBg].join(' ')}>
+                  {item.iconChar}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate dark:text-gray-100">
-                    {t.description || <span className="italic text-gray-400">No description</span>}
-                  </p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 uppercase">{t.status}</p>
+                  <p className="text-sm font-medium text-gray-900 truncate dark:text-gray-100">{item.title}</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500">{formatDate(item.date)}</p>
                 </div>
               </div>
-              <span className={[
-                'text-sm font-semibold whitespace-nowrap',
-                t.status === 'kks' ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400',
-              ].join(' ')}>
-                {formatTradeAmount(t.status, t.amount, t.currency)}
+              <span className={['text-sm font-semibold whitespace-nowrap ml-3', item.amountColor].join(' ')}>
+                {item.amount}
               </span>
             </div>
           ))}

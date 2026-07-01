@@ -43,6 +43,24 @@ const EMPTY: TradeForm = {
   completion_date: '',
 }
 
+function formatWithCommas(raw: string, allowDecimal: boolean): string {
+  if (!raw) return ''
+  const [integer, decimal] = raw.split('.')
+  const intFormatted = integer.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  if (!allowDecimal || decimal === undefined) return intFormatted
+  return `${intFormatted}.${decimal}`
+}
+
+function handleAmountInput(
+  value: string,
+  allowDecimal: boolean,
+  setter: (v: string) => void,
+) {
+  const stripped = value.replace(/,/g, '')
+  const pattern = allowDecimal ? /^\d*\.?\d*$/ : /^\d*$/
+  if (stripped === '' || pattern.test(stripped)) setter(stripped)
+}
+
 export function TradeModal({ open, onClose, onSubmit, trade }: TradeModalProps) {
   const [form, setForm] = useState<TradeForm>(EMPTY)
   const [errors, setErrors] = useState<Partial<Record<keyof TradeForm, string>>>({})
@@ -154,11 +172,10 @@ export function TradeModal({ open, onClose, onSubmit, trade }: TradeModalProps) 
             )}
             <div className="flex-1">
               <input
-                type="number"
-                min="0"
-                step={isCash ? '0.01' : '1'}
-                value={form.amount}
-                onChange={(e) => set('amount', e.target.value)}
+                type="text"
+                inputMode="decimal"
+                value={formatWithCommas(form.amount, isCash)}
+                onChange={(e) => handleAmountInput(e.target.value, isCash, (v) => set('amount', v))}
                 placeholder={isCash ? '0.00' : '0'}
                 className={[
                   'block w-full rounded-lg border bg-white px-3 py-2 text-sm text-gray-900',

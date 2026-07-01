@@ -12,7 +12,7 @@ class Gold extends Model
 
     protected $table = 'golds';
 
-    protected $fillable = ['amount'];
+    protected $fillable = ['amount', 'description'];
 
     protected $casts = ['amount' => 'decimal:2'];
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { goldsApi } from '@/api/rucoy'
+import { goldsApi, type GoldPayload } from '@/api/rucoy'
 import type { Gold } from '@/types'
 
 export function useGolds() {
@@ -21,13 +21,13 @@ export function useGolds() {
 
   useEffect(() => { fetch() }, [fetch])
 
-  const create = async (data: { amount: number }) => {
+  const create = async (data: GoldPayload) => {
     const gold = await goldsApi.create(data)
     setGolds((prev) => [gold, ...prev])
     return gold
   }
 
-  const update = async (id: number, data: { amount: number }) => {
+  const update = async (id: number, data: GoldPayload) => {
     const gold = await goldsApi.update(id, data)
     setGolds((prev) => prev.map((g) => (g.id === id ? gold : g)))
     return gold

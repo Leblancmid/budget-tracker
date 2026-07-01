@@ -102,7 +102,7 @@ export type TradePaymentMethod = 'binance' | 'paypal'
 export interface Gold {
   id: number
   amount: string
-  trades?: Trade[]
+  description: string | null
   created_at: string
   updated_at: string
 }

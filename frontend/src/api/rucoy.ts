@@ -15,11 +15,16 @@ export const rucoyDashboardApi = {
     api.get<RucoyDashboardStats>('/rucoy/dashboard').then((r) => r.data),
 }
 
+export interface GoldPayload {
+  amount: number
+  description?: string
+}
+
 export const goldsApi = {
   getAll: () => api.get<Gold[]>('/rucoy/golds').then((r) => r.data),
-  create: (data: { amount: number }) =>
+  create: (data: GoldPayload) =>
     api.post<Gold>('/rucoy/golds', data).then((r) => r.data),
-  update: (id: number, data: { amount: number }) =>
+  update: (id: number, data: GoldPayload) =>
     api.put<Gold>(`/rucoy/golds/${id}`, data).then((r) => r.data),
   delete: (id: number) =>
     api.delete<{ message: string }>(`/rucoy/golds/${id}`).then((r) => r.data),

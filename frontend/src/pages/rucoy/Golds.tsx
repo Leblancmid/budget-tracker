@@ -19,7 +19,7 @@ export default function Golds() {
   const openCreate = () => { setEditing(null); setModalOpen(true) }
   const openEdit = (g: Gold) => { setEditing(g); setModalOpen(true) }
 
-  const handleSubmit = async (data: { amount: number }) => {
+  const handleSubmit = async (data: { amount: number; description?: string }) => {
     if (editing) {
       await update(editing.id, data)
       toast.success('Gold updated.')
@@ -70,21 +70,21 @@ export default function Golds() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">ID</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">#</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Description</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Amount</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Trades</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-900">
-              {golds.map((g) => (
+              {golds.map((g, i) => (
                 <tr key={g.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                  <td className="px-4 py-3 font-mono text-gray-500 dark:text-gray-400">#{g.id}</td>
+                  <td className="px-4 py-3 font-mono text-gray-400 dark:text-gray-500">{i + 1}</td>
+                  <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                    {g.description || <span className="text-gray-400 dark:text-gray-500 italic">—</span>}
+                  </td>
                   <td className="px-4 py-3 text-right font-semibold text-amber-600 dark:text-amber-400">
                     {Number(g.amount).toLocaleString()} G
-                  </td>
-                  <td className="px-4 py-3 text-right text-gray-500 dark:text-gray-400">
-                    {g.trades?.length ?? 0}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">
@@ -111,7 +111,7 @@ export default function Golds() {
         onConfirm={handleDelete}
         loading={deleting}
         title="Delete Gold Stash"
-        message={`Delete gold stash #${deleteTarget?.id}? This cannot be undone if trades are linked.`}
+        message={`Delete gold stash #${deleteTarget?.id}? This cannot be undone.`}
         confirmLabel="Delete"
       />
     </div>

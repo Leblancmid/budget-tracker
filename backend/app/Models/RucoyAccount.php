@@ -11,5 +11,21 @@ class RucoyAccount extends Model
 
     protected $table = 'rucoy_accounts';
 
-    protected $fillable = ['description', 'email', 'avatar'];
+    protected $fillable = ['description', 'email', 'avatar', 'price', 'cost'];
+
+    protected $appends = ['profit'];
+
+    protected $casts = [
+        'price' => 'float',
+        'cost'  => 'float',
+    ];
+
+    public function getProfitAttribute(): ?float
+    {
+        if ($this->price === null || $this->cost === null) {
+            return null;
+        }
+
+        return $this->price - $this->cost;
+    }
 }

@@ -14,6 +14,8 @@ class StoreRucoyAccountRequest extends FormRequest
             'description' => ['nullable', 'string', 'max:255'],
             'email'       => ['required', 'string', 'max:255'],
             'avatar'      => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
+            'price'       => ['nullable', 'numeric', 'min:0'],
+            'cost'        => ['nullable', 'numeric', 'min:0'],
         ];
     }
 }

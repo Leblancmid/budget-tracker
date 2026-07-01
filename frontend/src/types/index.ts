@@ -121,6 +121,9 @@ export interface RucoyAccount {
   description: string | null
   email: string
   avatar: string | null
+  price: number | null
+  cost: number | null
+  profit: number | null
   created_at: string
   updated_at: string
 }

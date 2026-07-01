@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { Plus, Pencil, Trash2, Users, User } from 'lucide-react'
+import { Plus, Pencil, Trash2, Users, User, TrendingUp, TrendingDown } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { AccountModal } from '@/components/modals/AccountModal'
 import { useRucoyAccounts } from '@/hooks/useRucoyAccounts'
 import { toast } from '@/components/ui/Toast'
+import { formatCurrency } from '@/utils/format'
 import type { AccountPayload } from '@/api/rucoy'
 import type { RucoyAccount } from '@/types'
 
@@ -86,7 +87,27 @@ export default function Accounts() {
                 {a.description && (
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{a.description}</p>
                 )}
-                <p className="text-xs font-mono text-gray-400 dark:text-gray-500 mt-1">#{a.id}</p>
+                <div className="mt-2 flex flex-col gap-0.5 text-xs">
+                  {a.price != null && (
+                    <span className="text-indigo-600 dark:text-indigo-400 font-medium">
+                      Price: {formatCurrency(a.price)}
+                    </span>
+                  )}
+                  {a.cost != null && (
+                    <span className="text-gray-500 dark:text-gray-400">
+                      Cost: {formatCurrency(a.cost)}
+                    </span>
+                  )}
+                  {a.profit != null && (
+                    <span className={`flex items-center gap-1 font-semibold ${a.profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}>
+                      {a.profit >= 0
+                        ? <TrendingUp size={11} />
+                        : <TrendingDown size={11} />}
+                      Profit: {formatCurrency(a.profit)}
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs font-mono text-gray-400 dark:text-gray-500 mt-1.5">#{a.id}</p>
               </div>
               <div className="flex gap-1 shrink-0">
                 <button onClick={() => openEdit(a)} className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">

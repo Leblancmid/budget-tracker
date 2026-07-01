@@ -30,6 +30,8 @@ export interface AccountPayload {
   email: string
   description?: string
   avatar?: File | null
+  price?: number | null
+  cost?: number | null
 }
 
 function buildAccountForm(data: AccountPayload, method?: 'PUT'): FormData {
@@ -38,6 +40,8 @@ function buildAccountForm(data: AccountPayload, method?: 'PUT'): FormData {
   fd.append('email', data.email)
   if (data.description !== undefined) fd.append('description', data.description)
   if (data.avatar instanceof File) fd.append('avatar', data.avatar)
+  if (data.price != null) fd.append('price', String(data.price))
+  if (data.cost != null) fd.append('cost', String(data.cost))
   return fd
 }
 

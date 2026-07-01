@@ -16,6 +16,8 @@ interface AccountModalProps {
 export function AccountModal({ open, onClose, onSubmit, account }: AccountModalProps) {
   const [email, setEmail] = useState('')
   const [description, setDescription] = useState('')
+  const [price, setPrice] = useState('')
+  const [cost, setCost] = useState('')
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [errors, setErrors] = useState<{ email?: string; avatar?: string }>({})
@@ -28,6 +30,8 @@ export function AccountModal({ open, onClose, onSubmit, account }: AccountModalP
       setAvatarFile(null)
       setEmail(account?.email ?? '')
       setDescription(account?.description ?? '')
+      setPrice(account?.price != null ? String(account.price) : '')
+      setCost(account?.cost != null ? String(account.cost) : '')
       setPreview(account?.avatar ?? null)
     }
   }, [open, account])
@@ -66,6 +70,8 @@ export function AccountModal({ open, onClose, onSubmit, account }: AccountModalP
         email: email.trim(),
         description: description || undefined,
         avatar: avatarFile,
+        price: price !== '' ? parseFloat(price) : null,
+        cost: cost !== '' ? parseFloat(cost) : null,
       })
       onClose()
     } catch (err: unknown) {
@@ -141,6 +147,27 @@ export function AccountModal({ open, onClose, onSubmit, account }: AccountModalP
           onChange={(e) => setDescription(e.target.value)}
           placeholder="e.g. Level 300 Archer"
         />
+
+        <div className="flex gap-3">
+          <Input
+            label="Price (₱)"
+            type="number"
+            min="0"
+            step="0.01"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            placeholder="0.00"
+          />
+          <Input
+            label="Cost (₱)"
+            type="number"
+            min="0"
+            step="0.01"
+            value={cost}
+            onChange={(e) => setCost(e.target.value)}
+            placeholder="0.00"
+          />
+        </div>
 
         <div className="flex justify-end gap-3 pt-1">
           <Button variant="secondary" onClick={onClose} disabled={loading}>Cancel</Button>

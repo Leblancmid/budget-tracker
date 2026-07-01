@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Plus, Pencil, Trash2, ArrowLeftRight } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Plus, Pencil, Trash2, ArrowLeftRight, ChevronUp, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -46,10 +46,26 @@ function StatusPill({ status }: { status: TradeStatus }) {
 export default function Trades() {
   const { trades, loading, error, create, update, remove } = useTrades()
 
+  const [dateSort, setDateSort] = useState<'asc' | 'desc' | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<Trade | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Trade | null>(null)
   const [deleting, setDeleting] = useState(false)
+
+  const sortedTrades = useMemo(() => {
+    if (!dateSort) return trades
+    return [...trades].sort((a, b) => {
+      const da = a.completion_date ?? ''
+      const db = b.completion_date ?? ''
+      if (!da && !db) return 0
+      if (!da) return 1
+      if (!db) return -1
+      return dateSort === 'asc' ? da.localeCompare(db) : db.localeCompare(da)
+    })
+  }, [trades, dateSort])
+
+  const cycleSort = () =>
+    setDateSort((s) => (s === null ? 'asc' : s === 'asc' ? 'desc' : null))
 
   const openCreate = () => { setEditing(null); setModalOpen(true) }
   const openEdit = (t: Trade) => { setEditing(t); setModalOpen(true) }
@@ -112,12 +128,19 @@ export default function Trades() {
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Type</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Payment</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Amount</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Done</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                  <button onClick={cycleSort} className="flex items-center gap-1 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
+                    Done
+                    {dateSort === 'asc'  && <ChevronUp size={13} />}
+                    {dateSort === 'desc' && <ChevronDown size={13} />}
+                    {dateSort === null   && <span className="opacity-30"><ChevronUp size={13} /></span>}
+                  </button>
+                </th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-900">
-              {trades.map((t) => (
+              {sortedTrades.map((t) => (
                 <tr key={t.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                   <td className="px-4 py-3 font-mono text-gray-500 dark:text-gray-400">#{t.id}</td>
                   <td className="px-4 py-3 text-gray-700 dark:text-gray-300 max-w-[180px] truncate">

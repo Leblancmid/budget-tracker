@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Plus, Pencil, Trash2, Users, User, TrendingUp, TrendingDown } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Plus, Pencil, Trash2, Users, User, TrendingUp, TrendingDown, DollarSign } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -20,6 +20,16 @@ export default function Accounts() {
 
   const openCreate = () => { setEditing(null); setModalOpen(true) }
   const openEdit = (a: RucoyAccount) => { setEditing(a); setModalOpen(true) }
+
+  const totals = useMemo(() => {
+    let price = 0, cost = 0, profit = 0
+    for (const a of accounts) {
+      if (a.price != null) price += a.price
+      if (a.cost != null) cost += a.cost
+      if (a.profit != null) profit += a.profit
+    }
+    return { price, cost, profit }
+  }, [accounts])
 
   const handleSubmit = async (data: AccountPayload) => {
     if (editing) {
@@ -56,6 +66,29 @@ export default function Accounts() {
           <Plus size={16} className="mr-1" /> Add Account
         </Button>
       </div>
+
+      {!loading && accounts.length > 0 && (
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { label: 'Total Price', value: totals.price, icon: DollarSign, color: 'bg-indigo-50 dark:bg-indigo-900/20', iconColor: 'text-indigo-500 dark:text-indigo-400', textColor: 'text-indigo-700 dark:text-indigo-400' },
+            { label: 'Total Cost',  value: totals.cost,  icon: TrendingDown, color: 'bg-gray-100 dark:bg-gray-800',      iconColor: 'text-gray-500 dark:text-gray-400',   textColor: 'text-gray-700 dark:text-gray-300' },
+            { label: 'Total Profit', value: totals.profit, icon: totals.profit >= 0 ? TrendingUp : TrendingDown,
+              color: totals.profit >= 0 ? 'bg-emerald-50 dark:bg-emerald-900/20' : 'bg-red-50 dark:bg-red-900/20',
+              iconColor: totals.profit >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-500 dark:text-red-400',
+              textColor: totals.profit >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400' },
+          ].map(({ label, value, icon: Icon, color, iconColor, textColor }) => (
+            <Card key={label} className="flex items-center gap-3 px-4 py-3">
+              <div className={['flex h-9 w-9 shrink-0 items-center justify-center rounded-lg', color].join(' ')}>
+                <Icon size={16} className={iconColor} />
+              </div>
+              <div>
+                <p className="text-xs text-gray-400 dark:text-gray-500 font-medium">{label}</p>
+                <p className={['text-base font-bold', textColor].join(' ')}>{formatCurrency(value)}</p>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {loading && <div className="text-center text-gray-400 py-10">Loading…</div>}
       {error && <div className="text-red-500 text-center py-4">{error}</div>}

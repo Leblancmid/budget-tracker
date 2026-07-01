@@ -35,7 +35,7 @@ interface TradeForm {
 
 const EMPTY: TradeForm = {
   description: '',
-  status: 'cash',
+  status: 'kks',
   amount: '',
   currency: 'PHP',
   payment_method: '',
@@ -133,7 +133,7 @@ export function TradeModal({ open, onClose, onSubmit, trade }: TradeModalProps) 
         <div>
           <p className="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Type</p>
           <div className="flex gap-2">
-            {(['cash', 'kks'] as TradeStatus[]).map((s) => (
+            {(['kks', 'cash'] as TradeStatus[]).map((s) => (
               <button
                 key={s}
                 type="button"
@@ -221,21 +221,13 @@ export function TradeModal({ open, onClose, onSubmit, trade }: TradeModalProps) 
           </div>
         )}
 
-        {/* Dates */}
-        <div className="flex gap-3">
-          <Input
-            label="Start Date"
-            type="date"
-            value={form.start_date}
-            onChange={(e) => set('start_date', e.target.value)}
-          />
-          <Input
-            label="Completion Date"
-            type="date"
-            value={form.completion_date}
-            onChange={(e) => set('completion_date', e.target.value)}
-          />
-        </div>
+        {/* Completion date */}
+        <Input
+          label="Completion Date"
+          type="date"
+          value={form.completion_date}
+          onChange={(e) => set('completion_date', e.target.value)}
+        />
 
         <div className="flex justify-end gap-3 pt-1">
           <Button variant="secondary" onClick={onClose} disabled={loading}>Cancel</Button>

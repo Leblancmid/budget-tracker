@@ -10,6 +10,8 @@ class Gold extends Model
 {
     use HasFactory;
 
+    protected $table = 'golds';
+
     protected $fillable = ['amount'];
 
     protected $casts = ['amount' => 'decimal:2'];

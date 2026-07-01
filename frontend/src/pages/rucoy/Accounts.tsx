@@ -6,8 +6,9 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { AccountModal } from '@/components/modals/AccountModal'
 import { useRucoyAccounts } from '@/hooks/useRucoyAccounts'
 import { toast } from '@/components/ui/Toast'
-import { formatCurrency } from '@/utils/format'
 import type { AccountPayload } from '@/api/rucoy'
+
+const fmtGold = (n: number) => `${n.toLocaleString()} G`
 import type { RucoyAccount } from '@/types'
 
 export default function Accounts() {
@@ -83,7 +84,7 @@ export default function Accounts() {
               </div>
               <div>
                 <p className="text-xs text-gray-400 dark:text-gray-500 font-medium">{label}</p>
-                <p className={['text-base font-bold', textColor].join(' ')}>{formatCurrency(value)}</p>
+                <p className={['text-base font-bold', textColor].join(' ')}>{fmtGold(value)}</p>
               </div>
             </Card>
           ))}
@@ -123,12 +124,12 @@ export default function Accounts() {
                 <div className="mt-2 flex flex-col gap-0.5 text-xs">
                   {a.price != null && (
                     <span className="text-indigo-600 dark:text-indigo-400 font-medium">
-                      Price: {formatCurrency(a.price)}
+                      Price: {fmtGold(a.price)}
                     </span>
                   )}
                   {a.cost != null && (
                     <span className="text-gray-500 dark:text-gray-400">
-                      Cost: {formatCurrency(a.cost)}
+                      Cost: {fmtGold(a.cost)}
                     </span>
                   )}
                   {a.profit != null && (
@@ -136,7 +137,7 @@ export default function Accounts() {
                       {a.profit >= 0
                         ? <TrendingUp size={11} />
                         : <TrendingDown size={11} />}
-                      Profit: {formatCurrency(a.profit)}
+                      Profit: {fmtGold(a.profit)}
                     </span>
                   )}
                 </div>

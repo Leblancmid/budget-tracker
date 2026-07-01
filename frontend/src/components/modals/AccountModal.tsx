@@ -6,6 +6,18 @@ import { Input } from '@/components/ui/Input'
 import type { AccountPayload } from '@/api/rucoy'
 import type { RucoyAccount } from '@/types'
 
+function formatWithCommas(raw: string): string {
+  if (!raw) return ''
+  const [integer, decimal] = raw.split('.')
+  const intFormatted = integer.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  return decimal !== undefined ? `${intFormatted}.${decimal}` : intFormatted
+}
+
+function handleNumberInput(value: string, setter: (v: string) => void) {
+  const stripped = value.replace(/,/g, '')
+  if (stripped === '' || /^\d*\.?\d*$/.test(stripped)) setter(stripped)
+}
+
 interface AccountModalProps {
   open: boolean
   onClose: () => void
@@ -149,24 +161,23 @@ export function AccountModal({ open, onClose, onSubmit, account }: AccountModalP
         />
 
         <div className="flex gap-3">
-          <Input
-            label="Price (₱)"
-            type="number"
-            min="0"
-            step="0.01"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            placeholder="0.00"
-          />
-          <Input
-            label="Cost (₱)"
-            type="number"
-            min="0"
-            step="0.01"
-            value={cost}
-            onChange={(e) => setCost(e.target.value)}
-            placeholder="0.00"
-          />
+          {(['Price (G)', 'Cost (G)'] as const).map((label, idx) => {
+            const raw = idx === 0 ? price : cost
+            const setter = idx === 0 ? setPrice : setCost
+            return (
+              <div key={label} className="flex-1">
+                <p className="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">{label}</p>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={formatWithCommas(raw)}
+                  onChange={(e) => handleNumberInput(e.target.value, setter)}
+                  placeholder="e.g. 1,000,000"
+                  className="block w-full rounded-lg border border-gray-300 hover:border-gray-400 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 dark:border-gray-600 dark:hover:border-gray-500 transition-colors"
+                />
+              </div>
+            )
+          })}
         </div>
 
         <div className="flex justify-end gap-3 pt-1">

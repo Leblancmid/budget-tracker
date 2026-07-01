@@ -29,7 +29,6 @@ interface TradeForm {
   amount: string
   currency: TradeCurrency
   payment_method: TradePaymentMethod | ''
-  start_date: string
   completion_date: string
 }
 
@@ -39,7 +38,6 @@ const EMPTY: TradeForm = {
   amount: '',
   currency: 'PHP',
   payment_method: '',
-  start_date: '',
   completion_date: '',
 }
 
@@ -75,7 +73,6 @@ export function TradeModal({ open, onClose, onSubmit, trade }: TradeModalProps) 
         amount:          parseFloat(trade.amount).toString(),
         currency:        trade.currency ?? 'PHP',
         payment_method:  trade.payment_method ?? '',
-        start_date:      trade.start_date ?? '',
         completion_date: trade.completion_date ?? '',
       } : EMPTY)
     }
@@ -102,7 +99,6 @@ export function TradeModal({ open, onClose, onSubmit, trade }: TradeModalProps) 
         amount:          parseFloat(form.amount),
         currency:        form.status === 'cash' ? form.currency : null,
         payment_method:  form.status === 'cash' && form.payment_method ? form.payment_method : null,
-        start_date:      form.start_date || null,
         completion_date: form.completion_date || null,
       })
       onClose()

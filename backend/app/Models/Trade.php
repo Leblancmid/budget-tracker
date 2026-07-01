@@ -23,7 +23,6 @@ class Trade extends Model
 
     protected $casts = [
         'amount'          => 'decimal:2',
-        'start_date'      => 'date:Y-m-d',
         'completion_date' => 'date:Y-m-d',
     ];
 

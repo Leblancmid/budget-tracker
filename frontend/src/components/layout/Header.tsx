@@ -12,7 +12,7 @@ const TITLES: Record<string, string> = {
 export function Header() {
   const { pathname } = useLocation()
   const { theme, toggle } = useTheme()
-  const title = TITLES[pathname] ?? 'Budget Tracker'
+  const title = TITLES[pathname] ?? 'Mikey\'s Tracker'
 
   return (
     <header className="flex h-14 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-6 dark:border-gray-700 dark:bg-gray-900">

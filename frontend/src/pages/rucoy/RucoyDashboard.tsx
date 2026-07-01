@@ -1,4 +1,4 @@
-import { Coins, ArrowLeftRight, Users, TrendingUp, ArrowRight } from 'lucide-react'
+import { Coins, ArrowLeftRight, TrendingUp, ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Card } from '@/components/ui/Card'
 import { useRucoyDashboard } from '@/hooks/useRucoyDashboard'
@@ -67,52 +67,40 @@ export default function RucoyDashboard() {
       </div>
 
       {statsLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => <SkeletonCard key={i} />)}
+        <div className="grid grid-cols-2 gap-4">
+          {[1, 2, 3, 4].map((i) => <SkeletonCard key={i} />)}
         </div>
       ) : (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <StatCard
-              icon={<Coins className="h-5 w-5 text-amber-600 dark:text-amber-400" />}
-              label="Total Gold"
-              value={`${Number(stats?.total_gold ?? 0).toLocaleString()} G`}
-              bg="bg-amber-50 dark:bg-amber-900/20"
-              textColor="text-amber-700 dark:text-amber-400"
-            />
-            <StatCard
-              icon={<ArrowLeftRight className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />}
-              label="Total Trades"
-              value={stats?.trade_count ?? 0}
-              bg="bg-indigo-50 dark:bg-indigo-900/20"
-              textColor="text-indigo-700 dark:text-indigo-400"
-            />
-            <StatCard
-              icon={<Users className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />}
-              label="Accounts for Sale"
-              value={stats?.account_count ?? 0}
-              bg="bg-emerald-50 dark:bg-emerald-900/20"
-              textColor="text-emerald-700 dark:text-emerald-400"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <StatCard
-              icon={<Coins className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />}
-              label="Gold Stash"
-              value={`${Number(stats?.manual_gold ?? 0).toLocaleString()} G`}
-              bg="bg-yellow-50 dark:bg-yellow-900/20"
-              textColor="text-yellow-700 dark:text-yellow-400"
-            />
-            <StatCard
-              icon={<TrendingUp className="h-5 w-5 text-orange-600 dark:text-orange-400" />}
-              label="KKS Trades Gold"
-              value={`${Number(stats?.kks_gold ?? 0).toLocaleString()} G`}
-              bg="bg-orange-50 dark:bg-orange-900/20"
-              textColor="text-orange-700 dark:text-orange-400"
-            />
-          </div>
-        </>
+        <div className="grid grid-cols-2 gap-4">
+          <StatCard
+            icon={<Coins className="h-5 w-5 text-amber-600 dark:text-amber-400" />}
+            label="Total Gold"
+            value={`${Number(stats?.total_gold ?? 0).toLocaleString()} G`}
+            bg="bg-amber-50 dark:bg-amber-900/20"
+            textColor="text-amber-700 dark:text-amber-400"
+          />
+          <StatCard
+            icon={<ArrowLeftRight className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />}
+            label="Total Trades"
+            value={stats?.trade_count ?? 0}
+            bg="bg-indigo-50 dark:bg-indigo-900/20"
+            textColor="text-indigo-700 dark:text-indigo-400"
+          />
+          <StatCard
+            icon={<Coins className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />}
+            label="Gold Stash"
+            value={`${Number(stats?.manual_gold ?? 0).toLocaleString()} G`}
+            bg="bg-yellow-50 dark:bg-yellow-900/20"
+            textColor="text-yellow-700 dark:text-yellow-400"
+          />
+          <StatCard
+            icon={<TrendingUp className="h-5 w-5 text-orange-600 dark:text-orange-400" />}
+            label="KKS Trades Gold"
+            value={`${Number(stats?.kks_gold ?? 0).toLocaleString()} G`}
+            bg="bg-orange-50 dark:bg-orange-900/20"
+            textColor="text-orange-700 dark:text-orange-400"
+          />
+        </div>
       )}
 
       <Card className="flex flex-col">

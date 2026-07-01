@@ -7,6 +7,8 @@ interface PaginationProps {
 }
 
 export function Pagination({ meta, onPageChange }: PaginationProps) {
+  if (!meta) return null
+
   const { current_page, last_page, from, to, total } = meta
 
   if (last_page <= 1) return null

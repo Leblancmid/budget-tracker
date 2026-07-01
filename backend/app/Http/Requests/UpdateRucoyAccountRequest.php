@@ -13,7 +13,7 @@ class UpdateRucoyAccountRequest extends FormRequest
         return [
             'description' => ['nullable', 'string', 'max:255'],
             'email'       => ['sometimes', 'required', 'string', 'max:255'],
-            'avatar'      => ['nullable', 'string', 'max:500'],
+            'avatar'      => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
         ];
     }
 }

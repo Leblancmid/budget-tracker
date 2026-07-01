@@ -1,42 +1,59 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { User, X } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import type { AccountPayload } from '@/api/rucoy'
 import type { RucoyAccount } from '@/types'
 
 interface AccountModalProps {
   open: boolean
   onClose: () => void
-  onSubmit: (data: { description?: string; email: string; avatar?: string }) => Promise<void>
+  onSubmit: (data: AccountPayload) => Promise<void>
   account?: RucoyAccount | null
 }
 
-interface AccountForm {
-  description: string
-  email: string
-  avatar: string
-}
-
-const EMPTY: AccountForm = { description: '', email: '', avatar: '' }
-
 export function AccountModal({ open, onClose, onSubmit, account }: AccountModalProps) {
-  const [form, setForm] = useState<AccountForm>(EMPTY)
-  const [errors, setErrors] = useState<Partial<Record<keyof AccountForm, string>>>({})
+  const [email, setEmail] = useState('')
+  const [description, setDescription] = useState('')
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
+  const [preview, setPreview] = useState<string | null>(null)
+  const [errors, setErrors] = useState<{ email?: string; avatar?: string }>({})
   const [loading, setLoading] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (open) {
       setErrors({})
-      setForm(account
-        ? { description: account.description ?? '', email: account.email, avatar: account.avatar ?? '' }
-        : EMPTY
-      )
+      setAvatarFile(null)
+      setEmail(account?.email ?? '')
+      setDescription(account?.description ?? '')
+      setPreview(account?.avatar ?? null)
     }
   }, [open, account])
 
+  useEffect(() => {
+    if (!avatarFile) return
+    const url = URL.createObjectURL(avatarFile)
+    setPreview(url)
+    return () => URL.revokeObjectURL(url)
+  }, [avatarFile])
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null
+    setAvatarFile(file)
+    setErrors((p) => ({ ...p, avatar: undefined }))
+  }
+
+  const clearAvatar = () => {
+    setAvatarFile(null)
+    setPreview(null)
+    if (fileRef.current) fileRef.current.value = ''
+  }
+
   const validate = () => {
     const errs: typeof errors = {}
-    if (!form.email.trim()) errs.email = 'Email is required.'
+    if (!email.trim()) errs.email = 'Email is required.'
     setErrors(errs)
     return Object.keys(errs).length === 0
   }
@@ -46,48 +63,90 @@ export function AccountModal({ open, onClose, onSubmit, account }: AccountModalP
     setLoading(true)
     try {
       await onSubmit({
-        email: form.email.trim(),
-        description: form.description || undefined,
-        avatar: form.avatar || undefined,
+        email: email.trim(),
+        description: description || undefined,
+        avatar: avatarFile,
       })
       onClose()
     } catch (err: unknown) {
       const e = err as { errors?: Record<string, string[]> }
-      if (e.errors) setErrors(Object.fromEntries(Object.entries(e.errors).map(([k, v]) => [k, v[0]])))
+      if (e.errors) {
+        setErrors({
+          email: e.errors.email?.[0],
+          avatar: e.errors.avatar?.[0],
+        })
+      }
     } finally {
       setLoading(false)
     }
   }
 
-  const set = <K extends keyof AccountForm>(k: K, v: AccountForm[K]) => setForm((p) => ({ ...p, [k]: v }))
-
   return (
     <Modal open={open} onClose={onClose} title={account ? 'Edit Account' : 'Add Account'}>
       <div className="flex flex-col gap-4">
+
+        {/* Avatar picker */}
+        <div className="flex flex-col items-center gap-3">
+          <div className="relative">
+            {preview ? (
+              <img
+                src={preview}
+                alt="Avatar preview"
+                className="w-20 h-20 rounded-full object-cover border-2 border-emerald-400 dark:border-emerald-600"
+              />
+            ) : (
+              <div className="w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600">
+                <User size={28} className="text-gray-400" />
+              </div>
+            )}
+            {preview && (
+              <button
+                type="button"
+                onClick={clearAvatar}
+                className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors"
+              >
+                <X size={11} />
+              </button>
+            )}
+          </div>
+
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/jpeg,image/png,image/jpg,image/gif,image/webp"
+            onChange={handleFile}
+            className="hidden"
+            id="avatar-upload"
+          />
+          <label
+            htmlFor="avatar-upload"
+            className="cursor-pointer rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          >
+            {preview ? 'Change photo' : 'Upload photo'}
+          </label>
+          {errors.avatar && <p className="text-xs text-red-500">{errors.avatar}</p>}
+        </div>
+
         <Input
-          label="Email"
-          type="text"
-          value={form.email}
-          onChange={(e) => set('email', e.target.value)}
+          label="Email / Username"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           error={errors.email}
           placeholder="account@example.com"
         />
+
         <Input
           label="Description"
-          value={form.description}
-          onChange={(e) => set('description', e.target.value)}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
           placeholder="e.g. Level 300 Archer"
         />
-        <Input
-          label="Avatar URL"
-          value={form.avatar}
-          onChange={(e) => set('avatar', e.target.value)}
-          placeholder="https://..."
-          hint="Optional link to the account avatar image"
-        />
-        <div className="flex justify-end gap-3">
+
+        <div className="flex justify-end gap-3 pt-1">
           <Button variant="secondary" onClick={onClose} disabled={loading}>Cancel</Button>
-          <Button onClick={handleSubmit} loading={loading}>{account ? 'Save Changes' : 'Add Account'}</Button>
+          <Button onClick={handleSubmit} loading={loading}>
+            {account ? 'Save Changes' : 'Add Account'}
+          </Button>
         </div>
       </div>
     </Modal>

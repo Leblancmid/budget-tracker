@@ -26,12 +26,27 @@ export const tradesApi = {
     api.delete<{ message: string }>(`/rucoy/trades/${id}`).then((r) => r.data),
 }
 
+export interface AccountPayload {
+  email: string
+  description?: string
+  avatar?: File | null
+}
+
+function buildAccountForm(data: AccountPayload, method?: 'PUT'): FormData {
+  const fd = new FormData()
+  if (method) fd.append('_method', method)
+  fd.append('email', data.email)
+  if (data.description !== undefined) fd.append('description', data.description)
+  if (data.avatar instanceof File) fd.append('avatar', data.avatar)
+  return fd
+}
+
 export const rucoyAccountsApi = {
   getAll: () => api.get<RucoyAccount[]>('/rucoy/accounts').then((r) => r.data),
-  create: (data: { description?: string; email: string; avatar?: string }) =>
-    api.post<RucoyAccount>('/rucoy/accounts', data).then((r) => r.data),
-  update: (id: number, data: Partial<{ description?: string; email: string; avatar?: string }>) =>
-    api.put<RucoyAccount>(`/rucoy/accounts/${id}`, data).then((r) => r.data),
+  create: (data: AccountPayload) =>
+    api.post<RucoyAccount>('/rucoy/accounts', buildAccountForm(data)).then((r) => r.data),
+  update: (id: number, data: AccountPayload) =>
+    api.post<RucoyAccount>(`/rucoy/accounts/${id}`, buildAccountForm(data, 'PUT')).then((r) => r.data),
   delete: (id: number) =>
     api.delete<{ message: string }>(`/rucoy/accounts/${id}`).then((r) => r.data),
 }

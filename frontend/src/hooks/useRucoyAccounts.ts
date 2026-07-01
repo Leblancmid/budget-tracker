@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { rucoyAccountsApi } from '@/api/rucoy'
+import { rucoyAccountsApi, type AccountPayload } from '@/api/rucoy'
 import type { RucoyAccount } from '@/types'
 
 export function useRucoyAccounts() {
@@ -21,13 +21,13 @@ export function useRucoyAccounts() {
 
   useEffect(() => { fetch() }, [fetch])
 
-  const create = async (data: { description?: string; email: string; avatar?: string }) => {
+  const create = async (data: AccountPayload) => {
     const account = await rucoyAccountsApi.create(data)
     setAccounts((prev) => [account, ...prev])
     return account
   }
 
-  const update = async (id: number, data: Partial<Parameters<typeof create>[0]>) => {
+  const update = async (id: number, data: AccountPayload) => {
     const account = await rucoyAccountsApi.update(id, data)
     setAccounts((prev) => prev.map((a) => (a.id === id ? account : a)))
     return account

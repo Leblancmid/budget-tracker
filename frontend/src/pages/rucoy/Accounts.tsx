@@ -6,6 +6,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { AccountModal } from '@/components/modals/AccountModal'
 import { useRucoyAccounts } from '@/hooks/useRucoyAccounts'
 import { toast } from '@/components/ui/Toast'
+import type { AccountPayload } from '@/api/rucoy'
 import type { RucoyAccount } from '@/types'
 
 export default function Accounts() {
@@ -19,7 +20,7 @@ export default function Accounts() {
   const openCreate = () => { setEditing(null); setModalOpen(true) }
   const openEdit = (a: RucoyAccount) => { setEditing(a); setModalOpen(true) }
 
-  const handleSubmit = async (data: { description?: string; email: string; avatar?: string }) => {
+  const handleSubmit = async (data: AccountPayload) => {
     if (editing) {
       await update(editing.id, data)
       toast.success('Account updated.')

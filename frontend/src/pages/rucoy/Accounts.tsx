@@ -5,12 +5,11 @@ import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { AccountModal } from '@/components/modals/AccountModal'
 import { useRucoyAccounts } from '@/hooks/useRucoyAccounts'
-import { useToast } from '@/hooks/useToast'
+import { toast } from '@/components/ui/Toast'
 import type { RucoyAccount } from '@/types'
 
 export default function Accounts() {
   const { accounts, loading, error, create, update, remove } = useRucoyAccounts()
-  const { addToast } = useToast()
 
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<RucoyAccount | null>(null)
@@ -23,10 +22,10 @@ export default function Accounts() {
   const handleSubmit = async (data: { description?: string; email: string; avatar?: string }) => {
     if (editing) {
       await update(editing.id, data)
-      addToast('Account updated.', 'success')
+      toast.success('Account updated.')
     } else {
       await create(data)
-      addToast('Account added.', 'success')
+      toast.success('Account added.')
     }
   }
 
@@ -35,9 +34,9 @@ export default function Accounts() {
     setDeleting(true)
     try {
       await remove(deleteTarget.id)
-      addToast('Account deleted.', 'success')
+      toast.success('Account deleted.')
     } catch (err: unknown) {
-      addToast((err as { message: string }).message, 'error')
+      toast.error((err as { message: string }).message)
     } finally {
       setDeleting(false)
       setDeleteTarget(null)
@@ -116,7 +115,6 @@ export default function Accounts() {
         title="Delete Account"
         message={`Delete account "${deleteTarget?.email}"? This cannot be undone.`}
         confirmLabel="Delete"
-        variant="danger"
       />
     </div>
   )

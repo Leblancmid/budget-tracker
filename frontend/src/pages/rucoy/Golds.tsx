@@ -5,12 +5,11 @@ import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { GoldModal } from '@/components/modals/GoldModal'
 import { useGolds } from '@/hooks/useGolds'
-import { useToast } from '@/hooks/useToast'
+import { toast } from '@/components/ui/Toast'
 import type { Gold } from '@/types'
 
 export default function Golds() {
   const { golds, loading, error, create, update, remove } = useGolds()
-  const { addToast } = useToast()
 
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<Gold | null>(null)
@@ -23,10 +22,10 @@ export default function Golds() {
   const handleSubmit = async (data: { amount: number }) => {
     if (editing) {
       await update(editing.id, data)
-      addToast('Gold updated.', 'success')
+      toast.success('Gold updated.')
     } else {
       await create(data)
-      addToast('Gold added.', 'success')
+      toast.success('Gold added.')
     }
   }
 
@@ -35,9 +34,9 @@ export default function Golds() {
     setDeleting(true)
     try {
       await remove(deleteTarget.id)
-      addToast('Gold deleted.', 'success')
+      toast.success('Gold deleted.')
     } catch (err: unknown) {
-      addToast((err as { message: string }).message, 'error')
+      toast.error((err as { message: string }).message)
     } finally {
       setDeleting(false)
       setDeleteTarget(null)
@@ -114,7 +113,6 @@ export default function Golds() {
         title="Delete Gold Stash"
         message={`Delete gold stash #${deleteTarget?.id}? This cannot be undone if trades are linked.`}
         confirmLabel="Delete"
-        variant="danger"
       />
     </div>
   )

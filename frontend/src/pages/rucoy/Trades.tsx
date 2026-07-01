@@ -1,20 +1,30 @@
 import { useState } from 'react'
 import { Plus, Pencil, Trash2, ArrowLeftRight } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
-import { Badge } from '@/components/ui/Badge'
 import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { TradeModal } from '@/components/modals/TradeModal'
 import { useTrades } from '@/hooks/useTrades'
 import { useGolds } from '@/hooks/useGolds'
-import { useToast } from '@/hooks/useToast'
+import { toast } from '@/components/ui/Toast'
 import { formatCurrency } from '@/utils/format'
 import type { Trade, TradeStatus } from '@/types'
+
+function StatusPill({ status }: { status: TradeStatus }) {
+  return status === 'cash' ? (
+    <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+      CASH
+    </span>
+  ) : (
+    <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+      KKS
+    </span>
+  )
+}
 
 export default function Trades() {
   const { trades, loading, error, create, update, remove } = useTrades()
   const { golds } = useGolds()
-  const { addToast } = useToast()
 
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<Trade | null>(null)
@@ -27,10 +37,10 @@ export default function Trades() {
   const handleSubmit = async (data: { gold_id: number; description?: string; status: TradeStatus; amount: number }) => {
     if (editing) {
       await update(editing.id, data)
-      addToast('Trade updated.', 'success')
+      toast.success('Trade updated.')
     } else {
       await create(data)
-      addToast('Trade added.', 'success')
+      toast.success('Trade added.')
     }
   }
 
@@ -39,18 +49,14 @@ export default function Trades() {
     setDeleting(true)
     try {
       await remove(deleteTarget.id)
-      addToast('Trade deleted.', 'success')
+      toast.success('Trade deleted.')
     } catch (err: unknown) {
-      addToast((err as { message: string }).message, 'error')
+      toast.error((err as { message: string }).message)
     } finally {
       setDeleting(false)
       setDeleteTarget(null)
     }
   }
-
-  const statusBadge = (status: TradeStatus) => status === 'cash'
-    ? <Badge variant="success">CASH</Badge>
-    : <Badge variant="warning">KKS</Badge>
 
   return (
     <div className="space-y-6">
@@ -93,13 +99,11 @@ export default function Trades() {
               {trades.map((t) => (
                 <tr key={t.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                   <td className="px-4 py-3 font-mono text-gray-500 dark:text-gray-400">#{t.id}</td>
-                  <td className="px-4 py-3 text-amber-600 dark:text-amber-400 font-medium">
-                    #{t.gold_id}
-                  </td>
+                  <td className="px-4 py-3 text-amber-600 dark:text-amber-400 font-medium">#{t.gold_id}</td>
                   <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
                     {t.description || <span className="text-gray-400 italic">—</span>}
                   </td>
-                  <td className="px-4 py-3 text-center">{statusBadge(t.status)}</td>
+                  <td className="px-4 py-3 text-center"><StatusPill status={t.status} /></td>
                   <td className="px-4 py-3 text-right font-semibold text-gray-800 dark:text-gray-100">
                     {formatCurrency(parseFloat(t.amount))}
                   </td>
@@ -136,7 +140,6 @@ export default function Trades() {
         title="Delete Trade"
         message={`Delete trade #${deleteTarget?.id}? This cannot be undone.`}
         confirmLabel="Delete"
-        variant="danger"
       />
     </div>
   )

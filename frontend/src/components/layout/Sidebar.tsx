@@ -15,7 +15,7 @@ export function Sidebar() {
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600">
           <Wallet className="h-4 w-4 text-white" />
         </div>
-        <span className="text-base font-bold text-gray-900 dark:text-gray-100">BudgetTrack</span>
+        <span className="text-base font-bold text-gray-900 dark:text-gray-100">Budget Tracker</span>
       </div>
 
       <nav className="flex flex-col gap-0.5 p-3 flex-1">

@@ -48,6 +48,7 @@ function StatusPill({ status }: { status: TradeStatus }) {
 export default function Trades() {
   const { trades, loading, error, create, update, remove } = useTrades()
 
+  const [typeFilter, setTypeFilter] = useState<'all' | 'kks' | 'cash'>('all')
   const [dateSort, setDateSort] = useState<'asc' | 'desc' | null>(null)
   const [page, setPage] = useState(1)
   const [modalOpen, setModalOpen] = useState(false)
@@ -55,9 +56,13 @@ export default function Trades() {
   const [deleteTarget, setDeleteTarget] = useState<Trade | null>(null)
   const [deleting, setDeleting] = useState(false)
 
+  const filteredTrades = useMemo(() =>
+    typeFilter === 'all' ? trades : trades.filter((t) => t.status === typeFilter),
+  [trades, typeFilter])
+
   const sortedTrades = useMemo(() => {
-    if (!dateSort) return trades
-    return [...trades].sort((a, b) => {
+    if (!dateSort) return filteredTrades
+    return [...filteredTrades].sort((a, b) => {
       const da = a.completion_date ?? ''
       const db = b.completion_date ?? ''
       if (!da && !db) return 0
@@ -78,6 +83,8 @@ export default function Trades() {
     setPage(1)
     setDateSort((s) => (s === null ? 'asc' : s === 'asc' ? 'desc' : null))
   }
+
+  const changeFilter = (f: typeof typeFilter) => { setTypeFilter(f); setPage(1) }
 
   const openCreate = () => { setEditing(null); setModalOpen(true) }
   const openEdit = (t: Trade) => { setEditing(t); setModalOpen(true) }
@@ -122,6 +129,28 @@ export default function Trades() {
         <Button onClick={openCreate}>
           <Plus size={16} className="mr-1" /> New Trade
         </Button>
+      </div>
+
+      {/* Type filter */}
+      <div className="flex gap-2">
+        {(['all', 'kks', 'cash'] as const).map((f) => (
+          <button
+            key={f}
+            onClick={() => changeFilter(f)}
+            className={[
+              'rounded-lg border px-3 py-1.5 text-xs font-semibold uppercase transition-colors',
+              typeFilter === f
+                ? f === 'kks'
+                  ? 'border-amber-500 bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-700'
+                  : f === 'cash'
+                  ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-700'
+                  : 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400 dark:border-indigo-700'
+                : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
+            ].join(' ')}
+          >
+            {f === 'all' ? 'All' : f.toUpperCase()}
+          </button>
+        ))}
       </div>
 
       {loading && <div className="text-center text-gray-400 py-10">Loading…</div>}

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Plus, Pencil, Trash2, ArrowLeftRight, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, Pencil, Trash2, ArrowLeftRight, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Coins } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -55,6 +55,10 @@ export default function Trades() {
   const [editing, setEditing] = useState<Trade | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Trade | null>(null)
   const [deleting, setDeleting] = useState(false)
+
+  const totalKksGold = useMemo(() =>
+    trades.filter((t) => t.status === 'kks').reduce((sum, t) => sum + Number(t.amount), 0),
+  [trades])
 
   const filteredTrades = useMemo(() =>
     typeFilter === 'all' ? trades : trades.filter((t) => t.status === typeFilter),
@@ -141,6 +145,21 @@ export default function Trades() {
           </Button>
         </div>
       </div>
+
+      {!loading && (
+        <div className="flex items-center gap-4 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 dark:border-amber-800/40 dark:bg-amber-900/10">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-400/20 dark:bg-amber-500/20">
+            <Coins size={22} className="text-amber-600 dark:text-amber-400" />
+          </div>
+          <div>
+            <p className="text-xs font-medium text-amber-700 dark:text-amber-500 uppercase tracking-wide">Total Trade Gold</p>
+            <p className="text-2xl font-bold text-amber-700 dark:text-amber-400">
+              {totalKksGold.toLocaleString()} <span className="text-base font-semibold">G</span>
+            </p>
+            <p className="text-xs text-amber-600/70 dark:text-amber-500/70 mt-0.5">From KKS trades only</p>
+          </div>
+        </div>
+      )}
 
       {loading && <div className="text-center text-gray-400 py-10">Loading…</div>}
       {error && <div className="text-red-500 text-center py-4">{error}</div>}

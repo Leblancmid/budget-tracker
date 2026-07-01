@@ -92,3 +92,40 @@ export interface ApiError {
   message: string
   errors?: Record<string, string[]>
 }
+
+// ── Rucoy ────────────────────────────────────────────────────────────────────
+
+export type TradeStatus = 'kks' | 'cash'
+
+export interface Gold {
+  id: number
+  amount: string
+  created_at: string
+  updated_at: string
+}
+
+export interface Trade {
+  id: number
+  gold_id: number
+  gold?: Gold
+  description: string | null
+  status: TradeStatus
+  amount: string
+  created_at: string
+  updated_at: string
+}
+
+export interface RucoyAccount {
+  id: number
+  description: string | null
+  email: string
+  avatar: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface RucoyDashboardStats {
+  total_gold: number
+  trade_count: number
+  account_count: number
+}

@@ -100,6 +100,7 @@ export type TradeStatus = 'kks' | 'cash'
 export interface Gold {
   id: number
   amount: string
+  trades?: Trade[]
   created_at: string
   updated_at: string
 }

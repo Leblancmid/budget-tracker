@@ -3,10 +3,14 @@ import { Moon, Sun } from 'lucide-react'
 import { useTheme } from '@/context/ThemeContext'
 
 const TITLES: Record<string, string> = {
-  '/':             'Dashboard',
-  '/transactions': 'Transactions',
-  '/categories':   'Categories',
-  '/budgets':      'Budgets',
+  '/':               'Dashboard',
+  '/transactions':   'Transactions',
+  '/categories':     'Categories',
+  '/budgets':        'Budgets',
+  '/rucoy':          'Rucoy Dashboard',
+  '/rucoy/golds':    'Golds',
+  '/rucoy/trades':   'Trades',
+  '/rucoy/accounts': 'Accounts',
 }
 
 export function Header() {

@@ -17,6 +17,8 @@ class RucoyDashboardController extends Controller
 
         return response()->json([
             'total_gold'    => $manualGold + $kksGold,
+            'manual_gold'   => $manualGold,
+            'kks_gold'      => $kksGold,
             'trade_count'   => Trade::count(),
             'account_count' => RucoyAccount::count(),
         ]);

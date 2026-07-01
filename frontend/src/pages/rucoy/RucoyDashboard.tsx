@@ -58,6 +58,35 @@ export default function RucoyDashboard() {
           color="bg-emerald-500"
         />
       </div>
+
+      {/* Gold breakdown */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Card className="flex items-center gap-4 p-5">
+          <div className="rounded-xl p-3 bg-yellow-400">
+            <Coins size={20} className="text-white" />
+          </div>
+          <div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide font-medium">Gold Stash</p>
+            <p className="text-xl font-bold text-gray-800 dark:text-gray-100">
+              {Number(stats?.manual_gold ?? 0).toLocaleString()} <span className="text-sm font-semibold text-amber-500">G</span>
+            </p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Manually added gold</p>
+          </div>
+        </Card>
+
+        <Card className="flex items-center gap-4 p-5">
+          <div className="rounded-xl p-3 bg-orange-400">
+            <ArrowLeftRight size={20} className="text-white" />
+          </div>
+          <div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide font-medium">KKS Trades</p>
+            <p className="text-xl font-bold text-gray-800 dark:text-gray-100">
+              {Number(stats?.kks_gold ?? 0).toLocaleString()} <span className="text-sm font-semibold text-orange-500">G</span>
+            </p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Gold from KKS trades</p>
+          </div>
+        </Card>
+      </div>
     </div>
   )
 }

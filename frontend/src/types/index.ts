@@ -134,6 +134,8 @@ export interface RucoyAccount {
 
 export interface RucoyDashboardStats {
   total_gold: number
+  manual_gold: number
+  kks_gold: number
   trade_count: number
   account_count: number
 }

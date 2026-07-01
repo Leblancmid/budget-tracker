@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, ArrowLeftRight, Tag, Target, Wallet,
-  Gamepad2, CircleDollarSign, Repeat2, Users,
+  Gamepad2, CircleDollarSign, Repeat2, Users, Calculator,
 } from 'lucide-react'
 
 const BUDGET_NAV = [
@@ -15,7 +15,8 @@ const RUCOY_NAV = [
   { to: '/rucoy',          label: 'Dashboard', icon: Gamepad2 },
   { to: '/rucoy/golds',    label: 'Golds',     icon: CircleDollarSign },
   { to: '/rucoy/trades',   label: 'Trades',    icon: Repeat2 },
-  { to: '/rucoy/accounts', label: 'Accounts',  icon: Users },
+  { to: '/rucoy/accounts',    label: 'Accounts',        icon: Users },
+  { to: '/rucoy/calculator', label: 'Gold Calculator', icon: Calculator },
 ]
 
 export function Sidebar() {

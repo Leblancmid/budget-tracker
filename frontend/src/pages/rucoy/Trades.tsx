@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Plus, Pencil, Trash2, ArrowLeftRight, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Coins, Search, Check, Archive } from 'lucide-react'
+import { Plus, Pencil, Trash2, ArrowLeftRight, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Coins, Search, Check, Archive, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -47,7 +47,7 @@ function StatusPill({ status }: { status: TradeStatus }) {
 }
 
 export default function Trades() {
-  const { trades, loading, error, create, update, archive, remove } = useTrades()
+  const { trades, loading, error, create, update, archive, unarchive, remove } = useTrades()
 
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<'all' | 'kks' | 'cash'>('all')
@@ -61,7 +61,10 @@ export default function Trades() {
   const [showArchive, setShowArchive] = useState(false)
   const [archivedTrades, setArchivedTrades] = useState<Trade[]>([])
   const [archiveLoading, setArchiveLoading] = useState(false)
-  const [archiving, setArchiving] = useState<number | null>(null)
+  const [archiveTarget, setArchiveTarget] = useState<Trade | null>(null)
+  const [archiving, setArchiving] = useState(false)
+  const [unarchiveTarget, setUnarchiveTarget] = useState<Trade | null>(null)
+  const [unarchiving, setUnarchiving] = useState(false)
 
   const fetchArchived = useCallback(async () => {
     setArchiveLoading(true)
@@ -71,16 +74,36 @@ export default function Trades() {
 
   useEffect(() => { if (showArchive) fetchArchived() }, [showArchive, fetchArchived])
 
-  const handleArchive = async (t: Trade) => {
-    setArchiving(t.id)
+  const handleArchive = async () => {
+    if (!archiveTarget) return
+    const target = archiveTarget
+    setArchiving(true)
+    setArchiveTarget(null)
     try {
-      await archive(t.id)
-      toast.success('Trade archived.')
+      await archive(target.id)
       if (showArchive) fetchArchived()
+      toast.success('Trade archived.', {
+        action: { label: 'Undo', onClick: () => setUnarchiveTarget(target) },
+      })
     } catch {
       toast.error('Failed to archive trade.')
     } finally {
-      setArchiving(null)
+      setArchiving(false)
+    }
+  }
+
+  const handleUnarchive = async () => {
+    if (!unarchiveTarget) return
+    setUnarchiving(true)
+    try {
+      await unarchive(unarchiveTarget.id)
+      setArchivedTrades((prev) => prev.filter((t) => t.id !== unarchiveTarget.id))
+      toast.success('Trade restored.')
+    } catch {
+      toast.error('Failed to restore trade.')
+    } finally {
+      setUnarchiving(false)
+      setUnarchiveTarget(null)
     }
   }
 
@@ -274,8 +297,8 @@ export default function Trades() {
                       <td className="px-4 py-3">
                         <div className="flex justify-end gap-2">
                           <button
-                            onClick={() => handleArchive(t)}
-                            disabled={archiving === t.id}
+                            onClick={() => setArchiveTarget(t)}
+                            disabled={archiving}
                             className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 disabled:opacity-40 transition-colors"
                             title="Mark as done"
                           >
@@ -359,6 +382,7 @@ export default function Trades() {
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Payment</th>
                     <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Amount</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Done</th>
+                    <th className="px-4 py-3" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-900">
@@ -372,6 +396,15 @@ export default function Trades() {
                       <td className="px-4 py-3 capitalize">{t.payment_method || <span className="italic">—</span>}</td>
                       <td className="px-4 py-3 text-right font-semibold whitespace-nowrap">{formatAmount(t)}</td>
                       <td className="px-4 py-3 whitespace-nowrap">{formatDate(t.completion_date)}</td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => setUnarchiveTarget(t)}
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                          title="Restore"
+                        >
+                          <RotateCcw size={14} />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -386,6 +419,26 @@ export default function Trades() {
         onClose={() => setModalOpen(false)}
         onSubmit={handleSubmit}
         trade={editing}
+      />
+
+      <ConfirmDialog
+        open={!!archiveTarget}
+        onClose={() => setArchiveTarget(null)}
+        onConfirm={handleArchive}
+        loading={archiving}
+        title="Archive Trade"
+        message={`Archive trade #${archiveTarget?.id}? You can restore it anytime from the archive.`}
+        confirmLabel="Archive"
+      />
+
+      <ConfirmDialog
+        open={!!unarchiveTarget}
+        onClose={() => setUnarchiveTarget(null)}
+        onConfirm={handleUnarchive}
+        loading={unarchiving}
+        title="Restore Trade"
+        message={`Restore trade #${unarchiveTarget?.id} back to active trades?`}
+        confirmLabel="Restore"
       />
 
       <ConfirmDialog

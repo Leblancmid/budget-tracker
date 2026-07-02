@@ -42,6 +42,14 @@ class TradeController extends Controller
         return response()->json($trade->fresh());
     }
 
+    public function unarchive(Trade $trade): JsonResponse
+    {
+        $trade->archived_at = null;
+        $trade->save();
+
+        return response()->json($trade->fresh());
+    }
+
     public function destroy(Trade $trade): JsonResponse
     {
         $trade->delete();

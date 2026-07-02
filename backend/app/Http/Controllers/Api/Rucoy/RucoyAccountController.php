@@ -29,6 +29,14 @@ class RucoyAccountController extends Controller
         return response()->json($this->transform($rucoyAccount->fresh()));
     }
 
+    public function unarchive(RucoyAccount $rucoyAccount): JsonResponse
+    {
+        $rucoyAccount->archived_at = null;
+        $rucoyAccount->save();
+
+        return response()->json($this->transform($rucoyAccount->fresh()));
+    }
+
     public function store(StoreRucoyAccountRequest $request): JsonResponse
     {
         $data = $request->validated();

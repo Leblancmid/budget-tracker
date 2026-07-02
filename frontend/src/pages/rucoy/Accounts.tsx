@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Plus, Pencil, Trash2, Users, User, TrendingUp, TrendingDown, DollarSign, Search, Check, Archive } from 'lucide-react'
+import { Plus, Pencil, Trash2, Users, User, TrendingUp, TrendingDown, DollarSign, Search, Check, Archive, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -12,7 +12,7 @@ const fmtGold = (n: number) => `${n.toLocaleString()} G`
 import type { RucoyAccount } from '@/types'
 
 export default function Accounts() {
-  const { accounts, loading, error, create, update, archive, remove } = useRucoyAccounts()
+  const { accounts, loading, error, create, update, archive, unarchive, remove } = useRucoyAccounts()
 
   const [search, setSearch] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
@@ -23,7 +23,10 @@ export default function Accounts() {
   const [showArchive, setShowArchive] = useState(false)
   const [archivedAccounts, setArchivedAccounts] = useState<RucoyAccount[]>([])
   const [archiveLoading, setArchiveLoading] = useState(false)
-  const [archiving, setArchiving] = useState<number | null>(null)
+  const [archiveTarget, setArchiveTarget] = useState<RucoyAccount | null>(null)
+  const [archiving, setArchiving] = useState(false)
+  const [unarchiveTarget, setUnarchiveTarget] = useState<RucoyAccount | null>(null)
+  const [unarchiving, setUnarchiving] = useState(false)
 
   const fetchArchived = useCallback(async () => {
     setArchiveLoading(true)
@@ -33,16 +36,36 @@ export default function Accounts() {
 
   useEffect(() => { if (showArchive) fetchArchived() }, [showArchive, fetchArchived])
 
-  const handleArchive = async (a: RucoyAccount) => {
-    setArchiving(a.id)
+  const handleArchive = async () => {
+    if (!archiveTarget) return
+    const target = archiveTarget
+    setArchiving(true)
+    setArchiveTarget(null)
     try {
-      await archive(a.id)
-      toast.success('Account archived.')
+      await archive(target.id)
       if (showArchive) fetchArchived()
+      toast.success('Account archived.', {
+        action: { label: 'Undo', onClick: () => setUnarchiveTarget(target) },
+      })
     } catch {
       toast.error('Failed to archive account.')
     } finally {
-      setArchiving(null)
+      setArchiving(false)
+    }
+  }
+
+  const handleUnarchive = async () => {
+    if (!unarchiveTarget) return
+    setUnarchiving(true)
+    try {
+      await unarchive(unarchiveTarget.id)
+      setArchivedAccounts((prev) => prev.filter((a) => a.id !== unarchiveTarget.id))
+      toast.success('Account restored.')
+    } catch {
+      toast.error('Failed to restore account.')
+    } finally {
+      setUnarchiving(false)
+      setUnarchiveTarget(null)
     }
   }
 
@@ -208,8 +231,8 @@ export default function Accounts() {
               </div>
               <div className="flex gap-1 shrink-0">
                 <button
-                  onClick={() => handleArchive(a)}
-                  disabled={archiving === a.id}
+                  onClick={() => setArchiveTarget(a)}
+                  disabled={archiving}
                   className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 disabled:opacity-40 transition-colors"
                   title="Mark as done"
                 >
@@ -238,7 +261,7 @@ export default function Accounts() {
             <p className="text-center text-sm text-gray-400 py-6">No archived accounts yet.</p>
           )}
           {!archiveLoading && archivedAccounts.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 opacity-60">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 opacity-70">
               {archivedAccounts.map((a) => (
                 <Card key={a.id} className="flex items-start gap-4 p-4">
                   {a.avatar ? (
@@ -259,6 +282,13 @@ export default function Accounts() {
                       {a.profit != null && <span>Profit: {fmtGold(a.profit)}</span>}
                     </div>
                   </div>
+                  <button
+                    onClick={() => setUnarchiveTarget(a)}
+                    className="shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                    title="Restore"
+                  >
+                    <RotateCcw size={14} />
+                  </button>
                 </Card>
               ))}
             </div>
@@ -271,6 +301,26 @@ export default function Accounts() {
         onClose={() => setModalOpen(false)}
         onSubmit={handleSubmit}
         account={editing}
+      />
+
+      <ConfirmDialog
+        open={!!archiveTarget}
+        onClose={() => setArchiveTarget(null)}
+        onConfirm={handleArchive}
+        loading={archiving}
+        title="Archive Account"
+        message={`Archive "${archiveTarget?.email}"? You can restore it anytime from the archive.`}
+        confirmLabel="Archive"
+      />
+
+      <ConfirmDialog
+        open={!!unarchiveTarget}
+        onClose={() => setUnarchiveTarget(null)}
+        onConfirm={handleUnarchive}
+        loading={unarchiving}
+        title="Restore Account"
+        message={`Restore "${unarchiveTarget?.email}" back to active accounts?`}
+        confirmLabel="Restore"
       />
 
       <ConfirmDialog

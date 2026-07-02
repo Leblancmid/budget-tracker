@@ -45,6 +45,8 @@ export const tradesApi = {
     api.put<Trade>(`/rucoy/trades/${id}`, data).then((r) => r.data),
   archive: (id: number) =>
     api.post<Trade>(`/rucoy/trades/${id}/archive`).then((r) => r.data),
+  unarchive: (id: number) =>
+    api.post<Trade>(`/rucoy/trades/${id}/unarchive`).then((r) => r.data),
   delete: (id: number) =>
     api.delete<{ message: string }>(`/rucoy/trades/${id}`).then((r) => r.data),
 }
@@ -77,6 +79,8 @@ export const rucoyAccountsApi = {
     api.post<RucoyAccount>(`/rucoy/accounts/${id}`, buildAccountForm(data, 'PUT')).then((r) => r.data),
   archive: (id: number) =>
     api.post<RucoyAccount>(`/rucoy/accounts/${id}/archive`).then((r) => r.data),
+  unarchive: (id: number) =>
+    api.post<RucoyAccount>(`/rucoy/accounts/${id}/unarchive`).then((r) => r.data),
   delete: (id: number) =>
     api.delete<{ message: string }>(`/rucoy/accounts/${id}`).then((r) => r.data),
 }

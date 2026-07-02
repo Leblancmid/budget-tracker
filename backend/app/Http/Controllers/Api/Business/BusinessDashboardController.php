@@ -31,6 +31,16 @@ class BusinessDashboardController extends Controller
             ->limit(5)
             ->get();
 
+        $expenseByType = BusinessTransaction::select('type', DB::raw('SUM(amount) as total'))
+            ->where(function ($q) {
+                $q->where('action', 'buy')->orWhere('type', 'expense');
+            })
+            ->whereMonth('date', $month)
+            ->whereYear('date', $year)
+            ->groupBy('type')
+            ->orderByDesc('total')
+            ->get();
+
         $monthlyTrend = BusinessTransaction::select(
                 DB::raw('MONTH(date) as month'),
                 DB::raw('YEAR(date) as year'),
@@ -63,6 +73,7 @@ class BusinessDashboardController extends Controller
             'total_profit'        => $profit,
             'balance'             => $balance,
             'recent_transactions' => $recentTransactions,
+            'expense_by_type'     => $expenseByType,
             'monthly_trend'       => $monthlyTrend,
         ]);
     }

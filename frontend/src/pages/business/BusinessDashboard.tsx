@@ -6,7 +6,8 @@ import { Select } from '@/components/ui/Select'
 import { Badge } from '@/components/ui/Badge'
 import { formatCurrency, formatDate, MONTHS } from '@/utils/format'
 
-const TYPE_LABELS: Record<string, string> = { account: 'Account', gold: 'Gold', expense: 'Expense' }
+const TYPE_LABELS: Record<string, string> = { account: 'Account', gold: 'Gold', expense: 'Item' }
+const TYPE_COLORS: Record<string, string>  = { account: '#6366f1', gold: '#f59e0b', expense: '#ef4444' }
 
 export default function BusinessDashboard() {
   const { stats, month, year, loading, setMonth, setYear } = useBusinessDashboard()
@@ -75,44 +76,84 @@ export default function BusinessDashboard() {
         </div>
       )}
 
-      <Card className="flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
-          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Recent Transactions</h2>
-          <Link to="/business/transactions" className="flex items-center gap-1 text-xs text-teal-600 hover:text-teal-800 font-medium dark:text-teal-400 dark:hover:text-teal-300">
-            View all <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
-        <div className="divide-y divide-gray-50 overflow-y-auto scrollbar-thin max-h-72 dark:divide-gray-700/40">
-          {(stats?.recent_transactions.length ?? 0) === 0 && (
-            <p className="px-5 py-8 text-center text-sm text-gray-400 dark:text-gray-500">No transactions yet.</p>
-          )}
-          {stats?.recent_transactions.map((tx) => {
-            const isIncome = tx.action === 'sell' || (tx.type !== 'expense' && tx.action === null)
-            const typeColors: Record<string, string> = { account: '#6366f1', gold: '#f59e0b', expense: '#ef4444' }
-            return (
-              <div key={tx.id} className="flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition-colors dark:hover:bg-gray-800/50">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white text-xs font-bold"
-                    style={{ backgroundColor: typeColors[tx.type] ?? '#14b8a6' }}
-                  >
-                    {TYPE_LABELS[tx.type].charAt(0)}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Recent Transactions */}
+        <Card className="flex flex-col">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Recent Transactions</h2>
+            <Link to="/business/transactions" className="flex items-center gap-1 text-xs text-teal-600 hover:text-teal-800 font-medium dark:text-teal-400 dark:hover:text-teal-300">
+              View all <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+          <div className="divide-y divide-gray-50 overflow-y-auto scrollbar-thin max-h-72 dark:divide-gray-700/40">
+            {(stats?.recent_transactions.length ?? 0) === 0 && (
+              <p className="px-5 py-8 text-center text-sm text-gray-400 dark:text-gray-500">No transactions yet.</p>
+            )}
+            {stats?.recent_transactions.map((tx) => {
+              const isIncome = tx.action === 'sell' || (tx.type !== 'expense' && tx.action === null)
+              return (
+                <div key={tx.id} className="flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition-colors dark:hover:bg-gray-800/50">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white text-xs font-bold"
+                      style={{ backgroundColor: TYPE_COLORS[tx.type] ?? '#14b8a6' }}
+                    >
+                      {TYPE_LABELS[tx.type]?.charAt(0) ?? '?'}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate dark:text-gray-100">
+                        {tx.description || TYPE_LABELS[tx.type]}
+                      </p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500">{formatDate(tx.date)}</p>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate dark:text-gray-100">
-                      {tx.description || TYPE_LABELS[tx.type]}
-                    </p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">{formatDate(tx.date)}</p>
+                  <span className={['text-sm font-semibold', isIncome ? 'text-teal-600 dark:text-teal-400' : 'text-red-600 dark:text-red-400'].join(' ')}>
+                    {isIncome ? '+' : '-'}{formatCurrency(tx.amount)}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </Card>
+
+        {/* Expenses by Type */}
+        <Card className="flex flex-col">
+          <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Expenses by Type</h2>
+          </div>
+          <div className="flex flex-col gap-4 p-5 overflow-y-auto scrollbar-thin max-h-72">
+            {(stats?.expense_by_type.length ?? 0) === 0 && (
+              <p className="py-4 text-center text-sm text-gray-400 dark:text-gray-500">No expenses recorded.</p>
+            )}
+            {stats?.expense_by_type.map((item) => {
+              const totalExpense = stats.total_expense || 1
+              const pct = Math.round((Number(item.total) / totalExpense) * 100)
+              const color = TYPE_COLORS[item.type] ?? '#14b8a6'
+              const label = TYPE_LABELS[item.type] ?? item.type
+              return (
+                <div key={item.type}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-gray-400 dark:text-gray-500">{pct}%</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{formatCurrency(item.total)}</span>
+                    </div>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-gray-100 dark:bg-gray-700">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{ width: `${pct}%`, backgroundColor: color }}
+                    />
                   </div>
                 </div>
-                <span className={['text-sm font-semibold', isIncome ? 'text-teal-600 dark:text-teal-400' : 'text-red-600 dark:text-red-400'].join(' ')}>
-                  {isIncome ? '+' : '-'}{formatCurrency(tx.amount)}
-                </span>
-              </div>
-            )
-          })}
-        </div>
-      </Card>
+              )
+            })}
+          </div>
+        </Card>
+      </div>
 
       {(stats?.monthly_trend.length ?? 0) > 0 && (
         <Card>

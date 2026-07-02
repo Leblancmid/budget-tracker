@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Plus, Pencil, Trash2, Users, User, TrendingUp, TrendingDown, DollarSign } from 'lucide-react'
+import { Plus, Pencil, Trash2, Users, User, TrendingUp, TrendingDown, DollarSign, Search } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -14,6 +14,7 @@ import type { RucoyAccount } from '@/types'
 export default function Accounts() {
   const { accounts, loading, error, create, update, remove } = useRucoyAccounts()
 
+  const [search, setSearch] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<RucoyAccount | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<RucoyAccount | null>(null)
@@ -21,6 +22,15 @@ export default function Accounts() {
 
   const openCreate = () => { setEditing(null); setModalOpen(true) }
   const openEdit = (a: RucoyAccount) => { setEditing(a); setModalOpen(true) }
+
+  const filteredAccounts = useMemo(() => {
+    if (!search.trim()) return accounts
+    const q = search.trim().toLowerCase()
+    return accounts.filter((a) =>
+      a.email.toLowerCase().includes(q) ||
+      (a.description ?? '').toLowerCase().includes(q)
+    )
+  }, [accounts, search])
 
   const totals = useMemo(() => {
     let price = 0, cost = 0, profit = 0
@@ -63,9 +73,21 @@ export default function Accounts() {
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Accounts</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Accounts currently for sale</p>
         </div>
-        <Button onClick={openCreate}>
-          <Plus size={16} className="mr-1" /> Add Account
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search…"
+              className="rounded-lg border border-gray-300 bg-white pl-8 pr-3 py-1.5 text-sm text-gray-700 shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 w-44"
+            />
+          </div>
+          <Button onClick={openCreate}>
+            <Plus size={16} className="mr-1" /> Add Account
+          </Button>
+        </div>
       </div>
 
       {!loading && accounts.length > 0 && (
@@ -103,7 +125,10 @@ export default function Accounts() {
 
       {!loading && accounts.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {accounts.map((a) => (
+          {filteredAccounts.length === 0 && (
+            <p className="col-span-3 text-center text-sm text-gray-400 py-6">No accounts match your search.</p>
+          )}
+          {filteredAccounts.map((a) => (
             <Card key={a.id} className="flex items-start gap-4 p-4">
               {a.avatar ? (
                 <img

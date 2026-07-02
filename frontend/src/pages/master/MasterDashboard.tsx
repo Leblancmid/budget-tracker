@@ -79,7 +79,10 @@ export default function MasterDashboard() {
               </div>
               <div className="min-w-0">
                 <p className="text-xs text-gray-500 font-medium dark:text-gray-400">Total Account Cost</p>
-                <p className="text-lg font-bold mt-0.5 text-teal-700 dark:text-teal-400">
+                <p className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold mt-0.5">
+                  {(stats?.total_price ?? 0).toLocaleString()} G
+                </p>
+                <p className="text-lg font-bold text-teal-700 dark:text-teal-400">
                   ₱{phpAmount.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
                 <p className="text-[10px] text-gray-400 dark:text-gray-600">
@@ -93,7 +96,7 @@ export default function MasterDashboard() {
               <div className="flex items-center gap-2">
                 <span className="text-[10px] text-gray-400 dark:text-gray-500 w-5">$</span>
                 <span className="text-[10px] text-gray-500 dark:text-gray-400 flex-1 truncate">
-                  {totalCost.toLocaleString()} × <span className="font-semibold">{usdRate}</span> USD
+                  USD Conversion
                 </span>
                 <input
                   type="number"
@@ -108,7 +111,7 @@ export default function MasterDashboard() {
               <div className="flex items-center gap-2">
                 <span className="text-[10px] text-gray-400 dark:text-gray-500 w-5">₱</span>
                 <span className="text-[10px] text-gray-500 dark:text-gray-400 flex-1 truncate">
-                  USD × <span className="font-semibold">{phpRate}</span> PHP
+                  PHP Conversion
                 </span>
                 <input
                   type="number"

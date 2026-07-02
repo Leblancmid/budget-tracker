@@ -87,7 +87,7 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction 
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={transaction ? 'Edit Transaction' : 'Add Transaction'} size="xl">
+    <Modal open={open} onClose={onClose} title={transaction ? 'Edit Transaction' : 'Add Transaction'}>
       <div className="flex flex-col gap-4">
 
         {/* Action — Buy / Sell */}
@@ -132,27 +132,29 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction 
           ))}
         </div>
 
-        {/* Amount (flex) + Date (fixed right) */}
+        {/* Amount + Date in one row */}
         <div className="flex gap-3">
-          <Input
-            label="Amount"
-            type="number"
-            min="0.01"
-            step="0.01"
-            value={form.amount || ''}
-            onChange={(e) => set('amount', parseFloat(e.target.value) || 0)}
-            error={errors.amount}
-            placeholder="0.00"
-            className="flex-1"
-          />
-          <Input
-            label="Date"
-            type="date"
-            value={form.date}
-            onChange={(e) => set('date', e.target.value)}
-            error={errors.date}
-            className="w-44 shrink-0"
-          />
+          <div className="flex-1">
+            <Input
+              label="Amount"
+              type="number"
+              min="0.01"
+              step="0.01"
+              value={form.amount || ''}
+              onChange={(e) => set('amount', parseFloat(e.target.value) || 0)}
+              error={errors.amount}
+              placeholder="0.00"
+            />
+          </div>
+          <div className="flex-1">
+            <Input
+              label="Date"
+              type="date"
+              value={form.date}
+              onChange={(e) => set('date', e.target.value)}
+              error={errors.date}
+            />
+          </div>
         </div>
 
         <Input

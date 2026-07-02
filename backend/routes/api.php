@@ -29,6 +29,8 @@ Route::prefix('v1')->group(function () {
         Route::get('trades/archived', [TradeController::class, 'archived']);
         Route::post('trades/{trade}/archive', [TradeController::class, 'archive']);
         Route::apiResource('trades', TradeController::class)->except(['show', 'create', 'edit']);
+        Route::get('accounts/archived', [RucoyAccountController::class, 'archived']);
+        Route::post('accounts/{rucoyAccount}/archive', [RucoyAccountController::class, 'archive']);
         Route::apiResource('accounts', RucoyAccountController::class)
             ->except(['show', 'create', 'edit'])
             ->parameters(['accounts' => 'rucoyAccount']);

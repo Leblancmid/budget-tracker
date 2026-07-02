@@ -13,7 +13,20 @@ class RucoyAccountController extends Controller
 {
     public function index(): JsonResponse
     {
-        return response()->json(RucoyAccount::latest()->get()->map(fn ($a) => $this->transform($a)));
+        return response()->json(RucoyAccount::whereNull('archived_at')->latest()->get()->map(fn ($a) => $this->transform($a)));
+    }
+
+    public function archived(): JsonResponse
+    {
+        return response()->json(RucoyAccount::whereNotNull('archived_at')->latest('archived_at')->get()->map(fn ($a) => $this->transform($a)));
+    }
+
+    public function archive(RucoyAccount $rucoyAccount): JsonResponse
+    {
+        $rucoyAccount->archived_at = now();
+        $rucoyAccount->save();
+
+        return response()->json($this->transform($rucoyAccount->fresh()));
     }
 
     public function store(StoreRucoyAccountRequest $request): JsonResponse

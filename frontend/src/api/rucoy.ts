@@ -70,10 +70,13 @@ function buildAccountForm(data: AccountPayload, method?: 'PUT'): FormData {
 
 export const rucoyAccountsApi = {
   getAll: () => api.get<RucoyAccount[]>('/rucoy/accounts').then((r) => r.data),
+  getArchived: () => api.get<RucoyAccount[]>('/rucoy/accounts/archived').then((r) => r.data),
   create: (data: AccountPayload) =>
     api.post<RucoyAccount>('/rucoy/accounts', buildAccountForm(data)).then((r) => r.data),
   update: (id: number, data: AccountPayload) =>
     api.post<RucoyAccount>(`/rucoy/accounts/${id}`, buildAccountForm(data, 'PUT')).then((r) => r.data),
+  archive: (id: number) =>
+    api.post<RucoyAccount>(`/rucoy/accounts/${id}/archive`).then((r) => r.data),
   delete: (id: number) =>
     api.delete<{ message: string }>(`/rucoy/accounts/${id}`).then((r) => r.data),
 }

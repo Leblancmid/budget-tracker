@@ -1,24 +1,50 @@
-import { useMemo, useState } from 'react'
-import { Plus, Pencil, Trash2, Users, User, TrendingUp, TrendingDown, DollarSign, Search } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Plus, Pencil, Trash2, Users, User, TrendingUp, TrendingDown, DollarSign, Search, Check, Archive } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { AccountModal } from '@/components/modals/AccountModal'
 import { useRucoyAccounts } from '@/hooks/useRucoyAccounts'
+import { rucoyAccountsApi, type AccountPayload } from '@/api/rucoy'
 import { toast } from '@/components/ui/Toast'
-import type { AccountPayload } from '@/api/rucoy'
 
 const fmtGold = (n: number) => `${n.toLocaleString()} G`
 import type { RucoyAccount } from '@/types'
 
 export default function Accounts() {
-  const { accounts, loading, error, create, update, remove } = useRucoyAccounts()
+  const { accounts, loading, error, create, update, archive, remove } = useRucoyAccounts()
 
   const [search, setSearch] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<RucoyAccount | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<RucoyAccount | null>(null)
   const [deleting, setDeleting] = useState(false)
+
+  const [showArchive, setShowArchive] = useState(false)
+  const [archivedAccounts, setArchivedAccounts] = useState<RucoyAccount[]>([])
+  const [archiveLoading, setArchiveLoading] = useState(false)
+  const [archiving, setArchiving] = useState<number | null>(null)
+
+  const fetchArchived = useCallback(async () => {
+    setArchiveLoading(true)
+    try { setArchivedAccounts(await rucoyAccountsApi.getArchived()) }
+    finally { setArchiveLoading(false) }
+  }, [])
+
+  useEffect(() => { if (showArchive) fetchArchived() }, [showArchive, fetchArchived])
+
+  const handleArchive = async (a: RucoyAccount) => {
+    setArchiving(a.id)
+    try {
+      await archive(a.id)
+      toast.success('Account archived.')
+      if (showArchive) fetchArchived()
+    } catch {
+      toast.error('Failed to archive account.')
+    } finally {
+      setArchiving(null)
+    }
+  }
 
   const openCreate = () => { setEditing(null); setModalOpen(true) }
   const openEdit = (a: RucoyAccount) => { setEditing(a); setModalOpen(true) }
@@ -84,6 +110,18 @@ export default function Accounts() {
               className="rounded-lg border border-gray-300 bg-white pl-8 pr-3 py-1.5 text-sm text-gray-700 shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 w-44"
             />
           </div>
+          <button
+            onClick={() => setShowArchive((v) => !v)}
+            className={[
+              'flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors',
+              showArchive
+                ? 'border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-600 dark:bg-amber-900/20 dark:text-amber-400'
+                : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700',
+            ].join(' ')}
+          >
+            <Archive size={14} />
+            Archive
+          </button>
           <Button onClick={openCreate}>
             <Plus size={16} className="mr-1" /> Add Account
           </Button>
@@ -169,6 +207,14 @@ export default function Accounts() {
                 <p className="text-xs font-mono text-gray-400 dark:text-gray-500 mt-1.5">#{a.id}</p>
               </div>
               <div className="flex gap-1 shrink-0">
+                <button
+                  onClick={() => handleArchive(a)}
+                  disabled={archiving === a.id}
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 disabled:opacity-40 transition-colors"
+                  title="Mark as done"
+                >
+                  <Check size={14} />
+                </button>
                 <button onClick={() => openEdit(a)} className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
                   <Pencil size={14} />
                 </button>
@@ -178,6 +224,45 @@ export default function Accounts() {
               </div>
             </Card>
           ))}
+        </div>
+      )}
+
+      {showArchive && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Archive size={15} className="text-amber-500" />
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Archived Accounts</h2>
+          </div>
+          {archiveLoading && <p className="text-center text-sm text-gray-400 py-6">Loading…</p>}
+          {!archiveLoading && archivedAccounts.length === 0 && (
+            <p className="text-center text-sm text-gray-400 py-6">No archived accounts yet.</p>
+          )}
+          {!archiveLoading && archivedAccounts.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 opacity-60">
+              {archivedAccounts.map((a) => (
+                <Card key={a.id} className="flex items-start gap-4 p-4">
+                  {a.avatar ? (
+                    <img src={a.avatar} alt={a.email} className="w-12 h-12 rounded-full object-cover border-2 border-gray-300 dark:border-gray-600 shrink-0" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
+                      <User size={22} className="text-gray-400" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-gray-600 dark:text-gray-400 truncate">{a.email}</p>
+                    {a.description && (
+                      <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5 line-clamp-2">{a.description}</p>
+                    )}
+                    <div className="mt-2 flex flex-col gap-0.5 text-xs text-gray-400 dark:text-gray-500">
+                      {a.price != null && <span>Price: {fmtGold(a.price)}</span>}
+                      {a.cost  != null && <span>Cost: {fmtGold(a.cost)}</span>}
+                      {a.profit != null && <span>Profit: {fmtGold(a.profit)}</span>}
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

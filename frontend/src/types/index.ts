@@ -129,6 +129,7 @@ export interface RucoyAccount {
   price: number | null
   cost: number | null
   profit: number | null
+  archived_at: string | null
   created_at: string
   updated_at: string
 }

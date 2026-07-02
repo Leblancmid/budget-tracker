@@ -33,10 +33,15 @@ export function useRucoyAccounts() {
     return account
   }
 
+  const archive = async (id: number) => {
+    await rucoyAccountsApi.archive(id)
+    setAccounts((prev) => prev.filter((a) => a.id !== id))
+  }
+
   const remove = async (id: number) => {
     await rucoyAccountsApi.delete(id)
     setAccounts((prev) => prev.filter((a) => a.id !== id))
   }
 
-  return { accounts, loading, error, refetch: fetch, create, update, remove }
+  return { accounts, loading, error, refetch: fetch, create, update, archive, remove }
 }

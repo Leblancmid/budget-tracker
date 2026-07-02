@@ -16,8 +16,9 @@ class RucoyAccount extends Model
     protected $appends = ['profit'];
 
     protected $casts = [
-        'price' => 'float',
-        'cost'  => 'float',
+        'price'       => 'float',
+        'cost'        => 'float',
+        'archived_at' => 'datetime',
     ];
 
     public function getProfitAttribute(): ?float

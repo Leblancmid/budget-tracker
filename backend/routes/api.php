@@ -1,6 +1,10 @@
 <?php
 
 use App\Http\Controllers\Api\BudgetController;
+use App\Http\Controllers\Api\Business\BusinessBudgetController;
+use App\Http\Controllers\Api\Business\BusinessCategoryController;
+use App\Http\Controllers\Api\Business\BusinessDashboardController;
+use App\Http\Controllers\Api\Business\BusinessTransactionController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\TransactionController;
@@ -19,6 +23,21 @@ Route::prefix('v1')->group(function () {
     Route::post('budgets', [BudgetController::class, 'store']);
     Route::put('budgets/{budget}', [BudgetController::class, 'update']);
     Route::delete('budgets/{budget}', [BudgetController::class, 'destroy']);
+
+    // Business
+    Route::prefix('business')->group(function () {
+        Route::get('dashboard', [BusinessDashboardController::class, 'index']);
+        Route::apiResource('categories', BusinessCategoryController::class)
+            ->except(['show', 'create', 'edit'])
+            ->parameters(['categories' => 'businessCategory']);
+        Route::apiResource('transactions', BusinessTransactionController::class)
+            ->except(['show', 'create', 'edit'])
+            ->parameters(['transactions' => 'businessTransaction']);
+        Route::get('budgets', [BusinessBudgetController::class, 'index']);
+        Route::post('budgets', [BusinessBudgetController::class, 'store']);
+        Route::put('budgets/{businessBudget}', [BusinessBudgetController::class, 'update']);
+        Route::delete('budgets/{businessBudget}', [BusinessBudgetController::class, 'destroy']);
+    });
 
     // Rucoy
     Route::prefix('rucoy')->group(function () {

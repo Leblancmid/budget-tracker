@@ -1,3 +1,9 @@
+export function handleAmountInput(raw: string, onValid: (stripped: string) => void, allowDecimal = true): void {
+  const stripped = raw.replace(/,/g, '')
+  const pattern = allowDecimal ? /^\d*\.?\d*$/ : /^\d*$/
+  if (stripped === '' || pattern.test(stripped)) onValid(stripped)
+}
+
 export function formatWithCommas(raw: string, allowDecimal = true): string {
   if (!raw) return ''
   const [integer, decimal] = raw.split('.')

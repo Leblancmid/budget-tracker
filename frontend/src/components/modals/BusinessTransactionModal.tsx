@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import type { BusinessTransaction, BusinessTransactionType, BusinessTransactionAction } from '@/types'
 import type { BusinessTransactionPayload } from '@/api/business'
-import { formatWithCommas } from '@/utils/format'
+import { formatWithCommas, handleAmountInput } from '@/utils/format'
 
 interface BusinessTransactionModalProps {
   open: boolean
@@ -135,13 +135,7 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction 
               type="text"
               inputMode="decimal"
               value={formatWithCommas(amountStr)}
-              onChange={(e) => {
-                const stripped = e.target.value.replace(/,/g, '')
-                if (stripped === '' || /^\d*\.?\d*$/.test(stripped)) {
-                  setAmountStr(stripped)
-                  set('amount', parseFloat(stripped) || 0)
-                }
-              }}
+              onChange={(e) => handleAmountInput(e.target.value, (s) => { setAmountStr(s); set('amount', parseFloat(s) || 0) })}
               error={errors.amount}
               placeholder="0.00"
             />

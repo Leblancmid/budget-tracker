@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card'
 import { Select } from '@/components/ui/Select'
 import { Badge } from '@/components/ui/Badge'
 import { formatCurrency, formatDate, MONTHS } from '@/utils/format'
+import { isBusinessIncome } from '@/utils/business'
 
 const TYPE_LABELS: Record<string, string> = { account: 'Account', gold: 'Gold', expense: 'Item' }
 const TYPE_COLORS: Record<string, string>  = { account: '#6366f1', gold: '#f59e0b', expense: '#ef4444' }
@@ -90,7 +91,7 @@ export default function BusinessDashboard() {
               <p className="px-5 py-8 text-center text-sm text-gray-400 dark:text-gray-500">No transactions yet.</p>
             )}
             {stats?.recent_transactions.map((tx) => {
-              const isIncome = tx.action === 'sell' || (tx.type !== 'expense' && tx.action === null)
+              const isIncome = isBusinessIncome(tx)
               return (
                 <div key={tx.id} className="flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition-colors dark:hover:bg-gray-800/50">
                   <div className="flex items-center gap-3 min-w-0">

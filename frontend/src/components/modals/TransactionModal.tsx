@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import type { Category, Transaction } from '@/types'
-import { formatWithCommas } from '@/utils/format'
+import { formatWithCommas, handleAmountInput } from '@/utils/format'
 
 interface TransactionModalProps {
   open: boolean
@@ -119,13 +119,7 @@ export function TransactionModal({ open, onClose, onSubmit, categories, transact
           type="text"
           inputMode="decimal"
           value={formatWithCommas(amountStr)}
-          onChange={(e) => {
-            const stripped = e.target.value.replace(/,/g, '')
-            if (stripped === '' || /^\d*\.?\d*$/.test(stripped)) {
-              setAmountStr(stripped)
-              set('amount', parseFloat(stripped) || 0)
-            }
-          }}
+          onChange={(e) => handleAmountInput(e.target.value, (s) => { setAmountStr(s); set('amount', parseFloat(s) || 0) })}
           error={errors.amount}
           placeholder="0.00"
         />

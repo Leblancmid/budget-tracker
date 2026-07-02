@@ -11,6 +11,7 @@ import { Card } from '@/components/ui/Card'
 import { BusinessTransactionModal } from '@/components/modals/BusinessTransactionModal'
 import { toast } from '@/components/ui/Toast'
 import { formatCurrency, formatDate } from '@/utils/format'
+import { isBusinessIncome } from '@/utils/business'
 import type { BusinessTransaction, BusinessTransactionType } from '@/types'
 import type { BusinessTransactionPayload } from '@/api/business'
 
@@ -92,8 +93,8 @@ export default function BusinessTransactions() {
     }
   }
 
-  const totalIncome  = useMemo(() => transactions.filter(tx => tx.action === 'sell' || (tx.type !== 'expense' && tx.action === null)).reduce((s, tx) => s + parseFloat(tx.amount), 0), [transactions])
-  const totalExpense = useMemo(() => transactions.filter(tx => tx.action === 'buy' || (tx.action === null && tx.type === 'expense')).reduce((s, tx) => s + parseFloat(tx.amount), 0), [transactions])
+  const totalIncome  = useMemo(() => transactions.filter(tx => isBusinessIncome(tx)).reduce((s, tx) => s + parseFloat(tx.amount), 0), [transactions])
+  const totalExpense = useMemo(() => transactions.filter(tx => !isBusinessIncome(tx)).reduce((s, tx) => s + parseFloat(tx.amount), 0), [transactions])
   const balance      = masterStats?.business_balance ?? 0
 
   const openEdit = (tx: BusinessTransaction) => { setEditTarget(tx); setModalOpen(true) }
@@ -194,7 +195,7 @@ export default function BusinessTransactions() {
               </thead>
               <tbody className="divide-y divide-gray-50 dark:divide-gray-700/40">
                 {paginated.map((tx) => {
-                  const isIncome = tx.action === 'sell' || (tx.type !== 'expense' && tx.action === null)
+                  const isIncome = isBusinessIncome(tx)
                   return (
                     <tr key={tx.id} className="hover:bg-gray-50 transition-colors group dark:hover:bg-gray-800/40">
                       <td className="px-5 py-3.5 whitespace-nowrap text-gray-600 dark:text-gray-400">{formatDate(tx.date)}</td>

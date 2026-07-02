@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import type { TradePayload } from '@/api/rucoy'
 import type { Trade, TradeCurrency, TradePaymentMethod, TradeStatus } from '@/types'
-import { formatWithCommas } from '@/utils/format'
+import { formatWithCommas, handleAmountInput } from '@/utils/format'
 
 interface TradeModalProps {
   open: boolean
@@ -43,15 +43,6 @@ const EMPTY: TradeForm = {
 }
 
 
-function handleAmountInput(
-  value: string,
-  allowDecimal: boolean,
-  setter: (v: string) => void,
-) {
-  const stripped = value.replace(/,/g, '')
-  const pattern = allowDecimal ? /^\d*\.?\d*$/ : /^\d*$/
-  if (stripped === '' || pattern.test(stripped)) setter(stripped)
-}
 
 export function TradeModal({ open, onClose, onSubmit, trade }: TradeModalProps) {
   const [form, setForm] = useState<TradeForm>(EMPTY)
@@ -165,7 +156,7 @@ export function TradeModal({ open, onClose, onSubmit, trade }: TradeModalProps) 
                 type="text"
                 inputMode="decimal"
                 value={formatWithCommas(form.amount, isCash)}
-                onChange={(e) => handleAmountInput(e.target.value, isCash, (v) => set('amount', v))}
+                onChange={(e) => handleAmountInput(e.target.value, (v) => set('amount', v), isCash)}
                 placeholder={isCash ? '0.00' : '0'}
                 className={[
                   'block w-full rounded-lg border bg-white px-3 py-2 text-sm text-gray-900',

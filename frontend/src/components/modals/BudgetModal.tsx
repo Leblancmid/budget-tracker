@@ -3,7 +3,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
-import { MONTHS, formatWithCommas } from '@/utils/format'
+import { MONTHS, formatWithCommas, handleAmountInput } from '@/utils/format'
 import type { Budget, Category } from '@/types'
 
 interface BudgetModalProps {
@@ -102,13 +102,7 @@ export function BudgetModal({ open, onClose, onSubmit, categories, budget, curre
           type="text"
           inputMode="decimal"
           value={formatWithCommas(amountStr)}
-          onChange={(e) => {
-            const stripped = e.target.value.replace(/,/g, '')
-            if (stripped === '' || /^\d*\.?\d*$/.test(stripped)) {
-              setAmountStr(stripped)
-              set('amount', parseFloat(stripped) || 0)
-            }
-          }}
+          onChange={(e) => handleAmountInput(e.target.value, (s) => { setAmountStr(s); set('amount', parseFloat(s) || 0) })}
           error={errors.amount}
           placeholder="0.00"
         />

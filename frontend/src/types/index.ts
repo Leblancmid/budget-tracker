@@ -93,6 +93,34 @@ export interface ApiError {
   errors?: Record<string, string[]>
 }
 
+// ── Master ───────────────────────────────────────────────────────────────────
+
+export type SavingModeOfPayment = 'CIMB' | 'MARIBANK' | 'GCASH'
+export type SavingType = 'deposit' | 'withdraw'
+export type SavingTransfer = 'daily_expenses' | 'business'
+
+export interface Saving {
+  id: number
+  mode_of_payment: SavingModeOfPayment
+  type: SavingType
+  transfer: SavingTransfer | null
+  description: string | null
+  amount: string
+  date: string
+  created_at: string
+  updated_at: string
+}
+
+export interface MasterDashboardStats {
+  overall_profit: number
+  overall_balance: number
+  gold_stash: number
+  total_price: number
+  business_profit: number
+  daily_balance: number
+  savings_balance: number
+}
+
 // ── Business ─────────────────────────────────────────────────────────────────
 
 export type BusinessTransactionType = 'account' | 'gold' | 'expense'

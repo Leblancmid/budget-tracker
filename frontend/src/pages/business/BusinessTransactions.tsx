@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Plus, Search, Filter, Pencil, Trash2, Briefcase, TrendingUp, TrendingDown } from 'lucide-react'
 import { useBusinessTransactions } from '@/hooks/useBusinessTransactions'
-import { useBusinessCategories } from '@/hooks/useBusinessCategories'
 import { useMasterDashboard } from '@/hooks/useMasterDashboard'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -27,17 +26,16 @@ const TYPE_LABELS: Record<BusinessTransactionType, string> = {
   expense: 'Item',
 }
 
-const EMPTY_FILTERS = { search: '', type: '' as BusinessTransactionType | '', category_id: '' as number | '', date_from: '', date_to: '', per_page: 10 }
+const EMPTY_FILTERS = { search: '', type: '' as BusinessTransactionType | '', date_from: '', date_to: '', per_page: 10 }
 
 export default function BusinessTransactions() {
   const { transactions, loading, create, update, remove } = useBusinessTransactions()
-  const { categories } = useBusinessCategories()
   const { stats: masterStats } = useMasterDashboard()
 
   const [filters, setFilters] = useState(EMPTY_FILTERS)
   const [page, setPage]       = useState(1)
-  const [modalOpen, setModalOpen]     = useState(false)
-  const [editTarget, setEditTarget]   = useState<BusinessTransaction | null>(null)
+  const [modalOpen, setModalOpen]       = useState(false)
+  const [editTarget, setEditTarget]     = useState<BusinessTransaction | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<BusinessTransaction | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
 
@@ -49,9 +47,8 @@ export default function BusinessTransactions() {
   const filtered = useMemo(() => {
     return transactions.filter((tx) => {
       const q = filters.search.toLowerCase()
-      if (q && !(tx.description ?? '').toLowerCase().includes(q) && !(tx.category?.name ?? '').toLowerCase().includes(q)) return false
+      if (q && !(tx.description ?? '').toLowerCase().includes(q)) return false
       if (filters.type && tx.type !== filters.type) return false
-      if (filters.category_id && tx.category_id !== filters.category_id) return false
       if (filters.date_from && tx.date < filters.date_from) return false
       if (filters.date_to && tx.date > filters.date_to) return false
       return true
@@ -102,10 +99,6 @@ export default function BusinessTransactions() {
   const openEdit = (tx: BusinessTransaction) => { setEditTarget(tx); setModalOpen(true) }
   const openAdd  = () => { setEditTarget(null); setModalOpen(true) }
 
-  const filteredCategories = categories.filter((c) =>
-    filters.type === 'expense' ? c.type === 'expense' : filters.type ? c.type !== 'expense' : true
-  )
-
   return (
     <div className="flex flex-col gap-5">
 
@@ -155,16 +148,9 @@ export default function BusinessTransactions() {
         <Select
           placeholder="All types"
           value={filters.type}
-          onChange={(e) => applyFilters({ type: e.target.value as BusinessTransactionType | '', category_id: '' })}
+          onChange={(e) => applyFilters({ type: e.target.value as BusinessTransactionType | '' })}
           options={TYPE_OPTIONS}
           className="w-36"
-        />
-        <Select
-          placeholder="All categories"
-          value={filters.category_id}
-          onChange={(e) => applyFilters({ category_id: e.target.value ? Number(e.target.value) : '' })}
-          options={filteredCategories.map((c) => ({ value: c.id, label: c.name }))}
-          className="w-44"
         />
         <div className="flex items-center gap-2">
           <Input type="date" value={filters.date_from} onChange={(e) => applyFilters({ date_from: e.target.value })} className="w-36" />
@@ -212,7 +198,7 @@ export default function BusinessTransactions() {
                   return (
                     <tr key={tx.id} className="hover:bg-gray-50 transition-colors group dark:hover:bg-gray-800/40">
                       <td className="px-5 py-3.5 whitespace-nowrap text-gray-600 dark:text-gray-400">{formatDate(tx.date)}</td>
-                      {/* Action — Buy / Sell */}
+                      {/* Action */}
                       <td className="px-5 py-3.5">
                         {tx.action ? (
                           <span className={[
@@ -227,17 +213,9 @@ export default function BusinessTransactions() {
                           <span className="text-gray-400 dark:text-gray-600">—</span>
                         )}
                       </td>
-                      {/* Type — Account / Gold / Item + optional category */}
-                      <td className="px-5 py-3.5">
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{TYPE_LABELS[tx.type]}</span>
-                          {tx.category && (
-                            <div className="flex items-center gap-1.5">
-                              <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: tx.category.color }} />
-                              <span className="text-xs text-gray-500 dark:text-gray-500">{tx.category.name}</span>
-                            </div>
-                          )}
-                        </div>
+                      {/* Type */}
+                      <td className="px-5 py-3.5 text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {TYPE_LABELS[tx.type]}
                       </td>
                       <td className="px-5 py-3.5 text-gray-600 max-w-xs truncate dark:text-gray-400">{tx.description ?? '—'}</td>
                       <td className={['px-5 py-3.5 font-semibold whitespace-nowrap', isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'].join(' ')}>
@@ -269,7 +247,6 @@ export default function BusinessTransactions() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         onSubmit={handleSubmit}
-        categories={categories}
         transaction={editTarget}
       />
 

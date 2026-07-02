@@ -2,14 +2,13 @@ import { useEffect, useState } from 'react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import type { BusinessCategory, BusinessTransaction, BusinessTransactionType, BusinessTransactionAction } from '@/types'
+import type { BusinessTransaction, BusinessTransactionType, BusinessTransactionAction } from '@/types'
 import type { BusinessTransactionPayload } from '@/api/business'
 
 interface BusinessTransactionModalProps {
   open: boolean
   onClose: () => void
   onSubmit: (data: BusinessTransactionPayload) => Promise<void>
-  categories: BusinessCategory[]
   transaction?: BusinessTransaction | null
 }
 
@@ -20,13 +19,12 @@ const TYPE_BUTTONS: { value: BusinessTransactionType; label: string }[] = [
 ]
 
 const EMPTY = (): BusinessTransactionPayload => ({
-  category_id:  null,
-  type:         'account',
-  action:       null,
-  amount:       0,
-  description:  '',
-  date:         new Date().toISOString().split('T')[0],
-  notes:        '',
+  type:        'account',
+  action:      null,
+  amount:      0,
+  description: '',
+  date:        new Date().toISOString().split('T')[0],
+  notes:       '',
 })
 
 export function BusinessTransactionModal({ open, onClose, onSubmit, transaction }: BusinessTransactionModalProps) {
@@ -40,7 +38,6 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction 
       setForm(
         transaction
           ? {
-              category_id: transaction.category_id,
               type:        transaction.type,
               action:      transaction.action,
               amount:      parseFloat(transaction.amount),
@@ -57,7 +54,7 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction 
     setForm((p) => ({ ...p, [key]: value }))
 
   const handleTypeChange = (type: BusinessTransactionType) => {
-    setForm((p) => ({ ...p, type, category_id: null }))
+    setForm((p) => ({ ...p, type }))
   }
 
   const handleActionToggle = (action: BusinessTransactionAction) => {

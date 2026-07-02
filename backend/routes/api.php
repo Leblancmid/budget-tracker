@@ -4,7 +4,6 @@ use App\Http\Controllers\Api\BudgetController;
 use App\Http\Controllers\Api\Master\MasterDashboardController;
 use App\Http\Controllers\Api\Master\SavingController;
 use App\Http\Controllers\Api\Business\BusinessBudgetController;
-use App\Http\Controllers\Api\Business\BusinessCategoryController;
 use App\Http\Controllers\Api\Business\BusinessDashboardController;
 use App\Http\Controllers\Api\Business\BusinessTransactionController;
 use App\Http\Controllers\Api\CategoryController;
@@ -35,9 +34,6 @@ Route::prefix('v1')->group(function () {
     // Business
     Route::prefix('business')->group(function () {
         Route::get('dashboard', [BusinessDashboardController::class, 'index']);
-        Route::apiResource('categories', BusinessCategoryController::class)
-            ->except(['show', 'create', 'edit'])
-            ->parameters(['categories' => 'businessCategory']);
         Route::apiResource('transactions', BusinessTransactionController::class)
             ->except(['show', 'create', 'edit'])
             ->parameters(['transactions' => 'businessTransaction']);

@@ -12,14 +12,13 @@ class BusinessTransactionController extends Controller
     public function index(): JsonResponse
     {
         return response()->json(
-            BusinessTransaction::with('category')->latest()->get()
+            BusinessTransaction::latest()->get()
         );
     }
 
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'category_id' => 'nullable|exists:business_categories,id',
             'type'        => 'required|in:account,gold,expense',
             'action'      => 'nullable|in:buy,sell',
             'amount'      => 'required|numeric|min:0',
@@ -30,13 +29,12 @@ class BusinessTransactionController extends Controller
 
         $tx = BusinessTransaction::create($data);
 
-        return response()->json($tx->load('category'), 201);
+        return response()->json($tx, 201);
     }
 
     public function update(Request $request, BusinessTransaction $businessTransaction): JsonResponse
     {
         $data = $request->validate([
-            'category_id' => 'nullable|exists:business_categories,id',
             'type'        => 'sometimes|in:account,gold,expense',
             'action'      => 'nullable|in:buy,sell',
             'amount'      => 'sometimes|numeric|min:0',
@@ -47,7 +45,7 @@ class BusinessTransactionController extends Controller
 
         $businessTransaction->update($data);
 
-        return response()->json($businessTransaction->fresh()->load('category'));
+        return response()->json($businessTransaction->fresh());
     }
 
     public function destroy(BusinessTransaction $businessTransaction): JsonResponse

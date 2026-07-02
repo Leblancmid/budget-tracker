@@ -138,8 +138,6 @@ export interface BusinessCategory {
 
 export interface BusinessTransaction {
   id: number
-  category_id: number | null
-  category: BusinessCategory | null
   type: BusinessTransactionType
   action: BusinessTransactionAction | null
   amount: string
@@ -170,11 +168,6 @@ export interface BusinessDashboardStats {
   total_profit: number
   balance: number
   recent_transactions: BusinessTransaction[]
-  expense_by_category: Array<{
-    category_id: number
-    total: string
-    category: Pick<BusinessCategory, 'id' | 'name' | 'color' | 'icon'>
-  }>
   monthly_trend: Array<{
     month: number
     year: number

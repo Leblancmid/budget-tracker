@@ -26,20 +26,9 @@ class BusinessDashboardController extends Controller
             ->whereYear('date', $year)
             ->sum('amount');
 
-        $recentTransactions = BusinessTransaction::with('category')
-            ->latest('date')
+        $recentTransactions = BusinessTransaction::latest('date')
             ->latest('id')
             ->limit(5)
-            ->get();
-
-        $expenseByCategory = BusinessTransaction::select('category_id', DB::raw('SUM(amount) as total'))
-            ->with('category:id,name,color,icon')
-            ->where('type', 'expense')
-            ->whereMonth('date', $month)
-            ->whereYear('date', $year)
-            ->groupBy('category_id')
-            ->orderByDesc('total')
-            ->limit(6)
             ->get();
 
         $monthlyTrend = BusinessTransaction::select(
@@ -74,7 +63,6 @@ class BusinessDashboardController extends Controller
             'total_profit'        => $profit,
             'balance'             => $balance,
             'recent_transactions' => $recentTransactions,
-            'expense_by_category' => $expenseByCategory,
             'monthly_trend'       => $monthlyTrend,
         ]);
     }

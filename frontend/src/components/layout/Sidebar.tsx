@@ -55,8 +55,6 @@ const SECTIONS = [
     items: [
       { to: '/business', label: 'Dashboard', end: true },
       { to: '/business/transactions', label: 'Transactions', end: false },
-      { to: '/business/categories', label: 'Categories', end: false },
-      { to: '/business/budgets', label: 'Budgets', end: false },
     ],
   },
   {

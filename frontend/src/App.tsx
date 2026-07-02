@@ -8,6 +8,9 @@ import { Categories } from '@/pages/Categories'
 import { Budgets } from '@/pages/Budgets'
 import { ToastContainer } from '@/components/ui/Toast'
 
+const MasterDashboard       = lazy(() => import('@/pages/master/MasterDashboard'))
+const Savings               = lazy(() => import('@/pages/master/Savings'))
+
 const RucoyDashboard        = lazy(() => import('@/pages/rucoy/RucoyDashboard'))
 const Golds                 = lazy(() => import('@/pages/rucoy/Golds'))
 const Trades                = lazy(() => import('@/pages/rucoy/Trades'))
@@ -29,6 +32,8 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route element={<Layout />}>
+            <Route path="/master"          element={<Suspense fallback={<Loading />}><MasterDashboard /></Suspense>} />
+            <Route path="/master/savings"  element={<Suspense fallback={<Loading />}><Savings /></Suspense>} />
             <Route path="/"             element={<Dashboard />} />
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/categories"   element={<Categories />} />

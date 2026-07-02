@@ -93,6 +93,54 @@ export interface ApiError {
   errors?: Record<string, string[]>
 }
 
+// ── Business ─────────────────────────────────────────────────────────────────
+
+export type BusinessTransactionType = 'account' | 'gold' | 'expense'
+
+export interface BusinessCategory {
+  id: number
+  name: string
+  type: BusinessTransactionType
+  color: string
+  icon: string
+  created_at: string
+  updated_at: string
+}
+
+export interface BusinessTransaction {
+  id: number
+  category_id: number | null
+  category: BusinessCategory | null
+  type: BusinessTransactionType
+  amount: string
+  description: string | null
+  date: string
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface BusinessBudget {
+  id: number
+  category_id: number
+  category: BusinessCategory
+  amount: string
+  month: number
+  year: number
+  spent?: number
+  remaining?: number
+  percentage?: number
+  created_at: string
+  updated_at: string
+}
+
+export interface BusinessDashboardStats {
+  total_income: number
+  total_expense: number
+  total_profit: number
+  balance: number
+}
+
 // ── Rucoy ────────────────────────────────────────────────────────────────────
 
 export type TradeStatus = 'kks' | 'cash'

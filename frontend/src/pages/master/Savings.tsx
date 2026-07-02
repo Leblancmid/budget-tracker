@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Plus, Search, Filter, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Search, Filter, Pencil, Trash2, PiggyBank, ArrowDownCircle, ArrowUpCircle } from 'lucide-react'
 import { useSavings } from '@/hooks/useSavings'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -105,11 +105,49 @@ export default function Savings() {
     }
   }
 
+  const totalDeposit  = useMemo(() => savings.reduce((sum, s) => s.type === 'deposit'  ? sum + parseFloat(s.amount) : sum, 0), [savings])
+  const totalWithdraw = useMemo(() => savings.reduce((sum, s) => s.type === 'withdraw' ? sum + parseFloat(s.amount) : sum, 0), [savings])
+  const balance       = totalDeposit - totalWithdraw
+
   const openEdit = (s: Saving) => { setEditTarget(s); setModalOpen(true) }
   const openAdd  = () => { setEditTarget(null); setModalOpen(true) }
 
   return (
     <div className="flex flex-col gap-5">
+
+      {/* Hero Banner */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-green-700 p-6 shadow-lg">
+        <div className="absolute -top-6 -right-6 h-32 w-32 rounded-full bg-white/10" />
+        <div className="absolute -bottom-8 -left-4 h-28 w-28 rounded-full bg-white/5" />
+        <div className="relative flex items-center gap-5">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm">
+            <PiggyBank className="h-6 w-6 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-emerald-100">Savings Balance</p>
+            <p className="text-3xl font-bold text-white mt-0.5">{formatCurrency(balance)}</p>
+            <div className="flex items-center gap-4 mt-2">
+              <span className="flex items-center gap-1 text-xs text-emerald-100">
+                <ArrowDownCircle className="h-3.5 w-3.5" />
+                {formatCurrency(totalDeposit)} in
+              </span>
+              <span className="text-emerald-300/50">·</span>
+              <span className="flex items-center gap-1 text-xs text-emerald-100">
+                <ArrowUpCircle className="h-3.5 w-3.5" />
+                {formatCurrency(totalWithdraw)} out
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={openAdd}
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/20 transition-colors"
+            title="Add Saving"
+          >
+            <Plus className="h-5 w-5 text-white" />
+          </button>
+        </div>
+      </div>
+
       <div className="flex flex-wrap items-end gap-3">
         <Input
           placeholder="Search description…"
@@ -159,9 +197,6 @@ export default function Savings() {
         >
           Clear
         </Button>
-        <div className="ml-auto">
-          <Button icon={<Plus className="h-4 w-4" />} onClick={openAdd}>Add Saving</Button>
-        </div>
       </div>
 
       <Card>

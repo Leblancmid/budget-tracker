@@ -1,12 +1,13 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Coins, ArrowLeftRight, TrendingUp, ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Card } from '@/components/ui/Card'
 import { useRucoyDashboard } from '@/hooks/useRucoyDashboard'
 import { useTrades } from '@/hooks/useTrades'
 import { useGoldLogs } from '@/hooks/useGoldLogs'
+import { tradesApi } from '@/api/rucoy'
 import { formatCurrency } from '@/utils/format'
-import type { TradeCurrency, TradeStatus } from '@/types'
+import type { Trade, TradeCurrency, TradeStatus } from '@/types'
 
 const CURRENCY_SYMBOLS: Record<TradeCurrency, string> = { PHP: '₱', USD: '$', EUR: '€' }
 
@@ -60,6 +61,11 @@ export default function RucoyDashboard() {
   const { stats, loading: statsLoading, error: statsError } = useRucoyDashboard()
   const { trades, loading: tradesLoading } = useTrades()
   const { logs, loading: logsLoading } = useGoldLogs()
+  const [archivedTrades, setArchivedTrades] = useState<Trade[]>([])
+
+  useEffect(() => {
+    tradesApi.getArchived().then(setArchivedTrades).catch(() => {})
+  }, [])
 
   const recentActivity = useMemo(() => {
     const tradeItems = trades.map((t) => ({
@@ -75,6 +81,17 @@ export default function RucoyDashboard() {
       date: t.created_at,
     }))
 
+    const archivedItems = archivedTrades.map((t) => ({
+      key: `archived-${t.id}`,
+      iconBg: 'bg-gray-400 dark:bg-gray-600',
+      iconChar: '✓',
+      title: t.description || (t.status === 'kks' ? 'KKS Trade' : 'CASH Trade'),
+      subtitle: `Archived · ${t.status === 'kks' ? 'KKS' : 'CASH'}`,
+      amount: formatTradeAmount(t.status, t.amount, t.currency),
+      amountColor: 'text-gray-400 dark:text-gray-500',
+      date: t.archived_at ?? t.created_at,
+    }))
+
     const logItems = logs.map((l) => ({
       key: `log-${l.id}`,
       iconBg: l.type === 'add' ? 'bg-emerald-500' : 'bg-red-500',
@@ -88,10 +105,10 @@ export default function RucoyDashboard() {
       date: l.created_at,
     }))
 
-    return [...tradeItems, ...logItems]
+    return [...tradeItems, ...archivedItems, ...logItems]
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .slice(0, 8)
-  }, [trades, logs])
+  }, [trades, archivedTrades, logs])
 
   const activityLoading = tradesLoading || logsLoading
 

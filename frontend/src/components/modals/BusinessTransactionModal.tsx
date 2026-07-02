@@ -17,7 +17,7 @@ interface BusinessTransactionModalProps {
 const TYPE_BUTTONS: { value: BusinessTransactionType; label: string }[] = [
   { value: 'account', label: 'Account' },
   { value: 'gold',    label: 'Gold'    },
-  { value: 'expense', label: 'Expense' },
+  { value: 'expense', label: 'Item'    },
 ]
 
 const EMPTY = (): BusinessTransactionPayload => ({
@@ -30,8 +30,8 @@ const EMPTY = (): BusinessTransactionPayload => ({
 })
 
 export function BusinessTransactionModal({ open, onClose, onSubmit, categories, transaction }: BusinessTransactionModalProps) {
-  const [form, setForm]     = useState<BusinessTransactionPayload>(EMPTY())
-  const [errors, setErrors] = useState<Partial<Record<string, string>>>({})
+  const [form, setForm]       = useState<BusinessTransactionPayload>(EMPTY())
+  const [errors, setErrors]   = useState<Partial<Record<string, string>>>({})
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -51,6 +51,9 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, categories, 
       )
     }
   }, [open, transaction])
+
+  const set = <K extends keyof BusinessTransactionPayload>(key: K, value: BusinessTransactionPayload[K]) =>
+    setForm((p) => ({ ...p, [key]: value }))
 
   const filteredCategories = categories.filter((c) =>
     form.type === 'expense' ? c.type === 'expense' : c.type !== 'expense'
@@ -78,12 +81,10 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, categories, 
     }
   }
 
-  const set = <K extends keyof BusinessTransactionPayload>(key: K, value: BusinessTransactionPayload[K]) =>
-    setForm((p) => ({ ...p, [key]: value }))
-
   return (
     <Modal open={open} onClose={onClose} title={transaction ? 'Edit Transaction' : 'Add Transaction'}>
       <div className="flex flex-col gap-4">
+
         <div className="flex gap-2">
           {TYPE_BUTTONS.map(({ value, label }) => (
             <button

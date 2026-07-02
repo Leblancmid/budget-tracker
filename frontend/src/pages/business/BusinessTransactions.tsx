@@ -5,7 +5,6 @@ import { useBusinessCategories } from '@/hooks/useBusinessCategories'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
-import { Badge } from '@/components/ui/Badge'
 import { Pagination } from '@/components/ui/Pagination'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Card } from '@/components/ui/Card'
@@ -18,13 +17,13 @@ import type { BusinessTransactionPayload } from '@/api/business'
 const TYPE_OPTIONS = [
   { value: 'account', label: 'Account' },
   { value: 'gold',    label: 'Gold'    },
-  { value: 'expense', label: 'Expense' },
+  { value: 'expense', label: 'Item'    },
 ]
 
 const TYPE_LABELS: Record<BusinessTransactionType, string> = {
   account: 'Account',
   gold:    'Gold',
-  expense: 'Expense',
+  expense: 'Item',
 }
 
 const EMPTY_FILTERS = { search: '', type: '' as BusinessTransactionType | '', category_id: '' as number | '', date_from: '', date_to: '', per_page: 10 }
@@ -163,7 +162,7 @@ export default function BusinessTransactions() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b border-gray-100 dark:bg-gray-800/60 dark:border-gray-700/60">
                 <tr>
-                  {['Date', 'Category', 'Description', 'Type', 'Amount', ''].map((h) => (
+                  {['Date', 'Type', 'Description', 'Amount', ''].map((h) => (
                     <th key={h} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap dark:text-gray-400">{h}</th>
                   ))}
                 </tr>
@@ -185,9 +184,6 @@ export default function BusinessTransactions() {
                         )}
                       </td>
                       <td className="px-5 py-3.5 text-gray-600 max-w-xs truncate dark:text-gray-400">{tx.description ?? '—'}</td>
-                      <td className="px-5 py-3.5">
-                        <Badge variant={isIncome ? 'income' : 'expense'}>{TYPE_LABELS[tx.type]}</Badge>
-                      </td>
                       <td className={['px-5 py-3.5 font-semibold whitespace-nowrap', isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'].join(' ')}>
                         {isIncome ? '+' : '-'}{formatCurrency(tx.amount)}
                       </td>

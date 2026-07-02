@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
 import type { BusinessCategory, BusinessTransaction, BusinessTransactionType, BusinessTransactionAction } from '@/types'
 import type { BusinessTransactionPayload } from '@/api/business'
 
@@ -30,7 +29,7 @@ const EMPTY = (): BusinessTransactionPayload => ({
   notes:        '',
 })
 
-export function BusinessTransactionModal({ open, onClose, onSubmit, categories, transaction }: BusinessTransactionModalProps) {
+export function BusinessTransactionModal({ open, onClose, onSubmit, transaction }: BusinessTransactionModalProps) {
   const [form, setForm]       = useState<BusinessTransactionPayload>(EMPTY())
   const [errors, setErrors]   = useState<Partial<Record<string, string>>>({})
   const [loading, setLoading] = useState(false)
@@ -47,7 +46,7 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, categories, 
               amount:      parseFloat(transaction.amount),
               description: transaction.description ?? '',
               date:        transaction.date,
-              notes:       transaction.notes ?? '',
+              notes:       '',
             }
           : EMPTY()
       )
@@ -58,21 +57,12 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, categories, 
     setForm((p) => ({ ...p, [key]: value }))
 
   const handleTypeChange = (type: BusinessTransactionType) => {
-    setForm((p) => ({
-      ...p,
-      type,
-      action:      type === 'expense' ? null : p.action,
-      category_id: null,
-    }))
+    setForm((p) => ({ ...p, type, category_id: null }))
   }
 
   const handleActionToggle = (action: BusinessTransactionAction) => {
     set('action', form.action === action ? null : action)
   }
-
-  const filteredCategories = categories.filter((c) =>
-    form.type === 'expense' ? c.type === 'expense' : c.type !== 'expense'
-  )
 
   const validate = () => {
     const errs: typeof errors = {}
@@ -97,10 +87,31 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, categories, 
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={transaction ? 'Edit Transaction' : 'Add Transaction'}>
+    <Modal open={open} onClose={onClose} title={transaction ? 'Edit Transaction' : 'Add Transaction'} size="xl">
       <div className="flex flex-col gap-4">
 
-        {/* Type */}
+        {/* Action — Buy / Sell */}
+        <div className="flex gap-2">
+          {(['buy', 'sell'] as BusinessTransactionAction[]).map((action) => (
+            <button
+              key={action}
+              type="button"
+              onClick={() => handleActionToggle(action)}
+              className={[
+                'flex-1 rounded-lg border py-2 text-sm font-medium transition-colors',
+                form.action === action
+                  ? action === 'buy'
+                    ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400 dark:border-red-700'
+                    : 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-700'
+                  : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
+              ].join(' ')}
+            >
+              {action === 'buy' ? '− Buy' : '+ Sell'}
+            </button>
+          ))}
+        </div>
+
+        {/* Type — Account / Gold / Item */}
         <div className="flex gap-2">
           {TYPE_BUTTONS.map(({ value, label }) => (
             <button
@@ -121,59 +132,28 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, categories, 
           ))}
         </div>
 
-        {/* Buy / Sell — only for Account and Gold */}
-        {form.type !== 'expense' && (
-          <div className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Action</span>
-            <div className="flex gap-2">
-              {(['buy', 'sell'] as BusinessTransactionAction[]).map((action) => (
-                <button
-                  key={action}
-                  type="button"
-                  onClick={() => handleActionToggle(action)}
-                  className={[
-                    'flex-1 rounded-lg border py-2 text-sm font-medium capitalize transition-colors',
-                    form.action === action
-                      ? action === 'buy'
-                        ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400 dark:border-red-700'
-                        : 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-700'
-                      : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
-                  ].join(' ')}
-                >
-                  {action === 'buy' ? '− Buy' : '+ Sell'}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <Select
-          label="Category"
-          placeholder="Select category"
-          value={form.category_id ?? ''}
-          onChange={(e) => set('category_id', e.target.value ? Number(e.target.value) : null)}
-          options={filteredCategories.map((c) => ({ value: c.id, label: c.name }))}
-          error={errors.category_id}
-        />
-
-        <Input
-          label="Amount"
-          type="number"
-          min="0.01"
-          step="0.01"
-          value={form.amount || ''}
-          onChange={(e) => set('amount', parseFloat(e.target.value) || 0)}
-          error={errors.amount}
-          placeholder="0.00"
-        />
-
-        <Input
-          label="Date"
-          type="date"
-          value={form.date}
-          onChange={(e) => set('date', e.target.value)}
-          error={errors.date}
-        />
+        {/* Amount (flex) + Date (fixed right) */}
+        <div className="flex gap-3">
+          <Input
+            label="Amount"
+            type="number"
+            min="0.01"
+            step="0.01"
+            value={form.amount || ''}
+            onChange={(e) => set('amount', parseFloat(e.target.value) || 0)}
+            error={errors.amount}
+            placeholder="0.00"
+            className="flex-1"
+          />
+          <Input
+            label="Date"
+            type="date"
+            value={form.date}
+            onChange={(e) => set('date', e.target.value)}
+            error={errors.date}
+            className="w-44 shrink-0"
+          />
+        </div>
 
         <Input
           label="Description"
@@ -181,17 +161,6 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, categories, 
           onChange={(e) => set('description', e.target.value)}
           placeholder="Optional short description"
         />
-
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Notes</label>
-          <textarea
-            rows={3}
-            value={form.notes ?? ''}
-            onChange={(e) => set('notes', e.target.value)}
-            placeholder="Additional notes (optional)"
-            className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none scrollbar-thin dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 dark:hover:border-gray-500"
-          />
-        </div>
 
         <div className="flex justify-end gap-3 pt-1">
           <Button variant="secondary" onClick={onClose} disabled={loading}>Cancel</Button>

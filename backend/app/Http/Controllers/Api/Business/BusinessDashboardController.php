@@ -13,17 +13,15 @@ class BusinessDashboardController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $month = (int) $request->get('month', now()->month);
-        $year  = (int) $request->get('year', now()->year);
+        $month = $request->integer('month', now()->month);
+        $year  = $request->integer('year', now()->year);
 
         $income = (float) BusinessTransaction::where('action', 'sell')
             ->whereMonth('date', $month)
             ->whereYear('date', $year)
             ->sum('amount');
 
-        $expense = (float) BusinessTransaction::where(function ($q) {
-                $q->where('type', 'expense')->orWhere('action', 'buy');
-            })
+        $expense = (float) BusinessTransaction::where('action', 'buy')
             ->whereMonth('date', $month)
             ->whereYear('date', $year)
             ->sum('amount');

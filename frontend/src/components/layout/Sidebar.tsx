@@ -7,43 +7,32 @@ type SectionVariant = 'master' | 'default' | 'business' | 'rucoy'
 
 const SECTION_COLORS: Record<SectionVariant, { header: string; activeBg: string; activeText: string; dot: string }> = {
   master: {
-    header:     'bg-violet-600 hover:bg-violet-700',
-    activeBg:   'bg-violet-700/30',
+    header: 'bg-violet-600 hover:bg-violet-700',
+    activeBg: 'bg-violet-700/30',
     activeText: 'text-violet-100',
-    dot:        'bg-violet-300',
+    dot: 'bg-violet-300',
   },
   default: {
-    header:     'bg-indigo-600 hover:bg-indigo-700',
-    activeBg:   'bg-indigo-700/30',
+    header: 'bg-indigo-600 hover:bg-indigo-700',
+    activeBg: 'bg-indigo-700/30',
     activeText: 'text-indigo-100',
-    dot:        'bg-indigo-300',
+    dot: 'bg-indigo-300',
   },
   business: {
-    header:     'bg-teal-600 hover:bg-teal-700',
-    activeBg:   'bg-teal-700/30',
+    header: 'bg-teal-600 hover:bg-teal-700',
+    activeBg: 'bg-teal-700/30',
     activeText: 'text-teal-100',
-    dot:        'bg-teal-300',
+    dot: 'bg-teal-300',
   },
   rucoy: {
-    header:     'bg-amber-600 hover:bg-amber-700',
-    activeBg:   'bg-amber-700/30',
+    header: 'bg-amber-600 hover:bg-amber-700',
+    activeBg: 'bg-amber-700/30',
     activeText: 'text-amber-100',
-    dot:        'bg-amber-300',
+    dot: 'bg-amber-300',
   },
 }
 
 const SECTIONS = [
-  {
-    id: 'master',
-    label: 'Master File',
-    icon: FolderOpen,
-    variant: 'master' as SectionVariant,
-    basePath: '/master',
-    items: [
-      { to: '/master',         label: 'Overall Dashboard', end: true  },
-      { to: '/master/savings', label: 'Savings',           end: false },
-    ],
-  },
   {
     id: 'daily',
     label: 'Daily Expenses',
@@ -51,10 +40,10 @@ const SECTIONS = [
     variant: 'default' as SectionVariant,
     basePath: '/',
     items: [
-      { to: '/',             label: 'Dashboard',    end: true  },
+      { to: '/', label: 'Dashboard', end: true },
       { to: '/transactions', label: 'Transactions', end: false },
-      { to: '/categories',   label: 'Categories',   end: false },
-      { to: '/budgets',      label: 'Budgets',      end: false },
+      { to: '/categories', label: 'Categories', end: false },
+      { to: '/budgets', label: 'Budgets', end: false },
     ],
   },
   {
@@ -64,10 +53,10 @@ const SECTIONS = [
     variant: 'business' as SectionVariant,
     basePath: '/business',
     items: [
-      { to: '/business',                label: 'Dashboard',    end: true  },
-      { to: '/business/transactions',   label: 'Transactions', end: false },
-      { to: '/business/categories',     label: 'Categories',   end: false },
-      { to: '/business/budgets',        label: 'Budgets',      end: false },
+      { to: '/business', label: 'Dashboard', end: true },
+      { to: '/business/transactions', label: 'Transactions', end: false },
+      { to: '/business/categories', label: 'Categories', end: false },
+      { to: '/business/budgets', label: 'Budgets', end: false },
     ],
   },
   {
@@ -77,11 +66,22 @@ const SECTIONS = [
     variant: 'rucoy' as SectionVariant,
     basePath: '/rucoy',
     items: [
-      { to: '/rucoy',            label: 'Dashboard',       end: true  },
-      { to: '/rucoy/golds',      label: 'Golds',           end: false },
-      { to: '/rucoy/trades',     label: 'Trades',          end: false },
-      { to: '/rucoy/accounts',   label: 'Accounts',        end: false },
+      { to: '/rucoy', label: 'Dashboard', end: true },
+      { to: '/rucoy/golds', label: 'Golds', end: false },
+      { to: '/rucoy/trades', label: 'Trades', end: false },
+      { to: '/rucoy/accounts', label: 'Accounts', end: false },
       { to: '/rucoy/calculator', label: 'Gold Calculator', end: false },
+    ],
+  },
+  {
+    id: 'master',
+    label: 'Master File',
+    icon: FolderOpen,
+    variant: 'master' as SectionVariant,
+    basePath: '/master',
+    items: [
+      { to: '/master', label: 'Overall Dashboard', end: true },
+      { to: '/master/savings', label: 'Savings', end: false },
     ],
   },
 ]

@@ -139,6 +139,18 @@ export interface BusinessDashboardStats {
   total_expense: number
   total_profit: number
   balance: number
+  recent_transactions: BusinessTransaction[]
+  expense_by_category: Array<{
+    category_id: number
+    total: string
+    category: Pick<BusinessCategory, 'id' | 'name' | 'color' | 'icon'>
+  }>
+  monthly_trend: Array<{
+    month: number
+    year: number
+    type: 'income' | 'expense'
+    total: string
+  }>
 }
 
 // ── Rucoy ────────────────────────────────────────────────────────────────────

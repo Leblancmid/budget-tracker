@@ -162,7 +162,7 @@ export default function RucoyDashboard() {
 
       <Card className="flex flex-col">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
-          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Recent Activity</h2>
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Recent Transaction</h2>
           <div className="flex items-center gap-3">
             <Link to="/rucoy/golds" className="flex items-center gap-1 text-xs text-amber-600 hover:text-amber-800 font-medium dark:text-amber-400 dark:hover:text-amber-300">
               Golds <ArrowRight className="h-3.5 w-3.5" />

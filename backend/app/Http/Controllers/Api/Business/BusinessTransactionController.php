@@ -21,6 +21,7 @@ class BusinessTransactionController extends Controller
         $data = $request->validate([
             'category_id' => 'nullable|exists:business_categories,id',
             'type'        => 'required|in:account,gold,expense',
+            'action'      => 'nullable|in:buy,sell',
             'amount'      => 'required|numeric|min:0',
             'description' => 'nullable|string|max:255',
             'date'        => 'required|date',
@@ -37,6 +38,7 @@ class BusinessTransactionController extends Controller
         $data = $request->validate([
             'category_id' => 'nullable|exists:business_categories,id',
             'type'        => 'sometimes|in:account,gold,expense',
+            'action'      => 'nullable|in:buy,sell',
             'amount'      => 'sometimes|numeric|min:0',
             'description' => 'nullable|string|max:255',
             'date'        => 'sometimes|date',

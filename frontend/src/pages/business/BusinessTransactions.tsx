@@ -95,8 +95,8 @@ export default function BusinessTransactions() {
     }
   }
 
-  const totalIncome  = useMemo(() => transactions.filter(tx => tx.type !== 'expense').reduce((s, tx) => s + parseFloat(tx.amount), 0), [transactions])
-  const totalExpense = useMemo(() => transactions.filter(tx => tx.type === 'expense').reduce((s, tx) => s + parseFloat(tx.amount), 0), [transactions])
+  const totalIncome  = useMemo(() => transactions.filter(tx => tx.action === 'sell' || (tx.type !== 'expense' && tx.action === null)).reduce((s, tx) => s + parseFloat(tx.amount), 0), [transactions])
+  const totalExpense = useMemo(() => transactions.filter(tx => tx.action === 'buy' || tx.type === 'expense').reduce((s, tx) => s + parseFloat(tx.amount), 0), [transactions])
   const balance      = masterStats?.business_balance ?? 0
 
   const openEdit = (tx: BusinessTransaction) => { setEditTarget(tx); setModalOpen(true) }
@@ -201,7 +201,7 @@ export default function BusinessTransactions() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b border-gray-100 dark:bg-gray-800/60 dark:border-gray-700/60">
                 <tr>
-                  {['Date', 'Type', 'Description', 'Amount', ''].map((h) => (
+                  {['Date', 'Action', 'Type', 'Description', 'Amount', ''].map((h) => (
                     <th key={h} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap dark:text-gray-400">{h}</th>
                   ))}
                 </tr>
@@ -212,25 +212,30 @@ export default function BusinessTransactions() {
                   return (
                     <tr key={tx.id} className="hover:bg-gray-50 transition-colors group dark:hover:bg-gray-800/40">
                       <td className="px-5 py-3.5 whitespace-nowrap text-gray-600 dark:text-gray-400">{formatDate(tx.date)}</td>
+                      {/* Action — Buy / Sell */}
                       <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {tx.category ? (
-                            <div className="flex items-center gap-2">
-                              <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: tx.category.color }} />
-                              <span className="text-gray-700 font-medium dark:text-gray-300">{tx.category.name}</span>
+                        {tx.action ? (
+                          <span className={[
+                            'rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase',
+                            tx.action === 'sell'
+                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400'
+                              : 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400',
+                          ].join(' ')}>
+                            {tx.action === 'sell' ? '+ Sell' : '− Buy'}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 dark:text-gray-600">—</span>
+                        )}
+                      </td>
+                      {/* Type — Account / Gold / Item + optional category */}
+                      <td className="px-5 py-3.5">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{TYPE_LABELS[tx.type]}</span>
+                          {tx.category && (
+                            <div className="flex items-center gap-1.5">
+                              <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: tx.category.color }} />
+                              <span className="text-xs text-gray-500 dark:text-gray-500">{tx.category.name}</span>
                             </div>
-                          ) : (
-                            <span className="text-gray-400 dark:text-gray-600">—</span>
-                          )}
-                          {tx.action && (
-                            <span className={[
-                              'rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase',
-                              tx.action === 'sell'
-                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400'
-                                : 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400',
-                            ].join(' ')}>
-                              {tx.action}
-                            </span>
                           )}
                         </div>
                       </td>

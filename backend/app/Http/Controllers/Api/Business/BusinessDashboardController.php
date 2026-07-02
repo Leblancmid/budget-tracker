@@ -16,22 +16,12 @@ class BusinessDashboardController extends Controller
         $month = $request->integer('month', now()->month);
         $year  = $request->integer('year', now()->year);
 
-        $income = (float) BusinessTransaction::where(function ($q) {
-                $q->where('action', 'sell')
-                  ->orWhere(function ($q2) {
-                      $q2->whereNull('action')->where('type', '!=', 'expense');
-                  });
-            })
+        $income = (float) BusinessTransaction::income()
             ->whereMonth('date', $month)
             ->whereYear('date', $year)
             ->sum('amount');
 
-        $expense = (float) BusinessTransaction::where(function ($q) {
-                $q->where('action', 'buy')
-                  ->orWhere(function ($q2) {
-                      $q2->whereNull('action')->where('type', 'expense');
-                  });
-            })
+        $expense = (float) BusinessTransaction::expense()
             ->whereMonth('date', $month)
             ->whereYear('date', $year)
             ->sum('amount');
@@ -41,20 +31,15 @@ class BusinessDashboardController extends Controller
             ->limit(5)
             ->get();
 
-        $expenseByType = BusinessTransaction::select('type', DB::raw('SUM(amount) as total'))
-            ->where(function ($q) {
-                $q->where('action', 'buy')
-                  ->orWhere(function ($q2) {
-                      $q2->whereNull('action')->where('type', 'expense');
-                  });
-            })
+        $expenseByType = BusinessTransaction::expense()
+            ->select('type', DB::raw('SUM(amount) as total'))
             ->whereMonth('date', $month)
             ->whereYear('date', $year)
             ->groupBy('type')
             ->orderByDesc('total')
             ->get();
 
-        $incomeExpr  = "CASE WHEN action = 'sell' OR (action IS NULL AND type != 'expense') THEN 'income' ELSE 'expense' END";
+        $incomeExpr   = BusinessTransaction::incomeExpr();
         $monthlyTrend = BusinessTransaction::select(
                 DB::raw('MONTH(date) as month'),
                 DB::raw('YEAR(date) as year'),

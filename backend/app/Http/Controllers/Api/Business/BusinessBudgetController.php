@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\Business;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Business\StoreBusinessBudgetRequest;
+use App\Http\Requests\Business\UpdateBusinessBudgetRequest;
 use App\Models\BusinessBudget;
 use App\Models\BusinessTransaction;
 use Illuminate\Http\JsonResponse;
@@ -20,13 +22,14 @@ class BusinessBudgetController extends Controller
             ->where('year', $year)
             ->get()
             ->map(function ($b) use ($month, $year) {
-                $spent = (float) BusinessTransaction::where('category_id', $b->category_id)
+                $spent = (float) BusinessTransaction::expense()
+                    ->where('category_id', $b->category_id)
                     ->whereMonth('date', $month)
                     ->whereYear('date', $year)
                     ->sum('amount');
 
-                $b->spent     = $spent;
-                $b->remaining = max(0, (float) $b->amount - $spent);
+                $b->spent      = $spent;
+                $b->remaining  = max(0, (float) $b->amount - $spent);
                 $b->percentage = $b->amount > 0 ? round(($spent / (float) $b->amount) * 100, 1) : 0;
 
                 return $b;
@@ -35,15 +38,9 @@ class BusinessBudgetController extends Controller
         return response()->json($budgets);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreBusinessBudgetRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'category_id' => 'required|exists:business_categories,id',
-            'amount'      => 'required|numeric|min:0',
-            'month'       => 'required|integer|between:1,12',
-            'year'        => 'required|integer|min:2000',
-        ]);
-
+        $data   = $request->validated();
         $budget = BusinessBudget::updateOrCreate(
             ['category_id' => $data['category_id'], 'month' => $data['month'], 'year' => $data['year']],
             ['amount' => $data['amount']]
@@ -52,10 +49,9 @@ class BusinessBudgetController extends Controller
         return response()->json($budget->load('category'), 201);
     }
 
-    public function update(Request $request, BusinessBudget $businessBudget): JsonResponse
+    public function update(UpdateBusinessBudgetRequest $request, BusinessBudget $businessBudget): JsonResponse
     {
-        $data = $request->validate(['amount' => 'required|numeric|min:0']);
-        $businessBudget->update($data);
+        $businessBudget->update($request->validated());
 
         return response()->json($businessBudget->fresh()->load('category'));
     }

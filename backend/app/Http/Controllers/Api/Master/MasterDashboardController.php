@@ -15,18 +15,8 @@ class MasterDashboardController extends Controller
     public function index(): JsonResponse
     {
         // Business
-        $businessIncome  = (float) BusinessTransaction::where(function ($q) {
-            $q->where('action', 'sell')
-               ->orWhere(function ($q2) {
-                   $q2->whereNull('action')->where('type', '!=', 'expense');
-               });
-        })->sum('amount');
-        $businessExpense = (float) BusinessTransaction::where(function ($q) {
-            $q->where('action', 'buy')
-               ->orWhere(function ($q2) {
-                   $q2->whereNull('action')->where('type', 'expense');
-               });
-        })->sum('amount');
+        $businessIncome  = (float) BusinessTransaction::income()->sum('amount');
+        $businessExpense = (float) BusinessTransaction::expense()->sum('amount');
         $businessProfit  = $businessIncome - $businessExpense;
 
         // Daily Expenses
@@ -55,7 +45,6 @@ class MasterDashboardController extends Controller
         $adjustedBusinessBalance = $businessProfit + $savingsToBusiness - $businessToSavings;
 
         return response()->json([
-            'overall_profit'   => $adjustedBusinessBalance + $adjustedDailyBalance,
             'overall_balance'  => $adjustedBusinessBalance + $adjustedDailyBalance,
             'daily_balance'    => $adjustedDailyBalance,
             'business_balance' => $adjustedBusinessBalance,

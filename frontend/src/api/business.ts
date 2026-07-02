@@ -1,5 +1,5 @@
 import api from './axios'
-import type { BusinessCategory, BusinessTransaction, BusinessBudget, BusinessDashboardStats, BusinessTransactionType } from '@/types'
+import type { BusinessCategory, BusinessTransaction, BusinessBudget, BusinessDashboardStats, BusinessTransactionType, BusinessTransactionAction } from '@/types'
 
 export const businessDashboardApi = {
   getStats: (month: number, year: number) =>
@@ -26,6 +26,7 @@ export const businessCategoriesApi = {
 export interface BusinessTransactionPayload {
   category_id?: number | null
   type: BusinessTransactionType
+  action?: BusinessTransactionAction | null
   amount: number
   description?: string | null
   date: string

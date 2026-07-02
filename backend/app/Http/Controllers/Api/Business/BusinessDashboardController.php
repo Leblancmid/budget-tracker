@@ -16,12 +16,14 @@ class BusinessDashboardController extends Controller
         $month = (int) $request->get('month', now()->month);
         $year  = (int) $request->get('year', now()->year);
 
-        $income = (float) BusinessTransaction::whereIn('type', ['account', 'gold'])
+        $income = (float) BusinessTransaction::where('action', 'sell')
             ->whereMonth('date', $month)
             ->whereYear('date', $year)
             ->sum('amount');
 
-        $expense = (float) BusinessTransaction::where('type', 'expense')
+        $expense = (float) BusinessTransaction::where(function ($q) {
+                $q->where('type', 'expense')->orWhere('action', 'buy');
+            })
             ->whereMonth('date', $month)
             ->whereYear('date', $year)
             ->sum('amount');

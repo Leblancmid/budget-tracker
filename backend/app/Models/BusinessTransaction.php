@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class BusinessTransaction extends Model
 {
-    protected $fillable = ['category_id', 'type', 'amount', 'description', 'date', 'notes'];
+    protected $fillable = ['category_id', 'type', 'action', 'amount', 'description', 'date', 'notes'];
 
     protected $casts = [
         'amount' => 'decimal:2',

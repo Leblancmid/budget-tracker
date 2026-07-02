@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
-import { Plus, Search, Filter, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Search, Filter, Pencil, Trash2, Briefcase, TrendingUp, TrendingDown } from 'lucide-react'
 import { useBusinessTransactions } from '@/hooks/useBusinessTransactions'
 import { useBusinessCategories } from '@/hooks/useBusinessCategories'
+import { useMasterDashboard } from '@/hooks/useMasterDashboard'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
@@ -31,6 +32,7 @@ const EMPTY_FILTERS = { search: '', type: '' as BusinessTransactionType | '', ca
 export default function BusinessTransactions() {
   const { transactions, loading, create, update, remove } = useBusinessTransactions()
   const { categories } = useBusinessCategories()
+  const { stats: masterStats } = useMasterDashboard()
 
   const [filters, setFilters] = useState(EMPTY_FILTERS)
   const [page, setPage]       = useState(1)
@@ -93,6 +95,10 @@ export default function BusinessTransactions() {
     }
   }
 
+  const totalIncome  = useMemo(() => transactions.filter(tx => tx.type !== 'expense').reduce((s, tx) => s + parseFloat(tx.amount), 0), [transactions])
+  const totalExpense = useMemo(() => transactions.filter(tx => tx.type === 'expense').reduce((s, tx) => s + parseFloat(tx.amount), 0), [transactions])
+  const balance      = masterStats?.business_balance ?? 0
+
   const openEdit = (tx: BusinessTransaction) => { setEditTarget(tx); setModalOpen(true) }
   const openAdd  = () => { setEditTarget(null); setModalOpen(true) }
 
@@ -102,6 +108,42 @@ export default function BusinessTransactions() {
 
   return (
     <div className="flex flex-col gap-5">
+
+      {/* Balance Banner */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-700 p-6 shadow-lg">
+        <div className="absolute -top-6 -right-6 h-32 w-32 rounded-full bg-white/10" />
+        <div className="absolute -bottom-8 -left-4 h-28 w-28 rounded-full bg-white/5" />
+        <div className="relative flex items-center gap-5">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm">
+            <Briefcase className="h-6 w-6 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-teal-100">Business Balance</p>
+            <p className={['text-3xl font-bold mt-0.5', balance >= 0 ? 'text-white' : 'text-red-200'].join(' ')}>
+              {formatCurrency(balance)}
+            </p>
+            <div className="flex items-center gap-4 mt-2">
+              <span className="flex items-center gap-1 text-xs text-teal-100">
+                <TrendingUp className="h-3.5 w-3.5" />
+                {formatCurrency(totalIncome)} in
+              </span>
+              <span className="text-teal-300/50">·</span>
+              <span className="flex items-center gap-1 text-xs text-teal-100">
+                <TrendingDown className="h-3.5 w-3.5" />
+                {formatCurrency(totalExpense)} out
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={openAdd}
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/20 transition-colors"
+            title="Add Transaction"
+          >
+            <Plus className="h-5 w-5 text-white" />
+          </button>
+        </div>
+      </div>
+
       <div className="flex flex-wrap items-end gap-3">
         <Input
           placeholder="Search description…"
@@ -144,9 +186,6 @@ export default function BusinessTransactions() {
         >
           Clear
         </Button>
-        <div className="ml-auto">
-          <Button icon={<Plus className="h-4 w-4" />} onClick={openAdd}>Add Transaction</Button>
-        </div>
       </div>
 
       <Card>
@@ -169,19 +208,31 @@ export default function BusinessTransactions() {
               </thead>
               <tbody className="divide-y divide-gray-50 dark:divide-gray-700/40">
                 {paginated.map((tx) => {
-                  const isIncome = tx.type !== 'expense'
+                  const isIncome = tx.action === 'sell' || (tx.type !== 'expense' && tx.action === null)
                   return (
                     <tr key={tx.id} className="hover:bg-gray-50 transition-colors group dark:hover:bg-gray-800/40">
                       <td className="px-5 py-3.5 whitespace-nowrap text-gray-600 dark:text-gray-400">{formatDate(tx.date)}</td>
                       <td className="px-5 py-3.5">
-                        {tx.category ? (
-                          <div className="flex items-center gap-2">
-                            <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: tx.category.color }} />
-                            <span className="text-gray-700 font-medium dark:text-gray-300">{tx.category.name}</span>
-                          </div>
-                        ) : (
-                          <span className="text-gray-400 dark:text-gray-600">—</span>
-                        )}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {tx.category ? (
+                            <div className="flex items-center gap-2">
+                              <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: tx.category.color }} />
+                              <span className="text-gray-700 font-medium dark:text-gray-300">{tx.category.name}</span>
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 dark:text-gray-600">—</span>
+                          )}
+                          {tx.action && (
+                            <span className={[
+                              'rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase',
+                              tx.action === 'sell'
+                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400'
+                                : 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400',
+                            ].join(' ')}>
+                              {tx.action}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-5 py-3.5 text-gray-600 max-w-xs truncate dark:text-gray-400">{tx.description ?? '—'}</td>
                       <td className={['px-5 py-3.5 font-semibold whitespace-nowrap', isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'].join(' ')}>

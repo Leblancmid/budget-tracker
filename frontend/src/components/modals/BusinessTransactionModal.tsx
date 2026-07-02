@@ -3,7 +3,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
-import type { BusinessCategory, BusinessTransaction, BusinessTransactionType } from '@/types'
+import type { BusinessCategory, BusinessTransaction, BusinessTransactionType, BusinessTransactionAction } from '@/types'
 import type { BusinessTransactionPayload } from '@/api/business'
 
 interface BusinessTransactionModalProps {
@@ -23,6 +23,7 @@ const TYPE_BUTTONS: { value: BusinessTransactionType; label: string }[] = [
 const EMPTY = (): BusinessTransactionPayload => ({
   category_id:  null,
   type:         'account',
+  action:       null,
   amount:       0,
   description:  '',
   date:         new Date().toISOString().split('T')[0],
@@ -42,6 +43,7 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, categories, 
           ? {
               category_id: transaction.category_id,
               type:        transaction.type,
+              action:      transaction.action,
               amount:      parseFloat(transaction.amount),
               description: transaction.description ?? '',
               date:        transaction.date,
@@ -54,6 +56,19 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, categories, 
 
   const set = <K extends keyof BusinessTransactionPayload>(key: K, value: BusinessTransactionPayload[K]) =>
     setForm((p) => ({ ...p, [key]: value }))
+
+  const handleTypeChange = (type: BusinessTransactionType) => {
+    setForm((p) => ({
+      ...p,
+      type,
+      action:      type === 'expense' ? null : p.action,
+      category_id: null,
+    }))
+  }
+
+  const handleActionToggle = (action: BusinessTransactionAction) => {
+    set('action', form.action === action ? null : action)
+  }
 
   const filteredCategories = categories.filter((c) =>
     form.type === 'expense' ? c.type === 'expense' : c.type !== 'expense'
@@ -85,12 +100,13 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, categories, 
     <Modal open={open} onClose={onClose} title={transaction ? 'Edit Transaction' : 'Add Transaction'}>
       <div className="flex flex-col gap-4">
 
+        {/* Type */}
         <div className="flex gap-2">
           {TYPE_BUTTONS.map(({ value, label }) => (
             <button
               key={value}
               type="button"
-              onClick={() => { set('type', value); set('category_id', null) }}
+              onClick={() => handleTypeChange(value)}
               className={[
                 'flex-1 rounded-lg border py-2 text-sm font-medium transition-colors',
                 form.type === value
@@ -104,6 +120,32 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, categories, 
             </button>
           ))}
         </div>
+
+        {/* Buy / Sell — only for Account and Gold */}
+        {form.type !== 'expense' && (
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Action</span>
+            <div className="flex gap-2">
+              {(['buy', 'sell'] as BusinessTransactionAction[]).map((action) => (
+                <button
+                  key={action}
+                  type="button"
+                  onClick={() => handleActionToggle(action)}
+                  className={[
+                    'flex-1 rounded-lg border py-2 text-sm font-medium capitalize transition-colors',
+                    form.action === action
+                      ? action === 'buy'
+                        ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400 dark:border-red-700'
+                        : 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-700'
+                      : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
+                  ].join(' ')}
+                >
+                  {action === 'buy' ? '− Buy' : '+ Sell'}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <Select
           label="Category"

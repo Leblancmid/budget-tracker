@@ -1,0 +1,20 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\DB;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        // Revert type back to original 3 values, add action column
+        DB::statement("ALTER TABLE business_transactions MODIFY COLUMN type ENUM('account', 'gold', 'expense') NOT NULL");
+        DB::statement("ALTER TABLE business_transactions ADD COLUMN action ENUM('buy', 'sell') NULL AFTER type");
+    }
+
+    public function down(): void
+    {
+        DB::statement("ALTER TABLE business_transactions DROP COLUMN action");
+        DB::statement("ALTER TABLE business_transactions MODIFY COLUMN type ENUM('account', 'gold', 'expense', 'buy', 'sell') NOT NULL");
+    }
+};

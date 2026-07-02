@@ -124,6 +124,7 @@ export interface MasterDashboardStats {
 // ── Business ─────────────────────────────────────────────────────────────────
 
 export type BusinessTransactionType = 'account' | 'gold' | 'expense'
+export type BusinessTransactionAction = 'buy' | 'sell'
 
 export interface BusinessCategory {
   id: number
@@ -140,6 +141,7 @@ export interface BusinessTransaction {
   category_id: number | null
   category: BusinessCategory | null
   type: BusinessTransactionType
+  action: BusinessTransactionAction | null
   amount: string
   description: string | null
   date: string

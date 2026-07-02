@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\BudgetController;
+use App\Http\Controllers\Api\Master\MasterDashboardController;
+use App\Http\Controllers\Api\Master\SavingController;
 use App\Http\Controllers\Api\Business\BusinessBudgetController;
 use App\Http\Controllers\Api\Business\BusinessCategoryController;
 use App\Http\Controllers\Api\Business\BusinessDashboardController;
@@ -23,6 +25,12 @@ Route::prefix('v1')->group(function () {
     Route::post('budgets', [BudgetController::class, 'store']);
     Route::put('budgets/{budget}', [BudgetController::class, 'update']);
     Route::delete('budgets/{budget}', [BudgetController::class, 'destroy']);
+
+    // Master
+    Route::prefix('master')->group(function () {
+        Route::get('dashboard', [MasterDashboardController::class, 'index']);
+        Route::apiResource('savings', SavingController::class)->except(['show', 'create', 'edit']);
+    });
 
     // Business
     Route::prefix('business')->group(function () {

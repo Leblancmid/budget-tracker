@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Plus, Pencil, Trash2, ArrowLeftRight, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Coins } from 'lucide-react'
+import { Plus, Pencil, Trash2, ArrowLeftRight, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Coins, Search } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -48,6 +48,7 @@ function StatusPill({ status }: { status: TradeStatus }) {
 export default function Trades() {
   const { trades, loading, error, create, update, remove } = useTrades()
 
+  const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<'all' | 'kks' | 'cash'>('all')
   const [dateSort, setDateSort] = useState<'asc' | 'desc' | null>(null)
   const [page, setPage] = useState(1)
@@ -60,9 +61,17 @@ export default function Trades() {
     trades.filter((t) => t.status === 'kks').reduce((sum, t) => sum + Number(t.amount), 0),
   [trades])
 
-  const filteredTrades = useMemo(() =>
-    typeFilter === 'all' ? trades : trades.filter((t) => t.status === typeFilter),
-  [trades, typeFilter])
+  const filteredTrades = useMemo(() => {
+    let result = typeFilter === 'all' ? trades : trades.filter((t) => t.status === typeFilter)
+    if (search.trim()) {
+      const q = search.trim().toLowerCase()
+      result = result.filter((t) =>
+        (t.description ?? '').toLowerCase().includes(q) ||
+        (t.payment_method ?? '').toLowerCase().includes(q)
+      )
+    }
+    return result
+  }, [trades, typeFilter, search])
 
   const sortedTrades = useMemo(() => {
     if (!dateSort) return filteredTrades
@@ -89,6 +98,7 @@ export default function Trades() {
   }
 
   const changeFilter = (f: typeof typeFilter) => { setTypeFilter(f); setPage(1) }
+  const changeSearch = (q: string) => { setSearch(q); setPage(1) }
 
   const openCreate = () => { setEditing(null); setModalOpen(true) }
   const openEdit = (t: Trade) => { setEditing(t); setModalOpen(true) }
@@ -131,6 +141,16 @@ export default function Trades() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => changeSearch(e.target.value)}
+              placeholder="Search…"
+              className="rounded-lg border border-gray-300 bg-white pl-8 pr-3 py-1.5 text-sm text-gray-700 shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 w-44"
+            />
+          </div>
           <select
             value={typeFilter}
             onChange={(e) => changeFilter(e.target.value as typeof typeFilter)}

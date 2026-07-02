@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Business;
 
 use App\Http\Controllers\Controller;
 use App\Models\BusinessTransaction;
+use App\Models\Saving;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -52,11 +53,26 @@ class BusinessDashboardController extends Controller
             ->orderBy('month')
             ->get();
 
+        $savingsToBusiness = (float) Saving::where('type', 'withdraw')
+            ->where('transfer', 'business')
+            ->whereMonth('date', $month)
+            ->whereYear('date', $year)
+            ->sum('amount');
+
+        $businessToSavings = (float) Saving::where('type', 'deposit')
+            ->where('transfer', 'business')
+            ->whereMonth('date', $month)
+            ->whereYear('date', $year)
+            ->sum('amount');
+
+        $profit  = $income - $expense;
+        $balance = $profit + $savingsToBusiness - $businessToSavings;
+
         return response()->json([
             'total_income'        => $income,
             'total_expense'       => $expense,
-            'total_profit'        => $income - $expense,
-            'balance'             => $income - $expense,
+            'total_profit'        => $profit,
+            'balance'             => $balance,
             'recent_transactions' => $recentTransactions,
             'expense_by_category' => $expenseByCategory,
             'monthly_trend'       => $monthlyTrend,

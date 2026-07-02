@@ -114,6 +114,8 @@ export interface Saving {
 export interface MasterDashboardStats {
   overall_profit: number
   overall_balance: number
+  daily_balance: number
+  business_balance: number
   gold_stash: number
   total_price: number
   savings_balance: number

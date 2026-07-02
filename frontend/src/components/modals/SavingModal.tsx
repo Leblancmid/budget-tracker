@@ -3,6 +3,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
+import { formatCurrency } from '@/utils/format'
 import type { Saving, SavingModeOfPayment, SavingTransfer } from '@/types'
 import type { SavingPayload } from '@/api/master'
 
@@ -11,6 +12,8 @@ interface SavingModalProps {
   onClose: () => void
   onSubmit: (data: SavingPayload) => Promise<void>
   saving?: Saving | null
+  dailyBalance?: number
+  businessBalance?: number
 }
 
 const EMPTY = (): SavingPayload => ({
@@ -28,12 +31,8 @@ const MODE_OPTIONS: { value: SavingModeOfPayment; label: string }[] = [
   { value: 'GCASH',    label: 'GCash'    },
 ]
 
-const TRANSFER_OPTIONS: { value: SavingTransfer; label: string }[] = [
-  { value: 'daily_expenses', label: 'Daily Expenses' },
-  { value: 'business',       label: 'Business'       },
-]
 
-export function SavingModal({ open, onClose, onSubmit, saving }: SavingModalProps) {
+export function SavingModal({ open, onClose, onSubmit, saving, dailyBalance, businessBalance }: SavingModalProps) {
   const [form, setForm]     = useState<SavingPayload>(EMPTY())
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({})
   const [loading, setLoading] = useState(false)
@@ -111,13 +110,37 @@ export function SavingModal({ open, onClose, onSubmit, saving }: SavingModalProp
           options={MODE_OPTIONS}
         />
 
-        <Select
-          label="Transfer (optional)"
-          placeholder="None"
-          value={form.transfer ?? ''}
-          onChange={(e) => set('transfer', (e.target.value as SavingTransfer) || null)}
-          options={TRANSFER_OPTIONS}
-        />
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Transfer (optional)</span>
+          <div className="flex gap-2">
+            {([
+              { value: 'daily_expenses' as SavingTransfer, label: 'Daily Expenses', balance: dailyBalance },
+              { value: 'business'       as SavingTransfer, label: 'Business',       balance: businessBalance },
+            ]).map(({ value, label, balance }) => {
+              const active = form.transfer === value
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => set('transfer', active ? null : value)}
+                  className={[
+                    'flex-1 rounded-lg border px-3 py-2 text-left transition-colors',
+                    active
+                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 dark:border-indigo-600'
+                      : 'border-gray-200 bg-white hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700',
+                  ].join(' ')}
+                >
+                  <p className={['text-xs font-semibold', active ? 'text-indigo-700 dark:text-indigo-300' : 'text-gray-700 dark:text-gray-300'].join(' ')}>
+                    {label}
+                  </p>
+                  <p className={['text-[11px] mt-0.5', active ? 'text-indigo-500 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-500'].join(' ')}>
+                    {balance !== undefined ? formatCurrency(balance) : '—'}
+                  </p>
+                </button>
+              )
+            })}
+          </div>
+        </div>
 
         <Input
           label="Amount"

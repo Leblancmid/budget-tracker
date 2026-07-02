@@ -33,12 +33,25 @@ class MasterDashboardController extends Controller
         $savingsWithdraw = (float) Saving::where('type', 'withdraw')->sum('amount');
         $savingsBalance  = $savingsDeposit - $savingsWithdraw;
 
+        // Savings ↔ Daily Expenses transfers
+        $savingsToDaily = (float) Saving::where('type', 'withdraw')->where('transfer', 'daily_expenses')->sum('amount');
+        $dailyToSavings = (float) Saving::where('type', 'deposit')->where('transfer', 'daily_expenses')->sum('amount');
+
+        // Savings ↔ Business transfers
+        $savingsToBusiness = (float) Saving::where('type', 'withdraw')->where('transfer', 'business')->sum('amount');
+        $businessToSavings = (float) Saving::where('type', 'deposit')->where('transfer', 'business')->sum('amount');
+
+        $adjustedDailyBalance    = $dailyBalance   + $savingsToDaily   - $dailyToSavings;
+        $adjustedBusinessBalance = $businessProfit + $savingsToBusiness - $businessToSavings;
+
         return response()->json([
-            'overall_profit'  => $businessProfit + $dailyBalance,
-            'overall_balance' => $businessProfit + $dailyBalance,
-            'gold_stash'      => $manualGold,
-            'total_price'     => $totalPrice,
-            'savings_balance' => $savingsBalance,
+            'overall_profit'   => $adjustedBusinessBalance + $adjustedDailyBalance,
+            'overall_balance'  => $adjustedBusinessBalance + $adjustedDailyBalance,
+            'daily_balance'    => $adjustedDailyBalance,
+            'business_balance' => $adjustedBusinessBalance,
+            'gold_stash'       => $manualGold,
+            'total_price'      => $totalPrice,
+            'savings_balance'  => $savingsBalance,
         ]);
     }
 }

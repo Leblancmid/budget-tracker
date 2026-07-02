@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Plus, Search, Filter, Pencil, Trash2, PiggyBank, ArrowDownCircle, ArrowUpCircle } from 'lucide-react'
 import { useSavings } from '@/hooks/useSavings'
+import { useMasterDashboard } from '@/hooks/useMasterDashboard'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
@@ -42,6 +43,7 @@ const EMPTY_FILTERS = {
 
 export default function Savings() {
   const { savings, loading, create, update, remove } = useSavings()
+  const { stats: masterStats } = useMasterDashboard()
 
   const [filters, setFilters] = useState(EMPTY_FILTERS)
   const [page, setPage]       = useState(1)
@@ -264,6 +266,8 @@ export default function Savings() {
         onClose={() => setModalOpen(false)}
         onSubmit={handleSubmit}
         saving={editTarget}
+        dailyBalance={masterStats?.daily_balance}
+        businessBalance={masterStats?.business_balance}
       />
 
       <ConfirmDialog

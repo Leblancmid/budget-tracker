@@ -13,13 +13,13 @@ class RucoyDashboardController extends Controller
     public function index(): JsonResponse
     {
         $manualGold = (float) Gold::sum('amount');
-        $kksGold    = (float) Trade::where('status', 'kks')->sum('amount');
+        $kksGold    = (float) Trade::where('status', 'kks')->whereNull('archived_at')->sum('amount');
 
         return response()->json([
             'total_gold'    => $manualGold + $kksGold,
             'manual_gold'   => $manualGold,
             'kks_gold'      => $kksGold,
-            'trade_count'   => Trade::count(),
+            'trade_count'   => Trade::whereNull('archived_at')->count(),
             'account_count' => RucoyAccount::count(),
         ]);
     }

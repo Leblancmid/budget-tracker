@@ -106,9 +106,9 @@ export default function GoldCalculator() {
   const [gold, setGold] = useState('')
 
   const [configs, setConfigs] = useState<CurrencyConfig[]>([
-    { symbol: '₱', label: 'Philippine Peso', divisor: '10000000', multiplier: '9.5',  operation: 'divide'   as const, color: 'text-blue-600 dark:text-blue-400',    resultColor: 'text-blue-700 dark:text-blue-400'    },
-    { symbol: '$', label: 'US Dollar',        divisor: '1000000000', multiplier: '0.18', operation: 'multiply' as const, color: 'text-emerald-600 dark:text-emerald-400', resultColor: 'text-emerald-700 dark:text-emerald-400' },
-    { symbol: '€', label: 'Euro',             divisor: '1000000000', multiplier: '0.17', operation: 'multiply' as const, color: 'text-indigo-600 dark:text-indigo-400',  resultColor: 'text-indigo-700 dark:text-indigo-400'  },
+    { symbol: '₱', label: 'Philippine Peso', divisor: '10000', multiplier: '9.5',  operation: 'divide'   as const, color: 'text-blue-600 dark:text-blue-400',    resultColor: 'text-blue-700 dark:text-blue-400'    },
+    { symbol: '$', label: 'US Dollar',        divisor: '1000000', multiplier: '0.18', operation: 'multiply' as const, color: 'text-emerald-600 dark:text-emerald-400', resultColor: 'text-emerald-700 dark:text-emerald-400' },
+    { symbol: '€', label: 'Euro',             divisor: '1000000', multiplier: '0.17', operation: 'multiply' as const, color: 'text-indigo-600 dark:text-indigo-400',  resultColor: 'text-indigo-700 dark:text-indigo-400'  },
   ])
 
   const goldNum = useMemo(() => {

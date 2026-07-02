@@ -38,10 +38,13 @@ export const goldLogsApi = {
 
 export const tradesApi = {
   getAll: () => api.get<Trade[]>('/rucoy/trades').then((r) => r.data),
+  getArchived: () => api.get<Trade[]>('/rucoy/trades/archived').then((r) => r.data),
   create: (data: TradePayload) =>
     api.post<Trade>('/rucoy/trades', data).then((r) => r.data),
   update: (id: number, data: TradePayload) =>
     api.put<Trade>(`/rucoy/trades/${id}`, data).then((r) => r.data),
+  archive: (id: number) =>
+    api.post<Trade>(`/rucoy/trades/${id}/archive`).then((r) => r.data),
   delete: (id: number) =>
     api.delete<{ message: string }>(`/rucoy/trades/${id}`).then((r) => r.data),
 }

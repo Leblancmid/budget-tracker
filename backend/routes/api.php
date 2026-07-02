@@ -26,6 +26,8 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('golds', GoldController::class)->except(['show', 'create', 'edit']);
         Route::post('golds/sell', [GoldController::class, 'sell']);
         Route::get('gold-logs', [GoldController::class, 'logs']);
+        Route::get('trades/archived', [TradeController::class, 'archived']);
+        Route::post('trades/{trade}/archive', [TradeController::class, 'archive']);
         Route::apiResource('trades', TradeController::class)->except(['show', 'create', 'edit']);
         Route::apiResource('accounts', RucoyAccountController::class)
             ->except(['show', 'create', 'edit'])

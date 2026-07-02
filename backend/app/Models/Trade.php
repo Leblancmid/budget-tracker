@@ -24,6 +24,7 @@ class Trade extends Model
     protected $casts = [
         'amount'          => 'decimal:2',
         'completion_date' => 'date:Y-m-d',
+        'archived_at'     => 'datetime',
     ];
 
     public function gold(): BelongsTo

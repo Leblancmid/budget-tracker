@@ -116,6 +116,7 @@ export interface Trade {
   currency: TradeCurrency | null
   payment_method: TradePaymentMethod | null
   completion_date: string | null
+  archived_at: string | null
   created_at: string
   updated_at: string
 }

@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react'
-import { Plus, Pencil, Trash2, ArrowLeftRight, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Coins, Search } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Plus, Pencil, Trash2, ArrowLeftRight, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Coins, Search, Check, Archive } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { TradeModal } from '@/components/modals/TradeModal'
 import { useTrades } from '@/hooks/useTrades'
+import { tradesApi } from '@/api/rucoy'
 import { toast } from '@/components/ui/Toast'
 import { formatCurrency } from '@/utils/format'
 import type { TradePayload } from '@/api/rucoy'
@@ -46,7 +47,7 @@ function StatusPill({ status }: { status: TradeStatus }) {
 }
 
 export default function Trades() {
-  const { trades, loading, error, create, update, remove } = useTrades()
+  const { trades, loading, error, create, update, archive, remove } = useTrades()
 
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<'all' | 'kks' | 'cash'>('all')
@@ -56,6 +57,32 @@ export default function Trades() {
   const [editing, setEditing] = useState<Trade | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Trade | null>(null)
   const [deleting, setDeleting] = useState(false)
+
+  const [showArchive, setShowArchive] = useState(false)
+  const [archivedTrades, setArchivedTrades] = useState<Trade[]>([])
+  const [archiveLoading, setArchiveLoading] = useState(false)
+  const [archiving, setArchiving] = useState<number | null>(null)
+
+  const fetchArchived = useCallback(async () => {
+    setArchiveLoading(true)
+    try { setArchivedTrades(await tradesApi.getArchived()) }
+    finally { setArchiveLoading(false) }
+  }, [])
+
+  useEffect(() => { if (showArchive) fetchArchived() }, [showArchive, fetchArchived])
+
+  const handleArchive = async (t: Trade) => {
+    setArchiving(t.id)
+    try {
+      await archive(t.id)
+      toast.success('Trade archived.')
+      if (showArchive) fetchArchived()
+    } catch {
+      toast.error('Failed to archive trade.')
+    } finally {
+      setArchiving(null)
+    }
+  }
 
   const totalKksGold = useMemo(() =>
     trades.filter((t) => t.status === 'kks').reduce((sum, t) => sum + Number(t.amount), 0),
@@ -160,6 +187,18 @@ export default function Trades() {
             <option value="kks">KKS</option>
             <option value="cash">CASH</option>
           </select>
+          <button
+            onClick={() => setShowArchive((v) => !v)}
+            className={[
+              'flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors',
+              showArchive
+                ? 'border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-600 dark:bg-amber-900/20 dark:text-amber-400'
+                : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700',
+            ].join(' ')}
+          >
+            <Archive size={14} />
+            Archive
+          </button>
           <Button onClick={openCreate}>
             <Plus size={16} className="mr-1" /> New Trade
           </Button>
@@ -234,6 +273,14 @@ export default function Trades() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => handleArchive(t)}
+                            disabled={archiving === t.id}
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 disabled:opacity-40 transition-colors"
+                            title="Mark as done"
+                          >
+                            <Check size={15} />
+                          </button>
                           <button onClick={() => openEdit(t)} className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
                             <Pencil size={15} />
                           </button>
@@ -289,6 +336,49 @@ export default function Trades() {
             </div>
           )}
         </>
+      )}
+
+      {showArchive && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Archive size={15} className="text-amber-500" />
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Archived Trades</h2>
+          </div>
+          {archiveLoading && <p className="text-center text-sm text-gray-400 py-6">Loading…</p>}
+          {!archiveLoading && archivedTrades.length === 0 && (
+            <p className="text-center text-sm text-gray-400 py-6">No archived trades yet.</p>
+          )}
+          {!archiveLoading && archivedTrades.length > 0 && (
+            <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 opacity-80">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">#</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Description</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Type</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Payment</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Amount</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Done</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-900">
+                  {archivedTrades.map((t, i) => (
+                    <tr key={t.id} className="text-gray-400 dark:text-gray-500">
+                      <td className="px-4 py-3 font-mono">{i + 1}</td>
+                      <td className="px-4 py-3 max-w-[180px] truncate">
+                        {t.description || <span className="italic">—</span>}
+                      </td>
+                      <td className="px-4 py-3 text-center"><StatusPill status={t.status} /></td>
+                      <td className="px-4 py-3 capitalize">{t.payment_method || <span className="italic">—</span>}</td>
+                      <td className="px-4 py-3 text-right font-semibold whitespace-nowrap">{formatAmount(t)}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">{formatDate(t.completion_date)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       )}
 
       <TradeModal

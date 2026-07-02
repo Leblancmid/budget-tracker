@@ -33,10 +33,15 @@ export function useTrades() {
     return trade
   }
 
+  const archive = async (id: number) => {
+    await tradesApi.archive(id)
+    setTrades((prev) => prev.filter((t) => t.id !== id))
+  }
+
   const remove = async (id: number) => {
     await tradesApi.delete(id)
     setTrades((prev) => prev.filter((t) => t.id !== id))
   }
 
-  return { trades, loading, error, refetch: fetch, create, update, remove }
+  return { trades, loading, error, refetch: fetch, create, update, archive, remove }
 }

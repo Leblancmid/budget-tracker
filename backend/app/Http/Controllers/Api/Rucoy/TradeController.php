@@ -12,7 +12,12 @@ class TradeController extends Controller
 {
     public function index(): JsonResponse
     {
-        return response()->json(Trade::latest()->get());
+        return response()->json(Trade::whereNull('archived_at')->latest()->get());
+    }
+
+    public function archived(): JsonResponse
+    {
+        return response()->json(Trade::whereNotNull('archived_at')->latest('archived_at')->get());
     }
 
     public function store(StoreTradeRequest $request): JsonResponse
@@ -25,6 +30,14 @@ class TradeController extends Controller
     public function update(UpdateTradeRequest $request, Trade $trade): JsonResponse
     {
         $trade->update($request->validated());
+
+        return response()->json($trade->fresh());
+    }
+
+    public function archive(Trade $trade): JsonResponse
+    {
+        $trade->archived_at = now();
+        $trade->save();
 
         return response()->json($trade->fresh());
     }

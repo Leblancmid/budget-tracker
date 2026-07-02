@@ -16,12 +16,22 @@ class BusinessDashboardController extends Controller
         $month = $request->integer('month', now()->month);
         $year  = $request->integer('year', now()->year);
 
-        $income = (float) BusinessTransaction::where('action', 'sell')
+        $income = (float) BusinessTransaction::where(function ($q) {
+                $q->where('action', 'sell')
+                  ->orWhere(function ($q2) {
+                      $q2->whereNull('action')->where('type', '!=', 'expense');
+                  });
+            })
             ->whereMonth('date', $month)
             ->whereYear('date', $year)
             ->sum('amount');
 
-        $expense = (float) BusinessTransaction::where('action', 'buy')
+        $expense = (float) BusinessTransaction::where(function ($q) {
+                $q->where('action', 'buy')
+                  ->orWhere(function ($q2) {
+                      $q2->whereNull('action')->where('type', 'expense');
+                  });
+            })
             ->whereMonth('date', $month)
             ->whereYear('date', $year)
             ->sum('amount');
@@ -33,7 +43,10 @@ class BusinessDashboardController extends Controller
 
         $expenseByType = BusinessTransaction::select('type', DB::raw('SUM(amount) as total'))
             ->where(function ($q) {
-                $q->where('action', 'buy')->orWhere('type', 'expense');
+                $q->where('action', 'buy')
+                  ->orWhere(function ($q2) {
+                      $q2->whereNull('action')->where('type', 'expense');
+                  });
             })
             ->whereMonth('date', $month)
             ->whereYear('date', $year)
@@ -41,14 +54,15 @@ class BusinessDashboardController extends Controller
             ->orderByDesc('total')
             ->get();
 
+        $incomeExpr  = "CASE WHEN action = 'sell' OR (action IS NULL AND type != 'expense') THEN 'income' ELSE 'expense' END";
         $monthlyTrend = BusinessTransaction::select(
                 DB::raw('MONTH(date) as month'),
                 DB::raw('YEAR(date) as year'),
-                DB::raw("CASE WHEN type = 'expense' THEN 'expense' ELSE 'income' END as type"),
+                DB::raw("$incomeExpr as type"),
                 DB::raw('SUM(amount) as total')
             )
             ->whereYear('date', $year)
-            ->groupBy('year', 'month', DB::raw("CASE WHEN type = 'expense' THEN 'expense' ELSE 'income' END"))
+            ->groupBy('year', 'month', DB::raw($incomeExpr))
             ->orderBy('month')
             ->get();
 

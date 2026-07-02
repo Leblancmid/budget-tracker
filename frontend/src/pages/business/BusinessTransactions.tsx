@@ -93,7 +93,7 @@ export default function BusinessTransactions() {
   }
 
   const totalIncome  = useMemo(() => transactions.filter(tx => tx.action === 'sell' || (tx.type !== 'expense' && tx.action === null)).reduce((s, tx) => s + parseFloat(tx.amount), 0), [transactions])
-  const totalExpense = useMemo(() => transactions.filter(tx => tx.action === 'buy' || tx.type === 'expense').reduce((s, tx) => s + parseFloat(tx.amount), 0), [transactions])
+  const totalExpense = useMemo(() => transactions.filter(tx => tx.action === 'buy' || (tx.action === null && tx.type === 'expense')).reduce((s, tx) => s + parseFloat(tx.amount), 0), [transactions])
   const balance      = masterStats?.business_balance ?? 0
 
   const openEdit = (tx: BusinessTransaction) => { setEditTarget(tx); setModalOpen(true) }

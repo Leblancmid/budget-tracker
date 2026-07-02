@@ -15,9 +15,17 @@ class MasterDashboardController extends Controller
     public function index(): JsonResponse
     {
         // Business
-        $businessIncome  = (float) BusinessTransaction::where('action', 'sell')->sum('amount');
+        $businessIncome  = (float) BusinessTransaction::where(function ($q) {
+            $q->where('action', 'sell')
+               ->orWhere(function ($q2) {
+                   $q2->whereNull('action')->where('type', '!=', 'expense');
+               });
+        })->sum('amount');
         $businessExpense = (float) BusinessTransaction::where(function ($q) {
-            $q->where('type', 'expense')->orWhere('action', 'buy');
+            $q->where('action', 'buy')
+               ->orWhere(function ($q2) {
+                   $q2->whereNull('action')->where('type', 'expense');
+               });
         })->sum('amount');
         $businessProfit  = $businessIncome - $businessExpense;
 

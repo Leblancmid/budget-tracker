@@ -32,7 +32,7 @@ function NumInput({ value, onChange }: { value: string; onChange: (v: string) =>
     <input
       type="text"
       inputMode="decimal"
-      value={value}
+      value={formatWithCommas(value)}
       onChange={(e) => {
         const stripped = e.target.value.replace(/,/g, '')
         if (stripped === '' || /^\d*\.?\d*$/.test(stripped)) onChange(stripped)
@@ -47,6 +47,7 @@ interface CurrencyConfig {
   label: string
   divisor: string
   multiplier: string
+  operation: 'multiply' | 'divide'
   color: string
   resultColor: string
 }
@@ -54,21 +55,25 @@ interface CurrencyConfig {
 function CurrencyCard({
   config,
   goldNum,
-  onDivisorChange,
   onMultiplierChange,
 }: {
   config: CurrencyConfig
   goldNum: number | null
-  onDivisorChange: (v: string) => void
   onMultiplierChange: (v: string) => void
 }) {
   const result = useMemo(() => {
     if (goldNum === null) return null
     const d = parseFloat(config.divisor)
     const m = parseFloat(config.multiplier)
-    if (isNaN(d) || isNaN(m) || d === 0) return null
-    return (goldNum / d) * m
-  }, [goldNum, config.divisor, config.multiplier])
+    if (isNaN(d) || isNaN(m) || d === 0 || m === 0) return null
+    return config.operation === 'divide'
+      ? (goldNum / d) / m
+      : (goldNum / d) * m
+  }, [goldNum, config.divisor, config.multiplier, config.operation])
+
+  const formulaLabel = config.operation === 'divide'
+    ? 'gold ÷ div ÷ rate'
+    : 'gold ÷ div × rate'
 
   const formatted = result === null
     ? '—'
@@ -78,20 +83,14 @@ function CurrencyCard({
     <Card className="flex flex-col gap-4 p-5">
       <div className="flex items-center justify-between">
         <p className={`text-xs font-semibold uppercase tracking-wide ${config.color}`}>{config.label}</p>
-        <span className={`text-xs font-mono text-gray-400 dark:text-gray-500`}>
-          gold ÷ div × rate
+        <span className="text-xs font-mono text-gray-400 dark:text-gray-500">
+          {formulaLabel}
         </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Divisor</p>
-          <NumInput value={config.divisor} onChange={onDivisorChange} />
-        </div>
-        <div>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Rate ({config.symbol})</p>
-          <NumInput value={config.multiplier} onChange={onMultiplierChange} />
-        </div>
+      <div>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Rate ({config.symbol})</p>
+        <NumInput value={config.multiplier} onChange={onMultiplierChange} />
       </div>
 
       <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
@@ -107,9 +106,9 @@ export default function GoldCalculator() {
   const [gold, setGold] = useState('')
 
   const [configs, setConfigs] = useState<CurrencyConfig[]>([
-    { symbol: '₱', label: 'Philippine Peso', divisor: '95000000', multiplier: '10',   color: 'text-blue-600 dark:text-blue-400',    resultColor: 'text-blue-700 dark:text-blue-400'    },
-    { symbol: '$', label: 'US Dollar',        divisor: '1000000000', multiplier: '0.18', color: 'text-emerald-600 dark:text-emerald-400', resultColor: 'text-emerald-700 dark:text-emerald-400' },
-    { symbol: '€', label: 'Euro',             divisor: '1000000000', multiplier: '0.17', color: 'text-indigo-600 dark:text-indigo-400',  resultColor: 'text-indigo-700 dark:text-indigo-400'  },
+    { symbol: '₱', label: 'Philippine Peso', divisor: '10000000', multiplier: '9.5',  operation: 'divide'   as const, color: 'text-blue-600 dark:text-blue-400',    resultColor: 'text-blue-700 dark:text-blue-400'    },
+    { symbol: '$', label: 'US Dollar',        divisor: '1000000000', multiplier: '0.18', operation: 'multiply' as const, color: 'text-emerald-600 dark:text-emerald-400', resultColor: 'text-emerald-700 dark:text-emerald-400' },
+    { symbol: '€', label: 'Euro',             divisor: '1000000000', multiplier: '0.17', operation: 'multiply' as const, color: 'text-indigo-600 dark:text-indigo-400',  resultColor: 'text-indigo-700 dark:text-indigo-400'  },
   ])
 
   const goldNum = useMemo(() => {
@@ -159,7 +158,6 @@ export default function GoldCalculator() {
             key={cfg.symbol}
             config={cfg}
             goldNum={goldNum}
-            onDivisorChange={(v) => updateConfig(i, 'divisor', v)}
             onMultiplierChange={(v) => updateConfig(i, 'multiplier', v)}
           />
         ))}

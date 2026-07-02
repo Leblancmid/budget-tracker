@@ -38,12 +38,9 @@ class MasterDashboardController extends Controller
 
         return response()->json([
             'overall_profit'  => $businessProfit + $dailyBalance,
-            'overall_balance' => $businessProfit + $dailyBalance + $savingsBalance,
-            'gold_stash'      => $totalGold,
+            'overall_balance' => $businessProfit + $dailyBalance,
+            'gold_stash'      => $manualGold,
             'total_price'     => $totalPrice,
-            // breakdown
-            'business_profit' => $businessProfit,
-            'daily_balance'   => $dailyBalance,
             'savings_balance' => $savingsBalance,
         ]);
     }

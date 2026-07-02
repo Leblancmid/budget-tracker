@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import type { Category, Transaction } from '@/types'
+import { formatWithCommas } from '@/utils/format'
 
 interface TransactionModalProps {
   open: boolean
@@ -33,24 +34,21 @@ const EMPTY: TransactionFormData = {
 
 export function TransactionModal({ open, onClose, onSubmit, categories, transaction }: TransactionModalProps) {
   const [form, setForm] = useState<TransactionFormData>(EMPTY)
+  const [amountStr, setAmountStr] = useState('')
   const [errors, setErrors] = useState<Partial<Record<keyof TransactionFormData, string>>>({})
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (open) {
       setErrors({})
-      setForm(
-        transaction
-          ? {
-              category_id: transaction.category_id,
-              type: transaction.type,
-              amount: parseFloat(transaction.amount),
-              description: transaction.description ?? '',
-              date: transaction.date,
-              notes: transaction.notes ?? '',
-            }
-          : EMPTY
-      )
+      if (transaction) {
+        const amt = parseFloat(transaction.amount)
+        setAmountStr(String(amt))
+        setForm({ category_id: transaction.category_id, type: transaction.type, amount: amt, description: transaction.description ?? '', date: transaction.date, notes: transaction.notes ?? '' })
+      } else {
+        setAmountStr('')
+        setForm(EMPTY)
+      }
     }
   }, [open, transaction])
 
@@ -118,11 +116,16 @@ export function TransactionModal({ open, onClose, onSubmit, categories, transact
 
         <Input
           label="Amount"
-          type="number"
-          min="0.01"
-          step="0.01"
-          value={form.amount || ''}
-          onChange={(e) => set('amount', parseFloat(e.target.value) || 0)}
+          type="text"
+          inputMode="decimal"
+          value={formatWithCommas(amountStr)}
+          onChange={(e) => {
+            const stripped = e.target.value.replace(/,/g, '')
+            if (stripped === '' || /^\d*\.?\d*$/.test(stripped)) {
+              setAmountStr(stripped)
+              set('amount', parseFloat(stripped) || 0)
+            }
+          }}
           error={errors.amount}
           placeholder="0.00"
         />

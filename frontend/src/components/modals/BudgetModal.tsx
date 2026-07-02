@@ -3,7 +3,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
-import { MONTHS } from '@/utils/format'
+import { MONTHS, formatWithCommas } from '@/utils/format'
 import type { Budget, Category } from '@/types'
 
 interface BudgetModalProps {
@@ -25,6 +25,7 @@ export interface BudgetFormData {
 
 export function BudgetModal({ open, onClose, onSubmit, categories, budget, currentMonth, currentYear }: BudgetModalProps) {
   const [form, setForm] = useState<BudgetFormData>({ category_id: 0, amount: 0, month: currentMonth, year: currentYear })
+  const [amountStr, setAmountStr] = useState('')
   const [errors, setErrors] = useState<Partial<Record<keyof BudgetFormData, string>>>({})
   const [loading, setLoading] = useState(false)
 
@@ -33,11 +34,14 @@ export function BudgetModal({ open, onClose, onSubmit, categories, budget, curre
   useEffect(() => {
     if (open) {
       setErrors({})
-      setForm(
-        budget
-          ? { category_id: budget.category_id, amount: parseFloat(budget.amount), month: budget.month, year: budget.year }
-          : { category_id: 0, amount: 0, month: currentMonth, year: currentYear }
-      )
+      if (budget) {
+        const amt = parseFloat(budget.amount)
+        setAmountStr(String(amt))
+        setForm({ category_id: budget.category_id, amount: amt, month: budget.month, year: budget.year })
+      } else {
+        setAmountStr('')
+        setForm({ category_id: 0, amount: 0, month: currentMonth, year: currentYear })
+      }
     }
   }, [open, budget, currentMonth, currentYear])
 
@@ -95,11 +99,16 @@ export function BudgetModal({ open, onClose, onSubmit, categories, budget, curre
 
         <Input
           label="Budget Amount"
-          type="number"
-          min="0.01"
-          step="0.01"
-          value={form.amount || ''}
-          onChange={(e) => set('amount', parseFloat(e.target.value) || 0)}
+          type="text"
+          inputMode="decimal"
+          value={formatWithCommas(amountStr)}
+          onChange={(e) => {
+            const stripped = e.target.value.replace(/,/g, '')
+            if (stripped === '' || /^\d*\.?\d*$/.test(stripped)) {
+              setAmountStr(stripped)
+              set('amount', parseFloat(stripped) || 0)
+            }
+          }}
           error={errors.amount}
           placeholder="0.00"
         />

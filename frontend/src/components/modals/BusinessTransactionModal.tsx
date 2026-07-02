@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import type { BusinessTransaction, BusinessTransactionType, BusinessTransactionAction } from '@/types'
 import type { BusinessTransactionPayload } from '@/api/business'
+import { formatWithCommas } from '@/utils/format'
 
 interface BusinessTransactionModalProps {
   open: boolean
@@ -29,24 +30,21 @@ const EMPTY = (): BusinessTransactionPayload => ({
 
 export function BusinessTransactionModal({ open, onClose, onSubmit, transaction }: BusinessTransactionModalProps) {
   const [form, setForm]       = useState<BusinessTransactionPayload>(EMPTY())
+  const [amountStr, setAmountStr] = useState('')
   const [errors, setErrors]   = useState<Partial<Record<string, string>>>({})
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (open) {
       setErrors({})
-      setForm(
-        transaction
-          ? {
-              type:        transaction.type,
-              action:      transaction.action,
-              amount:      parseFloat(transaction.amount),
-              description: transaction.description ?? '',
-              date:        transaction.date,
-              notes:       '',
-            }
-          : EMPTY()
-      )
+      if (transaction) {
+        const amt = parseFloat(transaction.amount)
+        setAmountStr(String(amt))
+        setForm({ type: transaction.type, action: transaction.action, amount: amt, description: transaction.description ?? '', date: transaction.date, notes: '' })
+      } else {
+        setAmountStr('')
+        setForm(EMPTY())
+      }
     }
   }, [open, transaction])
 
@@ -134,11 +132,16 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction 
           <div className="flex-1">
             <Input
               label="Amount"
-              type="number"
-              min="0.01"
-              step="0.01"
-              value={form.amount || ''}
-              onChange={(e) => set('amount', parseFloat(e.target.value) || 0)}
+              type="text"
+              inputMode="decimal"
+              value={formatWithCommas(amountStr)}
+              onChange={(e) => {
+                const stripped = e.target.value.replace(/,/g, '')
+                if (stripped === '' || /^\d*\.?\d*$/.test(stripped)) {
+                  setAmountStr(stripped)
+                  set('amount', parseFloat(stripped) || 0)
+                }
+              }}
               error={errors.amount}
               placeholder="0.00"
             />

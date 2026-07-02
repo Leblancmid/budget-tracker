@@ -80,7 +80,7 @@ const SECTIONS = [
     variant: 'master' as SectionVariant,
     basePath: '/master',
     items: [
-      { to: '/master', label: 'Overall Dashboard', end: true },
+      { to: '/master', label: 'Dashboard', end: true },
       { to: '/master/savings', label: 'Savings', end: false },
     ],
   },

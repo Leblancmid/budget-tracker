@@ -32,9 +32,10 @@ export default function MasterDashboard() {
     if (!isNaN(n) && n > 0) { setPhpRate(n); localStorage.setItem(PHP_RATE_KEY, String(n)) }
   }
 
-  const totalCost   = (stats?.total_price ?? 0) / 1000
-  const usdAmount   = totalCost * usdRate
-  const phpAmount   = usdAmount * phpRate
+  const rawGold   = stats?.total_price ?? 0
+  const totalCost = rawGold / 1_000_000
+  const usdAmount = totalCost * usdRate
+  const phpAmount = usdAmount * phpRate
 
   return (
     <div className="flex flex-col gap-6">
@@ -80,7 +81,7 @@ export default function MasterDashboard() {
               <div className="min-w-0">
                 <p className="text-xs text-gray-500 font-medium dark:text-gray-400">Total Account Cost</p>
                 <p className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold mt-0.5">
-                  {(stats?.total_price ?? 0).toLocaleString()} G
+                  {rawGold.toLocaleString()} G
                 </p>
                 <p className="text-lg font-bold text-teal-700 dark:text-teal-400">
                   ₱{phpAmount.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}

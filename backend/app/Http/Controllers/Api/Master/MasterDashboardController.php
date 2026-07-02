@@ -7,7 +7,6 @@ use App\Models\BusinessTransaction;
 use App\Models\Gold;
 use App\Models\RucoyAccount;
 use App\Models\Saving;
-use App\Models\Trade;
 use App\Models\Transaction;
 use Illuminate\Http\JsonResponse;
 
@@ -27,9 +26,7 @@ class MasterDashboardController extends Controller
 
         // Rucoy
         $manualGold = (float) Gold::sum('amount');
-        $kksGold    = (float) Trade::where('status', 'kks')->whereNull('archived_at')->sum('amount');
-        $totalGold  = $manualGold + $kksGold;
-        $totalPrice = (float) RucoyAccount::whereNull('archived_at')->sum('price');
+        $totalPrice = (float) RucoyAccount::whereNull('archived_at')->sum('cost');
 
         // Savings
         $savingsDeposit  = (float) Saving::where('type', 'deposit')->sum('amount');

@@ -70,7 +70,7 @@ export default function MasterDashboard() {
                 <DollarSign className="h-5 w-5 text-teal-600 dark:text-teal-400" />
               </div>
               <div className="min-w-0">
-                <p className="text-xs text-gray-500 font-medium dark:text-gray-400">Total Account Price</p>
+                <p className="text-xs text-gray-500 font-medium dark:text-gray-400">Total Account Cost</p>
                 <p className="text-xl font-bold mt-0.5 text-teal-700 dark:text-teal-400">
                   {formatCurrency(converted)}
                 </p>

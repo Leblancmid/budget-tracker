@@ -1,3 +1,11 @@
+export function formatWithCommas(raw: string, allowDecimal = true): string {
+  if (!raw) return ''
+  const [integer, decimal] = raw.split('.')
+  const intFormatted = integer.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  if (!allowDecimal || decimal === undefined) return intFormatted
+  return `${intFormatted}.${decimal}`
+}
+
 export const formatCurrency = (value: number | string) =>
   new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(Number(value))
 

@@ -3,19 +3,13 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import type { Gold } from '@/types'
+import { formatWithCommas } from '@/utils/format'
 
 interface GoldModalProps {
   open: boolean
   onClose: () => void
   onSubmit: (data: { amount: number; description?: string }) => Promise<void>
   gold?: Gold | null
-}
-
-function formatWithCommas(raw: string): string {
-  if (!raw) return ''
-  const [integer, decimal] = raw.split('.')
-  const intFormatted = integer.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-  return decimal !== undefined ? `${intFormatted}.${decimal}` : intFormatted
 }
 
 function handleAmountInput(value: string, setter: (v: string) => void) {

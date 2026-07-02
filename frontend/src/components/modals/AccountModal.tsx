@@ -5,13 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import type { AccountPayload } from '@/api/rucoy'
 import type { RucoyAccount } from '@/types'
-
-function formatWithCommas(raw: string): string {
-  if (!raw) return ''
-  const [integer, decimal] = raw.split('.')
-  const intFormatted = integer.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-  return decimal !== undefined ? `${intFormatted}.${decimal}` : intFormatted
-}
+import { formatWithCommas } from '@/utils/format'
 
 function handleNumberInput(value: string, setter: (v: string) => void) {
   const stripped = value.replace(/,/g, '')

@@ -2,14 +2,7 @@ import { useState, useMemo } from 'react'
 import { Calculator, RefreshCw } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { useGolds } from '@/hooks/useGolds'
-
-function formatWithCommas(raw: string): string {
-  if (!raw) return ''
-  const [integer, decimal] = raw.split('.')
-  return decimal !== undefined
-    ? `${integer.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${decimal}`
-    : integer.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-}
+import { formatWithCommas } from '@/utils/format'
 
 function GoldInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (

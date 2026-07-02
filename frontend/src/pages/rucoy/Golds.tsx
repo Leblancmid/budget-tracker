@@ -8,14 +8,7 @@ import { useGolds } from '@/hooks/useGolds'
 import { useGoldLogs } from '@/hooks/useGoldLogs'
 import { goldsApi } from '@/api/rucoy'
 import { toast } from '@/components/ui/Toast'
-
-function formatWithCommas(raw: string): string {
-  if (!raw) return ''
-  const [integer, decimal] = raw.split('.')
-  return decimal !== undefined
-    ? `${integer.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${decimal}`
-    : integer.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-}
+import { formatWithCommas } from '@/utils/format'
 
 function formatDate(iso: string): string {
   const [year, month, day] = iso.split('T')[0].split('-').map(Number)

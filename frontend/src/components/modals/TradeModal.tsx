@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import type { TradePayload } from '@/api/rucoy'
 import type { Trade, TradeCurrency, TradePaymentMethod, TradeStatus } from '@/types'
+import { formatWithCommas } from '@/utils/format'
 
 interface TradeModalProps {
   open: boolean
@@ -41,13 +42,6 @@ const EMPTY: TradeForm = {
   completion_date: '',
 }
 
-function formatWithCommas(raw: string, allowDecimal: boolean): string {
-  if (!raw) return ''
-  const [integer, decimal] = raw.split('.')
-  const intFormatted = integer.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-  if (!allowDecimal || decimal === undefined) return intFormatted
-  return `${intFormatted}.${decimal}`
-}
 
 function handleAmountInput(
   value: string,

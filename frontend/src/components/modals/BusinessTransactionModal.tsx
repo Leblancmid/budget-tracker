@@ -12,6 +12,7 @@ interface BusinessTransactionModalProps {
   onClose: () => void
   onSubmit: (data: BusinessTransactionPayload) => Promise<void>
   transaction?: BusinessTransaction | null
+  defaultAction?: BusinessTransactionAction | null
 }
 
 const TYPE_BUTTONS: { value: BusinessTransactionType; label: string }[] = [
@@ -29,7 +30,7 @@ const EMPTY = (): BusinessTransactionPayload => ({
   notes:       '',
 })
 
-export function BusinessTransactionModal({ open, onClose, onSubmit, transaction }: BusinessTransactionModalProps) {
+export function BusinessTransactionModal({ open, onClose, onSubmit, transaction, defaultAction }: BusinessTransactionModalProps) {
   const [form, setForm]       = useState<BusinessTransactionPayload>(EMPTY())
   const [amountStr, setAmountStr] = useState('')
   const [errors, setErrors]   = useState<Partial<Record<string, string>>>({})
@@ -44,7 +45,7 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction 
         setForm({ type: transaction.type, action: transaction.action, amount: amt, description: transaction.description ?? '', date: transaction.date, notes: '' })
       } else {
         setAmountStr('')
-        setForm(EMPTY())
+        setForm({ ...EMPTY(), action: defaultAction ?? null })
       }
     }
   }, [open, transaction])
@@ -88,18 +89,18 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction 
 
         {/* Action — Buy / Sell */}
         <div className="flex gap-2">
-          {(['buy', 'sell'] as BusinessTransactionAction[]).map((action) => (
+          {(defaultAction ? [defaultAction] : ['buy', 'sell'] as BusinessTransactionAction[]).map((action) => (
             <button
               key={action}
               type="button"
-              onClick={() => handleActionToggle(action)}
+              onClick={() => !defaultAction && handleActionToggle(action)}
+              disabled={!!defaultAction}
               className={[
                 'flex-1 rounded-lg border py-2 text-sm font-medium transition-colors',
-                form.action === action
-                  ? action === 'buy'
-                    ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400 dark:border-red-700'
-                    : 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-700'
-                  : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
+                action === 'buy'
+                  ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400 dark:border-red-700'
+                  : 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-700',
+                defaultAction ? 'cursor-default' : '',
               ].join(' ')}
             >
               {action === 'buy' ? '− Buy' : '+ Sell'}

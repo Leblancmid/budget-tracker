@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Plus, Search, Filter, Pencil, Trash2, Briefcase, TrendingUp, TrendingDown } from 'lucide-react'
+import { Plus, Minus, Search, Filter, Pencil, Trash2, Briefcase, TrendingUp, TrendingDown } from 'lucide-react'
 import { useBusinessTransactions } from '@/hooks/useBusinessTransactions'
 import { useMasterDashboard } from '@/hooks/useMasterDashboard'
 import { Button } from '@/components/ui/Button'
@@ -12,7 +12,7 @@ import { BusinessTransactionModal } from '@/components/modals/BusinessTransactio
 import { toast } from '@/components/ui/Toast'
 import { formatCurrency, formatDate } from '@/utils/format'
 import { isBusinessIncome } from '@/utils/business'
-import type { BusinessTransaction, BusinessTransactionType } from '@/types'
+import type { BusinessTransaction, BusinessTransactionAction, BusinessTransactionType } from '@/types'
 import type { BusinessTransactionPayload } from '@/api/business'
 
 const TYPE_OPTIONS = [
@@ -35,10 +35,11 @@ export default function BusinessTransactions() {
 
   const [filters, setFilters] = useState(EMPTY_FILTERS)
   const [page, setPage]       = useState(1)
-  const [modalOpen, setModalOpen]       = useState(false)
-  const [editTarget, setEditTarget]     = useState<BusinessTransaction | null>(null)
-  const [deleteTarget, setDeleteTarget] = useState<BusinessTransaction | null>(null)
-  const [deleteLoading, setDeleteLoading] = useState(false)
+  const [modalOpen, setModalOpen]           = useState(false)
+  const [editTarget, setEditTarget]         = useState<BusinessTransaction | null>(null)
+  const [defaultAction, setDefaultAction]   = useState<BusinessTransactionAction | null>(null)
+  const [deleteTarget, setDeleteTarget]     = useState<BusinessTransaction | null>(null)
+  const [deleteLoading, setDeleteLoading]   = useState(false)
 
   const applyFilters = (patch: Partial<typeof filters>) => {
     setFilters((prev) => ({ ...prev, ...patch }))
@@ -98,7 +99,7 @@ export default function BusinessTransactions() {
   const balance      = masterStats?.business_balance ?? 0
 
   const openEdit = (tx: BusinessTransaction) => { setEditTarget(tx); setModalOpen(true) }
-  const openAdd  = () => { setEditTarget(null); setModalOpen(true) }
+  const openAdd  = (action: BusinessTransactionAction | null = null) => { setDefaultAction(action); setEditTarget(null); setModalOpen(true) }
 
   return (
     <div className="flex flex-col gap-5">
@@ -128,13 +129,22 @@ export default function BusinessTransactions() {
               </span>
             </div>
           </div>
-          <button
-            onClick={openAdd}
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/20 transition-colors"
-            title="Add Transaction"
-          >
-            <Plus className="h-5 w-5 text-white" />
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => openAdd('buy')}
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/20 transition-colors"
+              title="Add Expense"
+            >
+              <Minus className="h-5 w-5 text-white" />
+            </button>
+            <button
+              onClick={() => openAdd('sell')}
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/20 transition-colors"
+              title="Add Income"
+            >
+              <Plus className="h-5 w-5 text-white" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -181,7 +191,7 @@ export default function BusinessTransactions() {
         ) : filtered.length === 0 ? (
           <div className="py-16 text-center">
             <p className="text-sm text-gray-500 dark:text-gray-400">No transactions found.</p>
-            <Button className="mt-4" onClick={openAdd} icon={<Plus className="h-4 w-4" />}>Add your first</Button>
+            <Button className="mt-4" onClick={() => openAdd()} icon={<Plus className="h-4 w-4" />}>Add your first</Button>
           </div>
         ) : (
           <div className="overflow-x-auto scrollbar-thin">
@@ -249,6 +259,7 @@ export default function BusinessTransactions() {
         onClose={() => setModalOpen(false)}
         onSubmit={handleSubmit}
         transaction={editTarget}
+        defaultAction={defaultAction}
       />
 
       <ConfirmDialog

@@ -215,12 +215,7 @@ export default function Accounts() {
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-medium text-gray-800 dark:text-gray-100 truncate">{a.email}</p>
-                  <span className={['inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold', PAYMENT_STATUS_STYLES[a.payment_status].className].join(' ')}>
-                    {PAYMENT_STATUS_STYLES[a.payment_status].label}
-                  </span>
-                </div>
+                <p className="font-medium text-gray-800 dark:text-gray-100 truncate">{a.email}</p>
                 {a.description && (
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{a.description}</p>
                 )}
@@ -244,7 +239,9 @@ export default function Accounts() {
                     </span>
                   )}
                 </div>
-                <p className="text-xs font-mono text-gray-400 dark:text-gray-500 mt-1.5">#{a.id}</p>
+                <span className={['inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold mt-1.5', PAYMENT_STATUS_STYLES[a.payment_status].className].join(' ')}>
+                  {PAYMENT_STATUS_STYLES[a.payment_status].label}
+                </span>
               </div>
               <div className="flex gap-1 shrink-0">
                 <button

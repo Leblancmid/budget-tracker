@@ -50,7 +50,6 @@ export default function Golds() {
   const handleSell = async () => {
     const parsed = parseFloat(sellAmount)
     if (!sellAmount || isNaN(parsed) || parsed <= 0) { setSellError('Enter a valid amount.'); return }
-    if (parsed > totalGold) { setSellError(`Cannot sell more than ${totalGold.toLocaleString()} G.`); return }
     setSelling(true)
     try {
       await goldsApi.sell(parsed, sellDesc || undefined)
@@ -76,37 +75,47 @@ export default function Golds() {
       {error && <div className="text-red-500 text-center py-4">{error}</div>}
 
       {/* Current Gold banner */}
-      <div className="flex items-center justify-between gap-4 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 dark:border-amber-800/40 dark:bg-amber-900/10">
-        <div className="flex items-center gap-4">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-400/20 dark:bg-amber-500/20">
-            <Coins size={22} className="text-amber-600 dark:text-amber-400" />
+      {(() => {
+        const negative = !loading && totalGold < 0
+        return (
+          <div className={[
+            'flex items-center justify-between gap-4 rounded-xl border px-5 py-4',
+            negative
+              ? 'border-red-300 bg-red-50 dark:border-red-800/40 dark:bg-red-900/10'
+              : 'border-amber-200 bg-amber-50 dark:border-amber-800/40 dark:bg-amber-900/10',
+          ].join(' ')}>
+            <div className="flex items-center gap-4">
+              <div className={['flex h-11 w-11 shrink-0 items-center justify-center rounded-xl', negative ? 'bg-red-400/20 dark:bg-red-500/20' : 'bg-amber-400/20 dark:bg-amber-500/20'].join(' ')}>
+                <Coins size={22} className={negative ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400'} />
+              </div>
+              <div>
+                <p className={['text-xs font-medium uppercase tracking-wide', negative ? 'text-red-700 dark:text-red-500' : 'text-amber-700 dark:text-amber-500'].join(' ')}>Current Gold</p>
+                <p className={['text-2xl font-bold', negative ? 'text-red-600 dark:text-red-400' : 'text-amber-700 dark:text-amber-400'].join(' ')}>
+                  {loading ? '—' : `${totalGold.toLocaleString()} `}
+                  <span className="text-base font-semibold">G</span>
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setAddOpen(true)}
+                className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition-colors shadow-sm"
+                title="Add Gold"
+              >
+                <Plus size={18} />
+              </button>
+              <button
+                onClick={openSell}
+                disabled={loading}
+                className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-500 text-white hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm"
+                title="Sell Gold"
+              >
+                <Minus size={18} />
+              </button>
+            </div>
           </div>
-          <div>
-            <p className="text-xs font-medium text-amber-700 dark:text-amber-500 uppercase tracking-wide">Current Gold</p>
-            <p className="text-2xl font-bold text-amber-700 dark:text-amber-400">
-              {loading ? '—' : `${totalGold.toLocaleString()} `}
-              <span className="text-base font-semibold">G</span>
-            </p>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setAddOpen(true)}
-            className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition-colors shadow-sm"
-            title="Add Gold"
-          >
-            <Plus size={18} />
-          </button>
-          <button
-            onClick={openSell}
-            disabled={loading || totalGold === 0}
-            className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-500 text-white hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm"
-            title="Sell Gold"
-          >
-            <Minus size={18} />
-          </button>
-        </div>
-      </div>
+        )
+      })()}
 
       {/* Transaction History */}
       {logs.length > 0 && (
@@ -191,9 +200,19 @@ export default function Golds() {
 
       <Modal open={sellOpen} onClose={closeSell} title="Sell Gold" size="sm">
         <div className="flex flex-col gap-4">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Total available: <span className="font-semibold text-amber-600 dark:text-amber-400">{totalGold.toLocaleString()} G</span>
-          </p>
+          {(() => {
+            const parsed = parseFloat(sellAmount)
+            const remaining = sellAmount && !isNaN(parsed) ? totalGold - parsed : totalGold
+            const isNegative = remaining < 0
+            return (
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Remaining:{' '}
+                <span className={['font-semibold', isNegative ? 'text-red-500 dark:text-red-400' : 'text-amber-600 dark:text-amber-400'].join(' ')}>
+                  {remaining.toLocaleString()} G
+                </span>
+              </p>
+            )
+          })()}
           <div>
             <p className="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Amount to sell</p>
             <input

@@ -38,11 +38,6 @@ class GoldController extends Controller
         ]);
 
         $sellAmount = (float) $validated['amount'];
-        $totalGold  = (float) Gold::sum('amount');
-
-        if ($sellAmount > $totalGold) {
-            return response()->json(['message' => 'Insufficient gold.'], 422);
-        }
 
         $remaining = $sellAmount;
         foreach (Gold::orderByDesc('amount')->get() as $gold) {
@@ -51,6 +46,10 @@ class GoldController extends Controller
             $deduct  = min($current, $remaining);
             $gold->update(['amount' => $current - $deduct]);
             $remaining -= $deduct;
+        }
+
+        if ($remaining > 0) {
+            Gold::create(['amount' => -$remaining, 'description' => null]);
         }
 
         GoldLog::create([

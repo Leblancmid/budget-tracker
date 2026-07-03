@@ -73,7 +73,7 @@ export function Dashboard() {
             {stats?.recent_transactions.length === 0 && (
               <p className="px-5 py-8 text-center text-sm text-gray-400 dark:text-gray-500">No transactions yet.</p>
             )}
-            {stats?.recent_transactions.map((tx) => (
+            {stats?.recent_transactions.slice(0, 3).map((tx) => (
               <div key={tx.id} className="flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition-colors dark:hover:bg-gray-800/50">
                 <div className="flex items-center gap-3 min-w-0">
                   <div

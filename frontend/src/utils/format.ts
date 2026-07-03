@@ -18,6 +18,24 @@ export const formatCurrency = (value: number | string) =>
 export const formatDate = (date: string) =>
   new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(date))
 
+export function paginateLocally<T>(items: T[], page: number, perPage: number) {
+  const totalPages = Math.max(1, Math.ceil(items.length / perPage))
+  const safePage   = Math.min(Math.max(1, page), totalPages)
+  const paginated  = items.slice((safePage - 1) * perPage, safePage * perPage)
+  return {
+    paginated,
+    safePage,
+    meta: {
+      current_page: safePage,
+      last_page:    totalPages,
+      from:         items.length ? (safePage - 1) * perPage + 1 : null,
+      to:           Math.min(safePage * perPage, items.length) || null,
+      total:        items.length,
+      per_page:     perPage,
+    },
+  }
+}
+
 export function todayISO(): string {
   return new Date().toISOString().split('T')[0]
 }

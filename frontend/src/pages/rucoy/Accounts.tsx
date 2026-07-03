@@ -3,18 +3,21 @@ import { Plus, Pencil, Trash2, Users, User, TrendingUp, TrendingDown, DollarSign
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { Pagination } from '@/components/ui/Pagination'
 import { AccountModal } from '@/components/modals/AccountModal'
 import { useRucoyAccounts } from '@/hooks/useRucoyAccounts'
 import { rucoyAccountsApi, type AccountPayload } from '@/api/rucoy'
 import { toast } from '@/components/ui/Toast'
+import { paginateLocally } from '@/utils/format'
+import type { RucoyAccount } from '@/types'
 
 const fmtGold = (n: number) => `${n.toLocaleString()} G`
-import type { RucoyAccount } from '@/types'
 
 export default function Accounts() {
   const { accounts, loading, error, create, update, archive, unarchive, remove } = useRucoyAccounts()
 
   const [search, setSearch] = useState('')
+  const [page, setPage]     = useState(1)
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<RucoyAccount | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<RucoyAccount | null>(null)
@@ -81,6 +84,8 @@ export default function Accounts() {
     )
   }, [accounts, search])
 
+  const { paginated, meta } = paginateLocally(filteredAccounts, page, 6)
+
   const totals = useMemo(() => {
     let price = 0, cost = 0, profit = 0
     for (const a of accounts) {
@@ -128,7 +133,7 @@ export default function Accounts() {
             <input
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setPage(1) }}
               placeholder="Search…"
               className="rounded-lg border border-gray-300 bg-white pl-8 pr-3 py-1.5 text-sm text-gray-700 shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 w-44"
             />
@@ -185,11 +190,12 @@ export default function Accounts() {
       )}
 
       {!loading && accounts.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredAccounts.length === 0 && (
             <p className="col-span-3 text-center text-sm text-gray-400 py-6">No accounts match your search.</p>
           )}
-          {filteredAccounts.map((a) => (
+          {paginated.map((a) => (
             <Card key={a.id} className="flex items-start gap-4 p-4">
               {a.avatar ? (
                 <img
@@ -247,6 +253,8 @@ export default function Accounts() {
               </div>
             </Card>
           ))}
+          </div>
+          <Pagination meta={meta} onPageChange={setPage} />
         </div>
       )}
 

@@ -6,10 +6,9 @@ import { useRucoyDashboard } from '@/hooks/useRucoyDashboard'
 import { useTrades } from '@/hooks/useTrades'
 import { useGoldLogs } from '@/hooks/useGoldLogs'
 import { tradesApi } from '@/api/rucoy'
-import { formatCurrency } from '@/utils/format'
+import { formatCurrency, formatDateLong } from '@/utils/format'
+import { CURRENCY_SYMBOLS } from '@/utils/rucoy'
 import type { Trade, TradeCurrency, TradeStatus } from '@/types'
-
-const CURRENCY_SYMBOLS: Record<TradeCurrency, string> = { PHP: '₱', USD: '$', EUR: '€' }
 
 function formatTradeAmount(status: TradeStatus, amount: string, currency: TradeCurrency | null) {
   if (status === 'kks') return `+${Number(amount).toLocaleString()} G`
@@ -18,10 +17,6 @@ function formatTradeAmount(status: TradeStatus, amount: string, currency: TradeC
   return `+${symbol}${Number(amount).toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
-function formatDate(iso: string): string {
-  const date = new Date(iso)
-  return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-}
 
 function StatCard({ icon, label, value, bg, textColor }: {
   icon: React.ReactNode
@@ -187,7 +182,7 @@ export default function RucoyDashboard() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate dark:text-gray-100">{item.title}</p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500">{formatDate(item.date)}</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500">{formatDateLong(item.date)}</p>
                 </div>
               </div>
               <span className={['text-sm font-semibold whitespace-nowrap ml-3', item.amountColor].join(' ')}>

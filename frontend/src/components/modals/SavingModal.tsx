@@ -3,7 +3,8 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
-import { formatCurrency, formatWithCommas, handleAmountInput } from '@/utils/format'
+import { formatCurrency, formatWithCommas, handleAmountInput, todayISO } from '@/utils/format'
+import { flattenApiErrors } from '@/utils/api'
 import type { Saving, SavingModeOfPayment, SavingTransfer } from '@/types'
 import type { SavingPayload } from '@/api/master'
 
@@ -22,7 +23,7 @@ const EMPTY = (): SavingPayload => ({
   transfer:        null,
   description:     '',
   amount:          0,
-  date:            new Date().toISOString().split('T')[0],
+  date:            todayISO(),
 })
 
 const MODE_OPTIONS: { value: SavingModeOfPayment; label: string }[] = [
@@ -67,8 +68,8 @@ export function SavingModal({ open, onClose, onSubmit, saving, dailyBalance, bus
       await onSubmit(form)
       onClose()
     } catch (err: unknown) {
-      const e = err as { errors?: Record<string, string[]> }
-      if (e.errors) setErrors(Object.fromEntries(Object.entries(e.errors).map(([k, v]) => [k, v[0]])))
+      const flat = flattenApiErrors(err)
+      if (flat) setErrors(flat)
     } finally {
       setLoading(false)
     }

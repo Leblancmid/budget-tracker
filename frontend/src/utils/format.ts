@@ -18,6 +18,23 @@ export const formatCurrency = (value: number | string) =>
 export const formatDate = (date: string) =>
   new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(date))
 
+export function todayISO(): string {
+  return new Date().toISOString().split('T')[0]
+}
+
+export function formatDateLong(iso: string | null): string {
+  if (!iso) return '—'
+  const [year, month, day] = iso.split('T')[0].split('-').map(Number)
+  return new Date(year, month - 1, day).toLocaleDateString('en-US', {
+    month: 'long', day: 'numeric', year: 'numeric',
+  })
+}
+
+export function buildYearOptions(count = 5): { value: number; label: string }[] {
+  const base = new Date().getFullYear() - 2
+  return Array.from({ length: count }, (_, i) => ({ value: base + i, label: String(base + i) }))
+}
+
 export const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',

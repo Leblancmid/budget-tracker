@@ -4,7 +4,7 @@ import { useBusinessDashboard } from '@/hooks/useBusinessDashboard'
 import { Card } from '@/components/ui/Card'
 import { Select } from '@/components/ui/Select'
 import { Badge } from '@/components/ui/Badge'
-import { formatCurrency, formatDate, MONTHS } from '@/utils/format'
+import { formatCurrency, formatDate, MONTHS, buildYearOptions } from '@/utils/format'
 import { isBusinessIncome } from '@/utils/business'
 
 const TYPE_LABELS: Record<string, string> = { account: 'Account', gold: 'Gold', expense: 'Item' }
@@ -13,10 +13,7 @@ const TYPE_COLORS: Record<string, string>  = { account: '#6366f1', gold: '#f59e0
 export default function BusinessDashboard() {
   const { stats, month, year, loading, setMonth, setYear } = useBusinessDashboard()
 
-  const yearOptions = Array.from({ length: 5 }, (_, i) => {
-    const y = new Date().getFullYear() - 2 + i
-    return { value: y, label: String(y) }
-  })
+  const yearOptions = buildYearOptions()
 
   const profit = stats?.total_profit ?? 0
 

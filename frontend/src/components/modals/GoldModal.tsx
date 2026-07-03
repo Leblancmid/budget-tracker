@@ -3,18 +3,13 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import type { Gold } from '@/types'
-import { formatWithCommas } from '@/utils/format'
+import { formatWithCommas, handleAmountInput } from '@/utils/format'
 
 interface GoldModalProps {
   open: boolean
   onClose: () => void
   onSubmit: (data: { amount: number; description?: string }) => Promise<void>
   gold?: Gold | null
-}
-
-function handleAmountInput(value: string, setter: (v: string) => void) {
-  const stripped = value.replace(/,/g, '')
-  if (stripped === '' || /^\d*\.?\d*$/.test(stripped)) setter(stripped)
 }
 
 export function GoldModal({ open, onClose, onSubmit, gold }: GoldModalProps) {

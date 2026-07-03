@@ -8,14 +8,7 @@ import { useGolds } from '@/hooks/useGolds'
 import { useGoldLogs } from '@/hooks/useGoldLogs'
 import { goldsApi } from '@/api/rucoy'
 import { toast } from '@/components/ui/Toast'
-import { formatWithCommas } from '@/utils/format'
-
-function formatDate(iso: string): string {
-  const [year, month, day] = iso.split('T')[0].split('-').map(Number)
-  return new Date(year, month - 1, day).toLocaleDateString('en-US', {
-    month: 'long', day: 'numeric', year: 'numeric',
-  })
-}
+import { formatWithCommas, formatDateLong } from '@/utils/format'
 
 export default function Golds() {
   const { totalGold, loading, error, refetch: refetchGolds, create } = useGolds()
@@ -137,7 +130,7 @@ export default function Golds() {
                       {log.type === 'add' ? '+' : '-'}{Number(log.amount).toLocaleString()} G
                     </td>
                     <td className="px-4 py-3 text-gray-400 dark:text-gray-500 whitespace-nowrap">
-                      {formatDate(log.created_at)}
+                      {formatDateLong(log.created_at)}
                     </td>
                   </tr>
                 ))}

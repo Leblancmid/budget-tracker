@@ -5,12 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import type { AccountPayload } from '@/api/rucoy'
 import type { RucoyAccount } from '@/types'
-import { formatWithCommas } from '@/utils/format'
-
-function handleNumberInput(value: string, setter: (v: string) => void) {
-  const stripped = value.replace(/,/g, '')
-  if (stripped === '' || /^\d*\.?\d*$/.test(stripped)) setter(stripped)
-}
+import { formatWithCommas, handleAmountInput } from '@/utils/format'
 
 interface AccountModalProps {
   open: boolean
@@ -165,7 +160,7 @@ export function AccountModal({ open, onClose, onSubmit, account }: AccountModalP
                   type="text"
                   inputMode="decimal"
                   value={formatWithCommas(raw)}
-                  onChange={(e) => handleNumberInput(e.target.value, setter)}
+                  onChange={(e) => handleAmountInput(e.target.value, setter)}
                   placeholder="e.g. 1,000,000"
                   className="block w-full rounded-lg border border-gray-300 hover:border-gray-400 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 dark:border-gray-600 dark:hover:border-gray-500 transition-colors"
                 />

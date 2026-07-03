@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import type { Category, Transaction } from '@/types'
-import { formatWithCommas, handleAmountInput } from '@/utils/format'
+import { formatWithCommas, handleAmountInput, todayISO } from '@/utils/format'
+import { flattenApiErrors } from '@/utils/api'
 
 interface TransactionModalProps {
   open: boolean
@@ -28,7 +29,7 @@ const EMPTY: TransactionFormData = {
   type: 'expense',
   amount: 0,
   description: '',
-  date: new Date().toISOString().split('T')[0],
+  date: todayISO(),
   notes: '',
 }
 
@@ -70,10 +71,8 @@ export function TransactionModal({ open, onClose, onSubmit, categories, transact
       await onSubmit(form)
       onClose()
     } catch (err: unknown) {
-      const e = err as { errors?: Record<string, string[]> }
-      if (e.errors) {
-        setErrors(Object.fromEntries(Object.entries(e.errors).map(([k, v]) => [k, v[0]])))
-      }
+      const flat = flattenApiErrors(err)
+      if (flat) setErrors(flat)
     } finally {
       setLoading(false)
     }

@@ -8,7 +8,7 @@ import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { BudgetModal, type BudgetFormData } from '@/components/modals/BudgetModal'
 import { toast } from '@/components/ui/Toast'
-import { formatCurrency, MONTHS } from '@/utils/format'
+import { formatCurrency, MONTHS, buildYearOptions } from '@/utils/format'
 import type { Budget } from '@/types'
 
 export function Budgets() {
@@ -47,10 +47,7 @@ export function Budgets() {
   const openEdit = (b: Budget) => { setEditTarget(b); setModalOpen(true) }
   const openAdd  = () => { setEditTarget(null); setModalOpen(true) }
 
-  const yearOptions = Array.from({ length: 6 }, (_, i) => {
-    const y = new Date().getFullYear() - 2 + i
-    return { value: y, label: String(y) }
-  })
+  const yearOptions = buildYearOptions(6)
 
   const totalBudget = budgets.reduce((acc, b) => acc + parseFloat(b.amount), 0)
   const totalSpent  = budgets.reduce((acc, b) => acc + (b.spent ?? 0), 0)

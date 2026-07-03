@@ -3,6 +3,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { COLOR_OPTIONS } from '@/utils/format'
+import { flattenApiErrors } from '@/utils/api'
 import type { Category } from '@/types'
 
 interface CategoryModalProps {
@@ -49,8 +50,8 @@ export function CategoryModal({ open, onClose, onSubmit, category }: CategoryMod
       await onSubmit(form)
       onClose()
     } catch (err: unknown) {
-      const e = err as { errors?: Record<string, string[]> }
-      if (e.errors) setErrors(Object.fromEntries(Object.entries(e.errors).map(([k, v]) => [k, v[0]])))
+      const flat = flattenApiErrors(err)
+      if (flat) setErrors(flat)
     } finally {
       setLoading(false)
     }

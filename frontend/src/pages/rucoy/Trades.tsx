@@ -7,25 +7,12 @@ import { TradeModal } from '@/components/modals/TradeModal'
 import { useTrades } from '@/hooks/useTrades'
 import { tradesApi } from '@/api/rucoy'
 import { toast } from '@/components/ui/Toast'
-import { formatCurrency } from '@/utils/format'
+import { formatCurrency, formatDateLong } from '@/utils/format'
+import { CURRENCY_SYMBOLS } from '@/utils/rucoy'
 import type { TradePayload } from '@/api/rucoy'
-import type { Trade, TradeCurrency, TradeStatus } from '@/types'
+import type { Trade, TradeStatus } from '@/types'
 
 const PER_PAGE = 10
-
-function formatDate(iso: string | null): string {
-  if (!iso) return '—'
-  const [year, month, day] = iso.split('-').map(Number)
-  return new Date(year, month - 1, day).toLocaleDateString('en-US', {
-    month: 'long', day: 'numeric', year: 'numeric',
-  })
-}
-
-const CURRENCY_SYMBOLS: Record<TradeCurrency, string> = {
-  PHP: '₱',
-  USD: '$',
-  EUR: '€',
-}
 
 function formatAmount(t: Trade) {
   if (t.status === 'kks') return `${Number(t.amount).toLocaleString()} G`
@@ -292,7 +279,7 @@ export default function Trades() {
                         {formatAmount(t)}
                       </td>
                       <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                        {formatDate(t.completion_date)}
+                        {formatDateLong(t.completion_date)}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex justify-end gap-2">
@@ -395,7 +382,7 @@ export default function Trades() {
                       <td className="px-4 py-3 text-center"><StatusPill status={t.status} /></td>
                       <td className="px-4 py-3 capitalize">{t.payment_method || <span className="italic">—</span>}</td>
                       <td className="px-4 py-3 text-right font-semibold whitespace-nowrap">{formatAmount(t)}</td>
-                      <td className="px-4 py-3 whitespace-nowrap">{formatDate(t.completion_date)}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">{formatDateLong(t.completion_date)}</td>
                       <td className="px-4 py-3">
                         <button
                           onClick={() => setUnarchiveTarget(t)}

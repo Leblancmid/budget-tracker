@@ -3,7 +3,8 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
-import { MONTHS, formatWithCommas, handleAmountInput } from '@/utils/format'
+import { MONTHS, formatWithCommas, handleAmountInput, buildYearOptions } from '@/utils/format'
+import { flattenApiErrors } from '@/utils/api'
 import type { Budget, Category } from '@/types'
 
 interface BudgetModalProps {
@@ -60,9 +61,9 @@ export function BudgetModal({ open, onClose, onSubmit, categories, budget, curre
       await onSubmit(form)
       onClose()
     } catch (err: unknown) {
-      const e = err as { errors?: Record<string, string[]>; message?: string }
-      if (e.errors) setErrors(Object.fromEntries(Object.entries(e.errors).map(([k, v]) => [k, v[0]])))
-      else if (e.message) setErrors({ category_id: e.message })
+      const flat = flattenApiErrors(err)
+      if (flat) setErrors(flat)
+      else setErrors({ category_id: (err as { message?: string }).message ?? 'Something went wrong.' })
     } finally {
       setLoading(false)
     }
@@ -71,10 +72,7 @@ export function BudgetModal({ open, onClose, onSubmit, categories, budget, curre
   const set = <K extends keyof BudgetFormData>(key: K, value: BudgetFormData[K]) =>
     setForm((p) => ({ ...p, [key]: value }))
 
-  const yearOptions = Array.from({ length: 6 }, (_, i) => {
-    const y = new Date().getFullYear() - 2 + i
-    return { value: y, label: String(y) }
-  })
+  const yearOptions = buildYearOptions(6)
 
   return (
     <Modal open={open} onClose={onClose} title={budget ? 'Edit Budget' : 'Set Budget'}>

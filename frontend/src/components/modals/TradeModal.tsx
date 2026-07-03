@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/Input'
 import type { TradePayload } from '@/api/rucoy'
 import type { Trade, TradeCurrency, TradePaymentMethod, TradeStatus } from '@/types'
 import { formatWithCommas, handleAmountInput } from '@/utils/format'
+import { flattenApiErrors } from '@/utils/api'
 
 interface TradeModalProps {
   open: boolean
@@ -88,9 +89,8 @@ export function TradeModal({ open, onClose, onSubmit, trade }: TradeModalProps) 
       })
       onClose()
     } catch (err: unknown) {
-      const e = err as { errors?: Record<string, string[]> }
-      if (e.errors)
-        setErrors(Object.fromEntries(Object.entries(e.errors).map(([k, v]) => [k, v[0]])))
+      const flat = flattenApiErrors(err)
+      if (flat) setErrors(flat)
     } finally {
       setLoading(false)
     }

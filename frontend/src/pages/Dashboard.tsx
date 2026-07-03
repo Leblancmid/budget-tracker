@@ -4,15 +4,12 @@ import { useDashboard } from '@/hooks/useDashboard'
 import { Card } from '@/components/ui/Card'
 import { Select } from '@/components/ui/Select'
 import { Badge } from '@/components/ui/Badge'
-import { formatCurrency, formatDate, MONTHS } from '@/utils/format'
+import { formatCurrency, formatDate, MONTHS, buildYearOptions } from '@/utils/format'
 
 export function Dashboard() {
   const { stats, month, year, loading, setMonth, setYear } = useDashboard()
 
-  const yearOptions = Array.from({ length: 5 }, (_, i) => {
-    const y = new Date().getFullYear() - 2 + i
-    return { value: y, label: String(y) }
-  })
+  const yearOptions = buildYearOptions()
 
   return (
     <div className="flex flex-col gap-6">

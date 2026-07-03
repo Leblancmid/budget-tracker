@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/Input'
 import type { BusinessTransaction, BusinessTransactionAction, BusinessTransactionType, RucoyAccount } from '@/types'
 import type { BusinessTransactionPayload } from '@/api/business'
 import { rucoyAccountsApi } from '@/api/rucoy'
-import { formatCurrency, formatWithCommas, handleAmountInput, todayISO } from '@/utils/format'
+import { formatWithCommas, handleAmountInput, todayISO } from '@/utils/format'
 import { flattenApiErrors } from '@/utils/api'
 
 interface BusinessTransactionModalProps {
@@ -45,6 +45,7 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction,
   const [dropdownOpen, setDropdownOpen]         = useState(false)
   const [priceRate, setPriceRate]               = useState('')
   const [costRate, setCostRate]                 = useState('')
+  const [phpRate, setPhpRate]                   = useState('')
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   // Fetch accounts when type = account
@@ -70,7 +71,9 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction,
   const costRateNum  = parseFloat(costRate)  || 0
   const pricePhp  = selectedAccount?.price != null && priceRateNum ? (selectedAccount.price / 1_000_000) * priceRateNum : null
   const costPhp   = selectedAccount?.cost  != null && costRateNum  ? (selectedAccount.cost  / 1_000_000) * costRateNum  : null
-  const profitPhp = pricePhp != null && costPhp != null ? pricePhp - costPhp : null
+  const profitPhp    = pricePhp != null && costPhp != null ? pricePhp - costPhp : null
+  const phpRateNum   = parseFloat(phpRate) || 0
+  const profitInPhp  = profitPhp != null && phpRateNum ? profitPhp * phpRateNum : null
 
   // Auto-set amount when account fields change
   useEffect(() => {
@@ -92,6 +95,7 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction,
       setDropdownOpen(false)
       setPriceRate('')
       setCostRate('')
+      setPhpRate('')
       if (transaction) {
         const amt = parseFloat(transaction.amount)
         setAmountStr(String(amt))
@@ -113,6 +117,7 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction,
       setAccountSearch('')
       setPriceRate('')
       setCostRate('')
+      setPhpRate('')
     }
   }
 
@@ -154,7 +159,7 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction,
     }
   }
 
-  const fmtPHP = (v: number | null) => v != null ? formatCurrency(v) : '—'
+  const fmtPHP = (v: number | null) => v != null ? `$${v.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'
 
   return (
     <Modal open={open} onClose={onClose} title={transaction ? 'Edit Transaction' : 'Add Transaction'}>
@@ -319,12 +324,33 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction,
               </div>
             ))}
 
-            {/* Profit */}
-            <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-800/60">
-              <p className="text-xs text-gray-500 dark:text-gray-400">Profit ($)</p>
-              <p className={['text-sm font-semibold mt-0.5', profitPhp == null || profitPhp >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'].join(' ')}>
-                {fmtPHP(profitPhp)}
-              </p>
+            {/* Profit + PHP conversion */}
+            <div className="flex items-end gap-2">
+              <div className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-800/60">
+                <p className="text-xs text-gray-500 dark:text-gray-400">Profit ($)</p>
+                <p className={['text-sm font-semibold mt-0.5', profitPhp == null || profitPhp >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'].join(' ')}>
+                  {fmtPHP(profitPhp)}
+                </p>
+              </div>
+              <span className="pb-2 text-gray-400 dark:text-gray-500 text-sm font-medium shrink-0">×</span>
+              <div className="flex-1">
+                <p className="mb-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">PHP Rate</p>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={phpRate}
+                  onChange={(e) => handleAmountInput(e.target.value, setPhpRate)}
+                  placeholder="58.5"
+                  className="block w-full rounded-lg border border-gray-300 hover:border-gray-400 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 dark:border-gray-600 dark:hover:border-gray-500 transition-colors"
+                />
+              </div>
+              <span className="pb-2 text-gray-400 dark:text-gray-500 text-sm font-medium shrink-0">=</span>
+              <div className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-800/60">
+                <p className="text-xs text-gray-500 dark:text-gray-400">Profit (₱)</p>
+                <p className={['text-sm font-semibold mt-0.5', profitInPhp == null || profitInPhp >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'].join(' ')}>
+                  {profitInPhp != null ? `₱${profitInPhp.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
+                </p>
+              </div>
             </div>
           </>
         )}

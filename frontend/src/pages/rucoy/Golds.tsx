@@ -1,18 +1,22 @@
-import { useState } from 'react'
-import { Plus, Minus, Coins, TrendingUp, TrendingDown } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Plus, Minus, Coins, TrendingUp, TrendingDown, Search } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
+import { Pagination } from '@/components/ui/Pagination'
 import { GoldModal } from '@/components/modals/GoldModal'
 import { useGolds } from '@/hooks/useGolds'
 import { useGoldLogs } from '@/hooks/useGoldLogs'
 import { goldsApi } from '@/api/rucoy'
 import { toast } from '@/components/ui/Toast'
-import { formatWithCommas, formatDateLong } from '@/utils/format'
+import { formatWithCommas, formatDateLong, paginateLocally } from '@/utils/format'
 
 export default function Golds() {
   const { totalGold, loading, error, refetch: refetchGolds, create } = useGolds()
   const { logs, refetch: refetchLogs } = useGoldLogs()
+
+  const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
 
   const [addOpen, setAddOpen] = useState(false)
 
@@ -21,6 +25,17 @@ export default function Golds() {
   const [sellDesc, setSellDesc] = useState('')
   const [sellError, setSellError] = useState('')
   const [selling, setSelling] = useState(false)
+
+  const filteredLogs = useMemo(() => {
+    if (!search.trim()) return logs
+    const q = search.trim().toLowerCase()
+    return logs.filter((l) =>
+      (l.description ?? '').toLowerCase().includes(q) ||
+      l.type.toLowerCase().includes(q)
+    )
+  }, [logs, search])
+
+  const { paginated: paginatedLogs, meta } = paginateLocally(filteredLogs, page, 5)
 
   const openSell = () => { setSellOpen(true); setSellAmount(''); setSellDesc(''); setSellError('') }
   const closeSell = () => { setSellOpen(false); setSellAmount(''); setSellDesc(''); setSellError('') }
@@ -94,8 +109,20 @@ export default function Golds() {
 
       {/* Transaction History */}
       {logs.length > 0 && (
-        <div>
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Transaction History</h2>
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Transaction History</h2>
+            <div className="relative">
+              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => { setSearch(e.target.value); setPage(1) }}
+                placeholder="Search…"
+                className="rounded-lg border border-gray-300 bg-white pl-8 pr-3 py-1.5 text-sm text-gray-700 shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 w-44"
+              />
+            </div>
+          </div>
           <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
             <table className="w-full text-sm">
               <thead>
@@ -107,7 +134,14 @@ export default function Golds() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-900">
-                {logs.map((log) => (
+                {filteredLogs.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="px-4 py-8 text-center text-sm text-gray-400 dark:text-gray-500 italic">
+                      No results match your search.
+                    </td>
+                  </tr>
+                )}
+                {paginatedLogs.map((log) => (
                   <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                     <td className="px-4 py-3">
                       <span className={[
@@ -137,6 +171,7 @@ export default function Golds() {
               </tbody>
             </table>
           </div>
+          <Pagination meta={meta} onPageChange={setPage} />
         </div>
       )}
 

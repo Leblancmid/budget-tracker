@@ -160,8 +160,8 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction,
     <Modal open={open} onClose={onClose} title={transaction ? 'Edit Transaction' : 'Add Transaction'}>
       <div className="flex flex-col gap-4">
 
-        {/* Action — Buy / Sell */}
-        <div className="flex gap-2">
+        {/* Action — Buy / Sell (hidden for Account transactions) */}
+        {defaultType !== 'account' && <div className="flex gap-2">
           {(defaultAction ? [defaultAction] : ['buy', 'sell'] as BusinessTransactionAction[]).map((action) => (
             <button
               key={action}
@@ -179,7 +179,7 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction,
               {action === 'buy' ? '− Buy' : '+ Sell'}
             </button>
           ))}
-        </div>
+        </div>}
 
         {/* Type — Gold / Item (hidden when type is locked via defaultType) */}
         {!defaultType && (

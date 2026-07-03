@@ -289,6 +289,7 @@ export default function BusinessTransactions() {
         transaction={editTarget}
         defaultAction={defaultAction}
         defaultType={defaultType}
+        usedAccountIds={transactions.filter(tx => tx.type === 'account' && tx.account_id != null).map(tx => tx.account_id as number)}
       />
 
       <ConfirmDialog

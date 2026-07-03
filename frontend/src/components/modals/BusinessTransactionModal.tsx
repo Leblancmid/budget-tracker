@@ -16,6 +16,7 @@ interface BusinessTransactionModalProps {
   transaction?: BusinessTransaction | null
   defaultAction?: BusinessTransactionAction | null
   defaultType?: BusinessTransactionType | null
+  usedAccountIds?: number[]
 }
 
 const EMPTY = (type: BusinessTransactionType = 'gold'): BusinessTransactionPayload => ({
@@ -27,7 +28,7 @@ const EMPTY = (type: BusinessTransactionType = 'gold'): BusinessTransactionPaylo
   notes:       '',
 })
 
-export function BusinessTransactionModal({ open, onClose, onSubmit, transaction, defaultAction, defaultType }: BusinessTransactionModalProps) {
+export function BusinessTransactionModal({ open, onClose, onSubmit, transaction, defaultAction, defaultType, usedAccountIds = [] }: BusinessTransactionModalProps) {
   const [form, setForm]           = useState<BusinessTransactionPayload>(EMPTY())
   const [amountStr, setAmountStr] = useState('')
   const [errors, setErrors]       = useState<Partial<Record<string, string>>>({})
@@ -143,6 +144,7 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction,
   }
 
   const filteredAccounts = accounts.filter((a) => {
+    if (usedAccountIds.includes(a.id) && a.id !== transaction?.account_id) return false
     const q = accountSearch.toLowerCase()
     return (a.description ?? '').toLowerCase().includes(q) || a.email.toLowerCase().includes(q)
   })

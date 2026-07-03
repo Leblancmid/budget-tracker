@@ -173,7 +173,7 @@ export default function BusinessTransactions() {
                         <div className="mt-2 text-xs">
                           <span className={['flex items-center gap-1 font-semibold', isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'].join(' ')}>
                             {isIncome ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
-                            Amount: {formatCurrency(tx.amount)}
+                            Profit: {formatCurrency(tx.amount)}
                           </span>
                         </div>
                         {tx.action && (

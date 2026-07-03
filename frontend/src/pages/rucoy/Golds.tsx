@@ -16,6 +16,7 @@ export default function Golds() {
   const { logs, refetch: refetchLogs } = useGoldLogs()
 
   const [search, setSearch] = useState('')
+  const [typeFilter, setTypeFilter] = useState<'all' | 'add' | 'sell'>('all')
   const [page, setPage] = useState(1)
 
   const [addOpen, setAddOpen] = useState(false)
@@ -27,13 +28,13 @@ export default function Golds() {
   const [selling, setSelling] = useState(false)
 
   const filteredLogs = useMemo(() => {
-    if (!search.trim()) return logs
-    const q = search.trim().toLowerCase()
-    return logs.filter((l) =>
-      (l.description ?? '').toLowerCase().includes(q) ||
-      l.type.toLowerCase().includes(q)
-    )
-  }, [logs, search])
+    let result = typeFilter === 'all' ? logs : logs.filter((l) => l.type === typeFilter)
+    if (search.trim()) {
+      const q = search.trim().toLowerCase()
+      result = result.filter((l) => (l.description ?? '').toLowerCase().includes(q))
+    }
+    return result
+  }, [logs, typeFilter, search])
 
   const { paginated: paginatedLogs, meta } = paginateLocally(filteredLogs, page, 5)
 
@@ -112,15 +113,26 @@ export default function Golds() {
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Transaction History</h2>
-            <div className="relative">
-              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => { setSearch(e.target.value); setPage(1) }}
-                placeholder="Search…"
-                className="rounded-lg border border-gray-300 bg-white pl-8 pr-3 py-1.5 text-sm text-gray-700 shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 w-44"
-              />
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => { setSearch(e.target.value); setPage(1) }}
+                  placeholder="Search…"
+                  className="rounded-lg border border-gray-300 bg-white pl-8 pr-3 py-1.5 text-sm text-gray-700 shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 w-44"
+                />
+              </div>
+              <select
+                value={typeFilter}
+                onChange={(e) => { setTypeFilter(e.target.value as typeof typeFilter); setPage(1) }}
+                className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+              >
+                <option value="all">All Types</option>
+                <option value="add">Add</option>
+                <option value="sell">Sell</option>
+              </select>
             </div>
           </div>
           <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">

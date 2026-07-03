@@ -15,16 +15,11 @@ interface BusinessTransactionModalProps {
   onSubmit: (data: BusinessTransactionPayload) => Promise<void>
   transaction?: BusinessTransaction | null
   defaultAction?: BusinessTransactionAction | null
+  defaultType?: BusinessTransactionType | null
 }
 
-const TYPE_BUTTONS: { value: BusinessTransactionType; label: string }[] = [
-  { value: 'account', label: 'Account' },
-  { value: 'gold',    label: 'Gold'    },
-  { value: 'expense', label: 'Item'    },
-]
-
-const EMPTY = (): BusinessTransactionPayload => ({
-  type:        'account',
+const EMPTY = (type: BusinessTransactionType = 'gold'): BusinessTransactionPayload => ({
+  type,
   action:      null,
   amount:      0,
   description: '',
@@ -32,7 +27,7 @@ const EMPTY = (): BusinessTransactionPayload => ({
   notes:       '',
 })
 
-export function BusinessTransactionModal({ open, onClose, onSubmit, transaction, defaultAction }: BusinessTransactionModalProps) {
+export function BusinessTransactionModal({ open, onClose, onSubmit, transaction, defaultAction, defaultType }: BusinessTransactionModalProps) {
   const [form, setForm]           = useState<BusinessTransactionPayload>(EMPTY())
   const [amountStr, setAmountStr] = useState('')
   const [errors, setErrors]       = useState<Partial<Record<string, string>>>({})
@@ -102,7 +97,7 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction,
         setForm({ type: transaction.type, action: transaction.action, amount: amt, description: transaction.description ?? '', date: transaction.date, notes: '' })
       } else {
         setAmountStr('')
-        setForm({ ...EMPTY(), action: defaultAction ?? null })
+        setForm({ ...EMPTY(defaultType ?? 'gold'), action: defaultAction ?? null })
       }
     }
   }, [open, transaction])
@@ -186,26 +181,28 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction,
           ))}
         </div>
 
-        {/* Type — Account / Gold / Item */}
-        <div className="flex gap-2">
-          {TYPE_BUTTONS.map(({ value, label }) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => handleTypeChange(value)}
-              className={[
-                'flex-1 rounded-lg border py-2 text-sm font-medium transition-colors',
-                form.type === value
-                  ? value === 'expense'
-                    ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400 dark:border-red-700'
-                    : 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-700'
-                  : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
-              ].join(' ')}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        {/* Type — Gold / Item (hidden when type is locked via defaultType) */}
+        {!defaultType && (
+          <div className="flex gap-2">
+            {([{ value: 'gold', label: 'Gold' }, { value: 'expense', label: 'Item' }] as const).map(({ value, label }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => handleTypeChange(value)}
+                className={[
+                  'flex-1 rounded-lg border py-2 text-sm font-medium transition-colors',
+                  form.type === value
+                    ? value === 'expense'
+                      ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400 dark:border-red-700'
+                      : 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-700'
+                    : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
+                ].join(' ')}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Account-specific fields */}
         {form.type === 'account' && (

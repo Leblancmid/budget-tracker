@@ -38,6 +38,7 @@ export default function BusinessTransactions() {
   const [modalOpen, setModalOpen]           = useState(false)
   const [editTarget, setEditTarget]         = useState<BusinessTransaction | null>(null)
   const [defaultAction, setDefaultAction]   = useState<BusinessTransactionAction | null>(null)
+  const [defaultType, setDefaultType]       = useState<'account' | null>(null)
   const [deleteTarget, setDeleteTarget]     = useState<BusinessTransaction | null>(null)
   const [deleteLoading, setDeleteLoading]   = useState(false)
 
@@ -98,8 +99,9 @@ export default function BusinessTransactions() {
   const totalExpense = useMemo(() => transactions.filter(tx => !isBusinessIncome(tx)).reduce((s, tx) => s + parseFloat(tx.amount), 0), [transactions])
   const balance      = masterStats?.business_balance ?? 0
 
-  const openEdit = (tx: BusinessTransaction) => { setEditTarget(tx); setModalOpen(true) }
-  const openAdd  = (action: BusinessTransactionAction | null = null) => { setDefaultAction(action); setEditTarget(null); setModalOpen(true) }
+  const openEdit    = (tx: BusinessTransaction) => { setEditTarget(tx); setDefaultType(null); setModalOpen(true) }
+  const openAdd     = (action: BusinessTransactionAction | null = null) => { setDefaultAction(action); setDefaultType(null); setEditTarget(null); setModalOpen(true) }
+  const openAccount = () => { setDefaultAction(null); setDefaultType('account'); setEditTarget(null); setModalOpen(true) }
 
   return (
     <div className="flex flex-col gap-5">
@@ -183,6 +185,9 @@ export default function BusinessTransactions() {
         >
           Clear
         </Button>
+        <Button size="sm" icon={<Plus className="h-4 w-4" />} onClick={openAccount}>
+          Add Transaction
+        </Button>
       </div>
 
       <Card>
@@ -260,6 +265,7 @@ export default function BusinessTransactions() {
         onSubmit={handleSubmit}
         transaction={editTarget}
         defaultAction={defaultAction}
+        defaultType={defaultType}
       />
 
       <ConfirmDialog

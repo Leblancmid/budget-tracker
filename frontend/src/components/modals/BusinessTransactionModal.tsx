@@ -46,7 +46,14 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction,
   // Fetch accounts when type = account
   useEffect(() => {
     if (open && form.type === 'account') {
-      rucoyAccountsApi.getAll().then(setAccounts).catch(() => {})
+      rucoyAccountsApi.getAll().then((list) => {
+        setAccounts(list)
+        // Restore selected account from saved account_id
+        if (transaction?.account_id) {
+          const match = list.find((a) => a.id === transaction.account_id)
+          if (match) setSelectedAccount(match)
+        }
+      }).catch(() => {})
     }
   }, [open, form.type])
 
@@ -73,30 +80,38 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction,
   // Auto-set amount when account fields change
   useEffect(() => {
     if (form.type !== 'account') return
-    const computed = form.action === 'sell' ? pricePhp : form.action === 'buy' ? costPhp : null
+    // With action: price (sell) or cost (buy). Without action: use PHP profit if available, else $ profit.
+    const computed = form.action === 'sell' ? pricePhp
+      : form.action === 'buy' ? costPhp
+      : profitInPhp ?? profitPhp
     if (computed != null) {
       const rounded = Math.round(computed * 100) / 100
       setAmountStr(String(rounded))
       setForm((p) => ({ ...p, amount: rounded }))
     }
-  }, [form.type, form.action, pricePhp, costPhp])
+  }, [form.type, form.action, pricePhp, costPhp, profitPhp, profitInPhp])
 
   // Reset on open
   useEffect(() => {
     if (open) {
       setErrors({})
-      setSelectedAccount(null)
       setAccountSearch('')
       setDropdownOpen(false)
-      setPriceRate('')
-      setCostRate('')
-      setPhpRate('')
       if (transaction) {
         const amt = parseFloat(transaction.amount)
         setAmountStr(String(amt))
-        setForm({ type: transaction.type, action: transaction.action, amount: amt, description: transaction.description ?? '', date: transaction.date, notes: '' })
+        setForm({ type: transaction.type, action: transaction.action, account_id: transaction.account_id, price_rate: transaction.price_rate ? parseFloat(transaction.price_rate) : null, cost_rate: transaction.cost_rate ? parseFloat(transaction.cost_rate) : null, php_rate: transaction.php_rate ? parseFloat(transaction.php_rate) : null, amount: amt, description: transaction.description ?? '', date: transaction.date, notes: '' })
+        setPriceRate(transaction.price_rate ? String(parseFloat(transaction.price_rate)) : '')
+        setCostRate(transaction.cost_rate ? String(parseFloat(transaction.cost_rate)) : '')
+        setPhpRate(transaction.php_rate ? String(parseFloat(transaction.php_rate)) : '')
+        // Restore selected account — fetched after accounts load
+        setSelectedAccount(null)
       } else {
         setAmountStr('')
+        setSelectedAccount(null)
+        setPriceRate('')
+        setCostRate('')
+        setPhpRate('')
         setForm({ ...EMPTY(defaultType ?? 'gold'), action: defaultAction ?? null })
       }
     }
@@ -143,8 +158,11 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction,
   const handleSubmit = async () => {
     if (!validate()) return
     setLoading(true)
+    const payload = form.type === 'account'
+      ? { ...form, account_id: selectedAccount?.id ?? null, price_rate: parseFloat(priceRate) || null, cost_rate: parseFloat(costRate) || null, php_rate: parseFloat(phpRate) || null }
+      : form
     try {
-      await onSubmit(form)
+      await onSubmit(payload)
       onClose()
     } catch (err: unknown) {
       const flat = flattenApiErrors(err)

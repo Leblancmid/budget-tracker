@@ -82,7 +82,7 @@ export default function BusinessTransactions() {
   const totalExpense = useMemo(() => transactions.filter(tx => !isBusinessIncome(tx)).reduce((s, tx) => s + parseFloat(tx.amount), 0), [transactions])
   const balance      = masterStats?.business_balance ?? 0
 
-  const openEdit       = (tx: BusinessTransaction) => { setDefaultType(null); setEditTarget(tx); setModalOpen(true) }
+  const openEdit       = (tx: BusinessTransaction) => { setDefaultType(tx.type === 'account' ? 'account' : null); setEditTarget(tx); setModalOpen(true) }
   const openAdd        = (action: BusinessTransactionAction | null = null) => { setDefaultType(null); setDefaultAction(action); setEditTarget(null); setModalOpen(true) }
   const openAddAccount = () => { setDefaultType('account'); setDefaultAction(null); setEditTarget(null); setModalOpen(true) }
 

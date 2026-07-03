@@ -7,11 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 
 class BusinessTransaction extends Model
 {
-    protected $fillable = ['type', 'action', 'amount', 'description', 'date', 'notes'];
+    protected $fillable = ['type', 'action', 'account_id', 'price_rate', 'cost_rate', 'php_rate', 'amount', 'description', 'date', 'notes'];
 
     protected $casts = [
-        'amount' => 'decimal:2',
-        'date'   => 'date:Y-m-d',
+        'amount'     => 'decimal:2',
+        'price_rate' => 'decimal:6',
+        'cost_rate'  => 'decimal:6',
+        'php_rate'   => 'decimal:4',
+        'date'       => 'date:Y-m-d',
     ];
 
     public function scopeIncome(Builder $query): Builder

@@ -9,6 +9,10 @@ export const businessDashboardApi = {
 export interface BusinessTransactionPayload {
   type: BusinessTransactionType
   action?: BusinessTransactionAction | null
+  account_id?: number | null
+  price_rate?: number | null
+  cost_rate?: number | null
+  php_rate?: number | null
   amount: number
   description?: string | null
   date: string

@@ -140,6 +140,10 @@ export interface BusinessTransaction {
   id: number
   type: BusinessTransactionType
   action: BusinessTransactionAction | null
+  account_id: number | null
+  price_rate: string | null
+  cost_rate: string | null
+  php_rate: string | null
   amount: string
   description: string | null
   date: string

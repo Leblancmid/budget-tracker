@@ -205,6 +205,8 @@ export interface Trade {
   updated_at: string
 }
 
+export type AccountPaymentStatus = 'not_paid' | 'partially_paid' | 'fully_paid'
+
 export interface RucoyAccount {
   id: number
   description: string | null
@@ -213,6 +215,7 @@ export interface RucoyAccount {
   price: number | null
   cost: number | null
   profit: number | null
+  payment_status: AccountPaymentStatus
   archived_at: string | null
   created_at: string
   updated_at: string

@@ -9,9 +9,15 @@ import { useRucoyAccounts } from '@/hooks/useRucoyAccounts'
 import { rucoyAccountsApi, type AccountPayload } from '@/api/rucoy'
 import { toast } from '@/components/ui/Toast'
 import { paginateLocally } from '@/utils/format'
-import type { RucoyAccount } from '@/types'
+import type { AccountPaymentStatus, RucoyAccount } from '@/types'
 
 const fmtGold = (n: number) => `${n.toLocaleString()} G`
+
+const PAYMENT_STATUS_STYLES: Record<AccountPaymentStatus, { label: string; className: string }> = {
+  not_paid:       { label: 'Not Paid',       className: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+  partially_paid: { label: 'Partially Paid', className: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+  fully_paid:     { label: 'Fully Paid',     className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
+}
 
 export default function Accounts() {
   const { accounts, loading, error, create, update, archive, unarchive, remove } = useRucoyAccounts()
@@ -209,7 +215,12 @@ export default function Accounts() {
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-800 dark:text-gray-100 truncate">{a.email}</p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="font-medium text-gray-800 dark:text-gray-100 truncate">{a.email}</p>
+                  <span className={['inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold', PAYMENT_STATUS_STYLES[a.payment_status].className].join(' ')}>
+                    {PAYMENT_STATUS_STYLES[a.payment_status].label}
+                  </span>
+                </div>
                 {a.description && (
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{a.description}</p>
                 )}

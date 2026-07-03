@@ -14,8 +14,9 @@ class UpdateRucoyAccountRequest extends FormRequest
             'description' => ['nullable', 'string', 'max:255'],
             'email'       => ['sometimes', 'required', 'string', 'max:255'],
             'avatar'      => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
-            'price'       => ['nullable', 'numeric', 'min:0'],
-            'cost'        => ['nullable', 'numeric', 'min:0'],
+            'price'          => ['nullable', 'numeric', 'min:0'],
+            'cost'           => ['nullable', 'numeric', 'min:0'],
+            'payment_status' => ['nullable', 'in:not_paid,partially_paid,fully_paid'],
         ];
     }
 }

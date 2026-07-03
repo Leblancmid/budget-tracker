@@ -1,5 +1,5 @@
 import api from './axios'
-import type { Gold, GoldLog, RucoyAccount, RucoyDashboardStats, Trade, TradeCurrency, TradePaymentMethod, TradeStatus } from '@/types'
+import type { AccountPaymentStatus, Gold, GoldLog, RucoyAccount, RucoyDashboardStats, Trade, TradeCurrency, TradePaymentMethod, TradeStatus } from '@/types'
 
 export interface TradePayload {
   description?: string
@@ -57,6 +57,7 @@ export interface AccountPayload {
   avatar?: File | null
   price?: number | null
   cost?: number | null
+  payment_status?: AccountPaymentStatus
 }
 
 function buildAccountForm(data: AccountPayload, method?: 'PUT'): FormData {
@@ -67,6 +68,7 @@ function buildAccountForm(data: AccountPayload, method?: 'PUT'): FormData {
   if (data.avatar instanceof File) fd.append('avatar', data.avatar)
   if (data.price != null) fd.append('price', String(data.price))
   if (data.cost != null) fd.append('cost', String(data.cost))
+  if (data.payment_status) fd.append('payment_status', data.payment_status)
   return fd
 }
 

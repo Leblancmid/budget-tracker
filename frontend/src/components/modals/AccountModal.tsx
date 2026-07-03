@@ -4,7 +4,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import type { AccountPayload } from '@/api/rucoy'
-import type { RucoyAccount } from '@/types'
+import type { AccountPaymentStatus, RucoyAccount } from '@/types'
 import { formatWithCommas, handleAmountInput } from '@/utils/format'
 
 interface AccountModalProps {
@@ -19,6 +19,7 @@ export function AccountModal({ open, onClose, onSubmit, account }: AccountModalP
   const [description, setDescription] = useState('')
   const [price, setPrice] = useState('')
   const [cost, setCost] = useState('')
+  const [paymentStatus, setPaymentStatus] = useState<AccountPaymentStatus>('not_paid')
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [errors, setErrors] = useState<{ email?: string; avatar?: string }>({})
@@ -33,6 +34,7 @@ export function AccountModal({ open, onClose, onSubmit, account }: AccountModalP
       setDescription(account?.description ?? '')
       setPrice(account?.price != null ? String(account.price) : '')
       setCost(account?.cost != null ? String(account.cost) : '')
+      setPaymentStatus(account?.payment_status ?? 'not_paid')
       setPreview(account?.avatar ?? null)
     }
   }, [open, account])
@@ -73,6 +75,7 @@ export function AccountModal({ open, onClose, onSubmit, account }: AccountModalP
         avatar: avatarFile,
         price: price !== '' ? parseFloat(price) : null,
         cost: cost !== '' ? parseFloat(cost) : null,
+        payment_status: paymentStatus,
       })
       onClose()
     } catch (err: unknown) {
@@ -148,6 +151,19 @@ export function AccountModal({ open, onClose, onSubmit, account }: AccountModalP
           onChange={(e) => setDescription(e.target.value)}
           placeholder="e.g. Level 300 Archer"
         />
+
+        <div>
+          <p className="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Payment Status</p>
+          <select
+            value={paymentStatus}
+            onChange={(e) => setPaymentStatus(e.target.value as AccountPaymentStatus)}
+            className="block w-full rounded-lg border border-gray-300 hover:border-gray-400 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 dark:hover:border-gray-500 transition-colors"
+          >
+            <option value="not_paid">Not Paid</option>
+            <option value="partially_paid">Partially Paid</option>
+            <option value="fully_paid">Fully Paid</option>
+          </select>
+        </div>
 
         <div className="flex gap-3">
           {(['Price (G)', 'Cost (G)'] as const).map((label, idx) => {

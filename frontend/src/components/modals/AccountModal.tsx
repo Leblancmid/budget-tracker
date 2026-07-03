@@ -138,18 +138,18 @@ export function AccountModal({ open, onClose, onSubmit, account }: AccountModalP
         </div>
 
         <Input
+          label="Description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="e.g. Level 300 Archer"
+        />
+
+        <Input
           label="Email / Username"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           error={errors.email}
           placeholder="account@example.com"
-        />
-
-        <Input
-          label="Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="e.g. Level 300 Archer"
         />
 
         <div>

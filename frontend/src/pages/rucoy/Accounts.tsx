@@ -215,10 +215,10 @@ export default function Accounts() {
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-800 dark:text-gray-100 truncate">{a.email}</p>
                 {a.description && (
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{a.description}</p>
+                  <p className="font-medium text-gray-800 dark:text-gray-100 line-clamp-2">{a.description}</p>
                 )}
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 truncate">{a.email}</p>
                 <div className="mt-2 flex flex-col gap-0.5 text-xs">
                   {a.price != null && (
                     <span className="text-indigo-600 dark:text-indigo-400 font-medium">

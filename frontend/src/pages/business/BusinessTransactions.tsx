@@ -161,58 +161,67 @@ export default function BusinessTransactions() {
               <p className="text-sm text-gray-500 dark:text-gray-400">{accSearch ? 'No results.' : 'No account transactions yet.'}</p>
             </div>
           ) : (
-            <div className="flex flex-col gap-3 p-4">
-              {accPaginated.map((tx) => {
-                const isIncome = isBusinessIncome(tx)
-                return (
-                  <div
-                    key={tx.id}
-                    className="flex items-center gap-4 rounded-xl border border-gray-100 dark:border-gray-700/60 bg-white dark:bg-gray-800/40 px-4 py-3 group"
-                  >
-                    {/* Amount indicator dot */}
-                    <div className={['flex h-10 w-10 shrink-0 items-center justify-center rounded-full', isIncome ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-red-100 dark:bg-red-900/30'].join(' ')}>
-                      {isIncome
-                        ? <TrendingUp size={16} className="text-emerald-600 dark:text-emerald-400" />
-                        : <TrendingDown size={16} className="text-red-500 dark:text-red-400" />
-                      }
-                    </div>
+            <div className="p-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {accPaginated.map((tx) => {
+                  const isIncome = isBusinessIncome(tx)
+                  return (
+                    <div
+                      key={tx.id}
+                      className="flex items-start gap-3 rounded-xl border border-gray-100 dark:border-gray-700/60 bg-white dark:bg-gray-800/40 p-4 group"
+                    >
+                      {/* Icon */}
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30">
+                        {isIncome
+                          ? <TrendingUp size={18} className="text-emerald-600 dark:text-emerald-400" />
+                          : <TrendingDown size={18} className="text-red-500 dark:text-red-400" />
+                        }
+                      </div>
 
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-800 dark:text-gray-100 truncate">
-                        {tx.description ?? '—'}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{formatDate(tx.date)}</p>
-                      {tx.action && (
-                        <span className={[
-                          'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold mt-1',
-                          tx.action === 'sell'
-                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                            : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-                        ].join(' ')}>
-                          {tx.action === 'sell' ? '+ Sell' : '− Buy'}
-                        </span>
-                      )}
-                    </div>
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-gray-800 dark:text-gray-100 truncate leading-snug">
+                          {tx.description ?? '—'}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{formatDate(tx.date)}</p>
 
-                    {/* Amount */}
-                    <p className={['text-base font-bold whitespace-nowrap', isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'].join(' ')}>
-                      {isIncome ? '+' : '−'}{formatCurrency(tx.amount)}
-                    </p>
+                        <div className="mt-2 flex flex-col gap-0.5 text-xs">
+                          <span className={['font-semibold', isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'].join(' ')}>
+                            {isIncome
+                              ? <span className="flex items-center gap-1"><TrendingUp size={11} /> Amount: {formatCurrency(tx.amount)}</span>
+                              : <span className="flex items-center gap-1"><TrendingDown size={11} /> Amount: {formatCurrency(tx.amount)}</span>
+                            }
+                          </span>
+                        </div>
 
-                    {/* Actions */}
-                    <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => openEdit(tx)} className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
-                        <Pencil size={13} />
-                      </button>
-                      <button onClick={() => setDeleteTarget(tx)} className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                        <Trash2 size={13} />
-                      </button>
+                        {tx.action && (
+                          <span className={[
+                            'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold mt-2',
+                            tx.action === 'sell'
+                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                              : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+                          ].join(' ')}>
+                            {tx.action === 'sell' ? '+ Sell' : '− Buy'}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => openEdit(tx)} className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
+                          <Pencil size={13} />
+                        </button>
+                        <button onClick={() => setDeleteTarget(tx)} className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                )
-              })}
-              <Pagination meta={accMeta} onPageChange={setAccPage} />
+                  )
+                })}
+              </div>
+              <div className="mt-4">
+                <Pagination meta={accMeta} onPageChange={setAccPage} />
+              </div>
             </div>
           )}
         </Card>

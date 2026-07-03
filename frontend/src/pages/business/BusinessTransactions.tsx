@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Plus, Minus, Search, Pencil, Trash2, Briefcase, TrendingUp, TrendingDown } from 'lucide-react'
 import { useBusinessTransactions } from '@/hooks/useBusinessTransactions'
-import { useMasterDashboard } from '@/hooks/useMasterDashboard'
+import { rucoyAccountsApi } from '@/api/rucoy'
 import { Button } from '@/components/ui/Button'
 import { Pagination } from '@/components/ui/Pagination'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -23,7 +23,6 @@ const PER_PAGE = 10
 
 export default function BusinessTransactions() {
   const { transactions, loading, create, update, remove } = useBusinessTransactions()
-  const { stats: masterStats } = useMasterDashboard()
 
   const [modalOpen, setModalOpen]         = useState(false)
   const [editTarget, setEditTarget]       = useState<BusinessTransaction | null>(null)
@@ -31,6 +30,11 @@ export default function BusinessTransactions() {
   const [defaultType, setDefaultType]     = useState<'account' | null>(null)
   const [deleteTarget, setDeleteTarget]   = useState<BusinessTransaction | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const [archivedAccountIds, setArchivedAccountIds] = useState<Set<number>>(new Set())
+
+  useEffect(() => {
+    rucoyAccountsApi.getArchived().then((list) => setArchivedAccountIds(new Set(list.map((a) => a.id)))).catch(() => {})
+  }, [])
 
   const [accSearch, setAccSearch] = useState('')
   const [accPage,   setAccPage]   = useState(1)
@@ -78,9 +82,12 @@ export default function BusinessTransactions() {
     }
   }
 
-  const totalIncome  = useMemo(() => transactions.filter(tx => isBusinessIncome(tx)).reduce((s, tx) => s + parseFloat(tx.amount), 0), [transactions])
-  const totalExpense = useMemo(() => transactions.filter(tx => !isBusinessIncome(tx)).reduce((s, tx) => s + parseFloat(tx.amount), 0), [transactions])
-  const balance      = masterStats?.business_balance ?? 0
+  const isSettled = (tx: BusinessTransaction) =>
+    tx.type !== 'account' || tx.account_id == null || archivedAccountIds.has(tx.account_id)
+
+  const totalIncome  = useMemo(() => transactions.filter(tx => isSettled(tx) && isBusinessIncome(tx)).reduce((s, tx) => s + parseFloat(tx.amount), 0), [transactions, archivedAccountIds])
+  const totalExpense = useMemo(() => transactions.filter(tx => isSettled(tx) && !isBusinessIncome(tx)).reduce((s, tx) => s + parseFloat(tx.amount), 0), [transactions, archivedAccountIds])
+  const balance      = totalIncome - totalExpense
 
   const openEdit       = (tx: BusinessTransaction) => { setDefaultType(tx.type === 'account' ? 'account' : null); setEditTarget(tx); setModalOpen(true) }
   const openAdd        = (action: BusinessTransactionAction | null = null) => { setDefaultType(null); setDefaultAction(action); setEditTarget(null); setModalOpen(true) }

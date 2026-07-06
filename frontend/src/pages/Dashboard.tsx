@@ -36,7 +36,7 @@ export function Dashboard() {
           {[1, 2, 3].map((i) => <SkeletonCard key={i} />)}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <StatCard
             label="Total Income"
             value={formatCurrency(stats?.total_income ?? 0)}

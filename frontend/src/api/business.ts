@@ -13,6 +13,9 @@ export interface BusinessTransactionPayload {
   price_rate?: number | null
   cost_rate?: number | null
   php_rate?: number | null
+  price_php?: number | null
+  cost_php?: number | null
+  profit_php?: number | null
   amount: number
   description?: string | null
   date: string

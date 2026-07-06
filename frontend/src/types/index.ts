@@ -134,6 +134,9 @@ export interface BusinessTransaction {
   price_rate: string | null
   cost_rate: string | null
   php_rate: string | null
+  price_php: string | null
+  cost_php: string | null
+  profit_php: string | null
   amount: string
   description: string | null
   date: string

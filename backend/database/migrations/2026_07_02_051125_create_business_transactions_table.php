@@ -16,6 +16,9 @@ return new class extends Migration
             $table->decimal('price_rate', 10, 6)->nullable();
             $table->decimal('cost_rate', 10, 6)->nullable();
             $table->decimal('php_rate', 10, 4)->nullable();
+            $table->decimal('price_php', 15, 2)->nullable();
+            $table->decimal('cost_php', 15, 2)->nullable();
+            $table->decimal('profit_php', 15, 2)->nullable();
             $table->decimal('amount', 15, 2);
             $table->string('description')->nullable();
             $table->date('date');

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Business\StoreBusinessTransactionRequest;
 use App\Http\Requests\Business\UpdateBusinessTransactionRequest;
 use App\Models\BusinessTransaction;
+use App\Models\RucoyAccount;
 use Illuminate\Http\JsonResponse;
 
 class BusinessTransactionController extends Controller
@@ -43,13 +44,15 @@ class BusinessTransactionController extends Controller
     public function store(StoreBusinessTransactionRequest $request): JsonResponse
     {
         $tx = BusinessTransaction::create($request->validated());
+        $this->computePhpValues($tx);
 
-        return response()->json($tx, 201);
+        return response()->json($tx->fresh(), 201);
     }
 
     public function update(UpdateBusinessTransactionRequest $request, BusinessTransaction $businessTransaction): JsonResponse
     {
         $businessTransaction->update($request->validated());
+        $this->computePhpValues($businessTransaction);
 
         return response()->json($businessTransaction->fresh());
     }
@@ -59,5 +62,34 @@ class BusinessTransactionController extends Controller
         $businessTransaction->delete();
 
         return response()->json(['message' => 'Transaction deleted.']);
+    }
+
+    private function computePhpValues(BusinessTransaction $tx): void
+    {
+        // Only account-type transactions derive values from the linked RucoyAccount
+        if ($tx->type !== 'account' || !$tx->account_id || !$tx->php_rate) {
+            return;
+        }
+
+        $account = RucoyAccount::find($tx->account_id);
+        if (!$account) return;
+
+        $phpRate = (float) $tx->php_rate;
+
+        $pricePhp = ($account->price !== null && $tx->price_rate)
+            ? round(((float) $account->price / 1_000_000) * (float) $tx->price_rate * $phpRate, 2)
+            : null;
+
+        $costPhp = ($account->cost !== null && $tx->cost_rate)
+            ? round(((float) $account->cost / 1_000_000) * (float) $tx->cost_rate * $phpRate, 2)
+            : null;
+
+        $tx->price_php  = $pricePhp;
+        $tx->cost_php   = $costPhp;
+        $tx->profit_php = ($pricePhp !== null && $costPhp !== null)
+            ? round($pricePhp - $costPhp, 2)
+            : null;
+
+        $tx->save();
     }
 }

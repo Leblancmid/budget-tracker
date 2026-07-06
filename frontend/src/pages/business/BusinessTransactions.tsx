@@ -81,9 +81,9 @@ export default function BusinessTransactions() {
   const isSettled = (tx: BusinessTransaction) =>
     tx.type !== 'account' || tx.archived_at != null
 
-  const totalIncome  = useMemo(() => transactions.filter(tx => isSettled(tx) && isBusinessIncome(tx)).reduce((s, tx) => s + parseFloat(tx.amount), 0), [transactions])
-  const totalExpense = useMemo(() => transactions.filter(tx => isSettled(tx) && !isBusinessIncome(tx)).reduce((s, tx) => s + parseFloat(tx.amount), 0), [transactions])
-  const balance      = totalIncome - totalExpense
+  const totalIncome  = useMemo(() => transactions.filter(tx => isSettled(tx) && tx.price_php != null).reduce((s, tx) => s + parseFloat(tx.price_php!), 0), [transactions])
+  const totalExpense = useMemo(() => transactions.filter(tx => isSettled(tx) && tx.cost_php  != null).reduce((s, tx) => s + parseFloat(tx.cost_php!),  0), [transactions])
+  const totalProfit  = totalIncome - totalExpense
 
   const openEdit       = (tx: BusinessTransaction) => { setDefaultType(tx.type === 'account' ? 'account' : null); setEditTarget(tx); setModalOpen(true) }
   const openAddAccount = () => { setDefaultType('account'); setEditTarget(null); setModalOpen(true) }
@@ -96,7 +96,7 @@ export default function BusinessTransactions() {
   return (
     <div className="flex flex-col gap-5">
 
-      {/* Balance Banner */}
+      {/* Profit Banner */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-700 p-6 shadow-lg">
         <div className="absolute -top-6 -right-6 h-32 w-32 rounded-full bg-white/10" />
         <div className="absolute -bottom-8 -left-4 h-28 w-28 rounded-full bg-white/5" />
@@ -105,19 +105,19 @@ export default function BusinessTransactions() {
             <Briefcase className="h-6 w-6 text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-teal-100">Business Balance</p>
-            <p className={['text-3xl font-bold mt-0.5', balance >= 0 ? 'text-white' : 'text-red-200'].join(' ')}>
-              {formatCurrency(balance)}
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-teal-100">Total Profit</p>
+            <p className={['text-3xl font-bold mt-0.5', totalProfit >= 0 ? 'text-white' : 'text-red-200'].join(' ')}>
+              {formatCurrency(totalProfit)}
             </p>
             <div className="flex items-center gap-4 mt-2">
               <span className="flex items-center gap-1 text-xs text-teal-100">
                 <TrendingUp className="h-3.5 w-3.5" />
-                {formatCurrency(totalIncome)} in
+                {formatCurrency(totalIncome)} price
               </span>
               <span className="text-teal-300/50">·</span>
               <span className="flex items-center gap-1 text-xs text-teal-100">
                 <TrendingDown className="h-3.5 w-3.5" />
-                {formatCurrency(totalExpense)} out
+                {formatCurrency(totalExpense)} cost
               </span>
             </div>
           </div>

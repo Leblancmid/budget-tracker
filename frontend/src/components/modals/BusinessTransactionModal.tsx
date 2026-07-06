@@ -84,6 +84,8 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction,
   const costPhp        = costGoldValue  != null && costRateNum  ? (costGoldValue  / 1_000_000) * costRateNum  : null
   const profitPhp      = pricePhp != null && costPhp != null ? pricePhp - costPhp : null
   const phpRateNum     = parseFloat(phpRate) || 0
+  const priceInPhp     = pricePhp != null && phpRateNum ? pricePhp * phpRateNum : null
+  const costInPhp      = costPhp  != null && phpRateNum ? costPhp  * phpRateNum : null
   const profitInPhp    = profitPhp != null && phpRateNum ? profitPhp * phpRateNum : null
 
   // Auto-set amount from formula
@@ -204,6 +206,7 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction,
       onRateChange: setPriceRate,
       resultLabel: 'Price ($)',
       resultValue: fmtPHP(pricePhp),
+      resultPhp: priceInPhp,
       resultColor: 'text-emerald-600 dark:text-emerald-400',
     },
     {
@@ -216,6 +219,7 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction,
       onRateChange: setCostRate,
       resultLabel: 'Cost ($)',
       resultValue: fmtPHP(costPhp),
+      resultPhp: costInPhp,
       resultColor: 'text-red-600 dark:text-red-400',
     },
   ]
@@ -346,6 +350,11 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction,
               <p className="mb-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">{row.resultLabel}</p>
               <div className={['rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-semibold dark:border-gray-700 dark:bg-gray-800/60', row.resultColor].join(' ')}>
                 {row.resultValue}
+                {row.resultPhp != null && (
+                  <p className="text-xs font-medium text-gray-400 dark:text-gray-500 mt-0.5">
+                    ₱{row.resultPhp.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                )}
               </div>
             </div>
           </div>

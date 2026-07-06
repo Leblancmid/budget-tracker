@@ -81,9 +81,6 @@ export default function BusinessTransactions() {
     }
   }
 
-  const isSettled = (tx: BusinessTransaction) =>
-    tx.type !== 'account' || tx.archived_at != null
-
   const settledTxs    = useMemo(() => [...transactions.filter(tx => tx.type !== 'account'), ...archivedTxs], [transactions, archivedTxs])
   const totalIncome   = useMemo(() => settledTxs.filter(tx => tx.price_php != null).reduce((s, tx) => s + parseFloat(tx.price_php!), 0), [settledTxs])
   const totalExpense  = useMemo(() => settledTxs.filter(tx => tx.cost_php  != null).reduce((s, tx) => s + parseFloat(tx.cost_php!),  0), [settledTxs])

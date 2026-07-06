@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { TrendingUp, Wallet, Coins, DollarSign, PiggyBank } from 'lucide-react'
+import { TrendingUp, Coins, DollarSign, PiggyBank } from 'lucide-react'
 import { useMasterDashboard } from '@/hooks/useMasterDashboard'
 import { Card } from '@/components/ui/Card'
 import { formatCurrency } from '@/utils/format'
@@ -52,8 +52,7 @@ export default function MasterDashboard() {
 
       {loading ? (
         <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="h-36 rounded-2xl animate-pulse bg-gray-200 dark:bg-gray-800" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="h-36 rounded-2xl animate-pulse bg-gray-200 dark:bg-gray-800" />
             <div className="h-36 rounded-2xl animate-pulse bg-gray-200 dark:bg-gray-800" />
           </div>
@@ -66,7 +65,7 @@ export default function MasterDashboard() {
         <div className="flex flex-col gap-4">
 
           {/* Primary Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
             {/* Overall Profit */}
             <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-500 to-purple-700 p-6 shadow-lg">
@@ -84,26 +83,6 @@ export default function MasterDashboard() {
                     {formatCurrency(stats?.overall_profit ?? 0)}
                   </p>
                   <p className="text-xs text-violet-200/80 mt-1">Business + Daily Expenses</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Overall Balance */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-700 p-6 shadow-lg">
-              <div className="absolute -top-6 -right-6 h-32 w-32 rounded-full bg-white/10" />
-              <div className="absolute -bottom-8 -left-4 h-28 w-28 rounded-full bg-white/5" />
-              <div className="relative flex flex-col gap-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
-                    <Wallet className="h-4 w-4 text-white" />
-                  </div>
-                  <span className="text-sm font-semibold text-indigo-100">Overall Balance</span>
-                </div>
-                <div>
-                  <p className={['text-3xl font-bold', (stats?.overall_balance ?? 0) >= 0 ? 'text-white' : 'text-red-200'].join(' ')}>
-                    {formatCurrency(stats?.overall_balance ?? 0)}
-                  </p>
-                  <p className="text-xs text-indigo-200/80 mt-1">Business + Daily Expenses</p>
                 </div>
               </div>
             </div>

@@ -64,13 +64,11 @@ class BusinessDashboardController extends Controller
             ->sum('amount');
 
         $profit  = $income - $expense;
-        $balance = $profit + $savingsToBusiness - $businessToSavings;
 
         return response()->json([
             'total_income'        => $income,
             'total_expense'       => $expense,
             'total_profit'        => $profit,
-            'balance'             => $balance,
             'recent_transactions' => $recentTransactions,
             'expense_by_type'     => $expenseByType,
             'monthly_trend'       => $monthlyTrend,

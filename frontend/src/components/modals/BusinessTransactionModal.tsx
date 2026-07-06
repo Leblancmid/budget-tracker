@@ -178,10 +178,9 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction,
   const handleSubmit = async () => {
     if (!validate()) return
     setLoading(true)
-    const phpValues = { price_php: priceInPhp, cost_php: costInPhp, profit_php: profitInPhp }
     const payload = category === 'account'
-      ? { ...form, ...phpValues, account_id: selectedAccount?.id ?? null, price_rate: parseFloat(priceRate) || null, cost_rate: parseFloat(costRate) || null, php_rate: parseFloat(phpRate) || null }
-      : { ...form, ...phpValues }
+      ? { ...form, account_id: selectedAccount?.id ?? null, price_rate: parseFloat(priceRate) || null, cost_rate: parseFloat(costRate) || null, php_rate: parseFloat(phpRate) || null }
+      : form
     try {
       await onSubmit(payload)
       onClose()

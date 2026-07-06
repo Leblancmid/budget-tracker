@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Plus, Search, Pencil, Trash2, Briefcase, TrendingUp, TrendingDown, Archive, RotateCcw } from 'lucide-react'
 import { useBusinessTransactions } from '@/hooks/useBusinessTransactions'
 import { useArchive } from '@/hooks/useArchive'
@@ -31,7 +31,10 @@ export default function BusinessTransactions() {
   const [deleteTarget, setDeleteTarget] = useState<BusinessTransaction | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
 
-  const { showArchive, setShowArchive, archivedItems: archivedTxs, archiveLoading, removeFromArchived } = useArchive(businessTransactionsApi.getArchived)
+  const { showArchive, setShowArchive, archivedItems: archivedTxs, archiveLoading, fetchArchived, removeFromArchived } = useArchive(businessTransactionsApi.getArchived)
+
+  // Eagerly load archived so profit totals are correct on first render
+  useEffect(() => { fetchArchived() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const [accSearch, setAccSearch] = useState('')
   const [accPage,   setAccPage]   = useState(1)
@@ -81,9 +84,11 @@ export default function BusinessTransactions() {
   const isSettled = (tx: BusinessTransaction) =>
     tx.type !== 'account' || tx.archived_at != null
 
-  const totalIncome  = useMemo(() => transactions.filter(tx => isSettled(tx) && tx.price_php != null).reduce((s, tx) => s + parseFloat(tx.price_php!), 0), [transactions])
-  const totalExpense = useMemo(() => transactions.filter(tx => isSettled(tx) && tx.cost_php  != null).reduce((s, tx) => s + parseFloat(tx.cost_php!),  0), [transactions])
-  const totalProfit  = totalIncome - totalExpense
+  const settledTxs    = useMemo(() => [...transactions.filter(tx => tx.type !== 'account'), ...archivedTxs], [transactions, archivedTxs])
+  const totalIncome   = useMemo(() => settledTxs.filter(tx => tx.price_php != null).reduce((s, tx) => s + parseFloat(tx.price_php!), 0), [settledTxs])
+  const totalExpense  = useMemo(() => settledTxs.filter(tx => tx.cost_php  != null).reduce((s, tx) => s + parseFloat(tx.cost_php!),  0), [settledTxs])
+  const initialProfit = totalIncome - totalExpense
+  const totalProfit   = useMemo(() => archivedTxs.filter(tx => tx.profit_php != null).reduce((s, tx) => s + parseFloat(tx.profit_php!), 0), [archivedTxs])
 
   const openEdit       = (tx: BusinessTransaction) => { setDefaultType(tx.type === 'account' ? 'account' : null); setEditTarget(tx); setModalOpen(true) }
   const openAddAccount = () => { setDefaultType('account'); setEditTarget(null); setModalOpen(true) }
@@ -108,6 +113,9 @@ export default function BusinessTransactions() {
             <p className="text-[11px] font-semibold uppercase tracking-widest text-teal-100">Total Profit</p>
             <p className={['text-3xl font-bold mt-0.5', totalProfit >= 0 ? 'text-white' : 'text-red-200'].join(' ')}>
               {formatCurrency(totalProfit)}
+            </p>
+            <p className="text-xs text-teal-200 mt-0.5">
+              Initial Profit: {formatCurrency(initialProfit)}
             </p>
             <div className="flex items-center gap-4 mt-2">
               <span className="flex items-center gap-1 text-xs text-teal-100">

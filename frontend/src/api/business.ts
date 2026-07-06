@@ -20,12 +20,17 @@ export interface BusinessTransactionPayload {
 }
 
 export const businessTransactionsApi = {
-  getAll: () => api.get<BusinessTransaction[]>('/business/transactions').then((r) => r.data),
-  create: (data: BusinessTransactionPayload) =>
+  getAll:    () => api.get<BusinessTransaction[]>('/business/transactions').then((r) => r.data),
+  getArchived: () => api.get<BusinessTransaction[]>('/business/transactions/archived').then((r) => r.data),
+  create:    (data: BusinessTransactionPayload) =>
     api.post<BusinessTransaction>('/business/transactions', data).then((r) => r.data),
-  update: (id: number, data: BusinessTransactionPayload) =>
+  update:    (id: number, data: BusinessTransactionPayload) =>
     api.put<BusinessTransaction>(`/business/transactions/${id}`, data).then((r) => r.data),
-  delete: (id: number) =>
+  archive:   (id: number) =>
+    api.post<BusinessTransaction>(`/business/transactions/${id}/archive`).then((r) => r.data),
+  unarchive: (id: number) =>
+    api.post<BusinessTransaction>(`/business/transactions/${id}/unarchive`).then((r) => r.data),
+  delete:    (id: number) =>
     api.delete<{ message: string }>(`/business/transactions/${id}`).then((r) => r.data),
 }
 

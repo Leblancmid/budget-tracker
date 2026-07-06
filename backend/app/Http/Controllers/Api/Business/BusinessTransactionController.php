@@ -13,8 +13,31 @@ class BusinessTransactionController extends Controller
     public function index(): JsonResponse
     {
         return response()->json(
-            BusinessTransaction::latest('date')->latest('id')->get()
+            BusinessTransaction::whereNull('archived_at')->latest('date')->latest('id')->get()
         );
+    }
+
+    public function archived(): JsonResponse
+    {
+        return response()->json(
+            BusinessTransaction::whereNotNull('archived_at')->where('type', 'account')->latest('archived_at')->get()
+        );
+    }
+
+    public function archive(BusinessTransaction $businessTransaction): JsonResponse
+    {
+        $businessTransaction->archived_at = now();
+        $businessTransaction->save();
+
+        return response()->json($businessTransaction->fresh());
+    }
+
+    public function unarchive(BusinessTransaction $businessTransaction): JsonResponse
+    {
+        $businessTransaction->archived_at = null;
+        $businessTransaction->save();
+
+        return response()->json($businessTransaction->fresh());
     }
 
     public function store(StoreBusinessTransactionRequest $request): JsonResponse

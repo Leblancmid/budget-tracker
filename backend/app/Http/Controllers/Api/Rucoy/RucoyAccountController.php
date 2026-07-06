@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Rucoy;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreRucoyAccountRequest;
 use App\Http\Requests\UpdateRucoyAccountRequest;
+use App\Models\BusinessTransaction;
 use App\Models\RucoyAccount;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
@@ -23,8 +24,13 @@ class RucoyAccountController extends Controller
 
     public function archive(RucoyAccount $rucoyAccount): JsonResponse
     {
-        $rucoyAccount->archived_at = now();
+        $now = now();
+        $rucoyAccount->archived_at = $now;
         $rucoyAccount->save();
+
+        BusinessTransaction::where('account_id', $rucoyAccount->id)
+            ->whereNull('archived_at')
+            ->update(['archived_at' => $now]);
 
         return response()->json($this->transform($rucoyAccount->fresh()));
     }
@@ -33,6 +39,10 @@ class RucoyAccountController extends Controller
     {
         $rucoyAccount->archived_at = null;
         $rucoyAccount->save();
+
+        BusinessTransaction::where('account_id', $rucoyAccount->id)
+            ->whereNotNull('archived_at')
+            ->update(['archived_at' => null]);
 
         return response()->json($this->transform($rucoyAccount->fresh()));
     }

@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Plus, Minus, Search, Pencil, Trash2, Briefcase, TrendingUp, TrendingDown } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Plus, Minus, Search, Pencil, Trash2, Briefcase, TrendingUp, TrendingDown, Archive, Check, RotateCcw } from 'lucide-react'
 import { useBusinessTransactions } from '@/hooks/useBusinessTransactions'
-import { rucoyAccountsApi } from '@/api/rucoy'
+import { businessTransactionsApi } from '@/api/business'
 import { Button } from '@/components/ui/Button'
 import { Pagination } from '@/components/ui/Pagination'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -22,7 +22,7 @@ const TYPE_LABELS: Record<BusinessTransactionType, string> = {
 const PER_PAGE = 10
 
 export default function BusinessTransactions() {
-  const { transactions, loading, create, update, remove } = useBusinessTransactions()
+  const { transactions, loading, create, update, remove, refetch } = useBusinessTransactions()
 
   const [modalOpen, setModalOpen]         = useState(false)
   const [editTarget, setEditTarget]       = useState<BusinessTransaction | null>(null)
@@ -30,20 +30,30 @@ export default function BusinessTransactions() {
   const [defaultType, setDefaultType]     = useState<'account' | null>(null)
   const [deleteTarget, setDeleteTarget]   = useState<BusinessTransaction | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
-  const [archivedAccountIds, setArchivedAccountIds] = useState<Set<number>>(new Set())
 
-  useEffect(() => {
-    rucoyAccountsApi.getArchived().then((list) => setArchivedAccountIds(new Set(list.map((a) => a.id)))).catch(() => {})
-  }, [])
+  // Archive state
+  const [showArchive, setShowArchive]   = useState(false)
+  const [archivedTxs, setArchivedTxs]   = useState<BusinessTransaction[]>([])
+  const [archiveLoading, setArchiveLoading] = useState(false)
+  const [archiving, setArchiving]       = useState(false)
 
   const [accSearch, setAccSearch] = useState('')
   const [accPage,   setAccPage]   = useState(1)
   const [giSearch,  setGiSearch]  = useState('')
   const [giPage,    setGiPage]    = useState(1)
 
+  const fetchArchived = useCallback(async () => {
+    setArchiveLoading(true)
+    try { setArchivedTxs(await businessTransactionsApi.getArchived()) }
+    finally { setArchiveLoading(false) }
+  }, [])
+
+  useEffect(() => { if (showArchive) fetchArchived() }, [showArchive, fetchArchived])
+
+  // Only show non-archived account transactions in active list
   const accountTxs = useMemo(() => {
     const q = accSearch.toLowerCase()
-    return transactions.filter(tx => tx.type === 'account' && (!q || (tx.description ?? '').toLowerCase().includes(q)))
+    return transactions.filter(tx => tx.type === 'account' && tx.archived_at == null && (!q || (tx.description ?? '').toLowerCase().includes(q)))
   }, [transactions, accSearch])
 
   const goldItemTxs = useMemo(() => {
@@ -82,16 +92,46 @@ export default function BusinessTransactions() {
     }
   }
 
-  const isSettled = (tx: BusinessTransaction) =>
-    tx.type !== 'account' || tx.account_id == null || archivedAccountIds.has(tx.account_id)
+  const handleArchive = async (tx: BusinessTransaction) => {
+    setArchiving(true)
+    try {
+      await businessTransactionsApi.archive(tx.id)
+      await refetch()
+      if (showArchive) fetchArchived()
+      toast.success('Transaction archived.')
+    } catch {
+      toast.error('Failed to archive transaction.')
+    } finally {
+      setArchiving(false)
+    }
+  }
 
-  const totalIncome  = useMemo(() => transactions.filter(tx => isSettled(tx) && isBusinessIncome(tx)).reduce((s, tx) => s + parseFloat(tx.amount), 0), [transactions, archivedAccountIds])
-  const totalExpense = useMemo(() => transactions.filter(tx => isSettled(tx) && !isBusinessIncome(tx)).reduce((s, tx) => s + parseFloat(tx.amount), 0), [transactions, archivedAccountIds])
+  const handleUnarchive = async (tx: BusinessTransaction) => {
+    try {
+      await businessTransactionsApi.unarchive(tx.id)
+      setArchivedTxs((prev) => prev.filter((t) => t.id !== tx.id))
+      await refetch()
+      toast.success('Transaction restored.')
+    } catch {
+      toast.error('Failed to restore transaction.')
+    }
+  }
+
+  const isSettled = (tx: BusinessTransaction) =>
+    tx.type !== 'account' || tx.archived_at != null
+
+  const totalIncome  = useMemo(() => transactions.filter(tx => isSettled(tx) && isBusinessIncome(tx)).reduce((s, tx) => s + parseFloat(tx.amount), 0), [transactions])
+  const totalExpense = useMemo(() => transactions.filter(tx => isSettled(tx) && !isBusinessIncome(tx)).reduce((s, tx) => s + parseFloat(tx.amount), 0), [transactions])
   const balance      = totalIncome - totalExpense
 
   const openEdit       = (tx: BusinessTransaction) => { setDefaultType(tx.type === 'account' ? 'account' : null); setEditTarget(tx); setModalOpen(true) }
   const openAdd        = (action: BusinessTransactionAction | null = null) => { setDefaultType(null); setDefaultAction(action); setEditTarget(null); setModalOpen(true) }
   const openAddAccount = () => { setDefaultType('account'); setDefaultAction(null); setEditTarget(null); setModalOpen(true) }
+
+  const activeAccountIds = useMemo(
+    () => transactions.filter(tx => tx.type === 'account' && tx.account_id != null && tx.archived_at == null).map(tx => tx.account_id as number),
+    [transactions]
+  )
 
   return (
     <div className="flex flex-col gap-5">
@@ -149,6 +189,18 @@ export default function BusinessTransactions() {
                   className="rounded-lg border border-gray-300 bg-white pl-8 pr-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 w-36"
                 />
               </div>
+              <button
+                onClick={() => setShowArchive((v) => !v)}
+                className={[
+                  'flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors',
+                  showArchive
+                    ? 'border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-600 dark:bg-amber-900/20 dark:text-amber-400'
+                    : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700',
+                ].join(' ')}
+              >
+                <Archive size={14} />
+                Archive
+              </button>
               <Button size="sm" icon={<Plus className="h-4 w-4" />} onClick={openAddAccount}>
                 Add Account
               </Button>
@@ -190,6 +242,14 @@ export default function BusinessTransactions() {
                         )}
                       </div>
                       <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => setArchiveTarget(tx)}
+                          disabled={archiving}
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 disabled:opacity-40 transition-colors"
+                          title="Mark as done"
+                        >
+                          <Check size={13} />
+                        </button>
                         <button onClick={() => openEdit(tx)} className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
                           <Pencil size={13} />
                         </button>
@@ -204,6 +264,51 @@ export default function BusinessTransactions() {
               <div className="mt-4">
                 <Pagination meta={accMeta} onPageChange={setAccPage} />
               </div>
+            </div>
+          )}
+
+          {/* Archived Transactions */}
+          {showArchive && (
+            <div className="border-t border-gray-100 dark:border-gray-700/60 px-5 py-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <Archive size={14} className="text-amber-500" />
+                <h3 className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">Archived Transactions</h3>
+              </div>
+              {archiveLoading && <p className="text-center text-sm text-gray-400 py-6">Loading…</p>}
+              {!archiveLoading && archivedTxs.length === 0 && (
+                <p className="text-center text-sm text-gray-400 py-4">No archived transactions yet.</p>
+              )}
+              {!archiveLoading && archivedTxs.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 opacity-70">
+                  {archivedTxs.map((tx) => {
+                    const isIncome = isBusinessIncome(tx)
+                    return (
+                      <div key={tx.id} className="flex items-start gap-3 rounded-xl border border-gray-100 dark:border-gray-700/40 bg-gray-50 dark:bg-gray-800/20 p-4">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700/40">
+                          {isIncome
+                            ? <TrendingUp size={16} className="text-gray-400 dark:text-gray-500" />
+                            : <TrendingDown size={16} className="text-gray-400 dark:text-gray-500" />
+                          }
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-500 dark:text-gray-400 truncate leading-snug">{tx.description ?? '—'}</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{formatDate(tx.date)}</p>
+                          <div className="mt-1.5 text-xs text-gray-400 dark:text-gray-500 font-medium">
+                            Profit: {formatCurrency(tx.amount)}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setUnarchiveTarget(tx)}
+                          className="shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                          title="Restore"
+                        >
+                          <RotateCcw size={13} />
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           )}
         </Card>
@@ -296,7 +401,27 @@ export default function BusinessTransactions() {
         transaction={editTarget}
         defaultAction={defaultAction}
         defaultType={defaultType}
-        usedAccountIds={transactions.filter(tx => tx.type === 'account' && tx.account_id != null).map(tx => tx.account_id as number)}
+        usedAccountIds={activeAccountIds}
+      />
+
+      <ConfirmDialog
+        open={!!archiveTarget}
+        onClose={() => setArchiveTarget(null)}
+        onConfirm={handleArchive}
+        loading={archiving}
+        title="Archive Transaction"
+        message={`Archive "${archiveTarget?.description ?? 'this transaction'}"? You can restore it anytime from the archive.`}
+        confirmLabel="Archive"
+      />
+
+      <ConfirmDialog
+        open={!!unarchiveTarget}
+        onClose={() => setUnarchiveTarget(null)}
+        onConfirm={handleUnarchive}
+        loading={unarchiving}
+        title="Restore Transaction"
+        message={`Restore "${unarchiveTarget?.description ?? 'this transaction'}" back to active accounts?`}
+        confirmLabel="Restore"
       />
 
       <ConfirmDialog

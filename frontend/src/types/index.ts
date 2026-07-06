@@ -148,6 +148,7 @@ export interface BusinessTransaction {
   description: string | null
   date: string
   notes: string | null
+  archived_at: string | null
   created_at: string
   updated_at: string
 }

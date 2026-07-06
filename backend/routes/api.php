@@ -3,7 +3,6 @@
 use App\Http\Controllers\Api\BudgetController;
 use App\Http\Controllers\Api\Master\MasterDashboardController;
 use App\Http\Controllers\Api\Master\SavingController;
-use App\Http\Controllers\Api\Business\BusinessBudgetController;
 use App\Http\Controllers\Api\Business\BusinessDashboardController;
 use App\Http\Controllers\Api\Business\BusinessTransactionController;
 use App\Http\Controllers\Api\CategoryController;
@@ -40,10 +39,6 @@ Route::prefix('v1')->group(function () {
         Route::get('transactions/archived', [BusinessTransactionController::class, 'archived']);
         Route::post('transactions/{businessTransaction}/archive', [BusinessTransactionController::class, 'archive']);
         Route::post('transactions/{businessTransaction}/unarchive', [BusinessTransactionController::class, 'unarchive']);
-        Route::get('budgets', [BusinessBudgetController::class, 'index']);
-        Route::post('budgets', [BusinessBudgetController::class, 'store']);
-        Route::put('budgets/{businessBudget}', [BusinessBudgetController::class, 'update']);
-        Route::delete('budgets/{businessBudget}', [BusinessBudgetController::class, 'destroy']);
     });
 
     // Rucoy

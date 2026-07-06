@@ -126,16 +126,6 @@ export interface MasterDashboardStats {
 export type BusinessTransactionType = 'account' | 'gold' | 'expense'
 export type BusinessTransactionAction = 'buy' | 'sell'
 
-export interface BusinessCategory {
-  id: number
-  name: string
-  type: BusinessTransactionType
-  color: string
-  icon: string
-  created_at: string
-  updated_at: string
-}
-
 export interface BusinessTransaction {
   id: number
   type: BusinessTransactionType
@@ -149,20 +139,6 @@ export interface BusinessTransaction {
   date: string
   notes: string | null
   archived_at: string | null
-  created_at: string
-  updated_at: string
-}
-
-export interface BusinessBudget {
-  id: number
-  category_id: number
-  category: BusinessCategory
-  amount: string
-  month: number
-  year: number
-  spent?: number
-  remaining?: number
-  percentage?: number
   created_at: string
   updated_at: string
 }

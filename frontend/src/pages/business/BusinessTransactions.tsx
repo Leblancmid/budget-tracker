@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Plus, Search, Pencil, Trash2, Briefcase, TrendingUp, TrendingDown, Archive, RotateCcw } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, Briefcase, TrendingUp, TrendingDown, Archive } from 'lucide-react'
 import { useBusinessTransactions } from '@/hooks/useBusinessTransactions'
 import { useArchive } from '@/hooks/useArchive'
 import { businessTransactionsApi } from '@/api/business'
@@ -23,7 +23,7 @@ const TYPE_LABELS: Record<BusinessTransactionType, string> = {
 const PER_PAGE = 10
 
 export default function BusinessTransactions() {
-  const { transactions, loading, create, update, remove, refetch } = useBusinessTransactions()
+  const { transactions, loading, create, update, remove } = useBusinessTransactions()
 
   const [modalOpen, setModalOpen]       = useState(false)
   const [editTarget, setEditTarget]     = useState<BusinessTransaction | null>(null)
@@ -31,7 +31,7 @@ export default function BusinessTransactions() {
   const [deleteTarget, setDeleteTarget] = useState<BusinessTransaction | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
 
-  const { showArchive, setShowArchive, archivedItems: archivedTxs, archiveLoading, fetchArchived, removeFromArchived } = useArchive(businessTransactionsApi.getArchived)
+  const { showArchive, setShowArchive, archivedItems: archivedTxs, archiveLoading, fetchArchived } = useArchive(businessTransactionsApi.getArchived)
 
   // Eagerly load archived so profit totals are correct on first render
   useEffect(() => { fetchArchived() }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -70,16 +70,6 @@ export default function BusinessTransactions() {
     }
   }
 
-  const handleUnarchive = async (tx: BusinessTransaction) => {
-    try {
-      await businessTransactionsApi.unarchive(tx.id)
-      removeFromArchived((t) => t.id !== tx.id)
-      await refetch()
-      toast.success('Transaction restored.')
-    } catch {
-      toast.error('Failed to restore transaction.')
-    }
-  }
 
   const settledTxs    = useMemo(() => [...transactions.filter(tx => tx.type !== 'account'), ...archivedTxs], [transactions, archivedTxs])
   const totalIncome   = useMemo(() => settledTxs.filter(tx => tx.price_php != null).reduce((s, tx) => s + parseFloat(tx.price_php!), 0), [settledTxs])
@@ -246,13 +236,6 @@ export default function BusinessTransactions() {
                           Profit: {formatCurrency(tx.amount)}
                         </div>
                       </div>
-                      <button
-                        onClick={() => handleUnarchive(tx)}
-                        className="shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
-                        title="Restore"
-                      >
-                        <RotateCcw size={13} />
-                      </button>
                     </div>
                   )
                 })}

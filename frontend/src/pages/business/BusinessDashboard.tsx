@@ -15,7 +15,8 @@ export default function BusinessDashboard() {
 
   const yearOptions = buildYearOptions()
 
-  const profit = stats?.total_profit ?? 0
+  const profit        = stats?.initial_profit ?? 0
+  const archivedProfit = stats?.total_profit ?? 0
 
   return (
     <div className="flex flex-col gap-6">
@@ -49,9 +50,9 @@ export default function BusinessDashboard() {
             icon={<BarChart3 className="h-5 w-5 text-teal-600 dark:text-teal-400" />}
             bg="bg-teal-50 dark:bg-teal-900/20"
             textColor={profit >= 0 ? 'text-teal-700 dark:text-teal-400' : 'text-red-700 dark:text-red-400'}
-            subLabel="Initial Profit"
-            subValue={formatCurrency(stats?.initial_profit ?? 0)}
-            subTextColor={(stats?.initial_profit ?? 0) >= 0 ? 'text-teal-600 dark:text-teal-500' : 'text-red-600 dark:text-red-400'}
+            subLabel="Archived Profit"
+            subValue={formatCurrency(archivedProfit)}
+            subTextColor={archivedProfit >= 0 ? 'text-teal-600 dark:text-teal-500' : 'text-red-600 dark:text-red-400'}
           />
           <StatCard
             label="Income"

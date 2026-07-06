@@ -10,10 +10,14 @@ return new class extends Migration
     {
         Schema::create('trades', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('gold_id')->constrained('golds')->cascadeOnDelete();
+            $table->foreignId('gold_id')->nullable()->constrained('golds')->nullOnDelete();
             $table->string('description')->nullable();
             $table->enum('status', ['kks', 'cash']);
             $table->decimal('amount', 15, 2);
+            $table->string('currency', 3)->nullable();
+            $table->string('payment_method')->nullable();
+            $table->date('completion_date')->nullable();
+            $table->timestamp('archived_at')->nullable();
             $table->timestamps();
         });
     }

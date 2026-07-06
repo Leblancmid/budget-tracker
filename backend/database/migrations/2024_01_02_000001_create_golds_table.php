@@ -11,6 +11,7 @@ return new class extends Migration
         Schema::create('golds', function (Blueprint $table) {
             $table->id();
             $table->decimal('amount', 20, 2);
+            $table->string('description')->nullable();
             $table->timestamps();
         });
     }

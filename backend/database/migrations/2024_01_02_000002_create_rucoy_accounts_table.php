@@ -13,6 +13,10 @@ return new class extends Migration
             $table->string('description');
             $table->string('email');
             $table->string('avatar')->nullable();
+            $table->decimal('price', 12, 2)->nullable();
+            $table->decimal('cost', 12, 2)->nullable();
+            $table->enum('payment_status', ['not_paid', 'partially_paid', 'fully_paid'])->default('not_paid');
+            $table->timestamp('archived_at')->nullable();
             $table->timestamps();
         });
     }

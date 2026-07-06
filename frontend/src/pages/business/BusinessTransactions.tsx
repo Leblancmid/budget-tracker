@@ -38,7 +38,7 @@ export default function BusinessTransactions() {
 
   const accountTxs = useMemo(() => {
     const q = accSearch.toLowerCase()
-    return transactions.filter(tx => tx.type === 'account' && tx.archived_at == null && (!q || (tx.description ?? '').toLowerCase().includes(q)))
+    return transactions.filter(tx => tx.archived_at == null && (!q || (tx.description ?? '').toLowerCase().includes(q)))
   }, [transactions, accSearch])
 
   const { paginated: accPaginated, meta: accMeta } = paginateLocally(accountTxs, accPage, PER_PAGE)
@@ -177,7 +177,14 @@ export default function BusinessTransactions() {
                       }
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-800 dark:text-gray-100 truncate leading-snug">{tx.description ?? '—'}</p>
+                      {tx.type === 'account' ? (
+                        <p className="font-semibold text-gray-800 dark:text-gray-100 truncate leading-snug">{tx.description ?? '—'}</p>
+                      ) : (
+                        <>
+                          <p className="font-semibold text-gray-800 dark:text-gray-100 leading-snug">Gold & Item</p>
+                          {tx.description && <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{tx.description}</p>}
+                        </>
+                      )}
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{formatDate(tx.date)}</p>
                       <div className="mt-2 text-xs">
                         <span className={['flex items-center gap-1 font-semibold', isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'].join(' ')}>

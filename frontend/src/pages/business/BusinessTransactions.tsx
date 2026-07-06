@@ -102,7 +102,7 @@ export default function BusinessTransactions() {
             <Briefcase className="h-6 w-6 text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-teal-100">Total Profit</p>
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-teal-100">Profit</p>
             <p className={['text-3xl font-bold mt-0.5', totalProfit >= 0 ? 'text-white' : 'text-red-200'].join(' ')}>
               {formatCurrency(totalProfit)}
             </p>

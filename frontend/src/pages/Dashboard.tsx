@@ -38,14 +38,14 @@ export function Dashboard() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <StatCard
-            label="Total Income"
+            label="Income"
             value={formatCurrency(stats?.total_income ?? 0)}
             icon={<TrendingUp className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />}
             bg="bg-emerald-50 dark:bg-emerald-900/20"
             textColor="text-emerald-700 dark:text-emerald-400"
           />
           <StatCard
-            label="Total Expense"
+            label="Expense"
             value={formatCurrency(stats?.total_expense ?? 0)}
             icon={<TrendingDown className="h-5 w-5 text-red-600 dark:text-red-400" />}
             bg="bg-red-50 dark:bg-red-900/20"

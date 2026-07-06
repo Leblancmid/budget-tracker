@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Plus, Minus, Search, Pencil, Trash2, Briefcase, TrendingUp, TrendingDown, Archive, RotateCcw } from 'lucide-react'
 import { useBusinessTransactions } from '@/hooks/useBusinessTransactions'
+import { useArchive } from '@/hooks/useArchive'
 import { businessTransactionsApi } from '@/api/business'
 import { Button } from '@/components/ui/Button'
 import { Pagination } from '@/components/ui/Pagination'
@@ -31,23 +32,12 @@ export default function BusinessTransactions() {
   const [deleteTarget, setDeleteTarget]   = useState<BusinessTransaction | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
 
-  // Archive state
-  const [showArchive, setShowArchive]       = useState(false)
-  const [archivedTxs, setArchivedTxs]       = useState<BusinessTransaction[]>([])
-  const [archiveLoading, setArchiveLoading] = useState(false)
+  const { showArchive, setShowArchive, archivedItems: archivedTxs, archiveLoading, removeFromArchived } = useArchive(businessTransactionsApi.getArchived)
 
   const [accSearch, setAccSearch] = useState('')
   const [accPage,   setAccPage]   = useState(1)
   const [giSearch,  setGiSearch]  = useState('')
   const [giPage,    setGiPage]    = useState(1)
-
-  const fetchArchived = useCallback(async () => {
-    setArchiveLoading(true)
-    try { setArchivedTxs(await businessTransactionsApi.getArchived()) }
-    finally { setArchiveLoading(false) }
-  }, [])
-
-  useEffect(() => { if (showArchive) fetchArchived() }, [showArchive, fetchArchived])
 
   // Only show non-archived account transactions in active list
   const accountTxs = useMemo(() => {
@@ -95,7 +85,7 @@ export default function BusinessTransactions() {
   const handleUnarchive = async (tx: BusinessTransaction) => {
     try {
       await businessTransactionsApi.unarchive(tx.id)
-      setArchivedTxs((prev) => prev.filter((t) => t.id !== tx.id))
+      removeFromArchived((t) => t.id !== tx.id)
       await refetch()
       toast.success('Transaction restored.')
     } catch {

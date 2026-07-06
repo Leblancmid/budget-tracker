@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Plus, Pencil, Trash2, Users, User, TrendingUp, TrendingDown, DollarSign, Search, Check, Archive, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -6,6 +6,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Pagination } from '@/components/ui/Pagination'
 import { AccountModal } from '@/components/modals/AccountModal'
 import { useRucoyAccounts } from '@/hooks/useRucoyAccounts'
+import { useArchive } from '@/hooks/useArchive'
 import { rucoyAccountsApi, type AccountPayload } from '@/api/rucoy'
 import { toast } from '@/components/ui/Toast'
 import { paginateLocally } from '@/utils/format'
@@ -29,21 +30,12 @@ export default function Accounts() {
   const [deleteTarget, setDeleteTarget] = useState<RucoyAccount | null>(null)
   const [deleting, setDeleting] = useState(false)
 
-  const [showArchive, setShowArchive] = useState(false)
-  const [archivedAccounts, setArchivedAccounts] = useState<RucoyAccount[]>([])
-  const [archiveLoading, setArchiveLoading] = useState(false)
+  const { showArchive, setShowArchive, archivedItems: archivedAccounts, archiveLoading, fetchArchived, removeFromArchived } = useArchive(rucoyAccountsApi.getArchived)
+
   const [archiveTarget, setArchiveTarget] = useState<RucoyAccount | null>(null)
   const [archiving, setArchiving] = useState(false)
   const [unarchiveTarget, setUnarchiveTarget] = useState<RucoyAccount | null>(null)
   const [unarchiving, setUnarchiving] = useState(false)
-
-  const fetchArchived = useCallback(async () => {
-    setArchiveLoading(true)
-    try { setArchivedAccounts(await rucoyAccountsApi.getArchived()) }
-    finally { setArchiveLoading(false) }
-  }, [])
-
-  useEffect(() => { if (showArchive) fetchArchived() }, [showArchive, fetchArchived])
 
   const handleArchive = async () => {
     if (!archiveTarget) return
@@ -68,7 +60,7 @@ export default function Accounts() {
     setUnarchiving(true)
     try {
       await unarchive(unarchiveTarget.id)
-      setArchivedAccounts((prev) => prev.filter((a) => a.id !== unarchiveTarget.id))
+      removeFromArchived((a) => a.id !== unarchiveTarget.id)
       toast.success('Account restored.')
     } catch {
       toast.error('Failed to restore account.')

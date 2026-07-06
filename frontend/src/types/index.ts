@@ -150,7 +150,7 @@ export interface BusinessDashboardStats {
   total_income: number
   total_expense: number
   total_profit: number
-  balance: number
+  initial_profit: number
   recent_transactions: BusinessTransaction[]
   expense_by_type: Array<{ type: string; total: string }>
   monthly_trend: Array<{

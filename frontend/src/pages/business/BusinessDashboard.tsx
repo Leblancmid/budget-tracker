@@ -44,21 +44,24 @@ export default function BusinessDashboard() {
       ) : (
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
           <StatCard
-            label="Total Profit"
+            label="Profit"
             value={formatCurrency(profit)}
             icon={<BarChart3 className="h-5 w-5 text-teal-600 dark:text-teal-400" />}
             bg="bg-teal-50 dark:bg-teal-900/20"
             textColor={profit >= 0 ? 'text-teal-700 dark:text-teal-400' : 'text-red-700 dark:text-red-400'}
+            subLabel="Initial Profit"
+            subValue={formatCurrency(stats?.initial_profit ?? 0)}
+            subTextColor={(stats?.initial_profit ?? 0) >= 0 ? 'text-teal-600 dark:text-teal-500' : 'text-red-600 dark:text-red-400'}
           />
           <StatCard
-            label="Total Income"
+            label="Income"
             value={formatCurrency(stats?.total_income ?? 0)}
             icon={<TrendingUp className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />}
             bg="bg-emerald-50 dark:bg-emerald-900/20"
             textColor="text-emerald-700 dark:text-emerald-400"
           />
           <StatCard
-            label="Total Expense"
+            label="Expense"
             value={formatCurrency(stats?.total_expense ?? 0)}
             icon={<TrendingDown className="h-5 w-5 text-red-600 dark:text-red-400" />}
             bg="bg-red-50 dark:bg-red-900/20"
@@ -191,8 +194,9 @@ export default function BusinessDashboard() {
   )
 }
 
-function StatCard({ label, value, icon, bg, textColor }: {
+function StatCard({ label, value, icon, bg, textColor, subLabel, subValue, subTextColor }: {
   label: string; value: string; icon: React.ReactNode; bg: string; textColor: string
+  subLabel?: string; subValue?: string; subTextColor?: string
 }) {
   return (
     <Card className="flex flex-col gap-4 px-5 py-4">
@@ -202,7 +206,14 @@ function StatCard({ label, value, icon, bg, textColor }: {
           {icon}
         </div>
       </div>
-      <p className={['text-2xl font-bold leading-none tracking-tight truncate', textColor].join(' ')}>{value}</p>
+      <div className="flex flex-col gap-1">
+        <p className={['text-2xl font-bold leading-none tracking-tight truncate', textColor].join(' ')}>{value}</p>
+        {subLabel && subValue && (
+          <p className={['text-xs font-medium truncate', subTextColor ?? 'text-gray-400 dark:text-gray-500'].join(' ')}>
+            {subLabel}: {subValue}
+          </p>
+        )}
+      </div>
     </Card>
   )
 }

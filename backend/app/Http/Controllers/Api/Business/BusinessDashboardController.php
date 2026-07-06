@@ -17,9 +17,13 @@ class BusinessDashboardController extends Controller
 
         $base = BusinessTransaction::whereMonth('date', $month)->whereYear('date', $year);
 
-        $income  = (float) (clone $base)->sum('price_php');
-        $expense = (float) (clone $base)->sum('cost_php');
-        $profit  = $income - $expense;
+        $income        = (float) (clone $base)->sum('price_php');
+        $expense       = (float) (clone $base)->sum('cost_php');
+        $initialProfit = $income - $expense;
+        $profit        = (float) (clone $base)
+            ->where('type', 'account')
+            ->whereNotNull('archived_at')
+            ->sum('profit_php');
 
         $recentTransactions = BusinessTransaction::latest('date')
             ->latest('id')
@@ -62,6 +66,7 @@ class BusinessDashboardController extends Controller
             'total_income'        => $income,
             'total_expense'       => $expense,
             'total_profit'        => $profit,
+            'initial_profit'      => $initialProfit,
             'recent_transactions' => $recentTransactions,
             'expense_by_type'     => $expenseByType,
             'monthly_trend'       => $monthlyTrend,

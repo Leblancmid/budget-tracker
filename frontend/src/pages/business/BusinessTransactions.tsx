@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Plus, Minus, Search, Pencil, Trash2, Briefcase, TrendingUp, TrendingDown, Archive, Check, RotateCcw } from 'lucide-react'
+import { Plus, Minus, Search, Pencil, Trash2, Briefcase, TrendingUp, TrendingDown, Archive, RotateCcw } from 'lucide-react'
 import { useBusinessTransactions } from '@/hooks/useBusinessTransactions'
 import { businessTransactionsApi } from '@/api/business'
 import { Button } from '@/components/ui/Button'
@@ -32,10 +32,9 @@ export default function BusinessTransactions() {
   const [deleteLoading, setDeleteLoading] = useState(false)
 
   // Archive state
-  const [showArchive, setShowArchive]   = useState(false)
-  const [archivedTxs, setArchivedTxs]   = useState<BusinessTransaction[]>([])
+  const [showArchive, setShowArchive]       = useState(false)
+  const [archivedTxs, setArchivedTxs]       = useState<BusinessTransaction[]>([])
   const [archiveLoading, setArchiveLoading] = useState(false)
-  const [archiving, setArchiving]       = useState(false)
 
   const [accSearch, setAccSearch] = useState('')
   const [accPage,   setAccPage]   = useState(1)
@@ -92,19 +91,6 @@ export default function BusinessTransactions() {
     }
   }
 
-  const handleArchive = async (tx: BusinessTransaction) => {
-    setArchiving(true)
-    try {
-      await businessTransactionsApi.archive(tx.id)
-      await refetch()
-      if (showArchive) fetchArchived()
-      toast.success('Transaction archived.')
-    } catch {
-      toast.error('Failed to archive transaction.')
-    } finally {
-      setArchiving(false)
-    }
-  }
 
   const handleUnarchive = async (tx: BusinessTransaction) => {
     try {
@@ -242,14 +228,6 @@ export default function BusinessTransactions() {
                         )}
                       </div>
                       <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => setArchiveTarget(tx)}
-                          disabled={archiving}
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 disabled:opacity-40 transition-colors"
-                          title="Mark as done"
-                        >
-                          <Check size={13} />
-                        </button>
                         <button onClick={() => openEdit(tx)} className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
                           <Pencil size={13} />
                         </button>
@@ -298,7 +276,7 @@ export default function BusinessTransactions() {
                           </div>
                         </div>
                         <button
-                          onClick={() => setUnarchiveTarget(tx)}
+                          onClick={() => handleUnarchive(tx)}
                           className="shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
                           title="Restore"
                         >
@@ -402,26 +380,6 @@ export default function BusinessTransactions() {
         defaultAction={defaultAction}
         defaultType={defaultType}
         usedAccountIds={activeAccountIds}
-      />
-
-      <ConfirmDialog
-        open={!!archiveTarget}
-        onClose={() => setArchiveTarget(null)}
-        onConfirm={handleArchive}
-        loading={archiving}
-        title="Archive Transaction"
-        message={`Archive "${archiveTarget?.description ?? 'this transaction'}"? You can restore it anytime from the archive.`}
-        confirmLabel="Archive"
-      />
-
-      <ConfirmDialog
-        open={!!unarchiveTarget}
-        onClose={() => setUnarchiveTarget(null)}
-        onConfirm={handleUnarchive}
-        loading={unarchiving}
-        title="Restore Transaction"
-        message={`Restore "${unarchiveTarget?.description ?? 'this transaction'}" back to active accounts?`}
-        confirmLabel="Restore"
       />
 
       <ConfirmDialog

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Pencil, Trash2, AlertTriangle } from 'lucide-react'
+import { Plus, Pencil, Trash2, AlertTriangle, Download } from 'lucide-react'
 import { useBudgets } from '@/hooks/useBudgets'
 import { useCategories } from '@/hooks/useCategories'
 import { Button } from '@/components/ui/Button'
@@ -9,6 +9,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { BudgetModal, type BudgetFormData } from '@/components/modals/BudgetModal'
 import { toast } from '@/components/ui/Toast'
 import { formatCurrency, MONTHS, buildYearOptions } from '@/utils/format'
+import { exportCsv } from '@/utils/csv'
 import type { Budget } from '@/types'
 
 export function Budgets() {
@@ -49,6 +50,10 @@ export function Budgets() {
 
   const yearOptions = buildYearOptions(6)
 
+  const handleExport = () => exportCsv(`budgets-${MONTHS[month - 1]}-${year}`, budgets.map((b) => ({
+    category: b.category.name, budget: b.amount, spent: b.spent ?? 0, remaining: b.remaining ?? 0, percentage: b.percentage ?? 0,
+  })))
+
   const totalBudget = budgets.reduce((acc, b) => acc + parseFloat(b.amount), 0)
   const totalSpent  = budgets.reduce((acc, b) => acc + (b.spent ?? 0), 0)
 
@@ -69,7 +74,10 @@ export function Budgets() {
             className="w-24"
           />
         </div>
-        <Button icon={<Plus className="h-4 w-4" />} onClick={openAdd}>Set Budget</Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" icon={<Download className="h-4 w-4" />} onClick={handleExport}>Export</Button>
+          <Button icon={<Plus className="h-4 w-4" />} onClick={openAdd}>Set Budget</Button>
+        </div>
       </div>
 
       {totalBudget > 0 && (

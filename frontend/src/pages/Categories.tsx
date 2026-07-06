@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, Download } from 'lucide-react'
 import { useCategories } from '@/hooks/useCategories'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { CategoryModal, type CategoryFormData } from '@/components/modals/CategoryModal'
 import { toast } from '@/components/ui/Toast'
+import { exportCsv } from '@/utils/csv'
 import type { Category } from '@/types'
 
 export function Categories() {
@@ -47,12 +48,17 @@ export function Categories() {
   const openEdit = (cat: Category) => { setEditTarget(cat); setModalOpen(true) }
   const openAdd  = () => { setEditTarget(null); setModalOpen(true) }
 
+  const handleExport = () => exportCsv('categories', categories.map((c) => ({
+    name: c.name, type: c.type, color: c.color, transactions: c.transactions_count ?? 0,
+  })))
+
   const income  = categories.filter((c) => c.type === 'income')
   const expense = categories.filter((c) => c.type === 'expense')
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <Button variant="secondary" icon={<Download className="h-4 w-4" />} onClick={handleExport}>Export</Button>
         <Button icon={<Plus className="h-4 w-4" />} onClick={openAdd}>New Category</Button>
       </div>
 

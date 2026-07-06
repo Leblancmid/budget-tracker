@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Plus, Pencil, Trash2, Users, User, TrendingUp, TrendingDown, DollarSign, Search, Check, Archive, RotateCcw } from 'lucide-react'
+import { Plus, Pencil, Trash2, Users, User, TrendingUp, TrendingDown, DollarSign, Search, Check, Archive, RotateCcw, Download } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -10,6 +10,7 @@ import { useArchive } from '@/hooks/useArchive'
 import { rucoyAccountsApi, type AccountPayload } from '@/api/rucoy'
 import { toast } from '@/components/ui/Toast'
 import { paginateLocally } from '@/utils/format'
+import { exportCsv } from '@/utils/csv'
 import type { AccountPaymentStatus, RucoyAccount } from '@/types'
 
 const fmtGold = (n: number) => `${n.toLocaleString()} G`
@@ -94,6 +95,10 @@ export default function Accounts() {
     return { price, cost, profit }
   }, [accounts])
 
+  const handleExport = () => exportCsv('rucoy-accounts', accounts.map((a) => ({
+    email: a.email ?? '', description: a.description ?? '', price: a.price ?? '', cost: a.cost ?? '', payment_status: a.payment_status,
+  })))
+
   const handleSubmit = async (data: AccountPayload) => {
     if (editing) {
       await update(editing.id, data)
@@ -148,6 +153,9 @@ export default function Accounts() {
             <Archive size={14} />
             Archive
           </button>
+          <Button variant="secondary" onClick={handleExport}>
+            <Download size={16} className="mr-1" /> Export
+          </Button>
           <Button onClick={openCreate}>
             <Plus size={16} className="mr-1" /> Add Account
           </Button>

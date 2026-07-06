@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Search, Filter, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Search, Filter, Pencil, Trash2, Download } from 'lucide-react'
 import { useTransactions } from '@/hooks/useTransactions'
 import { useCategories } from '@/hooks/useCategories'
 import { Button } from '@/components/ui/Button'
@@ -12,6 +12,7 @@ import { Card } from '@/components/ui/Card'
 import { TransactionModal, type TransactionFormData } from '@/components/modals/TransactionModal'
 import { toast } from '@/components/ui/Toast'
 import { formatCurrency, formatDate } from '@/utils/format'
+import { exportCsv } from '@/utils/csv'
 import type { Transaction } from '@/types'
 
 export function Transactions() {
@@ -49,6 +50,10 @@ export function Transactions() {
 
   const openEdit = (tx: Transaction) => { setEditTarget(tx); setModalOpen(true) }
   const openAdd  = () => { setEditTarget(null); setModalOpen(true) }
+
+  const handleExport = () => exportCsv('transactions', transactions.map((tx) => ({
+    date: tx.date, category: tx.category.name, type: tx.type, description: tx.description ?? '', amount: tx.amount,
+  })))
 
   return (
     <div className="flex flex-col gap-5">
@@ -94,7 +99,8 @@ export function Transactions() {
         >
           Clear
         </Button>
-        <div className="ml-auto">
+        <div className="ml-auto flex gap-2">
+          <Button variant="secondary" icon={<Download className="h-4 w-4" />} onClick={handleExport}>Export</Button>
           <Button icon={<Plus className="h-4 w-4" />} onClick={openAdd}>Add Transaction</Button>
         </div>
       </div>

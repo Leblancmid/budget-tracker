@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Plus, Search, Pencil, Trash2, Briefcase, TrendingUp, TrendingDown, Archive } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, Briefcase, TrendingUp, TrendingDown, Archive, Download } from 'lucide-react'
 import { useBusinessTransactions } from '@/hooks/useBusinessTransactions'
 import { useArchive } from '@/hooks/useArchive'
 import { businessTransactionsApi } from '@/api/business'
@@ -11,6 +11,7 @@ import { BusinessTransactionModal } from '@/components/modals/BusinessTransactio
 import { toast } from '@/components/ui/Toast'
 import { formatCurrency, formatDate, paginateLocally } from '@/utils/format'
 import { isBusinessIncome } from '@/utils/business'
+import { exportCsv } from '@/utils/csv'
 import type { BusinessTransaction, BusinessTransactionType } from '@/types'
 import type { BusinessTransactionPayload } from '@/api/business'
 
@@ -80,6 +81,10 @@ export default function BusinessTransactions() {
   const openEdit       = (tx: BusinessTransaction) => { setDefaultType(tx.type === 'account' ? 'account' : null); setEditTarget(tx); setModalOpen(true) }
   const openAddAccount = () => { setDefaultType('account'); setEditTarget(null); setModalOpen(true) }
 
+  const handleExport = () => exportCsv('business-transactions', [...transactions, ...archivedTxs].map((tx) => ({
+    date: tx.date, type: tx.type, description: tx.description ?? '', price_php: tx.price_php ?? '', cost_php: tx.cost_php ?? '', profit_php: tx.profit_php ?? '',
+  })))
+
   const activeAccountIds = useMemo(
     () => transactions.filter(tx => tx.type === 'account' && tx.account_id != null && tx.archived_at == null).map(tx => tx.account_id as number),
     [transactions]
@@ -146,6 +151,7 @@ export default function BusinessTransactions() {
               <Archive size={14} />
               Archive
             </button>
+            <Button size="sm" variant="secondary" icon={<Download className="h-4 w-4" />} onClick={handleExport}>Export</Button>
             <Button size="sm" icon={<Plus className="h-4 w-4" />} onClick={openAddAccount}>
               Add Account
             </Button>

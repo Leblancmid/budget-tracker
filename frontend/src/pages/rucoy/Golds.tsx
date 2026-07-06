@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Plus, Minus, Coins, TrendingUp, TrendingDown, Search } from 'lucide-react'
+import { Plus, Minus, Coins, TrendingUp, TrendingDown, Search, Download } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
@@ -10,6 +10,7 @@ import { useGoldLogs } from '@/hooks/useGoldLogs'
 import { goldsApi } from '@/api/rucoy'
 import { toast } from '@/components/ui/Toast'
 import { formatWithCommas, formatDateLong, paginateLocally } from '@/utils/format'
+import { exportCsv } from '@/utils/csv'
 
 export default function Golds() {
   const { totalGold, loading, error, refetch: refetchGolds, create } = useGolds()
@@ -40,6 +41,10 @@ export default function Golds() {
 
   const openSell = () => { setSellOpen(true); setSellAmount(''); setSellDesc(''); setSellError('') }
   const closeSell = () => { setSellOpen(false); setSellAmount(''); setSellDesc(''); setSellError('') }
+
+  const handleExport = () => exportCsv('golds', logs.map((l) => ({
+    date: l.created_at, type: l.type, amount: l.amount, description: l.description ?? '',
+  })))
 
   const handleAdd = async (data: { amount: number; description?: string }) => {
     await create(data)
@@ -123,6 +128,12 @@ export default function Golds() {
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Transaction History</h2>
             <div className="flex items-center gap-2">
+              <button
+                onClick={handleExport}
+                className="flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+              >
+                <Download size={14} /> Export
+              </button>
               <div className="relative">
                 <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 <input

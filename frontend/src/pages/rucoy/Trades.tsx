@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Plus, Pencil, Trash2, ArrowLeftRight, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Coins, Search, Check, Archive, RotateCcw } from 'lucide-react'
+import { Plus, Pencil, Trash2, ArrowLeftRight, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Coins, Search, Check, Archive, RotateCcw, Download } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -8,6 +8,7 @@ import { useTrades } from '@/hooks/useTrades'
 import { tradesApi } from '@/api/rucoy'
 import { toast } from '@/components/ui/Toast'
 import { formatCurrency, formatDateLong } from '@/utils/format'
+import { exportCsv } from '@/utils/csv'
 import { CURRENCY_SYMBOLS } from '@/utils/rucoy'
 import type { TradePayload } from '@/api/rucoy'
 import type { Trade, TradeStatus } from '@/types'
@@ -140,6 +141,10 @@ export default function Trades() {
   const openCreate = () => { setEditing(null); setModalOpen(true) }
   const openEdit = (t: Trade) => { setEditing(t); setModalOpen(true) }
 
+  const handleExport = () => exportCsv('trades', trades.map((t) => ({
+    date: t.created_at, status: t.status, amount: t.amount, currency: t.currency ?? '', description: t.description ?? '',
+  })))
+
   const handleSubmit = async (data: TradePayload) => {
     if (editing) {
       await update(editing.id, data)
@@ -209,6 +214,9 @@ export default function Trades() {
             <Archive size={14} />
             Archive
           </button>
+          <Button variant="secondary" onClick={handleExport}>
+            <Download size={16} className="mr-1" /> Export
+          </Button>
           <Button onClick={openCreate}>
             <Plus size={16} className="mr-1" /> New Trade
           </Button>

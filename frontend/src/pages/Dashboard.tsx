@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown, Wallet, ArrowRight } from 'lucide-react'
+import { TrendingUp, TrendingDown, ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useDashboard } from '@/hooks/useDashboard'
 import { Card } from '@/components/ui/Card'
@@ -32,7 +32,7 @@ export function Dashboard() {
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           {[1, 2, 3].map((i) => <SkeletonCard key={i} />)}
         </div>
       ) : (
@@ -50,13 +50,6 @@ export function Dashboard() {
             icon={<TrendingDown className="h-5 w-5 text-red-600 dark:text-red-400" />}
             bg="bg-red-50 dark:bg-red-900/20"
             textColor="text-red-700 dark:text-red-400"
-          />
-          <StatCard
-            label="Balance"
-            value={formatCurrency(stats?.balance ?? 0)}
-            icon={<Wallet className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />}
-            bg="bg-indigo-50 dark:bg-indigo-900/20"
-            textColor={(stats?.balance ?? 0) >= 0 ? 'text-indigo-700 dark:text-indigo-400' : 'text-red-700 dark:text-red-400'}
           />
         </div>
       )}

@@ -63,7 +63,6 @@ export interface Paginated<T> {
 export interface DashboardStats {
   total_income: number
   total_expense: number
-  balance: number
   recent_transactions: Transaction[]
   expense_by_category: Array<{
     category_id: number
@@ -113,9 +112,6 @@ export interface Saving {
 
 export interface MasterDashboardStats {
   overall_profit: number
-  overall_balance: number
-  daily_balance: number
-  business_balance: number
   gold_stash: number
   total_price: number
   savings_balance: number

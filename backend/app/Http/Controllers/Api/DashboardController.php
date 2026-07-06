@@ -56,7 +56,6 @@ class DashboardController extends Controller
         return response()->json([
             'total_income'        => (float) $totalIncome,
             'total_expense'       => (float) $totalExpense,
-            'balance'             => (float) $totalIncome - (float) $totalExpense,
             'recent_transactions' => $recentTransactions,
             'expense_by_category' => $expenseByCategory,
             'monthly_trend'       => $monthlyTrend,

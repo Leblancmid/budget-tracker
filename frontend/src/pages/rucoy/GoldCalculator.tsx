@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Calculator, RefreshCw } from 'lucide-react'
+import { Calculator, Coins, RefreshCw } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { useGolds } from '@/hooks/useGolds'
 import { formatWithCommas } from '@/utils/format'
@@ -15,12 +15,16 @@ function GoldInput({ value, onChange }: { value: string; onChange: (v: string) =
         if (stripped === '' || /^\d*\.?\d*$/.test(stripped)) onChange(stripped)
       }}
       placeholder="e.g. 1,000,000,000"
-      className="block w-full rounded-lg border border-gray-300 hover:border-gray-400 bg-white px-4 py-3 text-lg font-semibold text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:placeholder:text-gray-600 transition-colors"
+      className={[
+        'block w-full rounded-xl border-2 bg-white/10 px-4 py-3 text-xl font-bold text-white placeholder:text-slate-500',
+        'focus:outline-none focus:ring-2 focus:ring-amber-400/60 focus:border-amber-400 border-white/10',
+        'transition-colors caret-amber-400',
+      ].join(' ')}
     />
   )
 }
 
-function NumInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function RateInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
     <input
       type="text"
@@ -30,20 +34,51 @@ function NumInput({ value, onChange }: { value: string; onChange: (v: string) =>
         const stripped = e.target.value.replace(/,/g, '')
         if (stripped === '' || /^\d*\.?\d*$/.test(stripped)) onChange(stripped)
       }}
-      className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-1.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors"
+      className={[
+        'w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800',
+        'px-3 py-1.5 text-sm text-gray-800 dark:text-gray-200 font-medium',
+        'focus:outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400 transition-colors',
+      ].join(' ')}
     />
   )
 }
 
 interface CurrencyConfig {
   symbol: string
+  flag: string
   label: string
+  code: string
   divisor: string
   multiplier: string
   operation: 'multiply' | 'divide'
-  color: string
   resultColor: string
+  accentBg: string
+  accentText: string
 }
+
+const INITIAL_CONFIGS: CurrencyConfig[] = [
+  {
+    symbol: '₱', flag: '🇵🇭', label: 'Philippine Peso', code: 'PHP',
+    divisor: '10000', multiplier: '9.5', operation: 'divide',
+    resultColor: 'text-rose-600 dark:text-rose-400',
+    accentBg: 'bg-rose-50 dark:bg-rose-900/20',
+    accentText: 'text-amber-500 dark:text-amber-400',
+  },
+  {
+    symbol: '$', flag: '🇺🇸', label: 'US Dollar', code: 'USD',
+    divisor: '1000000', multiplier: '0.18', operation: 'multiply',
+    resultColor: 'text-sky-600 dark:text-sky-400',
+    accentBg: 'bg-sky-50 dark:bg-sky-900/20',
+    accentText: 'text-emerald-500 dark:text-emerald-400',
+  },
+  {
+    symbol: '€', flag: '🇪🇺', label: 'Euro', code: 'EUR',
+    divisor: '1000000', multiplier: '0.17', operation: 'multiply',
+    resultColor: 'text-violet-600 dark:text-violet-400',
+    accentBg: 'bg-violet-50 dark:bg-violet-900/20',
+    accentText: 'text-violet-500 dark:text-violet-400',
+  },
+]
 
 function CurrencyCard({
   config,
@@ -64,30 +99,45 @@ function CurrencyCard({
       : (goldNum / d) * m
   }, [goldNum, config.divisor, config.multiplier, config.operation])
 
-  const formulaLabel = config.operation === 'divide'
-    ? 'gold ÷ div ÷ rate'
-    : 'gold ÷ div × rate'
-
   const formatted = result === null
-    ? '—'
-    : `${config.symbol}${result.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    ? null
+    : result.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+  const formula = config.operation === 'divide' ? 'G ÷ div ÷ rate' : 'G ÷ div × rate'
 
   return (
-    <Card className="flex flex-col gap-4 p-5">
-      <div className="flex items-center justify-between">
-        <p className={`text-xs font-semibold uppercase tracking-wide ${config.color}`}>{config.label}</p>
-        <span className="text-xs font-mono text-gray-400 dark:text-gray-500">
-          {formulaLabel}
-        </span>
+    <Card className="flex flex-col overflow-hidden">
+      {/* Header */}
+      <div className={['flex items-center gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-700/60', config.accentBg].join(' ')}>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">{config.label}</p>
+          <p className={['text-[11px] font-semibold tracking-wide', config.accentText].join(' ')}>{config.code}</p>
+        </div>
+        <span className="text-[10px] font-mono text-gray-400 dark:text-gray-500 shrink-0">{formula}</span>
       </div>
 
-      <div>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Rate ({config.symbol})</p>
-        <NumInput value={config.multiplier} onChange={onMultiplierChange} />
+      {/* Result */}
+      <div className="flex flex-col items-center justify-center py-6 px-5 gap-1 border-b border-gray-100 dark:border-gray-700/60">
+        {formatted ? (
+          <>
+            <p className={['text-3xl font-bold tabular-nums tracking-tight', config.resultColor].join(' ')}>
+              {config.symbol}{formatted}
+            </p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+              {config.code} equivalent
+            </p>
+          </>
+        ) : (
+          <p className="text-2xl font-bold text-gray-200 dark:text-gray-700">—</p>
+        )}
       </div>
 
-      <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
-        <p className={`text-2xl font-bold ${config.resultColor}`}>{formatted}</p>
+      {/* Rate input */}
+      <div className="px-5 py-4">
+        <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-1.5">
+          Rate ({config.symbol} per unit)
+        </label>
+        <RateInput value={config.multiplier} onChange={onMultiplierChange} />
       </div>
     </Card>
   )
@@ -97,20 +147,15 @@ export default function GoldCalculator() {
   const { totalGold } = useGolds()
 
   const [gold, setGold] = useState('')
-
-  const [configs, setConfigs] = useState<CurrencyConfig[]>([
-    { symbol: '₱', label: 'Philippine Peso', divisor: '10000', multiplier: '9.5',  operation: 'divide'   as const, color: 'text-blue-600 dark:text-blue-400',    resultColor: 'text-blue-700 dark:text-blue-400'    },
-    { symbol: '$', label: 'US Dollar',        divisor: '1000000', multiplier: '0.18', operation: 'multiply' as const, color: 'text-emerald-600 dark:text-emerald-400', resultColor: 'text-emerald-700 dark:text-emerald-400' },
-    { symbol: '€', label: 'Euro',             divisor: '1000000', multiplier: '0.17', operation: 'multiply' as const, color: 'text-indigo-600 dark:text-indigo-400',  resultColor: 'text-indigo-700 dark:text-indigo-400'  },
-  ])
+  const [configs, setConfigs] = useState<CurrencyConfig[]>(INITIAL_CONFIGS)
 
   const goldNum = useMemo(() => {
     const n = parseFloat(gold.replace(/,/g, ''))
     return isNaN(n) ? null : n
   }, [gold])
 
-  const updateConfig = (i: number, field: 'divisor' | 'multiplier', value: string) => {
-    setConfigs((prev) => prev.map((c, idx) => idx === i ? { ...c, [field]: value } : c))
+  const updateConfig = (i: number, value: string) => {
+    setConfigs((prev) => prev.map((c, idx) => idx === i ? { ...c, multiplier: value } : c))
   }
 
   const loadCurrentGold = () => {
@@ -118,43 +163,61 @@ export default function GoldCalculator() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Gold Calculator</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Calculate the real-world value of your Rucoy gold</p>
+    <div className="flex flex-col gap-5">
+
+      {/* Hero input banner */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-700 to-slate-900 p-6 shadow-lg shadow-slate-900/30 dark:shadow-black/40">
+        <div className="absolute -top-8 -right-8 h-40 w-40 rounded-full bg-white/5" />
+        <div className="absolute -bottom-10 -left-6 h-32 w-32 rounded-full bg-white/[0.03]" />
+
+        <div className="relative flex flex-col gap-4">
+          {/* Label row */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-400/20">
+                <Calculator className="h-3.5 w-3.5 text-amber-400" />
+              </div>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                Gold Amount
+              </span>
+            </div>
+            <button
+              onClick={loadCurrentGold}
+              disabled={totalGold === 0}
+              className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/8 hover:bg-white/15 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <RefreshCw size={11} />
+              Use Current Gold
+            </button>
+          </div>
+
+          {/* Input */}
+          <GoldInput value={gold} onChange={setGold} />
+
+          {/* Parsed display */}
+          <div className="flex items-center gap-2">
+            <Coins className="h-3.5 w-3.5 text-amber-400/60" />
+            <p className="text-xs text-slate-400">
+              {goldNum !== null
+                ? <span className="text-amber-400 font-semibold">{goldNum.toLocaleString()} G</span>
+                : 'Enter a gold amount to see conversions below'}
+            </p>
+          </div>
         </div>
-        <button
-          onClick={loadCurrentGold}
-          disabled={totalGold === 0}
-          className="flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-700 hover:bg-amber-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-400 dark:hover:bg-amber-900/30"
-        >
-          <RefreshCw size={14} />
-          Use Current Gold
-        </button>
       </div>
 
-      <Card className="flex flex-col gap-3 p-5">
-        <div className="flex items-center gap-2 mb-1">
-          <Calculator size={16} className="text-amber-500" />
-          <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Rucoy Gold Amount</p>
-        </div>
-        <GoldInput value={gold} onChange={setGold} />
-        <p className="text-xs text-gray-400 dark:text-gray-500">
-          {goldNum !== null ? `${goldNum.toLocaleString()} G` : 'Enter an amount to calculate'}
-        </p>
-      </Card>
-
-      <div className="grid grid-cols-3 gap-4">
+      {/* Currency cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {configs.map((cfg, i) => (
           <CurrencyCard
             key={cfg.symbol}
             config={cfg}
             goldNum={goldNum}
-            onMultiplierChange={(v) => updateConfig(i, 'multiplier', v)}
+            onMultiplierChange={(v) => updateConfig(i, v)}
           />
         ))}
       </div>
+
     </div>
   )
 }

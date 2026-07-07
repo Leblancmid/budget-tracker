@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { ThemeProvider } from '@/context/ThemeContext'
+import { AmountVisibilityProvider } from '@/context/AmountVisibilityContext'
 import { Layout } from '@/components/layout/Layout'
 import { Dashboard } from '@/pages/Dashboard'
 import { Transactions } from '@/pages/Transactions'
@@ -27,6 +28,7 @@ function Loading() {
 export default function App() {
   return (
     <ThemeProvider>
+      <AmountVisibilityProvider>
       <BrowserRouter>
         <Routes>
           <Route element={<Layout />}>
@@ -47,6 +49,7 @@ export default function App() {
         </Routes>
         <ToastContainer />
       </BrowserRouter>
+      </AmountVisibilityProvider>
     </ThemeProvider>
   )
 }

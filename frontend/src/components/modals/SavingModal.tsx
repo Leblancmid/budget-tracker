@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { formatCurrency, formatWithCommas, handleAmountInput, todayISO } from '@/utils/format'
+import { Amt } from '@/context/AmountVisibilityContext'
 import { flattenApiErrors } from '@/utils/api'
 import type { Saving, SavingModeOfPayment, SavingTransfer } from '@/types'
 import type { SavingPayload } from '@/api/master'
@@ -132,7 +133,7 @@ export function SavingModal({ open, onClose, onSubmit, saving, dailyBalance, bus
                     {label}
                   </p>
                   <p className={['text-[11px] mt-0.5', active ? 'text-indigo-500 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-500'].join(' ')}>
-                    {balance !== undefined ? formatCurrency(balance) : '—'}
+                    {balance !== undefined ? <Amt value={formatCurrency(balance)} /> : '—'}
                   </p>
                 </button>
               )

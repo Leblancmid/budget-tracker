@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/Card'
 import { BusinessTransactionModal } from '@/components/modals/BusinessTransactionModal'
 import { toast } from '@/components/ui/Toast'
 import { formatCurrency, formatDate, paginateLocally } from '@/utils/format'
+import { Amt } from '@/context/AmountVisibilityContext'
 import { isBusinessIncome } from '@/utils/business'
 import { exportCsv } from '@/utils/csv'
 import type { BusinessTransaction, BusinessTransactionType } from '@/types'
@@ -104,20 +105,20 @@ export default function BusinessTransactions() {
           <div className="flex-1 min-w-0">
             <p className="text-[11px] font-semibold uppercase tracking-widest text-teal-100">Profit</p>
             <p className={['text-3xl font-bold mt-0.5', totalProfit >= 0 ? 'text-white' : 'text-red-200'].join(' ')}>
-              {formatCurrency(totalProfit)}
+              <Amt value={formatCurrency(totalProfit)} />
             </p>
             <p className="text-xs text-teal-200 mt-0.5">
-              Initial Profit: {formatCurrency(initialProfit)}
+              Initial Profit: <Amt value={formatCurrency(initialProfit)} />
             </p>
             <div className="flex items-center gap-4 mt-2">
               <span className="flex items-center gap-1 text-xs text-teal-100">
                 <TrendingUp className="h-3.5 w-3.5" />
-                {formatCurrency(totalIncome)} price
+                <Amt value={formatCurrency(totalIncome)} /> price
               </span>
               <span className="text-teal-300/50">·</span>
               <span className="flex items-center gap-1 text-xs text-teal-100">
                 <TrendingDown className="h-3.5 w-3.5" />
-                {formatCurrency(totalExpense)} cost
+                <Amt value={formatCurrency(totalExpense)} /> cost
               </span>
             </div>
           </div>
@@ -190,7 +191,7 @@ export default function BusinessTransactions() {
                       <div className="mt-2 text-xs">
                         <span className={['flex items-center gap-1 font-semibold', isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'].join(' ')}>
                           {isIncome ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
-                          Profit: {formatCurrency(tx.amount)}
+                          Profit: <Amt value={formatCurrency(tx.amount)} />
                         </span>
                       </div>
                     </div>
@@ -239,7 +240,7 @@ export default function BusinessTransactions() {
                         <p className="font-medium text-gray-500 dark:text-gray-400 truncate leading-snug">{tx.description ?? '—'}</p>
                         <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{formatDate(tx.date)}</p>
                         <div className="mt-1.5 text-xs text-gray-400 dark:text-gray-500 font-medium">
-                          Profit: {formatCurrency(tx.amount)}
+                          Profit: <Amt value={formatCurrency(tx.amount)} />
                         </div>
                       </div>
                     </div>

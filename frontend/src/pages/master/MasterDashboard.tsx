@@ -3,6 +3,7 @@ import { TrendingUp, Coins, DollarSign, PiggyBank } from 'lucide-react'
 import { useMasterDashboard } from '@/hooks/useMasterDashboard'
 import { Card } from '@/components/ui/Card'
 import { formatCurrency } from '@/utils/format'
+import { Amt } from '@/context/AmountVisibilityContext'
 
 const USD_RATE_KEY = 'master_account_usd_rate'
 const PHP_RATE_KEY = 'master_account_php_rate'
@@ -80,7 +81,7 @@ export default function MasterDashboard() {
                 </div>
                 <div>
                   <p className={['text-3xl font-bold', (stats?.overall_profit ?? 0) >= 0 ? 'text-white' : 'text-red-200'].join(' ')}>
-                    {formatCurrency(stats?.overall_profit ?? 0)}
+                    <Amt value={formatCurrency(stats?.overall_profit ?? 0)} />
                   </p>
                   <p className="text-xs text-violet-200/80 mt-1">Business + Daily Expenses</p>
                 </div>
@@ -100,7 +101,7 @@ export default function MasterDashboard() {
                 </div>
                 <div>
                   <p className={['text-3xl font-bold', (stats?.savings_balance ?? 0) >= 0 ? 'text-white' : 'text-red-200'].join(' ')}>
-                    {formatCurrency(stats?.savings_balance ?? 0)}
+                    <Amt value={formatCurrency(stats?.savings_balance ?? 0)} />
                   </p>
                   <p className="text-xs text-emerald-200/80 mt-1">CIMB · Maribank · GCash</p>
                 </div>

@@ -9,6 +9,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { BudgetModal, type BudgetFormData } from '@/components/modals/BudgetModal'
 import { toast } from '@/components/ui/Toast'
 import { formatCurrency, MONTHS, buildYearOptions } from '@/utils/format'
+import { Amt } from '@/context/AmountVisibilityContext'
 import { exportCsv } from '@/utils/csv'
 import type { Budget } from '@/types'
 
@@ -85,18 +86,18 @@ export function Budgets() {
           <div className="flex items-center justify-between mb-3">
             <div>
               <p className="text-xs text-gray-500 font-medium dark:text-gray-400">Total Budget</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{formatCurrency(totalBudget)}</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-gray-100"><Amt value={formatCurrency(totalBudget)} /></p>
             </div>
             <div className="text-right">
               <p className="text-xs text-gray-500 font-medium dark:text-gray-400">Spent</p>
               <p className={['text-xl font-bold', totalSpent > totalBudget ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'].join(' ')}>
-                {formatCurrency(totalSpent)}
+                <Amt value={formatCurrency(totalSpent)} />
               </p>
             </div>
             <div className="text-right">
               <p className="text-xs text-gray-500 font-medium dark:text-gray-400">Remaining</p>
               <p className={['text-xl font-bold', (totalBudget - totalSpent) < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'].join(' ')}>
-                {formatCurrency(Math.max(0, totalBudget - totalSpent))}
+                <Amt value={formatCurrency(Math.max(0, totalBudget - totalSpent))} />
               </p>
             </div>
           </div>
@@ -132,7 +133,7 @@ export function Budgets() {
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{b.category.name}</p>
-                      <p className="text-xs text-gray-400 dark:text-gray-500">Budget: {formatCurrency(b.amount)}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500">Budget: <Amt value={formatCurrency(b.amount)} /></p>
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
@@ -163,8 +164,8 @@ export function Budgets() {
                 </div>
 
                 <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 border-t border-gray-50 dark:border-gray-700/40 pt-2">
-                  <span>Spent: <span className="font-medium text-gray-700 dark:text-gray-300">{formatCurrency(b.spent ?? 0)}</span></span>
-                  <span>Budget: <span className="font-medium text-gray-700 dark:text-gray-300">{formatCurrency(b.amount)}</span></span>
+                  <span>Spent: <span className="font-medium text-gray-700 dark:text-gray-300"><Amt value={formatCurrency(b.spent ?? 0)} /></span></span>
+                  <span>Budget: <span className="font-medium text-gray-700 dark:text-gray-300"><Amt value={formatCurrency(b.amount)} /></span></span>
                 </div>
               </Card>
             )

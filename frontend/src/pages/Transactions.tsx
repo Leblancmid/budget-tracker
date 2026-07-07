@@ -12,6 +12,7 @@ import { Card } from '@/components/ui/Card'
 import { TransactionModal, type TransactionFormData } from '@/components/modals/TransactionModal'
 import { toast } from '@/components/ui/Toast'
 import { formatCurrency, formatDate } from '@/utils/format'
+import { Amt } from '@/context/AmountVisibilityContext'
 import { exportCsv } from '@/utils/csv'
 import type { Transaction } from '@/types'
 
@@ -138,7 +139,7 @@ export function Transactions() {
                       <Badge variant={tx.type}>{tx.type}</Badge>
                     </td>
                     <td className={['px-5 py-3.5 font-semibold whitespace-nowrap', tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'].join(' ')}>
-                      {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
+                      {tx.type === 'income' ? '+' : '-'}<Amt value={formatCurrency(tx.amount)} />
                     </td>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

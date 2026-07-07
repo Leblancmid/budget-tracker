@@ -12,6 +12,7 @@ import { Card } from '@/components/ui/Card'
 import { SavingModal } from '@/components/modals/SavingModal'
 import { toast } from '@/components/ui/Toast'
 import { formatCurrency, formatDate } from '@/utils/format'
+import { Amt } from '@/context/AmountVisibilityContext'
 import type { Saving, SavingModeOfPayment, SavingTransfer } from '@/types'
 import type { SavingPayload } from '@/api/master'
 
@@ -127,16 +128,16 @@ export default function Savings() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-[11px] font-semibold uppercase tracking-widest text-emerald-100">Savings Balance</p>
-            <p className="text-3xl font-bold text-white mt-0.5">{formatCurrency(balance)}</p>
+            <p className="text-3xl font-bold text-white mt-0.5"><Amt value={formatCurrency(balance)} /></p>
             <div className="flex items-center gap-4 mt-2">
               <span className="flex items-center gap-1 text-xs text-emerald-100">
                 <ArrowDownCircle className="h-3.5 w-3.5" />
-                {formatCurrency(totalDeposit)} in
+                <Amt value={formatCurrency(totalDeposit)} /> in
               </span>
               <span className="text-emerald-300/50">·</span>
               <span className="flex items-center gap-1 text-xs text-emerald-100">
                 <ArrowUpCircle className="h-3.5 w-3.5" />
-                {formatCurrency(totalWithdraw)} out
+                <Amt value={formatCurrency(totalWithdraw)} /> out
               </span>
             </div>
           </div>
@@ -238,7 +239,7 @@ export default function Savings() {
                     </td>
                     <td className="px-5 py-3.5 text-gray-600 max-w-xs truncate dark:text-gray-400">{s.description ?? '—'}</td>
                     <td className={['px-5 py-3.5 font-semibold whitespace-nowrap', s.type === 'deposit' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'].join(' ')}>
-                      {s.type === 'deposit' ? '+' : '-'}{formatCurrency(s.amount)}
+                      {s.type === 'deposit' ? '+' : '-'}<Amt value={formatCurrency(s.amount)} />
                     </td>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

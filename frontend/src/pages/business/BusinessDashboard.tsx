@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card'
 import { Select } from '@/components/ui/Select'
 import { Badge } from '@/components/ui/Badge'
 import { formatCurrency, formatDate, MONTHS, buildYearOptions } from '@/utils/format'
+import { Amt } from '@/context/AmountVisibilityContext'
 import { isBusinessIncome } from '@/utils/business'
 
 const TYPE_LABELS: Record<string, string> = { account: 'Account', gold: 'Gold', expense: 'Item' }
@@ -103,7 +104,7 @@ export default function BusinessDashboard() {
                     </div>
                   </div>
                   <span className={['text-sm font-semibold', isIncome ? 'text-teal-600 dark:text-teal-400' : 'text-red-600 dark:text-red-400'].join(' ')}>
-                    {isIncome ? '+' : '-'}{formatCurrency(tx.amount)}
+                    {isIncome ? '+' : '-'}<Amt value={formatCurrency(tx.amount)} />
                   </span>
                 </div>
               )
@@ -134,7 +135,7 @@ export default function BusinessDashboard() {
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-xs text-gray-400 dark:text-gray-500">{pct}%</span>
-                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{formatCurrency(item.total)}</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100"><Amt value={formatCurrency(item.total)} /></span>
                     </div>
                   </div>
                   <div className="h-1.5 rounded-full bg-gray-100 dark:bg-gray-700">
@@ -178,10 +179,10 @@ export default function BusinessDashboard() {
                         {MONTHS[mi]}
                         {m === month && <Badge variant="neutral" className="ml-2">current</Badge>}
                       </td>
-                      <td className="px-5 py-3 text-right text-teal-600 font-medium dark:text-teal-400">{formatCurrency(inc?.total ?? 0)}</td>
-                      <td className="px-5 py-3 text-right text-red-600 font-medium dark:text-red-400">{formatCurrency(exp?.total ?? 0)}</td>
+                      <td className="px-5 py-3 text-right text-teal-600 font-medium dark:text-teal-400"><Amt value={formatCurrency(inc?.total ?? 0)} /></td>
+                      <td className="px-5 py-3 text-right text-red-600 font-medium dark:text-red-400"><Amt value={formatCurrency(exp?.total ?? 0)} /></td>
                       <td className={['px-5 py-3 text-right font-semibold', net >= 0 ? 'text-teal-700 dark:text-teal-400' : 'text-red-700 dark:text-red-400'].join(' ')}>
-                        {net >= 0 ? '+' : ''}{formatCurrency(net)}
+                        {net >= 0 ? '+' : ''}<Amt value={formatCurrency(net)} />
                       </td>
                     </tr>
                   )
@@ -208,10 +209,10 @@ function StatCard({ label, value, icon, bg, textColor, subLabel, subValue, subTe
         </div>
       </div>
       <div className="flex flex-col gap-1">
-        <p className={['text-2xl font-bold leading-none tracking-tight truncate', textColor].join(' ')}>{value}</p>
+        <p className={['text-2xl font-bold leading-none tracking-tight truncate', textColor].join(' ')}><Amt value={value} /></p>
         {subLabel && subValue && (
           <p className={['text-xs font-medium truncate', subTextColor ?? 'text-gray-400 dark:text-gray-500'].join(' ')}>
-            {subLabel}: {subValue}
+            {subLabel}: <Amt value={subValue} />
           </p>
         )}
       </div>

@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card'
 import { Select } from '@/components/ui/Select'
 import { Badge } from '@/components/ui/Badge'
 import { formatCurrency, formatDate, MONTHS, buildYearOptions } from '@/utils/format'
+import { Amt } from '@/context/AmountVisibilityContext'
 
 export function Dashboard() {
   const { stats, month, year, loading, setMonth, setYear } = useDashboard()
@@ -81,7 +82,7 @@ export function Dashboard() {
                   </div>
                 </div>
                 <span className={['text-sm font-semibold', tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'].join(' ')}>
-                  {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
+                  {tx.type === 'income' ? '+' : '-'}<Amt value={formatCurrency(tx.amount)} />
                 </span>
               </div>
             ))}
@@ -108,7 +109,7 @@ export function Dashboard() {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-gray-400 dark:text-gray-500">{pct}%</span>
-                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{formatCurrency(item.total)}</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100"><Amt value={formatCurrency(item.total)} /></span>
                     </div>
                   </div>
                   <div className="h-1.5 rounded-full bg-gray-100 dark:bg-gray-700">
@@ -152,10 +153,10 @@ export function Dashboard() {
                         {MONTHS[mi]}
                         {m === month && <Badge variant="neutral" className="ml-2">current</Badge>}
                       </td>
-                      <td className="px-5 py-3 text-right text-emerald-600 font-medium dark:text-emerald-400">{formatCurrency(inc?.total ?? 0)}</td>
-                      <td className="px-5 py-3 text-right text-red-600 font-medium dark:text-red-400">{formatCurrency(exp?.total ?? 0)}</td>
+                      <td className="px-5 py-3 text-right text-emerald-600 font-medium dark:text-emerald-400"><Amt value={formatCurrency(inc?.total ?? 0)} /></td>
+                      <td className="px-5 py-3 text-right text-red-600 font-medium dark:text-red-400"><Amt value={formatCurrency(exp?.total ?? 0)} /></td>
                       <td className={['px-5 py-3 text-right font-semibold', net >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400'].join(' ')}>
-                        {net >= 0 ? '+' : ''}{formatCurrency(net)}
+                        {net >= 0 ? '+' : ''}<Amt value={formatCurrency(net)} />
                       </td>
                     </tr>
                   )
@@ -179,7 +180,7 @@ function StatCard({ label, value, icon, bg, textColor }: {
       </div>
       <div>
         <p className="text-xs text-gray-500 font-medium dark:text-gray-400">{label}</p>
-        <p className={['text-xl font-bold mt-0.5', textColor].join(' ')}>{value}</p>
+        <p className={['text-xl font-bold mt-0.5', textColor].join(' ')}><Amt value={value} /></p>
       </div>
     </Card>
   )

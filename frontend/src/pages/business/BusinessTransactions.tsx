@@ -95,54 +95,47 @@ export default function BusinessTransactions() {
     <div className="flex flex-col gap-5">
 
       {/* Hero profit banner */}
-      <div className={[
-        'relative overflow-hidden rounded-2xl p-6 shadow-lg',
-        profitPositive
-          ? 'bg-gradient-to-br from-teal-500 via-teal-600 to-emerald-700 shadow-teal-500/20'
-          : 'bg-gradient-to-br from-red-500 via-red-600 to-rose-700 shadow-red-500/20',
-      ].join(' ')}>
-        <div className="absolute -top-8 -right-8 h-40 w-40 rounded-full bg-white/10" />
-        <div className="absolute -bottom-10 -left-6 h-32 w-32 rounded-full bg-white/5" />
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-700 to-slate-900 p-6 shadow-lg shadow-slate-900/30 dark:shadow-black/40">
+        <div className="absolute -top-8 -right-8 h-40 w-40 rounded-full bg-white/5" />
+        <div className="absolute -bottom-10 -left-6 h-32 w-32 rounded-full bg-white/[0.03]" />
 
         <div className="relative flex flex-col gap-4">
-          {/* Profit */}
+          {/* Primary: profit */}
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-white/20">
-                <BarChart3 className="h-3.5 w-3.5 text-white" />
+              <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-teal-400/20">
+                <BarChart3 className="h-3.5 w-3.5 text-teal-400" />
               </div>
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-white/60">Profit</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Profit</span>
             </div>
-            <p className="text-3xl font-bold text-white">
+            <p className={['text-3xl font-bold', profitPositive ? 'text-teal-300' : 'text-red-400'].join(' ')}>
               <Amt value={formatCurrency(totalProfit)} />
             </p>
-            <p className="text-xs text-white/60 mt-1 flex items-center gap-1.5">
+            <p className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
               <Briefcase className="h-3 w-3" />
               Initial profit:
-              <span className="font-semibold text-white/80">
-                <Amt value={formatCurrency(initialProfit)} />
-              </span>
+              <span className="font-semibold text-slate-400"><Amt value={formatCurrency(initialProfit)} /></span>
             </p>
           </div>
 
-          {/* Income / Expense */}
-          <div className="grid grid-cols-2 gap-3 pt-3 border-t border-white/20">
+          {/* Sub-stats: income / cost */}
+          <div className="grid grid-cols-2 gap-3 pt-3 border-t border-white/10">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-400/30">
-                <TrendingUp className="h-3.5 w-3.5 text-emerald-200" />
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10">
+                <TrendingUp className="h-3.5 w-3.5 text-slate-300" />
               </div>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-white/50">Income</p>
-                <p className="text-base font-bold text-white"><Amt value={formatCurrency(totalIncome)} /></p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Income</p>
+                <p className="text-base font-bold text-emerald-400"><Amt value={formatCurrency(totalIncome)} /></p>
               </div>
             </div>
             <div className="flex items-center gap-2.5">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-400/30">
-                <TrendingDown className="h-3.5 w-3.5 text-red-200" />
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10">
+                <TrendingDown className="h-3.5 w-3.5 text-slate-300" />
               </div>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-white/50">Cost</p>
-                <p className="text-base font-bold text-white"><Amt value={formatCurrency(totalExpense)} /></p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Cost</p>
+                <p className="text-base font-bold text-red-400"><Amt value={formatCurrency(totalExpense)} /></p>
               </div>
             </div>
           </div>

@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
-import { Plus, Search, Filter, Pencil, Trash2, PiggyBank, ArrowDownCircle, ArrowUpCircle } from 'lucide-react'
+import { Plus, Search, Filter, Pencil, Trash2, PiggyBank, TrendingUp, TrendingDown, Download } from 'lucide-react'
 import { useSavings } from '@/hooks/useSavings'
-import { useMasterDashboard } from '@/hooks/useMasterDashboard'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
@@ -13,6 +12,7 @@ import { SavingModal } from '@/components/modals/SavingModal'
 import { toast } from '@/components/ui/Toast'
 import { formatCurrency, formatDate } from '@/utils/format'
 import { Amt } from '@/context/AmountVisibilityContext'
+import { exportCsv } from '@/utils/csv'
 import type { Saving, SavingModeOfPayment, SavingTransfer } from '@/types'
 import type { SavingPayload } from '@/api/master'
 
@@ -33,10 +33,10 @@ const TRANSFER_LABELS: Record<SavingTransfer, string> = {
 }
 
 const EMPTY_FILTERS = {
-  search:   '',
-  type:     '' as 'deposit' | 'withdraw' | '',
-  mode:     '' as SavingModeOfPayment | '',
-  transfer: '' as SavingTransfer | '',
+  search:    '',
+  type:      '' as 'deposit' | 'withdraw' | '',
+  mode:      '' as SavingModeOfPayment | '',
+  transfer:  '' as SavingTransfer | '',
   date_from: '',
   date_to:   '',
   per_page:  10,
@@ -44,10 +44,9 @@ const EMPTY_FILTERS = {
 
 export default function Savings() {
   const { savings, loading, create, update, remove } = useSavings()
-  const { stats: masterStats } = useMasterDashboard()
 
-  const [filters, setFilters] = useState(EMPTY_FILTERS)
-  const [page, setPage]       = useState(1)
+  const [filters, setFilters]           = useState(EMPTY_FILTERS)
+  const [page, setPage]                 = useState(1)
   const [modalOpen, setModalOpen]       = useState(false)
   const [editTarget, setEditTarget]     = useState<Saving | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Saving | null>(null)
@@ -58,6 +57,8 @@ export default function Savings() {
     setPage(1)
   }
 
+  const hasFilters = filters.search || filters.type || filters.mode || filters.transfer || filters.date_from || filters.date_to
+
   const filtered = useMemo(() => {
     return savings.filter((s) => {
       const q = filters.search.toLowerCase()
@@ -66,7 +67,7 @@ export default function Savings() {
       if (filters.mode && s.mode_of_payment !== filters.mode) return false
       if (filters.transfer && s.transfer !== filters.transfer) return false
       if (filters.date_from && s.date < filters.date_from) return false
-      if (filters.date_to && s.date > filters.date_to) return false
+      if (filters.date_to   && s.date > filters.date_to)   return false
       return true
     })
   }, [savings, filters])
@@ -111,121 +112,176 @@ export default function Savings() {
   const totalDeposit  = useMemo(() => savings.reduce((sum, s) => s.type === 'deposit'  ? sum + parseFloat(s.amount) : sum, 0), [savings])
   const totalWithdraw = useMemo(() => savings.reduce((sum, s) => s.type === 'withdraw' ? sum + parseFloat(s.amount) : sum, 0), [savings])
   const balance       = totalDeposit - totalWithdraw
+  const balancePositive = balance >= 0
 
   const openEdit = (s: Saving) => { setEditTarget(s); setModalOpen(true) }
   const openAdd  = () => { setEditTarget(null); setModalOpen(true) }
 
+  const handleExport = () => exportCsv('savings', savings.map((s) => ({
+    date: s.date, type: s.type, mode: s.mode_of_payment, transfer: s.transfer ?? '',
+    description: s.description ?? '', amount: s.amount,
+  })))
+
   return (
     <div className="flex flex-col gap-5">
 
-      {/* Hero Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-green-700 p-6 shadow-lg">
-        <div className="absolute -top-6 -right-6 h-32 w-32 rounded-full bg-white/10" />
-        <div className="absolute -bottom-8 -left-4 h-28 w-28 rounded-full bg-white/5" />
-        <div className="relative flex items-center gap-5">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm">
-            <PiggyBank className="h-6 w-6 text-white" />
+      {/* Hero banner */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-700 to-slate-900 p-6 shadow-lg shadow-slate-900/30 dark:shadow-black/40">
+        <div className="absolute -top-8 -right-8 h-40 w-40 rounded-full bg-white/5" />
+        <div className="absolute -bottom-10 -left-6 h-32 w-32 rounded-full bg-white/[0.03]" />
+
+        <div className="relative flex flex-col gap-4">
+          {/* Primary: balance */}
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-violet-400/20">
+                <PiggyBank className="h-3.5 w-3.5 text-violet-400" />
+              </div>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Savings Balance</span>
+            </div>
+            <p className={['text-3xl font-bold', balancePositive ? 'text-violet-300' : 'text-red-400'].join(' ')}>
+              <Amt value={formatCurrency(balance)} />
+            </p>
+            <p className="text-xs text-slate-500 mt-1">CIMB · Maribank · GCash</p>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-emerald-100">Savings Balance</p>
-            <p className="text-3xl font-bold text-white mt-0.5"><Amt value={formatCurrency(balance)} /></p>
-            <div className="flex items-center gap-4 mt-2">
-              <span className="flex items-center gap-1 text-xs text-emerald-100">
-                <ArrowDownCircle className="h-3.5 w-3.5" />
-                <Amt value={formatCurrency(totalDeposit)} /> in
-              </span>
-              <span className="text-emerald-300/50">·</span>
-              <span className="flex items-center gap-1 text-xs text-emerald-100">
-                <ArrowUpCircle className="h-3.5 w-3.5" />
-                <Amt value={formatCurrency(totalWithdraw)} /> out
-              </span>
+
+          {/* Sub-stats: deposited / withdrawn */}
+          <div className="grid grid-cols-2 gap-3 pt-3 border-t border-white/10">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10">
+                <TrendingUp className="h-3.5 w-3.5 text-slate-300" />
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Deposited</p>
+                <p className="text-base font-bold text-emerald-400"><Amt value={formatCurrency(totalDeposit)} /></p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10">
+                <TrendingDown className="h-3.5 w-3.5 text-slate-300" />
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Withdrawn</p>
+                <p className="text-base font-bold text-red-400"><Amt value={formatCurrency(totalWithdraw)} /></p>
+              </div>
             </div>
           </div>
-          <button
-            onClick={openAdd}
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/20 transition-colors"
-            title="Add Saving"
-          >
-            <Plus className="h-5 w-5 text-white" />
-          </button>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-end gap-3">
-        <Input
-          placeholder="Search description…"
-          value={filters.search}
-          onChange={(e) => applyFilters({ search: e.target.value })}
-          leftIcon={<Search className="h-4 w-4" />}
-          className="w-56"
-        />
-        <Select
-          placeholder="All types"
-          value={filters.type}
-          onChange={(e) => applyFilters({ type: e.target.value as 'deposit' | 'withdraw' | '' })}
-          options={[{ value: 'deposit', label: 'Deposit' }, { value: 'withdraw', label: 'Withdraw' }]}
-          className="w-36"
-        />
-        <Select
-          placeholder="All modes"
-          value={filters.mode}
-          onChange={(e) => applyFilters({ mode: e.target.value as SavingModeOfPayment | '' })}
-          options={MODE_OPTIONS}
-          className="w-36"
-        />
-        <Select
-          placeholder="All transfers"
-          value={filters.transfer}
-          onChange={(e) => applyFilters({ transfer: e.target.value as SavingTransfer | '' })}
-          options={TRANSFER_OPTIONS}
-          className="w-40"
-        />
-        <div className="flex items-center gap-2">
+      {/* Toolbar */}
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative flex-1 min-w-0 max-w-xs">
+            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <input
+              type="text"
+              value={filters.search}
+              onChange={(e) => applyFilters({ search: e.target.value })}
+              placeholder="Search description…"
+              className="w-full rounded-lg border border-gray-200 bg-white pl-8 pr-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+            />
+          </div>
+          <Select
+            placeholder="All types"
+            value={filters.type}
+            onChange={(e) => applyFilters({ type: e.target.value as 'deposit' | 'withdraw' | '' })}
+            options={[{ value: 'deposit', label: 'Deposit' }, { value: 'withdraw', label: 'Withdraw' }]}
+            className="w-32"
+          />
+          <Select
+            placeholder="All modes"
+            value={filters.mode}
+            onChange={(e) => applyFilters({ mode: e.target.value as SavingModeOfPayment | '' })}
+            options={MODE_OPTIONS}
+            className="w-32"
+          />
+          <Select
+            placeholder="All transfers"
+            value={filters.transfer}
+            onChange={(e) => applyFilters({ transfer: e.target.value as SavingTransfer | '' })}
+            options={TRANSFER_OPTIONS}
+            className="w-36"
+          />
+          <div className="flex items-center gap-2 ml-auto">
+            {hasFilters && (
+              <button
+                onClick={() => { setFilters(EMPTY_FILTERS); setPage(1) }}
+                className="flex items-center gap-1.5 text-xs font-medium text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+              >
+                <Filter size={12} /> Clear filters
+              </button>
+            )}
+            <Button variant="secondary" size="sm" icon={<Download className="h-3.5 w-3.5" />} onClick={handleExport}>Export</Button>
+            <Button size="sm" icon={<Plus className="h-3.5 w-3.5" />} onClick={openAdd}>Add</Button>
+          </div>
+        </div>
+
+        {/* Date + per-page row */}
+        <div className="flex flex-wrap items-center gap-2">
           <Input type="date" value={filters.date_from} onChange={(e) => applyFilters({ date_from: e.target.value })} className="w-36" />
-          <span className="text-gray-400 dark:text-gray-600 text-sm">to</span>
+          <span className="text-xs text-gray-400 dark:text-gray-600">to</span>
           <Input type="date" value={filters.date_to} onChange={(e) => applyFilters({ date_to: e.target.value })} className="w-36" />
+          <Select
+            value={filters.per_page}
+            onChange={(e) => applyFilters({ per_page: Number(e.target.value) })}
+            options={[10, 25, 50].map((n) => ({ value: n, label: `${n} / page` }))}
+            className="w-28"
+          />
         </div>
-        <Select
-          value={filters.per_page}
-          onChange={(e) => applyFilters({ per_page: Number(e.target.value) })}
-          options={[10, 25, 50].map((n) => ({ value: n, label: `${n} / page` }))}
-          className="w-28"
-        />
-        <Button
-          variant="ghost"
-          size="sm"
-          icon={<Filter className="h-4 w-4" />}
-          onClick={() => { setFilters(EMPTY_FILTERS); setPage(1) }}
-          className="text-gray-500 dark:text-gray-400"
-        >
-          Clear
-        </Button>
       </div>
 
+      {/* Table */}
       <Card>
         {loading ? (
-          <div className="py-16 text-center text-sm text-gray-400 dark:text-gray-500 animate-pulse">Loading savings…</div>
+          <div className="flex flex-col divide-y divide-gray-50 dark:divide-gray-700/40">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4 px-5 py-3.5 animate-pulse">
+                <div className="h-3 w-24 rounded bg-gray-100 dark:bg-gray-800" />
+                <div className="h-5 w-16 rounded-full bg-gray-100 dark:bg-gray-800" />
+                <div className="h-5 w-16 rounded-full bg-gray-100 dark:bg-gray-800" />
+                <div className="flex-1 h-3 rounded bg-gray-100 dark:bg-gray-800" />
+                <div className="h-4 w-20 rounded bg-gray-100 dark:bg-gray-800" />
+              </div>
+            ))}
+          </div>
         ) : filtered.length === 0 ? (
-          <div className="py-16 text-center">
-            <p className="text-sm text-gray-500 dark:text-gray-400">No savings found.</p>
-            <Button className="mt-4" onClick={openAdd} icon={<Plus className="h-4 w-4" />}>Add your first</Button>
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-100 dark:bg-gray-800">
+              <PiggyBank className="h-6 w-6 text-gray-400 dark:text-gray-500" />
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {hasFilters ? 'No results match your filters.' : 'No savings yet.'}
+              </p>
+              {!hasFilters && (
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Start tracking your savings across CIMB, Maribank and GCash.</p>
+              )}
+            </div>
+            {!hasFilters && (
+              <Button size="sm" icon={<Plus className="h-4 w-4" />} onClick={openAdd}>Add your first</Button>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto scrollbar-thin">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-100 dark:bg-gray-800/60 dark:border-gray-700/60">
-                <tr>
-                  {['Date', 'Mode', 'Type', 'Transfer', 'Description', 'Amount', ''].map((h) => (
-                    <th key={h} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap dark:text-gray-400">{h}</th>
-                  ))}
+              <thead>
+                <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-700/60">
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Date</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Mode</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Type</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Transfer</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Description</th>
+                  <th className="px-5 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Amount</th>
+                  <th className="px-4 py-3 w-16" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 dark:divide-gray-700/40">
                 {paginated.map((s) => (
-                  <tr key={s.id} className="hover:bg-gray-50 transition-colors group dark:hover:bg-gray-800/40">
-                    <td className="px-5 py-3.5 whitespace-nowrap text-gray-600 dark:text-gray-400">{formatDate(s.date)}</td>
+                  <tr key={s.id} className="group hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+                    <td className="px-5 py-3.5 whitespace-nowrap text-xs text-gray-400 dark:text-gray-500">{formatDate(s.date)}</td>
                     <td className="px-5 py-3.5">
-                      <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                      <span className="rounded-full bg-gray-100 dark:bg-gray-700/60 px-2.5 py-0.5 text-[11px] font-semibold text-gray-600 dark:text-gray-300">
                         {s.mode_of_payment}
                       </span>
                     </td>
@@ -234,19 +290,27 @@ export default function Savings() {
                         {s.type === 'deposit' ? 'Deposit' : 'Withdraw'}
                       </Badge>
                     </td>
-                    <td className="px-5 py-3.5 text-gray-600 dark:text-gray-400">
+                    <td className="px-5 py-3.5 text-xs text-gray-500 dark:text-gray-400">
                       {s.transfer ? TRANSFER_LABELS[s.transfer] : <span className="text-gray-300 dark:text-gray-600">—</span>}
                     </td>
-                    <td className="px-5 py-3.5 text-gray-600 max-w-xs truncate dark:text-gray-400">{s.description ?? '—'}</td>
-                    <td className={['px-5 py-3.5 font-semibold whitespace-nowrap', s.type === 'deposit' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'].join(' ')}>
-                      {s.type === 'deposit' ? '+' : '-'}<Amt value={formatCurrency(s.amount)} />
+                    <td className="px-5 py-3.5 text-gray-600 dark:text-gray-400 max-w-xs truncate text-xs">
+                      {s.description ?? <span className="text-gray-300 dark:text-gray-600">—</span>}
                     </td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => openEdit(s)} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-indigo-600 transition-colors dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-indigo-400">
+                    <td className={['px-5 py-3.5 text-right font-bold whitespace-nowrap', s.type === 'deposit' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'].join(' ')}>
+                      {s.type === 'deposit' ? '+' : '−'}<Amt value={formatCurrency(s.amount)} />
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => openEdit(s)}
+                          className="rounded-lg p-1.5 text-gray-400 hover:bg-indigo-50 hover:text-indigo-600 transition-colors dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400"
+                        >
                           <Pencil className="h-3.5 w-3.5" />
                         </button>
-                        <button onClick={() => setDeleteTarget(s)} className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors dark:text-gray-500 dark:hover:bg-red-900/20 dark:hover:text-red-400">
+                        <button
+                          onClick={() => setDeleteTarget(s)}
+                          className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                        >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </div>
@@ -255,7 +319,7 @@ export default function Savings() {
                 ))}
               </tbody>
             </table>
-            <div className="px-5">
+            <div className="px-5 py-3 border-t border-gray-50 dark:border-gray-700/40">
               <Pagination meta={meta} onPageChange={setPage} />
             </div>
           </div>
@@ -267,8 +331,8 @@ export default function Savings() {
         onClose={() => setModalOpen(false)}
         onSubmit={handleSubmit}
         saving={editTarget}
-        dailyBalance={masterStats?.daily_balance}
-        businessBalance={masterStats?.business_balance}
+        dailyBalance={undefined}
+        businessBalance={undefined}
       />
 
       <ConfirmDialog
@@ -277,7 +341,7 @@ export default function Savings() {
         onConfirm={handleDelete}
         loading={deleteLoading}
         title="Delete Saving"
-        message={`Are you sure you want to delete this ${deleteTarget?.type} of ${formatCurrency(deleteTarget?.amount ?? 0)}? This action cannot be undone.`}
+        message={`Delete this ${deleteTarget?.type} of ${formatCurrency(deleteTarget?.amount ?? 0)}? This cannot be undone.`}
       />
     </div>
   )

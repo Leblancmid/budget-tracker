@@ -45,49 +45,51 @@ export function Dashboard() {
 
       {/* Hero summary banner */}
       {loading ? (
-        <div className="h-32 rounded-2xl animate-pulse bg-gray-100 dark:bg-gray-800" />
+        <div className="h-36 rounded-2xl animate-pulse bg-gray-100 dark:bg-gray-800" />
       ) : (
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-violet-700 p-6 shadow-lg shadow-indigo-500/20">
-          <div className="absolute -top-8 -right-8 h-36 w-36 rounded-full bg-white/10" />
-          <div className="absolute -bottom-10 -left-6 h-32 w-32 rounded-full bg-white/5" />
-          <div className="relative grid grid-cols-3 gap-4">
-            {/* Income */}
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-1.5">
-                <div className="flex h-5 w-5 items-center justify-center rounded-md bg-emerald-400/30">
-                  <TrendingUp className="h-3 w-3 text-emerald-300" />
-                </div>
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-indigo-200">Income</span>
-              </div>
-              <p className="text-2xl font-bold text-white mt-1 truncate">
-                <Amt value={formatCurrency(totalIncome)} />
-              </p>
-            </div>
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-700 to-slate-900 p-6 shadow-lg shadow-slate-900/30 dark:shadow-black/40">
+          <div className="absolute -top-8 -right-8 h-40 w-40 rounded-full bg-white/5" />
+          <div className="absolute -bottom-10 -left-6 h-32 w-32 rounded-full bg-white/[0.03]" />
 
-            {/* Expense */}
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-1.5">
-                <div className="flex h-5 w-5 items-center justify-center rounded-md bg-red-400/30">
-                  <TrendingDown className="h-3 w-3 text-red-300" />
+          <div className="relative flex flex-col gap-4">
+            {/* Net — primary */}
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <div className={['flex h-6 w-6 items-center justify-center rounded-lg', netPositive ? 'bg-indigo-400/20' : 'bg-red-400/20'].join(' ')}>
+                  <Minus className={['h-3.5 w-3.5', netPositive ? 'text-indigo-400' : 'text-red-400'].join(' ')} />
                 </div>
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-indigo-200">Expense</span>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Net</span>
               </div>
-              <p className="text-2xl font-bold text-white mt-1 truncate">
-                <Amt value={formatCurrency(totalExpense)} />
-              </p>
-            </div>
-
-            {/* Net */}
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-1.5">
-                <div className={['flex h-5 w-5 items-center justify-center rounded-md', netPositive ? 'bg-white/20' : 'bg-red-400/30'].join(' ')}>
-                  <Minus className={['h-3 w-3', netPositive ? 'text-white/80' : 'text-red-300'].join(' ')} />
-                </div>
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-indigo-200">Net</span>
-              </div>
-              <p className={['text-2xl font-bold mt-1 truncate', netPositive ? 'text-white' : 'text-red-300'].join(' ')}>
+              <p className={['text-3xl font-bold', netPositive ? 'text-indigo-300' : 'text-red-400'].join(' ')}>
                 {netPositive ? '+' : ''}<Amt value={formatCurrency(net)} />
               </p>
+              <p className="text-xs text-slate-500 mt-1">{MONTHS[month - 1]} {year}</p>
+            </div>
+
+            {/* Income / Expense — sub-stats */}
+            <div className="grid grid-cols-2 gap-3 pt-3 border-t border-white/10">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10">
+                  <TrendingUp className="h-3.5 w-3.5 text-slate-300" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Income</p>
+                  <p className="text-base font-bold text-emerald-400">
+                    <Amt value={formatCurrency(totalIncome)} />
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10">
+                  <TrendingDown className="h-3.5 w-3.5 text-slate-300" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Expense</p>
+                  <p className="text-base font-bold text-red-400">
+                    <Amt value={formatCurrency(totalExpense)} />
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>

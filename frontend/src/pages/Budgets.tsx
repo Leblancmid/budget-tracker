@@ -88,59 +88,64 @@ export function Budgets() {
 
       {/* Summary banner */}
       {!loading && totalBudget > 0 && (
-        <div className={[
-          'relative overflow-hidden rounded-2xl p-6 shadow-lg',
-          overBudget
-            ? 'bg-gradient-to-br from-red-500 to-rose-700 shadow-red-500/20'
-            : 'bg-gradient-to-br from-indigo-500 via-indigo-600 to-violet-700 shadow-indigo-500/20',
-        ].join(' ')}>
-          <div className="absolute -top-8 -right-8 h-36 w-36 rounded-full bg-white/10" />
-          <div className="absolute -bottom-10 -left-6 h-32 w-32 rounded-full bg-white/5" />
-          <div className="relative flex flex-col gap-4">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-700 to-slate-900 p-6 shadow-lg shadow-slate-900/30 dark:shadow-black/40">
+          <div className="absolute -top-8 -right-8 h-40 w-40 rounded-full bg-white/5" />
+          <div className="absolute -bottom-10 -left-6 h-32 w-32 rounded-full bg-white/[0.03]" />
 
-            {/* Top row */}
+          <div className="relative flex flex-col gap-4">
+            {/* Remaining — primary */}
             <div className="flex items-start justify-between gap-4">
-              <div className="grid grid-cols-3 gap-6 flex-1">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-white/60">Budget</p>
-                  <p className="text-2xl font-bold text-white mt-1 truncate">
-                    <Amt value={formatCurrency(totalBudget)} />
-                  </p>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className={['flex h-6 w-6 items-center justify-center rounded-lg', overBudget ? 'bg-red-400/20' : 'bg-indigo-400/20'].join(' ')}>
+                    <Wallet className={['h-3.5 w-3.5', overBudget ? 'text-red-400' : 'text-indigo-400'].join(' ')} />
+                  </div>
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Remaining</span>
                 </div>
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-white/60">Spent</p>
-                  <p className={['text-2xl font-bold mt-1 truncate', overBudget ? 'text-red-200' : 'text-white'].join(' ')}>
-                    <Amt value={formatCurrency(totalSpent)} />
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-white/60">Remaining</p>
-                  <p className={['text-2xl font-bold mt-1 truncate', totalRemain < 0 ? 'text-red-200' : 'text-white'].join(' ')}>
-                    <Amt value={formatCurrency(Math.abs(totalRemain))} />
-                    {totalRemain < 0 && <span className="text-sm font-normal ml-1 opacity-80">over</span>}
-                  </p>
-                </div>
+                <p className={['text-3xl font-bold', overBudget ? 'text-red-400' : 'text-indigo-300'].join(' ')}>
+                  {overBudget && '−'}<Amt value={formatCurrency(Math.abs(totalRemain))} />
+                </p>
+                <p className="text-xs text-slate-500 mt-1">{Math.round(overallPct)}% of budget used · {budgets.length} categories</p>
               </div>
 
               {overCount > 0 && (
-                <div className="flex items-center gap-1.5 shrink-0 bg-white/20 backdrop-blur-sm rounded-xl px-3 py-2">
-                  <AlertTriangle className="h-4 w-4 text-yellow-200" />
-                  <span className="text-xs font-semibold text-white">{overCount} over</span>
+                <div className="flex items-center gap-1.5 shrink-0 bg-red-500/20 rounded-xl px-3 py-2 border border-red-500/20">
+                  <AlertTriangle className="h-3.5 w-3.5 text-red-400" />
+                  <span className="text-xs font-semibold text-red-300">{overCount} over</span>
                 </div>
               )}
             </div>
 
-            {/* Progress bar */}
-            <div className="flex flex-col gap-1.5">
-              <div className="h-2.5 rounded-full bg-white/20 overflow-hidden">
+            {/* Budget / Spent sub-stats + progress */}
+            <div className="pt-3 border-t border-white/10 flex flex-col gap-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-slate-300" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Budget</p>
+                    <p className="text-base font-bold text-slate-200"><Amt value={formatCurrency(totalBudget)} /></p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10">
+                    <AlertTriangle className="h-3.5 w-3.5 text-slate-300" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Spent</p>
+                    <p className={['text-base font-bold', overBudget ? 'text-red-400' : 'text-slate-200'].join(' ')}>
+                      <Amt value={formatCurrency(totalSpent)} />
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="h-2 rounded-full bg-white/10 overflow-hidden">
                 <div
-                  className={['h-full rounded-full transition-all duration-700', overBudget ? 'bg-red-300' : 'bg-white'].join(' ')}
+                  className={['h-full rounded-full transition-all duration-700', overBudget ? 'bg-red-400' : 'bg-indigo-400'].join(' ')}
                   style={{ width: `${overallPct}%` }}
                 />
-              </div>
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-white/60">{Math.round(overallPct)}% used</p>
-                <p className="text-xs text-white/60">{budgets.length} categories</p>
               </div>
             </div>
           </div>

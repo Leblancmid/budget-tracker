@@ -1,7 +1,8 @@
-import { useLocation } from 'react-router-dom'
-import { Moon, Sun, Eye, EyeOff } from 'lucide-react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { Moon, Sun, Eye, EyeOff, LogOut } from 'lucide-react'
 import { useTheme } from '@/context/ThemeContext'
 import { useAmountVisibility } from '@/context/AmountVisibilityContext'
+import { useAuth } from '@/context/AuthContext'
 
 const PAGE_META: Record<string, { title: string; section: string }> = {
   '/':                       { title: 'Dashboard',       section: 'Daily Expenses' },
@@ -28,11 +29,18 @@ const SECTION_STYLES: Record<string, { badge: string }> = {
 
 export function Header() {
   const { pathname } = useLocation()
+  const navigate     = useNavigate()
   const { theme, toggle } = useTheme()
   const { hidden, toggle: toggleAmounts } = useAmountVisibility()
+  const { logout } = useAuth()
 
   const meta    = PAGE_META[pathname] ?? { title: "Mikey's Tracker", section: 'Daily Expenses' }
   const styles  = SECTION_STYLES[meta.section] ?? SECTION_STYLES['Daily Expenses']
+
+  const handleLogout = async () => {
+    await logout()
+    navigate('/login', { replace: true })
+  }
 
   return (
     <header className="flex h-14 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-6 dark:border-gray-700/60 dark:bg-gray-900">
@@ -68,6 +76,14 @@ export function Header() {
           className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-300"
         >
           {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+        </button>
+
+        <button
+          onClick={handleLogout}
+          title="Sign out"
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors dark:text-gray-500 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+        >
+          <LogOut className="h-4 w-4" />
         </button>
       </div>
     </header>

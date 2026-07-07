@@ -62,7 +62,7 @@ const SECTIONS = [
     variant: 'business' as SectionVariant,
     basePath: '/business',
     items: [
-      { to: '/business', label: 'Dashboard', end: true },
+      { to: '/business', label: 'Stats', end: true },
       { to: '/business/transactions', label: 'Transactions', end: false },
     ],
   },
@@ -73,7 +73,7 @@ const SECTIONS = [
     variant: 'rucoy' as SectionVariant,
     basePath: '/rucoy',
     items: [
-      { to: '/rucoy', label: 'Dashboard', end: true },
+      { to: '/rucoy', label: 'Summary', end: true },
       { to: '/rucoy/golds', label: 'Golds', end: false },
       { to: '/rucoy/trades', label: 'Trades', end: false },
       { to: '/rucoy/accounts', label: 'Accounts', end: false },
@@ -87,7 +87,7 @@ const SECTIONS = [
     variant: 'master' as SectionVariant,
     basePath: '/master',
     items: [
-      { to: '/master', label: 'Dashboard', end: true },
+      { to: '/master', label: 'Overview', end: true },
       { to: '/master/savings', label: 'Savings', end: false },
     ],
   },

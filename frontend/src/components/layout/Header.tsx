@@ -8,14 +8,14 @@ const PAGE_META: Record<string, { title: string; section: string }> = {
   '/transactions':            { title: 'Transactions',    section: 'Daily Expenses' },
   '/categories':              { title: 'Categories',      section: 'Daily Expenses' },
   '/budgets':                 { title: 'Budgets',         section: 'Daily Expenses' },
-  '/business':                { title: 'Dashboard',       section: 'Business'       },
+  '/business':                { title: 'Stats',       section: 'Business'       },
   '/business/transactions':   { title: 'Transactions',    section: 'Business'       },
-  '/rucoy':                   { title: 'Dashboard',       section: 'Rucoy'          },
+  '/rucoy':                   { title: 'Summary',         section: 'Rucoy'          },
   '/rucoy/golds':             { title: 'Golds',           section: 'Rucoy'          },
   '/rucoy/trades':            { title: 'Trades',          section: 'Rucoy'          },
   '/rucoy/accounts':          { title: 'Accounts',        section: 'Rucoy'          },
   '/rucoy/calculator':        { title: 'Gold Calculator', section: 'Rucoy'          },
-  '/master':                  { title: 'Dashboard',       section: 'Master File'    },
+  '/master':                  { title: 'Overview',        section: 'Master File'    },
   '/master/savings':          { title: 'Savings',         section: 'Master File'    },
 }
 

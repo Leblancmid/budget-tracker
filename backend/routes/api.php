@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BudgetController;
 use App\Http\Controllers\Api\Master\MasterDashboardController;
 use App\Http\Controllers\Api\Master\SavingController;
@@ -15,6 +16,10 @@ use App\Http\Controllers\Api\Rucoy\TradeController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
+    // Auth
+    Route::post('auth/login',  [AuthController::class, 'login']);
+    Route::post('auth/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+
     // Budget Tracker
     Route::get('dashboard', [DashboardController::class, 'index']);
     Route::apiResource('categories', CategoryController::class);

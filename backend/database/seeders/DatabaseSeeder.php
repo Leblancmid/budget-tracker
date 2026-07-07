@@ -19,15 +19,5 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('password'),
         ]);
 
-        $this->call([
-            CategorySeeder::class,
-            TransactionSeeder::class,
-            BudgetSeeder::class,
-            GoldSeeder::class,
-            RucoyAccountSeeder::class,
-            TradeSeeder::class,
-            BusinessTransactionSeeder::class,
-            SavingSeeder::class,
-        ]);
     }
 }

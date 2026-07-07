@@ -22,11 +22,6 @@ const MODE_OPTIONS = [
   { value: 'GCASH',    label: 'GCash'    },
 ]
 
-const TRANSFER_OPTIONS = [
-  { value: 'daily_expenses', label: 'Daily Expenses' },
-  { value: 'business',       label: 'Business'       },
-]
-
 const TRANSFER_LABELS: Record<SavingTransfer, string> = {
   daily_expenses: 'Daily Expenses',
   business:       'Business',
@@ -57,7 +52,7 @@ export default function Savings() {
     setPage(1)
   }
 
-  const hasFilters = filters.search || filters.type || filters.mode || filters.transfer || filters.date_from || filters.date_to
+  const hasFilters = filters.search || filters.type || filters.mode || filters.date_from || filters.date_to
 
   const filtered = useMemo(() => {
     return savings.filter((s) => {
@@ -170,64 +165,51 @@ export default function Savings() {
       </div>
 
       {/* Toolbar */}
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative flex-1 min-w-0 max-w-xs">
-            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-            <input
-              type="text"
-              value={filters.search}
-              onChange={(e) => applyFilters({ search: e.target.value })}
-              placeholder="Search description…"
-              className="w-full rounded-lg border border-gray-200 bg-white pl-8 pr-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
-            />
-          </div>
-          <Select
-            placeholder="All types"
-            value={filters.type}
-            onChange={(e) => applyFilters({ type: e.target.value as 'deposit' | 'withdraw' | '' })}
-            options={[{ value: 'deposit', label: 'Deposit' }, { value: 'withdraw', label: 'Withdraw' }]}
-            className="w-32"
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative">
+          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          <input
+            type="text"
+            value={filters.search}
+            onChange={(e) => applyFilters({ search: e.target.value })}
+            placeholder="Search…"
+            className="rounded-lg border border-gray-200 bg-white pl-8 pr-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 w-44"
           />
-          <Select
-            placeholder="All modes"
-            value={filters.mode}
-            onChange={(e) => applyFilters({ mode: e.target.value as SavingModeOfPayment | '' })}
-            options={MODE_OPTIONS}
-            className="w-32"
-          />
-          <Select
-            placeholder="All transfers"
-            value={filters.transfer}
-            onChange={(e) => applyFilters({ transfer: e.target.value as SavingTransfer | '' })}
-            options={TRANSFER_OPTIONS}
-            className="w-36"
-          />
-          <div className="flex items-center gap-2 ml-auto">
-            {hasFilters && (
-              <button
-                onClick={() => { setFilters(EMPTY_FILTERS); setPage(1) }}
-                className="flex items-center gap-1.5 text-xs font-medium text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
-              >
-                <Filter size={12} /> Clear filters
-              </button>
-            )}
-            <Button variant="secondary" size="sm" icon={<Download className="h-3.5 w-3.5" />} onClick={handleExport}>Export</Button>
-            <Button size="sm" icon={<Plus className="h-3.5 w-3.5" />} onClick={openAdd}>Add</Button>
-          </div>
         </div>
-
-        {/* Date + per-page row */}
-        <div className="flex flex-wrap items-center gap-2">
-          <Input type="date" value={filters.date_from} onChange={(e) => applyFilters({ date_from: e.target.value })} className="w-36" />
-          <span className="text-xs text-gray-400 dark:text-gray-600">to</span>
-          <Input type="date" value={filters.date_to} onChange={(e) => applyFilters({ date_to: e.target.value })} className="w-36" />
-          <Select
-            value={filters.per_page}
-            onChange={(e) => applyFilters({ per_page: Number(e.target.value) })}
-            options={[10, 25, 50].map((n) => ({ value: n, label: `${n} / page` }))}
-            className="w-28"
-          />
+        <Select
+          placeholder="All types"
+          value={filters.type}
+          onChange={(e) => applyFilters({ type: e.target.value as 'deposit' | 'withdraw' | '' })}
+          options={[{ value: 'deposit', label: 'Deposit' }, { value: 'withdraw', label: 'Withdraw' }]}
+          className="w-28"
+        />
+        <Select
+          placeholder="All modes"
+          value={filters.mode}
+          onChange={(e) => applyFilters({ mode: e.target.value as SavingModeOfPayment | '' })}
+          options={MODE_OPTIONS}
+          className="w-28"
+        />
+        <Input type="date" value={filters.date_from} onChange={(e) => applyFilters({ date_from: e.target.value })} className="w-36" />
+        <span className="text-xs text-gray-400 dark:text-gray-600">to</span>
+        <Input type="date" value={filters.date_to} onChange={(e) => applyFilters({ date_to: e.target.value })} className="w-36" />
+        <Select
+          value={filters.per_page}
+          onChange={(e) => applyFilters({ per_page: Number(e.target.value) })}
+          options={[10, 25, 50].map((n) => ({ value: n, label: `${n} / page` }))}
+          className="w-24"
+        />
+        <div className="flex items-center gap-2 ml-auto">
+          {hasFilters && (
+            <button
+              onClick={() => { setFilters(EMPTY_FILTERS); setPage(1) }}
+              className="flex items-center gap-1.5 text-xs font-medium text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+            >
+              <Filter size={12} /> Clear
+            </button>
+          )}
+          <Button variant="secondary" size="sm" icon={<Download className="h-3.5 w-3.5" />} onClick={handleExport}>Export</Button>
+          <Button size="sm" icon={<Plus className="h-3.5 w-3.5" />} onClick={openAdd}>Add</Button>
         </div>
       </div>
 

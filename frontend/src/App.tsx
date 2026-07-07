@@ -34,7 +34,7 @@ export default function App() {
     <ThemeProvider>
       <AmountVisibilityProvider>
         <AuthProvider>
-          <BrowserRouter>
+          <BrowserRouter basename={import.meta.env.VITE_BASE_URL ?? '/'}>
             <Routes>
 
               {/* Public */}

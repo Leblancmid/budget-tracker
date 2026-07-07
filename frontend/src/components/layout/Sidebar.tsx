@@ -1,34 +1,48 @@
 import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
-import { ChevronDown, ChevronRight } from 'lucide-react'
-import { Wallet, Gamepad2, Briefcase, FolderOpen } from 'lucide-react'
+import { ChevronDown, ChevronRight, Wallet, Gamepad2, Briefcase, FolderOpen } from 'lucide-react'
 
 type SectionVariant = 'master' | 'default' | 'business' | 'rucoy'
 
-const SECTION_COLORS: Record<SectionVariant, { header: string; activeBg: string; activeText: string; dot: string }> = {
+const SECTION_COLORS: Record<SectionVariant, {
+  icon:         string
+  iconBg:       string
+  activeBg:     string
+  activeBorder: string
+  activeText:   string
+  hoverBg:      string
+}> = {
   master: {
-    header: 'bg-violet-600 hover:bg-violet-700',
-    activeBg: 'bg-violet-700/30',
-    activeText: 'text-violet-100',
-    dot: 'bg-violet-300',
+    icon:         'text-violet-600 dark:text-violet-400',
+    iconBg:       'bg-violet-100 dark:bg-violet-900/40',
+    activeBg:     'bg-violet-50 dark:bg-violet-900/25',
+    activeBorder: 'border-violet-500 dark:border-violet-400',
+    activeText:   'text-violet-700 dark:text-violet-300',
+    hoverBg:      'hover:bg-violet-50/60 dark:hover:bg-violet-900/10',
   },
   default: {
-    header: 'bg-indigo-600 hover:bg-indigo-700',
-    activeBg: 'bg-indigo-700/30',
-    activeText: 'text-indigo-100',
-    dot: 'bg-indigo-300',
+    icon:         'text-indigo-600 dark:text-indigo-400',
+    iconBg:       'bg-indigo-100 dark:bg-indigo-900/40',
+    activeBg:     'bg-indigo-50 dark:bg-indigo-900/25',
+    activeBorder: 'border-indigo-500 dark:border-indigo-400',
+    activeText:   'text-indigo-700 dark:text-indigo-300',
+    hoverBg:      'hover:bg-indigo-50/60 dark:hover:bg-indigo-900/10',
   },
   business: {
-    header: 'bg-teal-600 hover:bg-teal-700',
-    activeBg: 'bg-teal-700/30',
-    activeText: 'text-teal-100',
-    dot: 'bg-teal-300',
+    icon:         'text-teal-600 dark:text-teal-400',
+    iconBg:       'bg-teal-100 dark:bg-teal-900/40',
+    activeBg:     'bg-teal-50 dark:bg-teal-900/25',
+    activeBorder: 'border-teal-500 dark:border-teal-400',
+    activeText:   'text-teal-700 dark:text-teal-300',
+    hoverBg:      'hover:bg-teal-50/60 dark:hover:bg-teal-900/10',
   },
   rucoy: {
-    header: 'bg-amber-600 hover:bg-amber-700',
-    activeBg: 'bg-amber-700/30',
-    activeText: 'text-amber-100',
-    dot: 'bg-amber-300',
+    icon:         'text-amber-600 dark:text-amber-400',
+    iconBg:       'bg-amber-100 dark:bg-amber-900/40',
+    activeBg:     'bg-amber-50 dark:bg-amber-900/25',
+    activeBorder: 'border-amber-500 dark:border-amber-400',
+    activeText:   'text-amber-700 dark:text-amber-300',
+    hoverBg:      'hover:bg-amber-50/60 dark:hover:bg-amber-900/10',
   },
 }
 
@@ -94,48 +108,60 @@ export function Sidebar() {
 
   const [open, setOpen] = useState<Record<string, boolean>>(() => {
     const state: Record<string, boolean> = {}
-    SECTIONS.forEach((s) => {
-      state[s.id] = isUnderBasePath(pathname, s.basePath)
-    })
+    SECTIONS.forEach((s) => { state[s.id] = isUnderBasePath(pathname, s.basePath) })
     return state
   })
 
   const toggle = (id: string) => setOpen((prev) => ({ ...prev, [id]: !prev[id] }))
 
   return (
-    <aside className="flex h-full w-56 shrink-0 flex-col border-r border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 overflow-y-auto scrollbar-thin">
-      <div className="flex items-center gap-2.5 px-4 py-4 border-b border-gray-100 dark:border-gray-700/60">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600">
+    <aside className="flex h-full w-56 shrink-0 flex-col border-r border-gray-200 bg-white dark:border-gray-700/60 dark:bg-gray-900 overflow-y-auto scrollbar-thin">
+
+      {/* Brand */}
+      <div className="flex items-center gap-3 px-4 py-4 border-b border-gray-100 dark:border-gray-700/60">
+        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-600 shadow-sm shadow-indigo-400/30">
           <Wallet className="h-4 w-4 text-white" />
         </div>
-        <span className="text-sm font-bold text-gray-900 dark:text-gray-100">Mikey's Tracker</span>
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">Mikey's Tracker</p>
+          <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">Finance & Gaming</p>
+        </div>
       </div>
 
-      <nav className="flex flex-col gap-1 p-2 flex-1">
+      {/* Nav */}
+      <nav className="flex flex-col gap-0.5 p-2 flex-1">
         {SECTIONS.map((section) => {
           const Icon = section.icon
-          const colors = SECTION_COLORS[section.variant]
+          const c = SECTION_COLORS[section.variant]
           const isOpen = open[section.id]
+          const isActive = isUnderBasePath(pathname, section.basePath)
 
           return (
-            <div key={section.id} className="flex flex-col rounded-lg overflow-hidden">
+            <div key={section.id}>
+              {/* Section header */}
               <button
                 onClick={() => toggle(section.id)}
                 className={[
-                  'flex items-center gap-2.5 w-full px-3 py-2.5 text-left transition-colors rounded-lg',
-                  colors.header,
+                  'flex items-center gap-2.5 w-full px-2.5 py-2 rounded-xl text-left transition-colors',
+                  'hover:bg-gray-100 dark:hover:bg-gray-800/60',
+                  isActive ? 'bg-gray-50 dark:bg-gray-800/40' : '',
                 ].join(' ')}
               >
-                <Icon className="h-4 w-4 text-white shrink-0" />
-                <span className="flex-1 text-sm font-semibold text-white truncate">{section.label}</span>
+                <div className={['flex h-7 w-7 shrink-0 items-center justify-center rounded-lg', c.iconBg].join(' ')}>
+                  <Icon className={['h-3.5 w-3.5', c.icon].join(' ')} />
+                </div>
+                <span className={['flex-1 text-[13px] font-semibold truncate', isActive ? 'text-gray-900 dark:text-gray-100' : 'text-gray-600 dark:text-gray-400'].join(' ')}>
+                  {section.label}
+                </span>
                 {isOpen
-                  ? <ChevronDown className="h-3.5 w-3.5 text-white/70 shrink-0" />
-                  : <ChevronRight className="h-3.5 w-3.5 text-white/70 shrink-0" />
+                  ? <ChevronDown className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500 shrink-0" />
+                  : <ChevronRight className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500 shrink-0" />
                 }
               </button>
 
+              {/* Section items */}
               {isOpen && (
-                <div className="flex flex-col mt-0.5 gap-px">
+                <div className="mt-0.5 ml-3 pl-3 border-l border-gray-200 dark:border-gray-700/60 flex flex-col gap-px mb-1">
                   {section.items.map(({ to, label, end }) => (
                     <NavLink
                       key={to}
@@ -143,19 +169,14 @@ export function Sidebar() {
                       end={end}
                       className={({ isActive }) =>
                         [
-                          'flex items-center gap-2.5 pl-4 pr-3 py-2 text-sm transition-colors rounded-md',
+                          'flex items-center px-2.5 py-1.5 text-[13px] rounded-lg transition-colors border-l-2 -ml-px',
                           isActive
-                            ? `${colors.activeBg} ${colors.activeText} font-medium`
-                            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100',
+                            ? `${c.activeBg} ${c.activeBorder} ${c.activeText} font-semibold`
+                            : `border-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/60 hover:text-gray-800 dark:hover:text-gray-200`,
                         ].join(' ')
                       }
                     >
-                      {({ isActive }) => (
-                        <>
-                          <span className={['h-1.5 w-1.5 rounded-full shrink-0', isActive ? colors.dot : 'bg-gray-300 dark:bg-gray-600'].join(' ')} />
-                          {label}
-                        </>
-                      )}
+                      {label}
                     </NavLink>
                   ))}
                 </div>
@@ -164,6 +185,11 @@ export function Sidebar() {
           )
         })}
       </nav>
+
+      {/* Footer */}
+      <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-700/60">
+        <p className="text-[10px] text-gray-300 dark:text-gray-600 text-center select-none">v1.0</p>
+      </div>
     </aside>
   )
 }

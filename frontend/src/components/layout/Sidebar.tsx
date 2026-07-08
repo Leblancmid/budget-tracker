@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
-import { ChevronDown, ChevronRight, Wallet, Gamepad2, Briefcase, FolderOpen, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { ChevronDown, ChevronRight, Wallet, Gamepad2, Briefcase, FolderOpen, PanelLeftClose, PanelLeftOpen, BarChart2 } from 'lucide-react'
 
-type SectionVariant = 'master' | 'default' | 'business' | 'rucoy'
+type SectionVariant = 'master' | 'default' | 'business' | 'rucoy' | 'reports'
 
 const SECTION_COLORS: Record<SectionVariant, {
   icon:         string
@@ -38,6 +38,13 @@ const SECTION_COLORS: Record<SectionVariant, {
     activeBg:     'bg-amber-50 dark:bg-amber-900/25',
     activeBorder: 'border-amber-500 dark:border-amber-400',
     activeText:   'text-amber-700 dark:text-amber-300',
+  },
+  reports: {
+    icon:         'text-sky-600 dark:text-sky-400',
+    iconBg:       'bg-sky-100 dark:bg-sky-900/40',
+    activeBg:     'bg-sky-50 dark:bg-sky-900/25',
+    activeBorder: 'border-sky-500 dark:border-sky-400',
+    activeText:   'text-sky-700 dark:text-sky-300',
   },
 }
 
@@ -91,10 +98,21 @@ const SECTIONS = [
       { to: '/master/savings', label: 'Savings', end: false },
     ],
   },
+  {
+    id: 'reports',
+    label: 'Reports',
+    icon: BarChart2,
+    variant: 'reports' as SectionVariant,
+    basePath: '/reports',
+    items: [
+      { to: '/reports/daily-expenses', label: 'Daily Expenses', end: false },
+      { to: '/reports/business',       label: 'Business',       end: false },
+    ],
+  },
 ]
 
 function isUnderBasePath(pathname: string, basePath: string) {
-  if (basePath === '/') return !pathname.startsWith('/rucoy') && !pathname.startsWith('/business') && !pathname.startsWith('/master')
+  if (basePath === '/') return !pathname.startsWith('/rucoy') && !pathname.startsWith('/business') && !pathname.startsWith('/master') && !pathname.startsWith('/reports')
   return pathname === basePath || pathname.startsWith(basePath + '/')
 }
 

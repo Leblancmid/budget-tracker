@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BudgetController;
+use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\Master\MasterDashboardController;
 use App\Http\Controllers\Api\Master\SavingController;
 use App\Http\Controllers\Api\Business\BusinessDashboardController;
@@ -19,6 +20,10 @@ Route::prefix('v1')->group(function () {
     // Auth
     Route::post('auth/login',  [AuthController::class, 'login']);
     Route::post('auth/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+
+    // Reports
+    Route::get('reports/daily-expenses', [ReportController::class, 'dailyExpenses']);
+    Route::get('reports/business',       [ReportController::class, 'business']);
 
     // Budget Tracker
     Route::get('dashboard', [DashboardController::class, 'index']);

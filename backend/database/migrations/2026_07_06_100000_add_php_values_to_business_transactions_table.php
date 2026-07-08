@@ -9,9 +9,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('business_transactions', function (Blueprint $table) {
-            $table->decimal('price_php', 15, 2)->nullable()->after('php_rate');
-            $table->decimal('cost_php', 15, 2)->nullable()->after('price_php');
-            $table->decimal('profit_php', 15, 2)->nullable()->after('cost_php');
+            if (!Schema::hasColumn('business_transactions', 'price_php')) {
+                $table->decimal('price_php', 15, 2)->nullable()->after('php_rate');
+            }
+            if (!Schema::hasColumn('business_transactions', 'cost_php')) {
+                $table->decimal('cost_php', 15, 2)->nullable()->after('price_php');
+            }
+            if (!Schema::hasColumn('business_transactions', 'profit_php')) {
+                $table->decimal('profit_php', 15, 2)->nullable()->after('cost_php');
+            }
         });
     }
 

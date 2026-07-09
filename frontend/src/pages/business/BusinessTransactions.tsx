@@ -74,7 +74,6 @@ export default function BusinessTransactions() {
   const settledTxs    = useMemo(() => [...transactions.filter(tx => tx.type !== 'account'), ...archivedTxs], [transactions, archivedTxs])
   const totalIncome   = useMemo(() => settledTxs.filter(tx => tx.price_php != null).reduce((s, tx) => s + parseFloat(tx.price_php!), 0), [settledTxs])
   const totalExpense  = useMemo(() => settledTxs.filter(tx => tx.cost_php  != null).reduce((s, tx) => s + parseFloat(tx.cost_php!),  0), [settledTxs])
-  const initialProfit = totalIncome - totalExpense
   const totalProfit   = useMemo(() => archivedTxs.filter(tx => tx.profit_php != null).reduce((s, tx) => s + parseFloat(tx.profit_php!), 0), [archivedTxs])
 
   const openEdit       = (tx: BusinessTransaction) => { setDefaultType(tx.type === 'account' ? 'account' : null); setEditTarget(tx); setModalOpen(true) }

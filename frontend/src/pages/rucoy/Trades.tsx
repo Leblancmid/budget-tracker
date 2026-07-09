@@ -302,7 +302,7 @@ export default function Trades() {
                         onClick={cycleSort}
                         className="flex items-center gap-1 text-gray-500 uppercase tracking-wide hover:text-gray-700 dark:hover:text-gray-200 transition-colors text-xs font-semibold"
                       >
-                        Done
+                        Date
                         {dateSort === 'asc'  && <ChevronUp size={12} />}
                         {dateSort === 'desc' && <ChevronDown size={12} />}
                         {dateSort === null   && <ChevronUp size={12} className="opacity-25" />}

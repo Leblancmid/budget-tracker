@@ -216,4 +216,6 @@ export interface RucoyDashboardStats {
   kks_gold: number
   trade_count: number
   account_count: number
+  account_total_cost:  number
+  account_total_price: number
 }

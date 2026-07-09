@@ -15,12 +15,16 @@ class RucoyDashboardController extends Controller
         $manualGold = (float) Gold::sum('amount');
         $kksGold    = (float) Trade::where('status', 'kks')->whereNull('archived_at')->sum('amount');
 
+        $activeAccounts = RucoyAccount::whereNull('archived_at')->get();
+
         return response()->json([
-            'total_gold'    => $manualGold + $kksGold,
-            'manual_gold'   => $manualGold,
-            'kks_gold'      => $kksGold,
-            'trade_count'   => Trade::whereNull('archived_at')->count(),
-            'account_count' => RucoyAccount::count(),
+            'total_gold'           => $manualGold + $kksGold,
+            'manual_gold'          => $manualGold,
+            'kks_gold'             => $kksGold,
+            'trade_count'          => Trade::whereNull('archived_at')->count(),
+            'account_count'        => $activeAccounts->count(),
+            'account_total_cost'   => (float) $activeAccounts->sum('cost'),
+            'account_total_price'  => (float) $activeAccounts->sum('price'),
         ]);
     }
 }

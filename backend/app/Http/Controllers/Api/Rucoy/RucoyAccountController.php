@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreRucoyAccountRequest;
 use App\Http\Requests\UpdateRucoyAccountRequest;
 use App\Models\BusinessTransaction;
+use App\Models\Gold;
 use App\Models\RucoyAccount;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
@@ -32,6 +33,13 @@ class RucoyAccountController extends Controller
             ->whereNull('archived_at')
             ->update(['archived_at' => $now]);
 
+        if ($rucoyAccount->price) {
+            Gold::create([
+                'amount'      => $rucoyAccount->price,
+                'description' => 'Sold: ' . $rucoyAccount->email,
+            ]);
+        }
+
         return response()->json($this->transform($rucoyAccount->fresh()));
     }
 
@@ -43,6 +51,14 @@ class RucoyAccountController extends Controller
         BusinessTransaction::where('account_id', $rucoyAccount->id)
             ->whereNotNull('archived_at')
             ->update(['archived_at' => null]);
+
+        if ($rucoyAccount->price) {
+            Gold::where('description', 'Sold: ' . $rucoyAccount->email)
+                ->where('amount', $rucoyAccount->price)
+                ->latest()
+                ->first()
+                ?->delete();
+        }
 
         return response()->json($this->transform($rucoyAccount->fresh()));
     }
@@ -92,7 +108,7 @@ class RucoyAccountController extends Controller
         return [
             ...$account->toArray(),
             'avatar' => $account->avatar
-                ? Storage::disk('public')->url($account->avatar)
+                ? asset('storage/' . $account->avatar)
                 : null,
         ];
     }

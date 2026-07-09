@@ -132,7 +132,7 @@ class ReportController extends Controller
 
     private function businessWeekly(int $year, int $month): array
     {
-        $txns        = BusinessTransaction::whereYear('date', $year)->whereMonth('date', $month)->get();
+        $txns        = BusinessTransaction::whereNotNull('archived_at')->whereYear('date', $year)->whereMonth('date', $month)->get();
         $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
         $monthName   = Carbon::createFromDate($year, $month, 1)->format('M');
         $rows        = [];
@@ -152,7 +152,7 @@ class ReportController extends Controller
 
     private function businessMonthly(int $year): array
     {
-        $txns = BusinessTransaction::whereYear('date', $year)->get();
+        $txns = BusinessTransaction::whereNotNull('archived_at')->whereYear('date', $year)->get();
         $rows = [];
 
         for ($m = 1; $m <= 12; $m++) {
@@ -168,7 +168,7 @@ class ReportController extends Controller
 
     private function businessYearly(): array
     {
-        $txns  = BusinessTransaction::orderBy('date')->get();
+        $txns  = BusinessTransaction::whereNotNull('archived_at')->orderBy('date')->get();
         $years = $txns->map(fn($t) => Carbon::parse($t->date)->year)->unique()->sort()->values();
         $rows  = [];
 

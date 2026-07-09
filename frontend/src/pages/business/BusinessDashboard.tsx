@@ -84,9 +84,9 @@ export default function BusinessDashboard() {
                 </div>
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Income</p>
-                  <p className="text-sm font-bold text-emerald-400"><Amt value={formatCurrency(totalIncome)} /></p>
+                  <p className="text-sm font-bold text-emerald-400"><Amt value={formatCurrency(archivedIncome)} /></p>
                   <p className="text-[10px] text-slate-500 mt-0.5">
-                    Initial: <span className="font-semibold text-emerald-500/70"><Amt value={formatCurrency(archivedIncome)} /></span>
+                    Initial: <span className="font-semibold text-emerald-500/70"><Amt value={formatCurrency(totalIncome)} /></span>
                   </p>
                 </div>
               </div>
@@ -96,9 +96,9 @@ export default function BusinessDashboard() {
                 </div>
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Expense</p>
-                  <p className="text-sm font-bold text-red-400"><Amt value={formatCurrency(totalExpense)} /></p>
+                  <p className="text-sm font-bold text-red-400"><Amt value={formatCurrency(archivedExpense)} /></p>
                   <p className="text-[10px] text-slate-500 mt-0.5">
-                    Initial: <span className="font-semibold text-red-400/70"><Amt value={formatCurrency(archivedExpense)} /></span>
+                    Initial: <span className="font-semibold text-red-400/70"><Amt value={formatCurrency(totalExpense)} /></span>
                   </p>
                 </div>
               </div>

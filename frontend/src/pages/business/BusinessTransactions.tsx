@@ -111,11 +111,6 @@ export default function BusinessTransactions() {
             <p className={['text-3xl font-bold', profitPositive ? 'text-teal-300' : 'text-red-400'].join(' ')}>
               <Amt value={formatCurrency(totalProfit)} />
             </p>
-            <p className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
-              <Briefcase className="h-3 w-3" />
-              Initial profit:
-              <span className="font-semibold text-slate-400"><Amt value={formatCurrency(initialProfit)} /></span>
-            </p>
           </div>
 
           {/* Sub-stats: income / cost */}

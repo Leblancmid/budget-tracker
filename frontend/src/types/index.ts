@@ -144,6 +144,8 @@ export interface BusinessDashboardStats {
   total_income: number
   total_expense: number
   total_profit: number
+  archived_income: number
+  archived_expense: number
   initial_profit: number
   recent_transactions: BusinessTransaction[]
   expense_by_type: Array<{ type: string; total: string }>

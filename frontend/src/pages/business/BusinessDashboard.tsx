@@ -15,10 +15,12 @@ export default function BusinessDashboard() {
   const { stats, month, year, loading, setMonth, setYear } = useBusinessDashboard()
 
   const yearOptions    = buildYearOptions()
-  const profit         = stats?.initial_profit ?? 0
-  const archivedProfit = stats?.total_profit   ?? 0
-  const totalIncome    = stats?.total_income   ?? 0
-  const totalExpense   = stats?.total_expense  ?? 0
+  const profit            = stats?.initial_profit  ?? 0
+  const archivedProfit    = stats?.total_profit    ?? 0
+  const archivedIncome    = stats?.archived_income  ?? 0
+  const archivedExpense   = stats?.archived_expense ?? 0
+  const totalIncome       = stats?.total_income    ?? 0
+  const totalExpense      = stats?.total_expense   ?? 0
   const profitPositive = profit >= 0
 
   return (
@@ -68,21 +70,33 @@ export default function BusinessDashboard() {
               <p className={['text-3xl font-bold', profitPositive ? 'text-teal-300' : 'text-red-400'].join(' ')}>
                 {profitPositive ? '' : '−'}<Amt value={formatCurrency(Math.abs(profit))} />
               </p>
-              <p className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
-                <Briefcase className="h-3 w-3" />
-                Initial profit:
-                <span className="font-semibold text-slate-400"><Amt value={formatCurrency(archivedProfit)} /></span>
-              </p>
+              <div className="flex flex-col gap-0.5 mt-1">
+                <p className="text-xs text-slate-500 flex items-center gap-1.5">
+                  <Briefcase className="h-3 w-3" />
+                  Archived profit:
+                  <span className="font-semibold text-slate-400"><Amt value={formatCurrency(archivedProfit)} /></span>
+                </p>
+                <p className="text-xs text-slate-500 flex items-center gap-1.5">
+                  <TrendingUp className="h-3 w-3" />
+                  Archived income:
+                  <span className="font-semibold text-emerald-500/70"><Amt value={formatCurrency(archivedIncome)} /></span>
+                </p>
+                <p className="text-xs text-slate-500 flex items-center gap-1.5">
+                  <TrendingDown className="h-3 w-3" />
+                  Archived expense:
+                  <span className="font-semibold text-red-400/70"><Amt value={formatCurrency(archivedExpense)} /></span>
+                </p>
+              </div>
             </div>
 
-            {/* Sub-stats: income / expense */}
+            {/* Sub-stats: initial income / initial expense */}
             <div className="grid grid-cols-2 gap-3 pt-3 border-t border-white/10">
               <div className="flex items-center gap-2.5">
                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10">
                   <TrendingUp className="h-3.5 w-3.5 text-slate-300" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Income</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Initial Income</p>
                   <p className="text-base font-bold text-emerald-400"><Amt value={formatCurrency(totalIncome)} /></p>
                 </div>
               </div>
@@ -91,7 +105,7 @@ export default function BusinessDashboard() {
                   <TrendingDown className="h-3.5 w-3.5 text-slate-300" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Expense</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Initial Expense</p>
                   <p className="text-base font-bold text-red-400"><Amt value={formatCurrency(totalExpense)} /></p>
                 </div>
               </div>

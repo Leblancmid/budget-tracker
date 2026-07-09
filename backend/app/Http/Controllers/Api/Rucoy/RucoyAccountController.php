@@ -7,6 +7,7 @@ use App\Http\Requests\StoreRucoyAccountRequest;
 use App\Http\Requests\UpdateRucoyAccountRequest;
 use App\Models\BusinessTransaction;
 use App\Models\Gold;
+use App\Models\GoldLog;
 use App\Models\RucoyAccount;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
@@ -38,6 +39,12 @@ class RucoyAccountController extends Controller
                 'amount'      => $rucoyAccount->price,
                 'description' => 'Sold: ' . $rucoyAccount->email,
             ]);
+
+            GoldLog::create([
+                'type'        => 'add',
+                'amount'      => $rucoyAccount->price,
+                'description' => 'Sold: ' . $rucoyAccount->email,
+            ]);
         }
 
         return response()->json($this->transform($rucoyAccount->fresh()));
@@ -54,6 +61,13 @@ class RucoyAccountController extends Controller
 
         if ($rucoyAccount->price) {
             Gold::where('description', 'Sold: ' . $rucoyAccount->email)
+                ->where('amount', $rucoyAccount->price)
+                ->latest()
+                ->first()
+                ?->delete();
+
+            GoldLog::where('type', 'add')
+                ->where('description', 'Sold: ' . $rucoyAccount->email)
                 ->where('amount', $rucoyAccount->price)
                 ->latest()
                 ->first()

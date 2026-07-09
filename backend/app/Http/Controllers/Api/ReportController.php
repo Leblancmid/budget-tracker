@@ -122,9 +122,12 @@ class ReportController extends Controller
 
     // ── Business ──────────────────────────────────────────────────────────────
 
-    private function isBusinessIncome(BusinessTransaction $t): bool
+    private function businessTotals($slice): array
     {
-        return $t->action === 'sell' || ($t->action === null && $t->type !== 'expense');
+        $income  = (float) $slice->whereNotIn('type', ['expense'])->sum('price_php');
+        $expense = (float) $slice->whereNotIn('type', ['expense'])->sum('cost_php')
+                 + (float) $slice->where('type', 'expense')->sum('amount');
+        return ['income' => $income, 'expense' => $expense, 'profit' => $income - $expense];
     }
 
     private function businessWeekly(int $year, int $month): array
@@ -138,14 +141,10 @@ class ReportController extends Controller
             if ($from > $daysInMonth) break;
             $actualTo = min($to, $daysInMonth);
             $slice    = $txns->filter(fn($t) => Carbon::parse($t->date)->day >= $from && Carbon::parse($t->date)->day <= $actualTo);
-            $income   = (float) $slice->filter(fn($t) => $this->isBusinessIncome($t))->sum('price_php');
-            $expense  = (float) $slice->filter(fn($t) => !$this->isBusinessIncome($t))->sum('cost_php');
-            $rows[]   = [
-                'label'   => 'Week ' . ($i + 1) . " ({$monthName} {$from}–{$actualTo})",
-                'income'  => $income,
-                'expense' => $expense,
-                'profit'  => $income - $expense,
-            ];
+            $rows[]   = array_merge(
+                ['label' => 'Week ' . ($i + 1) . " ({$monthName} {$from}–{$actualTo})"],
+                $this->businessTotals($slice),
+            );
         }
 
         return $rows;
@@ -157,15 +156,11 @@ class ReportController extends Controller
         $rows = [];
 
         for ($m = 1; $m <= 12; $m++) {
-            $slice   = $txns->filter(fn($t) => Carbon::parse($t->date)->month === $m);
-            $income  = (float) $slice->filter(fn($t) => $this->isBusinessIncome($t))->sum('price_php');
-            $expense = (float) $slice->filter(fn($t) => !$this->isBusinessIncome($t))->sum('cost_php');
-            $rows[]  = [
-                'label'   => Carbon::createFromDate($year, $m, 1)->format('F Y'),
-                'income'  => $income,
-                'expense' => $expense,
-                'profit'  => $income - $expense,
-            ];
+            $slice  = $txns->filter(fn($t) => Carbon::parse($t->date)->month === $m);
+            $rows[] = array_merge(
+                ['label' => Carbon::createFromDate($year, $m, 1)->format('F Y')],
+                $this->businessTotals($slice),
+            );
         }
 
         return $rows;
@@ -178,15 +173,11 @@ class ReportController extends Controller
         $rows  = [];
 
         foreach ($years as $year) {
-            $slice   = $txns->filter(fn($t) => Carbon::parse($t->date)->year === $year);
-            $income  = (float) $slice->filter(fn($t) => $this->isBusinessIncome($t))->sum('price_php');
-            $expense = (float) $slice->filter(fn($t) => !$this->isBusinessIncome($t))->sum('cost_php');
-            $rows[]  = [
-                'label'   => (string) $year,
-                'income'  => $income,
-                'expense' => $expense,
-                'profit'  => $income - $expense,
-            ];
+            $slice  = $txns->filter(fn($t) => Carbon::parse($t->date)->year === $year);
+            $rows[] = array_merge(
+                ['label' => (string) $year],
+                $this->businessTotals($slice),
+            );
         }
 
         return $rows;

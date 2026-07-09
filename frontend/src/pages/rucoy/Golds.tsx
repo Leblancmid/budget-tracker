@@ -8,6 +8,7 @@ import { Pagination } from '@/components/ui/Pagination'
 import { GoldModal } from '@/components/modals/GoldModal'
 import { useGolds } from '@/hooks/useGolds'
 import { useGoldLogs } from '@/hooks/useGoldLogs'
+import { useRucoyDashboard } from '@/hooks/useRucoyDashboard'
 import { goldsApi } from '@/api/rucoy'
 import { toast } from '@/components/ui/Toast'
 import { formatWithCommas, formatDateLong, paginateLocally } from '@/utils/format'
@@ -16,6 +17,8 @@ import { exportCsv } from '@/utils/csv'
 export default function Golds() {
   const { totalGold, loading, error, refetch: refetchGolds, create } = useGolds()
   const { logs, loading: logsLoading, refetch: refetchLogs } = useGoldLogs()
+  const { stats } = useRucoyDashboard()
+  const accountCost = Number(stats?.account_total_cost ?? 0)
 
   const [search, setSearch]         = useState('')
   const [typeFilter, setTypeFilter] = useState<'all' | 'add' | 'sell'>('all')
@@ -88,35 +91,50 @@ export default function Golds() {
           <div className="absolute -top-8 -right-8 h-40 w-40 rounded-full bg-white/5" />
           <div className="absolute -bottom-10 -left-6 h-32 w-32 rounded-full bg-white/[0.03]" />
 
-          <div className="relative flex items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <div className={['flex h-6 w-6 items-center justify-center rounded-lg', isNegative ? 'bg-red-400/20' : 'bg-amber-400/20'].join(' ')}>
-                  <Coins className={['h-3.5 w-3.5', isNegative ? 'text-red-300' : 'text-amber-400'].join(' ')} />
+          <div className="relative flex flex-col gap-4">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className={['flex h-6 w-6 items-center justify-center rounded-lg', isNegative ? 'bg-red-400/20' : 'bg-amber-400/20'].join(' ')}>
+                    <Coins className={['h-3.5 w-3.5', isNegative ? 'text-red-300' : 'text-amber-400'].join(' ')} />
+                  </div>
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Gold Stash</span>
                 </div>
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Gold Stash</span>
+                <p className={['text-3xl font-bold', isNegative ? 'text-red-300' : 'text-amber-400'].join(' ')}>
+                  {totalGold.toLocaleString()} <span className="text-xl font-semibold opacity-60">G</span>
+                </p>
+                <p className="text-xs text-slate-500 mt-1">{logs.length} log{logs.length !== 1 ? 's' : ''} recorded</p>
               </div>
-              <p className={['text-3xl font-bold', isNegative ? 'text-red-300' : 'text-amber-400'].join(' ')}>
-                {totalGold.toLocaleString()} <span className="text-xl font-semibold opacity-60">G</span>
-              </p>
-              <p className="text-xs text-slate-500 mt-1">{logs.length} log{logs.length !== 1 ? 's' : ''} recorded</p>
+
+              {/* Actions */}
+              <div className="flex flex-col gap-2 shrink-0">
+                <button
+                  onClick={() => setAddOpen(true)}
+                  className="flex items-center gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white px-4 py-2.5 text-sm font-semibold transition-colors shadow-sm"
+                >
+                  <Plus size={15} /> Add Gold
+                </button>
+                <button
+                  onClick={openSell}
+                  disabled={loading}
+                  className="flex items-center gap-2 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white/80 hover:text-white px-4 py-2.5 text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <Minus size={15} /> Sell Gold
+                </button>
+              </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex flex-col gap-2 shrink-0">
-              <button
-                onClick={() => setAddOpen(true)}
-                className="flex items-center gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white px-4 py-2.5 text-sm font-semibold transition-colors shadow-sm"
-              >
-                <Plus size={15} /> Add Gold
-              </button>
-              <button
-                onClick={openSell}
-                disabled={loading}
-                className="flex items-center gap-2 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white/80 hover:text-white px-4 py-2.5 text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                <Minus size={15} /> Sell Gold
-              </button>
+            {/* Sub-stat: Account Cost */}
+            <div className="pt-3 border-t border-white/10">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10">
+                  <TrendingDown className="h-3.5 w-3.5 text-slate-300" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Account Cost</p>
+                  <p className="text-sm font-bold text-slate-200">{accountCost.toLocaleString()} G</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>

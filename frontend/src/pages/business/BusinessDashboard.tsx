@@ -21,7 +21,6 @@ export default function BusinessDashboard() {
   const archivedExpense   = stats?.archived_expense ?? 0
   const totalIncome       = stats?.total_income    ?? 0
   const totalExpense      = stats?.total_expense   ?? 0
-  const profitPositive = profit >= 0
 
   return (
     <div className="flex flex-col gap-6">
@@ -67,13 +66,13 @@ export default function BusinessDashboard() {
                 </div>
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Profit</span>
               </div>
-              <p className={['text-3xl font-bold', profitPositive ? 'text-teal-300' : 'text-red-400'].join(' ')}>
-                {profitPositive ? '' : '−'}<Amt value={formatCurrency(Math.abs(profit))} />
+              <p className={['text-3xl font-bold', archivedProfit >= 0 ? 'text-teal-300' : 'text-red-400'].join(' ')}>
+                {archivedProfit >= 0 ? '' : '−'}<Amt value={formatCurrency(Math.abs(archivedProfit))} />
               </p>
               <p className="text-xs text-slate-500 flex items-center gap-1.5 mt-1">
                 <Briefcase className="h-3 w-3" />
                 Initial profit:
-                <span className="font-semibold text-slate-400"><Amt value={formatCurrency(archivedProfit)} /></span>
+                <span className="font-semibold text-slate-400"><Amt value={formatCurrency(profit)} /></span>
               </p>
             </div>
 

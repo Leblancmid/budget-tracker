@@ -37,13 +37,13 @@ class RucoyAccountController extends Controller
         if ($rucoyAccount->price) {
             Gold::create([
                 'amount'      => $rucoyAccount->price,
-                'description' => 'Sold: ' . $rucoyAccount->email,
+                'description' => 'Sold: ' . $rucoyAccount->description,
             ]);
 
             GoldLog::create([
                 'type'        => 'add',
                 'amount'      => $rucoyAccount->price,
-                'description' => 'Sold: ' . $rucoyAccount->email,
+                'description' => 'Sold: ' . $rucoyAccount->description,
             ]);
         }
 
@@ -60,14 +60,14 @@ class RucoyAccountController extends Controller
             ->update(['archived_at' => null]);
 
         if ($rucoyAccount->price) {
-            Gold::where('description', 'Sold: ' . $rucoyAccount->email)
+            Gold::where('description', 'Sold: ' . $rucoyAccount->description)
                 ->where('amount', $rucoyAccount->price)
                 ->latest()
                 ->first()
                 ?->delete();
 
             GoldLog::where('type', 'add')
-                ->where('description', 'Sold: ' . $rucoyAccount->email)
+                ->where('description', 'Sold: ' . $rucoyAccount->description)
                 ->where('amount', $rucoyAccount->price)
                 ->latest()
                 ->first()

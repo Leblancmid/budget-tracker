@@ -96,13 +96,11 @@ export interface ApiError {
 
 export type SavingModeOfPayment = 'CIMB' | 'MARIBANK' | 'GCASH'
 export type SavingType = 'deposit' | 'withdraw'
-export type SavingTransfer = 'daily_expenses' | 'business'
 
 export interface Saving {
   id: number
   mode_of_payment: SavingModeOfPayment
   type: SavingType
-  transfer: SavingTransfer | null
   description: string | null
   amount: string
   date: string

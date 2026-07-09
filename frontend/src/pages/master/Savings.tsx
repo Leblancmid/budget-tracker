@@ -13,7 +13,7 @@ import { toast } from '@/components/ui/Toast'
 import { formatCurrency, formatDate } from '@/utils/format'
 import { Amt } from '@/context/AmountVisibilityContext'
 import { exportCsv } from '@/utils/csv'
-import type { Saving, SavingModeOfPayment, SavingTransfer } from '@/types'
+import type { Saving, SavingModeOfPayment } from '@/types'
 import type { SavingPayload } from '@/api/master'
 
 const MODE_OPTIONS = [
@@ -22,16 +22,10 @@ const MODE_OPTIONS = [
   { value: 'GCASH',    label: 'GCash'    },
 ]
 
-const TRANSFER_LABELS: Record<SavingTransfer, string> = {
-  daily_expenses: 'Daily Expenses',
-  business:       'Business',
-}
-
 const EMPTY_FILTERS = {
   search:    '',
   type:      '' as 'deposit' | 'withdraw' | '',
   mode:      '' as SavingModeOfPayment | '',
-  transfer:  '' as SavingTransfer | '',
   date_from: '',
   date_to:   '',
   per_page:  10,
@@ -60,7 +54,6 @@ export default function Savings() {
       if (q && !(s.description ?? '').toLowerCase().includes(q)) return false
       if (filters.type && s.type !== filters.type) return false
       if (filters.mode && s.mode_of_payment !== filters.mode) return false
-      if (filters.transfer && s.transfer !== filters.transfer) return false
       if (filters.date_from && s.date < filters.date_from) return false
       if (filters.date_to   && s.date > filters.date_to)   return false
       return true
@@ -113,7 +106,7 @@ export default function Savings() {
   const openAdd  = () => { setEditTarget(null); setModalOpen(true) }
 
   const handleExport = () => exportCsv('savings', savings.map((s) => ({
-    date: s.date, type: s.type, mode: s.mode_of_payment, transfer: s.transfer ?? '',
+    date: s.date, type: s.type, mode: s.mode_of_payment,
     description: s.description ?? '', amount: s.amount,
   })))
 
@@ -252,7 +245,6 @@ export default function Savings() {
                   <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Date</th>
                   <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Mode</th>
                   <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Type</th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Transfer</th>
                   <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Description</th>
                   <th className="px-5 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Amount</th>
                   <th className="px-4 py-3 w-16" />
@@ -271,9 +263,6 @@ export default function Savings() {
                       <Badge variant={s.type === 'deposit' ? 'income' : 'expense'}>
                         {s.type === 'deposit' ? 'Deposit' : 'Withdraw'}
                       </Badge>
-                    </td>
-                    <td className="px-5 py-3.5 text-xs text-gray-500 dark:text-gray-400">
-                      {s.transfer ? TRANSFER_LABELS[s.transfer] : <span className="text-gray-300 dark:text-gray-600">—</span>}
                     </td>
                     <td className="px-5 py-3.5 text-gray-600 dark:text-gray-400 max-w-xs truncate text-xs">
                       {s.description ?? <span className="text-gray-300 dark:text-gray-600">—</span>}
@@ -313,8 +302,6 @@ export default function Savings() {
         onClose={() => setModalOpen(false)}
         onSubmit={handleSubmit}
         saving={editTarget}
-        dailyBalance={undefined}
-        businessBalance={undefined}
       />
 
       <ConfirmDialog

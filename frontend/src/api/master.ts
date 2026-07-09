@@ -8,7 +8,6 @@ export const masterDashboardApi = {
 export interface SavingPayload {
   mode_of_payment: 'CIMB' | 'MARIBANK' | 'GCASH'
   type: 'deposit' | 'withdraw'
-  transfer?: 'daily_expenses' | 'business' | null
   description?: string | null
   amount: number
   date: string

@@ -9,7 +9,6 @@ class Saving extends Model
     protected $fillable = [
         'mode_of_payment',
         'type',
-        'transfer',
         'description',
         'amount',
         'date',

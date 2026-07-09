@@ -3,10 +3,9 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
-import { formatCurrency, formatWithCommas, handleAmountInput, todayISO } from '@/utils/format'
-import { Amt } from '@/context/AmountVisibilityContext'
+import { formatWithCommas, handleAmountInput, todayISO } from '@/utils/format'
 import { flattenApiErrors } from '@/utils/api'
-import type { Saving, SavingModeOfPayment, SavingTransfer } from '@/types'
+import type { Saving, SavingModeOfPayment } from '@/types'
 import type { SavingPayload } from '@/api/master'
 
 interface SavingModalProps {
@@ -14,14 +13,11 @@ interface SavingModalProps {
   onClose: () => void
   onSubmit: (data: SavingPayload) => Promise<void>
   saving?: Saving | null
-  dailyBalance?: number
-  businessBalance?: number
 }
 
 const EMPTY = (): SavingPayload => ({
   mode_of_payment: 'CIMB',
   type:            'deposit',
-  transfer:        null,
   description:     '',
   amount:          0,
   date:            todayISO(),
@@ -34,7 +30,7 @@ const MODE_OPTIONS: { value: SavingModeOfPayment; label: string }[] = [
 ]
 
 
-export function SavingModal({ open, onClose, onSubmit, saving, dailyBalance, businessBalance }: SavingModalProps) {
+export function SavingModal({ open, onClose, onSubmit, saving }: SavingModalProps) {
   const [form, setForm]     = useState<SavingPayload>(EMPTY())
   const [amountStr, setAmountStr] = useState('')
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({})
@@ -46,7 +42,7 @@ export function SavingModal({ open, onClose, onSubmit, saving, dailyBalance, bus
       if (saving) {
         const amt = parseFloat(saving.amount)
         setAmountStr(String(amt))
-        setForm({ mode_of_payment: saving.mode_of_payment, type: saving.type, transfer: saving.transfer, description: saving.description ?? '', amount: amt, date: saving.date })
+        setForm({ mode_of_payment: saving.mode_of_payment, type: saving.type, description: saving.description ?? '', amount: amt, date: saving.date })
       } else {
         setAmountStr('')
         setForm(EMPTY())
@@ -108,38 +104,6 @@ export function SavingModal({ open, onClose, onSubmit, saving, dailyBalance, bus
           onChange={(e) => set('mode_of_payment', e.target.value as SavingModeOfPayment)}
           options={MODE_OPTIONS}
         />
-
-        <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Transfer (optional)</span>
-          <div className="flex gap-2">
-            {([
-              { value: 'daily_expenses' as SavingTransfer, label: 'Daily Expenses', balance: dailyBalance },
-              { value: 'business'       as SavingTransfer, label: 'Business',       balance: businessBalance },
-            ]).map(({ value, label, balance }) => {
-              const active = form.transfer === value
-              return (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => set('transfer', active ? null : value)}
-                  className={[
-                    'flex-1 rounded-lg border px-3 py-2 text-left transition-colors',
-                    active
-                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 dark:border-indigo-600'
-                      : 'border-gray-200 bg-white hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700',
-                  ].join(' ')}
-                >
-                  <p className={['text-xs font-semibold', active ? 'text-indigo-700 dark:text-indigo-300' : 'text-gray-700 dark:text-gray-300'].join(' ')}>
-                    {label}
-                  </p>
-                  <p className={['text-[11px] mt-0.5', active ? 'text-indigo-500 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-500'].join(' ')}>
-                    {balance !== undefined ? <Amt value={formatCurrency(balance)} /> : '—'}
-                  </p>
-                </button>
-              )
-            })}
-          </div>
-        </div>
 
         <Input
           label="Amount"

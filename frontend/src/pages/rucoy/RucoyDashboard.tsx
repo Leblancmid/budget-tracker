@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Coins, ArrowLeftRight, TrendingUp, ArrowRight, DollarSign, TrendingDown } from 'lucide-react'
+import { Coins, ArrowLeftRight, TrendingDown, TrendingUp, ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Card } from '@/components/ui/Card'
 import { useRucoyDashboard } from '@/hooks/useRucoyDashboard'
@@ -67,13 +67,11 @@ export default function RucoyDashboard() {
   }, [trades, archivedTrades, logs])
 
   const activityLoading = tradesLoading || logsLoading
-  const totalGold        = Number(stats?.total_gold         ?? 0)
-  const kksGold          = Number(stats?.kks_gold           ?? 0)
-  const manualGold       = Number(stats?.manual_gold        ?? 0)
-  const tradeCount       = stats?.trade_count               ?? 0
-  const accountCost      = Number(stats?.account_total_cost  ?? 0)
-  const accountPrice     = Number(stats?.account_total_price ?? 0)
-  const accountProfit    = accountPrice - accountCost
+  const totalGold   = Number(stats?.total_gold        ?? 0)
+  const kksGold     = Number(stats?.kks_gold          ?? 0)
+  const manualGold  = Number(stats?.manual_gold       ?? 0)
+  const tradeCount  = stats?.trade_count              ?? 0
+  const accountCost = Number(stats?.account_total_cost ?? 0)
 
   if (statsError) return (
     <div className="text-red-500 text-center py-10">{statsError}</div>
@@ -108,15 +106,15 @@ export default function RucoyDashboard() {
               </p>
             </div>
 
-            {/* KKS / Stash split */}
-            <div className="grid grid-cols-2 gap-3 pt-3 border-t border-white/10">
+            {/* Sub-stats */}
+            <div className="grid grid-cols-3 gap-3 pt-3 border-t border-white/10">
               <div className="flex items-center gap-2.5">
                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10">
                   <TrendingUp className="h-3.5 w-3.5 text-slate-300" />
                 </div>
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Trades Gold</p>
-                  <p className="text-base font-bold text-slate-200">{kksGold.toLocaleString()} G</p>
+                  <p className="text-sm font-bold text-slate-200">{kksGold.toLocaleString()} G</p>
                 </div>
               </div>
               <div className="flex items-center gap-2.5">
@@ -125,7 +123,16 @@ export default function RucoyDashboard() {
                 </div>
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Gold Stash</p>
-                  <p className="text-base font-bold text-slate-200">{manualGold.toLocaleString()} G</p>
+                  <p className="text-sm font-bold text-slate-200">{manualGold.toLocaleString()} G</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10">
+                  <TrendingDown className="h-3.5 w-3.5 text-slate-300" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Account Cost</p>
+                  <p className="text-sm font-bold text-slate-200">{accountCost.toLocaleString()} G</p>
                 </div>
               </div>
             </div>
@@ -133,30 +140,6 @@ export default function RucoyDashboard() {
         </div>
       )}
 
-      {/* Account stats */}
-      {!statsLoading && (accountCost > 0 || accountPrice > 0) && (
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { label: 'Account Price', value: accountPrice,  Icon: DollarSign,   color: 'text-indigo-700 dark:text-indigo-300',   iconBg: 'bg-indigo-100 dark:bg-indigo-900/40',   iconColor: 'text-indigo-600 dark:text-indigo-400',   border: 'border-indigo-100 dark:border-indigo-900/30 bg-indigo-50/60 dark:bg-indigo-900/10' },
-            { label: 'Account Cost',  value: accountCost,   Icon: TrendingDown, color: 'text-gray-700 dark:text-gray-300',        iconBg: 'bg-gray-100 dark:bg-gray-800',          iconColor: 'text-gray-500 dark:text-gray-400',       border: 'border-gray-100 dark:border-gray-700/60 bg-white dark:bg-gray-900' },
-            { label: 'Acct Profit',  value: accountProfit, Icon: accountProfit >= 0 ? TrendingUp : TrendingDown,
-              color:     accountProfit >= 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300',
-              iconBg:    accountProfit >= 0 ? 'bg-emerald-100 dark:bg-emerald-900/40' : 'bg-red-100 dark:bg-red-900/40',
-              iconColor: accountProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400',
-              border:    accountProfit >= 0 ? 'border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/60 dark:bg-emerald-900/10' : 'border-red-100 dark:border-red-900/30 bg-red-50/60 dark:bg-red-900/10' },
-          ].map(({ label, value, Icon, color, iconBg, iconColor, border }) => (
-            <div key={label} className={['flex items-center gap-3 rounded-xl border px-4 py-3', border].join(' ')}>
-              <div className={['flex h-8 w-8 shrink-0 items-center justify-center rounded-lg', iconBg].join(' ')}>
-                <Icon className={['h-4 w-4', iconColor].join(' ')} />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">{label}</p>
-                <p className={['text-sm font-bold truncate', color].join(' ')}>{value.toLocaleString()} G</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
 
 {/* Recent activity */}
       <Card className="flex flex-col">

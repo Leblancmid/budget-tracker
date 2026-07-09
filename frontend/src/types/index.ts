@@ -194,6 +194,7 @@ export interface RucoyAccount {
   cost: number | null
   profit: number | null
   payment_status: AccountPaymentStatus
+  payment_date: string | null
   archived_at: string | null
   created_at: string
   updated_at: string

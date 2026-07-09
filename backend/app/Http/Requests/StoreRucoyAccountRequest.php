@@ -17,6 +17,7 @@ class StoreRucoyAccountRequest extends FormRequest
             'price'          => ['nullable', 'numeric', 'min:0'],
             'cost'           => ['nullable', 'numeric', 'min:0'],
             'payment_status' => ['nullable', 'in:not_paid,partially_paid,fully_paid'],
+            'payment_date'   => ['nullable', 'date'],
         ];
     }
 }

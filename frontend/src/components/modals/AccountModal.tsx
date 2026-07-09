@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { User, X } from 'lucide-react'
+import { User, X, CalendarClock } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -20,6 +20,7 @@ export function AccountModal({ open, onClose, onSubmit, account }: AccountModalP
   const [price, setPrice] = useState('')
   const [cost, setCost] = useState('')
   const [paymentStatus, setPaymentStatus] = useState<AccountPaymentStatus>('not_paid')
+  const [paymentDate, setPaymentDate]     = useState('')
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [errors, setErrors] = useState<{ email?: string; avatar?: string }>({})
@@ -35,6 +36,7 @@ export function AccountModal({ open, onClose, onSubmit, account }: AccountModalP
       setPrice(account?.price != null ? String(account.price) : '')
       setCost(account?.cost != null ? String(account.cost) : '')
       setPaymentStatus(account?.payment_status ?? 'not_paid')
+      setPaymentDate(account?.payment_date ?? '')
       setPreview(account?.avatar ?? null)
     }
   }, [open, account])
@@ -76,6 +78,7 @@ export function AccountModal({ open, onClose, onSubmit, account }: AccountModalP
         price: price !== '' ? parseFloat(price) : null,
         cost: cost !== '' ? parseFloat(cost) : null,
         payment_status: paymentStatus,
+        payment_date: paymentDate || null,
       })
       onClose()
     } catch (err: unknown) {
@@ -163,6 +166,43 @@ export function AccountModal({ open, onClose, onSubmit, account }: AccountModalP
             <option value="partially_paid">Partially Paid</option>
             <option value="fully_paid">Fully Paid</option>
           </select>
+        </div>
+
+        {/* Payment Date */}
+        <div>
+          <p className="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Payment Date</p>
+          <input
+            type="date"
+            value={paymentDate}
+            onChange={(e) => setPaymentDate(e.target.value)}
+            className="block w-full rounded-lg border border-gray-300 hover:border-gray-400 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 dark:hover:border-gray-500 transition-colors"
+          />
+          {paymentDate && (() => {
+            const today = new Date(); today.setHours(0, 0, 0, 0)
+            const due   = new Date(paymentDate + 'T00:00:00')
+            const diff  = Math.round((due.getTime() - today.getTime()) / 86400000)
+            const isToday = diff === 0
+            const isPast  = diff < 0
+            const isClose = diff > 0 && diff <= 7
+            const color = isPast
+              ? 'bg-red-50 text-red-600 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800'
+              : isToday
+              ? 'bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800'
+              : isClose
+              ? 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800'
+              : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800'
+            const label = isPast
+              ? `Overdue by ${Math.abs(diff)} day${Math.abs(diff) !== 1 ? 's' : ''}`
+              : isToday
+              ? 'Due today'
+              : `Due in ${diff} day${diff !== 1 ? 's' : ''}`
+            return (
+              <div className={['mt-2 flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold', color].join(' ')}>
+                <CalendarClock size={13} />
+                {label}
+              </div>
+            )
+          })()}
         </div>
 
         <div className="flex gap-3">

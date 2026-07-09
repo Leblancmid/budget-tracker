@@ -11,7 +11,7 @@ class RucoyAccount extends Model
 
     protected $table = 'rucoy_accounts';
 
-    protected $fillable = ['description', 'email', 'avatar', 'price', 'cost', 'payment_status'];
+    protected $fillable = ['description', 'email', 'avatar', 'price', 'cost', 'payment_status', 'payment_date'];
 
     protected $appends = ['profit'];
 

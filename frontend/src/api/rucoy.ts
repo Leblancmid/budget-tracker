@@ -58,6 +58,7 @@ export interface AccountPayload {
   price?: number | null
   cost?: number | null
   payment_status?: AccountPaymentStatus
+  payment_date?: string | null
 }
 
 function buildAccountForm(data: AccountPayload, method?: 'PUT'): FormData {
@@ -69,6 +70,7 @@ function buildAccountForm(data: AccountPayload, method?: 'PUT'): FormData {
   if (data.price != null) fd.append('price', String(data.price))
   if (data.cost != null) fd.append('cost', String(data.cost))
   if (data.payment_status) fd.append('payment_status', data.payment_status)
+  if (data.payment_date !== undefined) fd.append('payment_date', data.payment_date ?? '')
   return fd
 }
 

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Plus, Pencil, Trash2, Users, User, TrendingUp, TrendingDown, DollarSign, Search, Check, Archive, RotateCcw, Download } from 'lucide-react'
+import { Plus, Pencil, Trash2, Users, User, TrendingUp, TrendingDown, DollarSign, Search, Check, Archive, RotateCcw, Download, CalendarClock } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -128,6 +128,31 @@ function AccountCard({ a, onEdit, onArchive, onDelete, archived = false, onUnarc
         <span className={['inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold', PAYMENT_STATUS_STYLES[a.payment_status].className].join(' ')}>
           {PAYMENT_STATUS_STYLES[a.payment_status].label}
         </span>
+        {a.payment_date && (() => {
+          const today = new Date(); today.setHours(0, 0, 0, 0)
+          const due   = new Date(a.payment_date + 'T00:00:00')
+          const diff  = Math.round((due.getTime() - today.getTime()) / 86400000)
+          const isPast  = diff < 0
+          const isToday = diff === 0
+          const isClose = diff > 0 && diff <= 7
+          const color = isPast
+            ? 'text-red-600 dark:text-red-400'
+            : isToday
+            ? 'text-orange-500 dark:text-orange-400'
+            : isClose
+            ? 'text-amber-600 dark:text-amber-400'
+            : 'text-emerald-600 dark:text-emerald-400'
+          const label = isPast
+            ? `${Math.abs(diff)}d overdue`
+            : isToday ? 'Due today'
+            : `${diff}d left`
+          return (
+            <span className={['inline-flex items-center gap-1 text-[11px] font-semibold', color].join(' ')}>
+              <CalendarClock size={11} />
+              {label}
+            </span>
+          )
+        })()}
       </div>
     </div>
   )

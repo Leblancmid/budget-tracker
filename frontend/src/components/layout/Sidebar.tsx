@@ -5,46 +5,46 @@ import { ChevronDown, ChevronRight, Wallet, Gamepad2, Briefcase, FolderOpen, Pan
 type SectionVariant = 'master' | 'default' | 'business' | 'rucoy' | 'reports'
 
 const SECTION_COLORS: Record<SectionVariant, {
-  icon:         string
-  iconBg:       string
-  activeBg:     string
+  icon: string
+  iconBg: string
+  activeBg: string
   activeBorder: string
-  activeText:   string
+  activeText: string
 }> = {
   master: {
-    icon:         'text-violet-600 dark:text-violet-400',
-    iconBg:       'bg-violet-100 dark:bg-violet-900/40',
-    activeBg:     'bg-violet-50 dark:bg-violet-900/25',
+    icon: 'text-violet-600 dark:text-violet-400',
+    iconBg: 'bg-violet-100 dark:bg-violet-900/40',
+    activeBg: 'bg-violet-50 dark:bg-violet-900/25',
     activeBorder: 'border-violet-500 dark:border-violet-400',
-    activeText:   'text-violet-700 dark:text-violet-300',
+    activeText: 'text-violet-700 dark:text-violet-300',
   },
   default: {
-    icon:         'text-indigo-600 dark:text-indigo-400',
-    iconBg:       'bg-indigo-100 dark:bg-indigo-900/40',
-    activeBg:     'bg-indigo-50 dark:bg-indigo-900/25',
+    icon: 'text-indigo-600 dark:text-indigo-400',
+    iconBg: 'bg-indigo-100 dark:bg-indigo-900/40',
+    activeBg: 'bg-indigo-50 dark:bg-indigo-900/25',
     activeBorder: 'border-indigo-500 dark:border-indigo-400',
-    activeText:   'text-indigo-700 dark:text-indigo-300',
+    activeText: 'text-indigo-700 dark:text-indigo-300',
   },
   business: {
-    icon:         'text-teal-600 dark:text-teal-400',
-    iconBg:       'bg-teal-100 dark:bg-teal-900/40',
-    activeBg:     'bg-teal-50 dark:bg-teal-900/25',
+    icon: 'text-teal-600 dark:text-teal-400',
+    iconBg: 'bg-teal-100 dark:bg-teal-900/40',
+    activeBg: 'bg-teal-50 dark:bg-teal-900/25',
     activeBorder: 'border-teal-500 dark:border-teal-400',
-    activeText:   'text-teal-700 dark:text-teal-300',
+    activeText: 'text-teal-700 dark:text-teal-300',
   },
   rucoy: {
-    icon:         'text-amber-600 dark:text-amber-400',
-    iconBg:       'bg-amber-100 dark:bg-amber-900/40',
-    activeBg:     'bg-amber-50 dark:bg-amber-900/25',
+    icon: 'text-amber-600 dark:text-amber-400',
+    iconBg: 'bg-amber-100 dark:bg-amber-900/40',
+    activeBg: 'bg-amber-50 dark:bg-amber-900/25',
     activeBorder: 'border-amber-500 dark:border-amber-400',
-    activeText:   'text-amber-700 dark:text-amber-300',
+    activeText: 'text-amber-700 dark:text-amber-300',
   },
   reports: {
-    icon:         'text-sky-600 dark:text-sky-400',
-    iconBg:       'bg-sky-100 dark:bg-sky-900/40',
-    activeBg:     'bg-sky-50 dark:bg-sky-900/25',
+    icon: 'text-sky-600 dark:text-sky-400',
+    iconBg: 'bg-sky-100 dark:bg-sky-900/40',
+    activeBg: 'bg-sky-50 dark:bg-sky-900/25',
     activeBorder: 'border-sky-500 dark:border-sky-400',
-    activeText:   'text-sky-700 dark:text-sky-300',
+    activeText: 'text-sky-700 dark:text-sky-300',
   },
 }
 
@@ -87,6 +87,19 @@ const SECTIONS = [
       { to: '/rucoy/calculator', label: 'Gold Calculator', end: false },
     ],
   },
+
+  {
+    id: 'reports',
+    label: 'Reports',
+    icon: BarChart2,
+    variant: 'reports' as SectionVariant,
+    basePath: '/reports',
+    items: [
+      { to: '/reports/daily-expenses', label: 'Daily Expenses', end: false },
+      { to: '/reports/business', label: 'Business', end: false },
+    ],
+  },
+
   {
     id: 'master',
     label: 'Master File',
@@ -98,17 +111,7 @@ const SECTIONS = [
       { to: '/master/savings', label: 'Savings', end: false },
     ],
   },
-  {
-    id: 'reports',
-    label: 'Reports',
-    icon: BarChart2,
-    variant: 'reports' as SectionVariant,
-    basePath: '/reports',
-    items: [
-      { to: '/reports/daily-expenses', label: 'Daily Expenses', end: false },
-      { to: '/reports/business',       label: 'Business',       end: false },
-    ],
-  },
+  
 ]
 
 function isUnderBasePath(pathname: string, basePath: string) {

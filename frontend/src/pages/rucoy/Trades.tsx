@@ -228,7 +228,7 @@ export default function Trades() {
 
       {/* Stats strip */}
       {!loading && trades.length > 0 && (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="flex items-center gap-3 rounded-xl border border-gray-100 dark:border-gray-700/60 bg-white dark:bg-gray-900 px-4 py-3">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800">
               <ArrowLeftRight className="h-4 w-4 text-slate-600 dark:text-slate-400" />

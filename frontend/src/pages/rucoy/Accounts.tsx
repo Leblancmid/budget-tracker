@@ -303,7 +303,7 @@ export default function Accounts() {
 
       {/* Stats strip */}
       {!loading && accounts.length > 0 && (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[
             {
               label: 'Total Price', value: totals.price, Icon: DollarSign,

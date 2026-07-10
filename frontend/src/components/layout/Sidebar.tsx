@@ -87,7 +87,6 @@ const SECTIONS = [
       { to: '/rucoy/calculator', label: 'Gold Calculator', end: false },
     ],
   },
-
   {
     id: 'reports',
     label: 'Reports',
@@ -99,7 +98,6 @@ const SECTIONS = [
       { to: '/reports/business', label: 'Business', end: false },
     ],
   },
-
   {
     id: 'master',
     label: 'Master File',
@@ -111,7 +109,6 @@ const SECTIONS = [
       { to: '/master/savings', label: 'Savings', end: false },
     ],
   },
-  
 ]
 
 function isUnderBasePath(pathname: string, basePath: string) {
@@ -121,7 +118,12 @@ function isUnderBasePath(pathname: string, basePath: string) {
 
 const COLLAPSED_KEY = 'sidebar_collapsed'
 
-export function Sidebar() {
+interface SidebarProps {
+  mobileOpen?: boolean
+  onClose?: () => void
+}
+
+export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
   const { pathname } = useLocation()
 
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem(COLLAPSED_KEY) === 'true')
@@ -141,29 +143,31 @@ export function Sidebar() {
     })
   }
 
+  const handleNavClick = () => {
+    onClose?.()
+  }
+
   return (
     <aside className={[
       'flex h-full shrink-0 flex-col border-r border-gray-200 bg-white dark:border-gray-700/60 dark:bg-gray-900 overflow-y-auto scrollbar-thin overflow-x-hidden transition-all duration-200',
-      collapsed ? 'w-[52px]' : 'w-56',
+      // Mobile: fixed overlay drawer
+      'fixed inset-y-0 left-0 z-50 md:relative md:translate-x-0',
+      mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
+      // Desktop width
+      collapsed ? 'md:w-[52px]' : 'md:w-56',
+      // Mobile always full-width drawer
+      'w-56',
     ].join(' ')}>
 
       {/* Brand */}
-      <div className={['flex items-center border-b border-gray-100 dark:border-gray-700/60 shrink-0', collapsed ? 'justify-center py-3.5 px-0' : 'gap-3 px-4 py-4'].join(' ')}>
-        {collapsed ? (
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-600 shadow-sm shadow-indigo-400/30">
-            <Wallet className="h-4 w-4 text-white" />
-          </div>
-        ) : (
-          <>
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-indigo-600 shadow-sm shadow-indigo-400/30">
-              <Wallet className="h-4 w-4 text-white" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">Mikey's Tracker</p>
-              <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">Finance & Gaming</p>
-            </div>
-          </>
-        )}
+      <div className={['flex items-center border-b border-gray-100 dark:border-gray-700/60 shrink-0', collapsed ? 'md:justify-center md:py-3.5 md:px-0 gap-3 px-4 py-4' : 'gap-3 px-4 py-4'].join(' ')}>
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-indigo-600 shadow-sm shadow-indigo-400/30">
+          <Wallet className="h-4 w-4 text-white" />
+        </div>
+        <div className={['flex-1 min-w-0', collapsed ? 'md:hidden' : ''].join(' ')}>
+          <p className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">Mikey's Tracker</p>
+          <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">Finance & Gaming</p>
+        </div>
       </div>
 
       {/* Nav */}
@@ -180,8 +184,9 @@ export function Sidebar() {
                 key={section.id}
                 to={section.items[0].to}
                 title={section.label}
+                onClick={handleNavClick}
                 className={[
-                  'flex items-center justify-center h-9 w-9 mx-auto rounded-xl transition-colors',
+                  'hidden md:flex items-center justify-center h-9 w-9 mx-auto rounded-xl transition-colors',
                   isActive ? c.iconBg : 'hover:bg-gray-100 dark:hover:bg-gray-800/60',
                 ].join(' ')}
               >
@@ -221,6 +226,7 @@ export function Sidebar() {
                       key={to}
                       to={to}
                       end={end}
+                      onClick={handleNavClick}
                       className={({ isActive }) =>
                         [
                           'flex items-center px-2.5 py-1.5 text-[13px] rounded-lg transition-colors border-l-2 -ml-px',
@@ -241,14 +247,12 @@ export function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className={['border-t border-gray-100 dark:border-gray-700/60 shrink-0', collapsed ? 'flex justify-center py-3' : 'flex items-center justify-between px-4 py-3'].join(' ')}>
-        {!collapsed && (
-          <p className="text-[10px] text-gray-300 dark:text-gray-600 select-none">v1.0</p>
-        )}
+      <div className={['border-t border-gray-100 dark:border-gray-700/60 shrink-0', collapsed ? 'md:flex md:justify-center md:py-3 flex items-center justify-between px-4 py-3' : 'flex items-center justify-between px-4 py-3'].join(' ')}>
+        <p className={['text-[10px] text-gray-300 dark:text-gray-600 select-none', collapsed ? 'md:hidden' : ''].join(' ')}>v1.0</p>
         <button
           onClick={toggleCollapsed}
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300 transition-colors"
+          className="hidden md:flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300 transition-colors"
         >
           {collapsed
             ? <PanelLeftOpen className="h-3.5 w-3.5" />

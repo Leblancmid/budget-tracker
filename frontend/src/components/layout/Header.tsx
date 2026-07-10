@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Moon, Sun, Eye, EyeOff, LogOut } from 'lucide-react'
+import { Moon, Sun, Eye, EyeOff, LogOut, Menu } from 'lucide-react'
 import { useTheme } from '@/context/ThemeContext'
 import { useAmountVisibility } from '@/context/AmountVisibilityContext'
 import { useAuth } from '@/context/AuthContext'
@@ -27,7 +27,11 @@ const SECTION_STYLES: Record<string, { badge: string }> = {
   'Master File':    { badge: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300' },
 }
 
-export function Header() {
+interface HeaderProps {
+  onMenuClick?: () => void
+}
+
+export function Header({ onMenuClick }: HeaderProps) {
   const { pathname } = useLocation()
   const navigate     = useNavigate()
   const { theme, toggle } = useTheme()
@@ -45,8 +49,16 @@ export function Header() {
   return (
     <header className="flex h-14 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-6 dark:border-gray-700/60 dark:bg-gray-900">
 
+      {/* Hamburger — mobile only */}
+      <button
+        onClick={onMenuClick}
+        className="md:hidden flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors mr-2"
+      >
+        <Menu className="h-5 w-5" />
+      </button>
+
       {/* Left: breadcrumb-style title */}
-      <div className="flex items-center gap-2.5 min-w-0">
+      <div className="flex items-center gap-2.5 min-w-0 flex-1">
         <span className={['shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold tracking-wide', styles.badge].join(' ')}>
           {meta.section}
         </span>

@@ -25,6 +25,7 @@ class RucoyDashboardController extends Controller
             'account_count'        => $activeAccounts->count(),
             'account_total_cost'   => (float) $activeAccounts->sum('cost'),
             'account_total_price'  => (float) $activeAccounts->sum('price'),
+            'accounts_to_pay'      => (float) $activeAccounts->where('payment_status', 'not_paid')->sum('cost'),
         ]);
     }
 }

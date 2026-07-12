@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Plus, Minus, Coins, TrendingUp, TrendingDown, Search, Download } from 'lucide-react'
+import { Plus, Minus, Coins, TrendingUp, TrendingDown, AlertCircle, Search, Download } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
@@ -19,6 +19,7 @@ export default function Golds() {
   const { logs, loading: logsLoading, refetch: refetchLogs } = useGoldLogs()
   const { stats } = useRucoyDashboard()
   const accountCost = Number(stats?.account_total_cost ?? 0)
+  const accountsToPay = Number(stats?.accounts_to_pay ?? 0)
 
   const [search, setSearch]         = useState('')
   const [typeFilter, setTypeFilter] = useState<'all' | 'add' | 'sell'>('all')
@@ -133,6 +134,19 @@ export default function Golds() {
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Account Cost</p>
                   <p className="text-sm font-bold text-slate-200">{accountCost.toLocaleString()} G</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Sub-stat: Accounts to Pay */}
+            <div className="pt-3 border-t border-white/10">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-400/20">
+                  <AlertCircle className="h-3.5 w-3.5 text-red-300" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Accounts to Pay</p>
+                  <p className="text-sm font-bold text-red-300">{accountsToPay.toLocaleString()} G</p>
                 </div>
               </div>
             </div>

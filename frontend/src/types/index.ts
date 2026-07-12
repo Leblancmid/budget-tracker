@@ -221,4 +221,5 @@ export interface RucoyDashboardStats {
   account_count: number
   account_total_cost:  number
   account_total_price: number
+  accounts_to_pay: number
 }

@@ -139,6 +139,7 @@ export default function Golds() {
             </div>
 
             {/* Sub-stat: Accounts to Pay */}
+            {accountsToPay > 0 && (
             <div className="pt-3 border-t border-white/10">
               <div className="flex items-center gap-2.5">
                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-400/20">
@@ -150,6 +151,7 @@ export default function Golds() {
                 </div>
               </div>
             </div>
+            )}
           </div>
         </div>
       )}

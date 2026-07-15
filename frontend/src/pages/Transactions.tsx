@@ -56,8 +56,6 @@ export function Transactions() {
     date: tx.date, category: tx.category.name, type: tx.type, description: tx.description ?? '', amount: tx.amount,
   })))
 
-  const totalIncome  = transactions.filter(t => t.type === 'income').reduce((s, t) => s + parseFloat(String(t.amount)), 0)
-  const totalExpense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + parseFloat(String(t.amount)), 0)
   const hasFilters   = !!(filters.search || filters.type || filters.category_id || filters.date_from || filters.date_to)
 
   return (
@@ -131,34 +129,6 @@ export function Transactions() {
           )}
         </div>
       </div>
-
-      {/* Summary strip */}
-      {!loading && transactions.length > 0 && (
-        <div className="grid grid-cols-2 gap-3">
-          <div className="flex items-center gap-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 px-4 py-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/40">
-              <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-            </div>
-            <div>
-              <p className="text-[11px] font-medium text-emerald-600 dark:text-emerald-500 uppercase tracking-wide">Income</p>
-              <p className="text-base font-bold text-emerald-700 dark:text-emerald-300">
-                <Amt value={formatCurrency(totalIncome)} />
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 rounded-xl bg-red-50 dark:bg-red-900/20 px-4 py-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/40">
-              <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400" />
-            </div>
-            <div>
-              <p className="text-[11px] font-medium text-red-500 dark:text-red-400 uppercase tracking-wide">Expense</p>
-              <p className="text-base font-bold text-red-600 dark:text-red-300">
-                <Amt value={formatCurrency(totalExpense)} />
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Table */}
       <Card className="overflow-hidden">

@@ -178,7 +178,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
           const isOpen = open[section.id]
           const isActive = isUnderBasePath(pathname, section.basePath)
 
-          if (collapsed) {
+          if (collapsed && !mobileOpen) {
             return (
               <NavLink
                 key={section.id}

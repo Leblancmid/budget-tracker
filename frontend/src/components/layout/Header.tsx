@@ -18,6 +18,7 @@ const PAGE_META: Record<string, { title: string; section: string }> = {
   '/rucoy/calculator':        { title: 'Gold Calculator', section: 'Rucoy'          },
   '/master':                  { title: 'Overview',        section: 'Master File'    },
   '/master/savings':          { title: 'Savings',         section: 'Master File'    },
+  '/master/balance':          { title: 'Balance',         section: 'Master File'    },
 }
 
 const SECTION_STYLES: Record<string, { badge: string }> = {

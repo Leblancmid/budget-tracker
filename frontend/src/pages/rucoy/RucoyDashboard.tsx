@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Coins, ArrowLeftRight, TrendingDown, TrendingUp, ArrowRight } from 'lucide-react'
+import { Coins, ArrowLeftRight, TrendingDown, TrendingUp, ArrowRight, HandCoins } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Card } from '@/components/ui/Card'
 import { useRucoyDashboard } from '@/hooks/useRucoyDashboard'
@@ -20,7 +20,7 @@ function formatTradeAmount(status: TradeStatus, amount: string, currency: TradeC
 export default function RucoyDashboard() {
   const { stats, loading: statsLoading, error: statsError } = useRucoyDashboard()
   const { trades, loading: tradesLoading } = useTrades()
-  const { logs, loading: logsLoading }     = useGoldLogs()
+  const { logs, loading: logsLoading } = useGoldLogs()
   const [archivedTrades, setArchivedTrades] = useState<Trade[]>([])
 
   useEffect(() => {
@@ -30,6 +30,9 @@ export default function RucoyDashboard() {
   const recentActivity = useMemo(() => {
     const tradeItems = trades.map((t) => ({
       key:         `trade-${t.id}`,
+      logId:       undefined as number | undefined,
+      logType:     undefined as string | undefined,
+      cancelled:   false,
       iconBg:      t.status === 'kks' ? 'bg-amber-500' : 'bg-emerald-500',
       iconChar:    t.status === 'kks' ? 'K' : 'C',
       title:       t.description || (t.status === 'kks' ? 'KKS Trade' : 'CASH Trade'),
@@ -41,6 +44,9 @@ export default function RucoyDashboard() {
 
     const archivedItems = archivedTrades.map((t) => ({
       key:         `archived-${t.id}`,
+      logId:       undefined as number | undefined,
+      logType:     undefined as string | undefined,
+      cancelled:   false,
       iconBg:      'bg-gray-400 dark:bg-gray-600',
       iconChar:    '✓',
       title:       t.description || (t.status === 'kks' ? 'KKS Trade' : 'CASH Trade'),
@@ -50,16 +56,24 @@ export default function RucoyDashboard() {
       date:        t.archived_at ?? t.created_at,
     }))
 
-    const logItems = logs.map((l) => ({
-      key:         `log-${l.id}`,
-      iconBg:      l.type === 'add' ? 'bg-emerald-500' : 'bg-red-500',
-      iconChar:    l.type === 'add' ? '+' : '−',
-      title:       l.description || (l.type === 'add' ? 'Gold Added' : 'Gold Sold'),
-      subtitle:    'Gold Stash',
-      amount:      `${l.type === 'add' ? '+' : '-'}${Number(l.amount).toLocaleString()} G`,
-      amountColor: l.type === 'add' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400',
-      date:        l.created_at,
-    }))
+    const logItems = logs.map((l) => {
+      const cancelled = !!l.cancelled_at
+      const isFee = l.type === 'fee'
+      const isAdd = l.type === 'add'
+      return {
+        key:         `log-${l.id}`,
+        logId:       l.id,
+        logType:     l.type,
+        cancelled,
+        iconBg:      cancelled ? 'bg-gray-400 dark:bg-gray-600' : isFee ? 'bg-violet-500' : isAdd ? 'bg-emerald-500' : 'bg-red-500',
+        iconChar:    isFee ? '' : isAdd ? '+' : '−',
+        title:       l.description || (isFee ? 'MM Fee' : isAdd ? 'Gold Added' : 'Gold Sold'),
+        subtitle:    isFee ? 'MM Fee' : 'Gold Stash',
+        amount:      cancelled ? '0 G' : `${isAdd || isFee ? '+' : '−'}${Number(l.amount).toLocaleString()} G`,
+        amountColor: cancelled ? 'text-gray-400 dark:text-gray-600' : (isAdd || isFee) ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400',
+        date:        l.created_at,
+      }
+    })
 
     return [...tradeItems, ...archivedItems, ...logItems]
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -176,9 +190,15 @@ export default function RucoyDashboard() {
             </div>
           ) : (
             recentActivity.map((item) => (
-              <div key={item.key} className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+              <div
+                key={item.key}
+                className={[
+                  'flex items-center gap-3 px-5 py-3 transition-colors',
+                  item.cancelled ? 'opacity-50' : 'hover:bg-gray-50 dark:hover:bg-gray-800/40',
+                ].join(' ')}
+              >
                 <div className={['flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white text-xs font-bold shadow-sm', item.iconBg].join(' ')}>
-                  {item.iconChar}
+                  {item.logType === 'fee' ? <HandCoins size={14} /> : item.iconChar}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{item.title}</p>

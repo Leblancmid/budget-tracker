@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { Plus, Minus, Coins, TrendingUp, TrendingDown, AlertCircle, Search, Download } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Plus, Minus, Coins, TrendingUp, TrendingDown, AlertCircle, Search, Download, HandCoins } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
@@ -9,6 +9,7 @@ import { GoldModal } from '@/components/modals/GoldModal'
 import { useGolds } from '@/hooks/useGolds'
 import { useGoldLogs } from '@/hooks/useGoldLogs'
 import { useRucoyDashboard } from '@/hooks/useRucoyDashboard'
+import { useMiddlemanFees } from '@/hooks/useMiddlemanFees'
 import { goldsApi } from '@/api/rucoy'
 import { toast } from '@/components/ui/Toast'
 import { formatWithCommas, formatDateLong, paginateLocally } from '@/utils/format'
@@ -16,13 +17,14 @@ import { exportCsv } from '@/utils/csv'
 
 export default function Golds() {
   const { totalGold, loading, error, refetch: refetchGolds, create } = useGolds()
-  const { logs, loading: logsLoading, refetch: refetchLogs } = useGoldLogs()
+  const { logs, loading: logsLoading, refetch: refetchLogs, cancel: cancelLog } = useGoldLogs()
   const { stats } = useRucoyDashboard()
+  const { create: createFee } = useMiddlemanFees()
   const accountCost = Number(stats?.account_total_cost ?? 0)
   const accountsToPay = Number(stats?.accounts_to_pay ?? 0)
 
   const [search, setSearch]         = useState('')
-  const [typeFilter, setTypeFilter] = useState<'all' | 'add' | 'sell'>('all')
+  const [typeFilter, setTypeFilter] = useState<'all' | 'add' | 'sell' | 'fee'>('all')
   const [page, setPage]             = useState(1)
   const [addOpen, setAddOpen]       = useState(false)
   const [sellOpen, setSellOpen]     = useState(false)
@@ -30,6 +32,70 @@ export default function Golds() {
   const [sellDesc, setSellDesc]     = useState('')
   const [sellError, setSellError]   = useState('')
   const [selling, setSelling]       = useState(false)
+
+  type MmFeePeriod = 'today' | 'weekly' | 'monthly' | 'yearly' | 'total'
+  const [mmFeePeriod,   setMmFeePeriod]   = useState<MmFeePeriod>('monthly')
+  const [mmFeeDropOpen, setMmFeeDropOpen] = useState(false)
+  const mmFeeRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (mmFeeRef.current && !mmFeeRef.current.contains(e.target as Node)) setMmFeeDropOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const mmFeePeriodTotal = useMemo(() => {
+    const now = new Date()
+    return logs
+      .filter((l) => l.type === 'fee' && !l.cancelled_at)
+      .filter((l) => {
+        const d = new Date(l.created_at)
+        if (mmFeePeriod === 'today')   return d.toDateString() === now.toDateString()
+        if (mmFeePeriod === 'weekly')  {
+          const start = new Date(now); start.setDate(now.getDate() - ((now.getDay() + 6) % 7)); start.setHours(0,0,0,0)
+          return d >= start
+        }
+        if (mmFeePeriod === 'monthly') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+        if (mmFeePeriod === 'yearly')  return d.getFullYear() === now.getFullYear()
+        return true
+      })
+      .reduce((sum, l) => sum + parseFloat(l.amount), 0)
+  }, [logs, mmFeePeriod])
+
+  const mmFeePeriodLabel: Record<MmFeePeriod, string> = {
+    today:   new Date().toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' }),
+    weekly:  'This Week',
+    monthly: new Date().toLocaleDateString('en', { month: 'short', year: 'numeric' }),
+    yearly:  String(new Date().getFullYear()),
+    total:   'All Time',
+  }
+
+  const [mmFeeOpen,   setMmFeeOpen]   = useState(false)
+  const [mmFeeAmount, setMmFeeAmount] = useState('')
+  const [mmFeeDesc,   setMmFeeDesc]   = useState('')
+  const [mmFeeError,  setMmFeeError]  = useState('')
+  const [mmFeeSaving, setMmFeeSaving] = useState(false)
+
+  const openMmFee  = () => { setMmFeeOpen(true); setMmFeeAmount(''); setMmFeeDesc(''); setMmFeeError('') }
+  const closeMmFee = () => { setMmFeeOpen(false); setMmFeeAmount(''); setMmFeeDesc(''); setMmFeeError('') }
+
+  const handleMmFee = async () => {
+    const parsed = parseFloat(mmFeeAmount)
+    if (!mmFeeAmount || isNaN(parsed) || parsed <= 0) { setMmFeeError('Enter a valid amount.'); return }
+    setMmFeeSaving(true)
+    try {
+      await createFee(parsed, mmFeeDesc || undefined)
+      await Promise.all([refetchGolds(), refetchLogs()])
+      toast.success(`MM Fee of ${parsed.toLocaleString()} G recorded.`)
+      closeMmFee()
+    } catch (err: unknown) {
+      setMmFeeError((err as { message: string }).message)
+    } finally {
+      setMmFeeSaving(false)
+    }
+  }
 
   const filteredLogs = useMemo(() => {
     let result = typeFilter === 'all' ? logs : logs.filter((l) => l.type === typeFilter)
@@ -42,6 +108,12 @@ export default function Golds() {
 
   const { paginated: paginatedLogs, meta } = paginateLocally(filteredLogs, page, 10)
 
+
+  const handleCancelLog = async (id: number) => {
+    await cancelLog(id)
+    await refetchGolds()
+    toast.success('Entry cancelled.')
+  }
 
   const openSell  = () => { setSellOpen(true); setSellAmount(''); setSellDesc(''); setSellError('') }
   const closeSell = () => { setSellOpen(false); setSellAmount(''); setSellDesc(''); setSellError('') }
@@ -122,11 +194,17 @@ export default function Golds() {
                 >
                   <Minus size={15} /> Sell Gold
                 </button>
+                <button
+                  onClick={openMmFee}
+                  className="flex items-center gap-2 rounded-xl bg-violet-500/20 hover:bg-violet-500/30 active:bg-violet-500/40 text-violet-300 hover:text-violet-200 px-4 py-2.5 text-sm font-semibold transition-colors"
+                >
+                  <HandCoins size={15} /> MM Fee
+                </button>
               </div>
             </div>
 
-            {/* Sub-stat: Account Cost */}
-            <div className="pt-3 border-t border-white/10">
+            {/* Sub-stats: Account Cost + Middleman Fee */}
+            <div className="pt-3 border-t border-white/10 grid grid-cols-2 gap-3">
               <div className="flex items-center gap-2.5">
                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10">
                   <TrendingDown className="h-3.5 w-3.5 text-slate-300" />
@@ -135,6 +213,43 @@ export default function Golds() {
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Account Cost</p>
                   <p className="text-sm font-bold text-slate-200">{accountCost.toLocaleString()} G</p>
                 </div>
+              </div>
+              <div className="relative" ref={mmFeeRef}>
+                <button
+                  type="button"
+                  onClick={() => setMmFeeDropOpen((o) => !o)}
+                  className="flex items-center gap-2.5 w-full text-left rounded-lg hover:bg-white/5 transition-colors p-0.5 -m-0.5"
+                >
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-400/20 shrink-0">
+                    <HandCoins className="h-3.5 w-3.5 text-violet-300" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Middleman Fee</p>
+                    <p className="text-sm font-bold text-violet-300">{mmFeePeriodTotal.toLocaleString()} G</p>
+                    <p className="text-[10px] text-slate-600">{mmFeePeriodLabel[mmFeePeriod]}</p>
+                  </div>
+                </button>
+
+                {mmFeeDropOpen && (
+                  <div className="absolute bottom-full left-0 mb-2 z-20 min-w-[140px] rounded-xl border border-white/10 bg-slate-800 shadow-xl shadow-black/40 overflow-hidden">
+                    {(['today', 'weekly', 'monthly', 'yearly', 'total'] as MmFeePeriod[]).map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => { setMmFeePeriod(p); setMmFeeDropOpen(false) }}
+                        className={[
+                          'flex w-full items-center justify-between gap-4 px-3.5 py-2 text-xs transition-colors',
+                          p === mmFeePeriod
+                            ? 'bg-violet-500/20 text-violet-300 font-semibold'
+                            : 'text-slate-400 hover:bg-white/5 hover:text-slate-200',
+                        ].join(' ')}
+                      >
+                        <span>{{ today: 'Today', weekly: 'This Week', monthly: 'This Month', yearly: 'This Year', total: 'All Time' }[p]}</span>
+                        {p === mmFeePeriod && <span className="h-1.5 w-1.5 rounded-full bg-violet-400" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -187,6 +302,7 @@ export default function Golds() {
               <option value="all">All Types</option>
               <option value="add">Add</option>
               <option value="sell">Sell</option>
+              <option value="fee">MM Fee</option>
             </select>
             <Button variant="secondary" size="sm" icon={<Download className="h-3.5 w-3.5" />} onClick={handleExport}>
               Export
@@ -224,20 +340,27 @@ export default function Golds() {
                     <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Description</th>
                     <th className="px-5 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Amount</th>
                     <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Date</th>
+                    <th className="px-4 py-3 w-10" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50 dark:divide-gray-700/40">
-                  {paginatedLogs.map((log) => (
-                    <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+                  {paginatedLogs.map((log) => {
+                    const cancelled = !!log.cancelled_at
+                    return (
+                    <tr key={log.id} className={['transition-colors', cancelled ? 'opacity-50' : 'hover:bg-gray-50 dark:hover:bg-gray-800/40'].join(' ')}>
                       <td className="px-5 py-3.5">
                         <span className={[
                           'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold',
-                          log.type === 'add'
-                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                            : 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400',
+                          cancelled
+                            ? 'bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500 line-through'
+                            : log.type === 'add'
+                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                              : log.type === 'fee'
+                                ? 'bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400'
+                                : 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400',
                         ].join(' ')}>
-                          {log.type === 'add' ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
-                          {log.type === 'add' ? 'Add' : 'Sell'}
+                          {log.type === 'add' ? <TrendingUp size={10} /> : log.type === 'fee' ? <HandCoins size={10} /> : <TrendingDown size={10} />}
+                          {log.type === 'add' ? 'Add' : log.type === 'fee' ? 'MM Fee' : 'Sell'}
                         </span>
                       </td>
                       <td className="px-5 py-3.5 text-gray-600 dark:text-gray-400 max-w-xs truncate">
@@ -245,15 +368,29 @@ export default function Golds() {
                       </td>
                       <td className={[
                         'px-5 py-3.5 text-right font-bold whitespace-nowrap',
-                        log.type === 'add' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400',
+                        cancelled
+                          ? 'text-gray-400 dark:text-gray-600'
+                          : log.type === 'sell' ? 'text-red-500 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400',
                       ].join(' ')}>
-                        {log.type === 'add' ? '+' : '−'}{Number(log.amount).toLocaleString()} G
+                        {cancelled ? '0' : (log.type === 'sell' ? '−' : '+') + Number(log.amount).toLocaleString()} G
                       </td>
                       <td className="px-5 py-3.5 text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">
                         {formatDateLong(log.created_at)}
                       </td>
+                      <td className="px-4 py-3.5">
+                        {!cancelled && (
+                          <button
+                            onClick={() => handleCancelLog(log.id)}
+                            title="Cancel entry"
+                            className="flex h-6 w-6 items-center justify-center rounded-md text-gray-300 hover:bg-red-50 hover:text-red-500 dark:text-gray-600 dark:hover:bg-red-900/20 dark:hover:text-red-400 transition-colors"
+                          >
+                            <span className="text-xs font-bold leading-none">✕</span>
+                          </button>
+                        )}
+                      </td>
                     </tr>
-                  ))}
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
@@ -265,6 +402,44 @@ export default function Golds() {
       </Card>
 
       <GoldModal open={addOpen} onClose={() => setAddOpen(false)} onSubmit={handleAdd} gold={null} />
+
+      {/* MM Fee modal */}
+      <Modal open={mmFeeOpen} onClose={closeMmFee} title="Middleman Fee" size="sm">
+        <div className="flex flex-col gap-4">
+          <div>
+            <p className="mb-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Amount (G)</p>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={formatWithCommas(mmFeeAmount)}
+              onChange={(e) => {
+                const stripped = e.target.value.replace(/,/g, '')
+                if (stripped === '' || /^\d*\.?\d*$/.test(stripped)) { setMmFeeAmount(stripped); setMmFeeError('') }
+              }}
+              placeholder="e.g. 10,000"
+              className={[
+                'block w-full rounded-xl border bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400',
+                'focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-400 transition-colors',
+                'dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500',
+                mmFeeError ? 'border-red-400 dark:border-red-500' : 'border-gray-200 dark:border-gray-600',
+              ].join(' ')}
+            />
+            {mmFeeError && <p className="mt-1.5 text-xs text-red-600 dark:text-red-400">{mmFeeError}</p>}
+          </div>
+
+          <Input
+            label="Description (optional)"
+            value={mmFeeDesc}
+            onChange={(e) => setMmFeeDesc(e.target.value)}
+            placeholder="e.g. Fee for trade #123"
+          />
+
+          <div className="flex justify-end gap-3 pt-1">
+            <Button variant="secondary" onClick={closeMmFee} disabled={mmFeeSaving}>Cancel</Button>
+            <Button onClick={handleMmFee} loading={mmFeeSaving}>Add Fee</Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Sell modal */}
       <Modal open={sellOpen} onClose={closeSell} title="Sell Gold" size="sm">

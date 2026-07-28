@@ -107,6 +107,7 @@ const SECTIONS = [
     items: [
       { to: '/master', label: 'Overview', end: true },
       { to: '/master/savings', label: 'Savings', end: false },
+      { to: '/master/balance', label: 'Balance', end: false },
     ],
   },
 ]
@@ -161,9 +162,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
 
       {/* Brand */}
       <div className={['flex items-center border-b border-gray-100 dark:border-gray-700/60 shrink-0', collapsed ? 'md:justify-center md:py-3.5 md:px-0 gap-3 px-4 py-4' : 'gap-3 px-4 py-4'].join(' ')}>
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-indigo-600 shadow-sm shadow-indigo-400/30">
-          <Wallet className="h-4 w-4 text-white" />
-        </div>
+        <img src="/logo.svg" alt="Logo" className="h-8 w-8 shrink-0 rounded-xl" />
         <div className={['flex-1 min-w-0', collapsed ? 'md:hidden' : ''].join(' ')}>
           <p className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">Mikey's Tracker</p>
           <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">Finance & Gaming</p>

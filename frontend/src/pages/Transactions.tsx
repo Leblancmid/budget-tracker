@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Search, Filter, Pencil, Trash2, Download, TrendingUp, TrendingDown } from 'lucide-react'
+import { Plus, Search, Filter, Pencil, Trash2, Download, TrendingUp } from 'lucide-react'
 import { useTransactions } from '@/hooks/useTransactions'
 import { useCategories } from '@/hooks/useCategories'
 import { Button } from '@/components/ui/Button'

@@ -108,6 +108,20 @@ export interface Saving {
   updated_at: string
 }
 
+export type BalanceAccount = 'PAYPAL' | 'BINANCE'
+export type BalanceEntryType = 'add' | 'sell'
+
+export interface BalanceEntry {
+  id: number
+  account: BalanceAccount
+  type: BalanceEntryType
+  amount: string
+  description: string | null
+  date: string
+  created_at: string
+  updated_at: string
+}
+
 export interface MasterDashboardStats {
   overall_profit: number
   gold_stash: number
@@ -202,13 +216,27 @@ export interface RucoyAccount {
   updated_at: string
 }
 
-export type GoldLogType = 'add' | 'sell'
+export interface MiddlemanFee {
+  id: number
+  amount: string
+  description: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface MiddlemanFeeIndex {
+  fees:  MiddlemanFee[]
+  total: number
+}
+
+export type GoldLogType = 'add' | 'sell' | 'fee'
 
 export interface GoldLog {
   id: number
   type: GoldLogType
   amount: string
   description: string | null
+  cancelled_at: string | null
   created_at: string
   updated_at: string
 }

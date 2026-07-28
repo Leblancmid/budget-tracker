@@ -132,7 +132,7 @@ class ReportController extends Controller
 
     private function businessWeekly(int $year, int $month): array
     {
-        $txns        = BusinessTransaction::whereNotNull('archived_at')->whereYear('date', $year)->whereMonth('date', $month)->get();
+        $txns        = BusinessTransaction::whereNotNull('archived_at')->whereYear('archived_at', $year)->whereMonth('archived_at', $month)->get();
         $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
         $monthName   = Carbon::createFromDate($year, $month, 1)->format('M');
         $rows        = [];
@@ -140,7 +140,7 @@ class ReportController extends Controller
         foreach ([[1, 7], [8, 14], [15, 21], [22, 28], [29, $daysInMonth]] as $i => [$from, $to]) {
             if ($from > $daysInMonth) break;
             $actualTo = min($to, $daysInMonth);
-            $slice    = $txns->filter(fn($t) => Carbon::parse($t->date)->day >= $from && Carbon::parse($t->date)->day <= $actualTo);
+            $slice    = $txns->filter(fn($t) => Carbon::parse($t->archived_at)->day >= $from && Carbon::parse($t->archived_at)->day <= $actualTo);
             $rows[]   = array_merge(
                 ['label' => 'Week ' . ($i + 1) . " ({$monthName} {$from}–{$actualTo})"],
                 $this->businessTotals($slice),
@@ -152,11 +152,11 @@ class ReportController extends Controller
 
     private function businessMonthly(int $year): array
     {
-        $txns = BusinessTransaction::whereNotNull('archived_at')->whereYear('date', $year)->get();
+        $txns = BusinessTransaction::whereNotNull('archived_at')->whereYear('archived_at', $year)->get();
         $rows = [];
 
         for ($m = 1; $m <= 12; $m++) {
-            $slice  = $txns->filter(fn($t) => Carbon::parse($t->date)->month === $m);
+            $slice  = $txns->filter(fn($t) => Carbon::parse($t->archived_at)->month === $m);
             $rows[] = array_merge(
                 ['label' => Carbon::createFromDate($year, $m, 1)->format('F Y')],
                 $this->businessTotals($slice),
@@ -168,12 +168,12 @@ class ReportController extends Controller
 
     private function businessYearly(): array
     {
-        $txns  = BusinessTransaction::whereNotNull('archived_at')->orderBy('date')->get();
-        $years = $txns->map(fn($t) => Carbon::parse($t->date)->year)->unique()->sort()->values();
+        $txns  = BusinessTransaction::whereNotNull('archived_at')->orderBy('archived_at')->get();
+        $years = $txns->map(fn($t) => Carbon::parse($t->archived_at)->year)->unique()->sort()->values();
         $rows  = [];
 
         foreach ($years as $year) {
-            $slice  = $txns->filter(fn($t) => Carbon::parse($t->date)->year === $year);
+            $slice  = $txns->filter(fn($t) => Carbon::parse($t->archived_at)->year === $year);
             $rows[] = array_merge(
                 ['label' => (string) $year],
                 $this->businessTotals($slice),

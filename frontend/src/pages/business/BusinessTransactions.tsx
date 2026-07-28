@@ -344,7 +344,7 @@ export default function BusinessTransactions() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">{tx.description ?? '—'}</p>
-                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{formatDate(tx.date)}</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{formatDate(tx.archived_at ?? tx.date)}</p>
                         </div>
                       </div>
                       <div className="flex items-center justify-between rounded-lg bg-gray-100 dark:bg-gray-700/30 px-3 py-2">

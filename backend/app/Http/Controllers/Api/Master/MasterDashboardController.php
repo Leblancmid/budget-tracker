@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Master;
 
 use App\Http\Controllers\Controller;
 use App\Models\BusinessTransaction;
+use App\Models\BalanceEntry;
 use App\Models\Gold;
 use App\Models\RucoyAccount;
 use App\Models\Saving;
@@ -31,11 +32,17 @@ class MasterDashboardController extends Controller
         $savingsWithdraw = (float) Saving::where('type', 'withdraw')->sum('amount');
         $savingsBalance  = $savingsDeposit - $savingsWithdraw;
 
+        // Balance (USD)
+        $balanceAdd   = (float) BalanceEntry::where('type', 'add')->sum('amount');
+        $balanceSell  = (float) BalanceEntry::where('type', 'sell')->sum('amount');
+        $balanceTotal = $balanceAdd - $balanceSell;
+
         return response()->json([
             'overall_profit'   => $overallProfit,
             'gold_stash'       => $manualGold,
             'total_price'      => $totalPrice,
             'savings_balance'  => $savingsBalance,
+            'balance_total'    => $balanceTotal,
         ]);
     }
 }

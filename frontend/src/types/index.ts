@@ -127,6 +127,7 @@ export interface MasterDashboardStats {
   gold_stash: number
   total_price: number
   savings_balance: number
+  balance_total: number
 }
 
 // ── Business ─────────────────────────────────────────────────────────────────

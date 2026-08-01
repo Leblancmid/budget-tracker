@@ -9,7 +9,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Card } from '@/components/ui/Card'
 import { BusinessTransactionModal } from '@/components/modals/BusinessTransactionModal'
 import { toast } from '@/components/ui/Toast'
-import { formatCurrency, formatDate, paginateLocally } from '@/utils/format'
+import { formatCurrency, formatDate, paginateLocally, MONTHS } from '@/utils/format'
 import { Amt } from '@/context/AmountVisibilityContext'
 import { isBusinessIncome } from '@/utils/business'
 import { exportCsv } from '@/utils/csv'
@@ -71,10 +71,22 @@ export default function BusinessTransactions() {
     }
   }
 
-  const settledTxs    = useMemo(() => [...transactions.filter(tx => tx.type !== 'account'), ...archivedTxs], [transactions, archivedTxs])
-  const totalIncome   = useMemo(() => settledTxs.filter(tx => tx.price_php != null).reduce((s, tx) => s + parseFloat(tx.price_php!), 0), [settledTxs])
-  const totalExpense  = useMemo(() => settledTxs.filter(tx => tx.cost_php  != null).reduce((s, tx) => s + parseFloat(tx.cost_php!),  0), [settledTxs])
-  const totalProfit   = useMemo(() => archivedTxs.filter(tx => tx.profit_php != null).reduce((s, tx) => s + parseFloat(tx.profit_php!), 0), [archivedTxs])
+  const totalProfit = useMemo(() => archivedTxs.filter(tx => tx.profit_php != null).reduce((s, tx) => s + parseFloat(tx.profit_php!), 0), [archivedTxs])
+
+  const _now = new Date()
+  const CUR_M = _now.getMonth()
+  const CUR_Y = _now.getFullYear()
+  const CUR_LABEL = `${MONTHS[CUR_M]} ${CUR_Y}`
+
+  const monthlyArchived = useMemo(() => archivedTxs.filter(tx => {
+    if (!tx.archived_at) return false
+    const d = new Date(tx.archived_at)
+    return d.getFullYear() === CUR_Y && d.getMonth() === CUR_M
+  }), [archivedTxs])
+
+  const monthlyIncome  = useMemo(() => monthlyArchived.filter(tx => tx.price_php  != null).reduce((s, tx) => s + parseFloat(tx.price_php!),  0), [monthlyArchived])
+  const monthlyExpense = useMemo(() => monthlyArchived.filter(tx => tx.cost_php   != null).reduce((s, tx) => s + parseFloat(tx.cost_php!),   0), [monthlyArchived])
+  const monthlyProfit  = useMemo(() => monthlyArchived.filter(tx => tx.profit_php != null).reduce((s, tx) => s + parseFloat(tx.profit_php!), 0), [monthlyArchived])
 
   const openEdit       = (tx: BusinessTransaction) => { setDefaultType(tx.type === 'account' ? 'account' : null); setEditTarget(tx); setModalOpen(true) }
   const openAddAccount = () => { setDefaultType('account'); setEditTarget(null); setModalOpen(true) }
@@ -88,7 +100,7 @@ export default function BusinessTransactions() {
     [transactions]
   )
 
-  const profitPositive = totalProfit >= 0
+  const profitPositive = monthlyProfit >= 0
 
   return (
     <div className="flex flex-col gap-5">
@@ -106,10 +118,12 @@ export default function BusinessTransactions() {
                 <BarChart3 className="h-3.5 w-3.5 text-teal-400" />
               </div>
               <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Profit</span>
+              <span className="ml-auto text-[10px] font-semibold text-slate-500 bg-white/10 px-2 py-0.5 rounded-full">{CUR_LABEL}</span>
             </div>
             <p className={['text-3xl font-bold', profitPositive ? 'text-teal-300' : 'text-red-400'].join(' ')}>
-              <Amt value={formatCurrency(totalProfit)} />
+              <Amt value={formatCurrency(monthlyProfit)} />
             </p>
+            <p className="text-xs text-slate-500 mt-1">All time: <Amt value={formatCurrency(totalProfit)} /></p>
           </div>
 
           {/* Sub-stats: income / cost */}
@@ -120,7 +134,7 @@ export default function BusinessTransactions() {
               </div>
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Income</p>
-                <p className="text-base font-bold text-emerald-400"><Amt value={formatCurrency(totalIncome)} /></p>
+                <p className="text-base font-bold text-emerald-400"><Amt value={formatCurrency(monthlyIncome)} /></p>
               </div>
             </div>
             <div className="flex items-center gap-2.5">
@@ -129,7 +143,7 @@ export default function BusinessTransactions() {
               </div>
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Cost</p>
-                <p className="text-base font-bold text-red-400"><Amt value={formatCurrency(totalExpense)} /></p>
+                <p className="text-base font-bold text-red-400"><Amt value={formatCurrency(monthlyExpense)} /></p>
               </div>
             </div>
           </div>

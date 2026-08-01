@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { TrendingUp, Coins, DollarSign, PiggyBank, SlidersHorizontal, Wallet } from 'lucide-react'
+import { MONTHS } from '@/utils/format'
 import { useMasterDashboard } from '@/hooks/useMasterDashboard'
 import { Card } from '@/components/ui/Card'
 import { formatCurrency } from '@/utils/format'
@@ -43,7 +44,10 @@ export default function MasterDashboard() {
   const goldUsd        = goldBase * usdRate
   const goldPhp        = goldUsd * phpRate
 
+  const now            = new Date()
+  const curLabel       = `${MONTHS[now.getMonth()]} ${now.getFullYear()}`
   const overallProfit  = stats?.overall_profit  ?? 0
+  const monthlyProfit  = stats?.monthly_profit  ?? 0
   const savingsBalance = stats?.savings_balance  ?? 0
   const balanceTotalUsd = stats?.balance_total   ?? 0
   const balanceTotalPhp = balanceTotalUsd * phpRate
@@ -77,11 +81,12 @@ export default function MasterDashboard() {
                 <TrendingUp className="h-3.5 w-3.5 text-violet-400" />
               </div>
               <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Overall Profit</span>
+              <span className="ml-auto text-[10px] font-semibold text-slate-500 bg-white/10 px-2 py-0.5 rounded-full">{curLabel}</span>
             </div>
-            <p className={['text-3xl font-bold', overallProfit >= 0 ? 'text-violet-300' : 'text-red-400'].join(' ')}>
-              <Amt value={formatCurrency(overallProfit)} />
+            <p className={['text-3xl font-bold', monthlyProfit >= 0 ? 'text-violet-300' : 'text-red-400'].join(' ')}>
+              <Amt value={formatCurrency(monthlyProfit)} />
             </p>
-            <p className="text-xs text-slate-500 mt-1">Business + Daily Expenses</p>
+            <p className="text-xs text-slate-500 mt-1">All time: <Amt value={formatCurrency(overallProfit)} /></p>
           </div>
 
           {/* Sub-stats */}

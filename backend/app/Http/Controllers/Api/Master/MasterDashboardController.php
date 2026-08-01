@@ -15,6 +15,8 @@ class MasterDashboardController extends Controller
 {
     public function index(): JsonResponse
     {
+        $now = now();
+
         // Overall Profit = Business archived profit + Daily (income - expense)
         $businessProfit = (float) BusinessTransaction::where('type', 'account')
             ->whereNotNull('archived_at')
@@ -22,6 +24,18 @@ class MasterDashboardController extends Controller
         $dailyIncome    = (float) Transaction::where('type', 'income')->sum('amount');
         $dailyExpense   = (float) Transaction::where('type', 'expense')->sum('amount');
         $overallProfit  = $businessProfit + ($dailyIncome - $dailyExpense);
+
+        // Monthly Profit (current month only)
+        $monthlyBusinessProfit = (float) BusinessTransaction::where('type', 'account')
+            ->whereNotNull('archived_at')
+            ->whereYear('archived_at', $now->year)
+            ->whereMonth('archived_at', $now->month)
+            ->sum('profit_php');
+        $monthlyDailyIncome  = (float) Transaction::where('type', 'income')
+            ->whereYear('date', $now->year)->whereMonth('date', $now->month)->sum('amount');
+        $monthlyDailyExpense = (float) Transaction::where('type', 'expense')
+            ->whereYear('date', $now->year)->whereMonth('date', $now->month)->sum('amount');
+        $monthlyProfit = $monthlyBusinessProfit + ($monthlyDailyIncome - $monthlyDailyExpense);
 
         // Rucoy
         $manualGold = (float) Gold::sum('amount');
@@ -39,6 +53,7 @@ class MasterDashboardController extends Controller
 
         return response()->json([
             'overall_profit'   => $overallProfit,
+            'monthly_profit'   => $monthlyProfit,
             'gold_stash'       => $manualGold,
             'total_price'      => $totalPrice,
             'savings_balance'  => $savingsBalance,

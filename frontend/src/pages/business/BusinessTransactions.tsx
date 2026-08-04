@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Plus, Search, Pencil, Trash2, Briefcase, TrendingUp, TrendingDown, Archive, Download, BarChart3 } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, Briefcase, TrendingUp, TrendingDown, Archive, Download, BarChart3, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react'
 import { useBusinessTransactions } from '@/hooks/useBusinessTransactions'
 import { useArchive } from '@/hooks/useArchive'
 import { businessTransactionsApi } from '@/api/business'
@@ -37,13 +37,22 @@ export default function BusinessTransactions() {
 
   useEffect(() => { fetchArchived() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const [accSearch, setAccSearch] = useState('')
-  const [accPage,   setAccPage]   = useState(1)
+  const [accSearch,   setAccSearch]   = useState('')
+  const [accPage,     setAccPage]     = useState(1)
+  const [profitSort,  setProfitSort]  = useState<'asc' | 'desc' | null>(null)
 
   const accountTxs = useMemo(() => {
     const q = accSearch.toLowerCase()
-    return transactions.filter(tx => tx.archived_at == null && (!q || (tx.description ?? '').toLowerCase().includes(q)))
-  }, [transactions, accSearch])
+    let result = transactions.filter(tx => tx.archived_at == null && (!q || (tx.description ?? '').toLowerCase().includes(q)))
+    if (profitSort) {
+      result = result.slice().sort((a, b) => {
+        const pa = parseFloat(a.profit_php ?? '0')
+        const pb = parseFloat(b.profit_php ?? '0')
+        return profitSort === 'asc' ? pa - pb : pb - pa
+      })
+    }
+    return result
+  }, [transactions, accSearch, profitSort])
 
   const { paginated: accPaginated, meta: accMeta } = paginateLocally(accountTxs, accPage, PER_PAGE)
 
@@ -176,6 +185,20 @@ export default function BusinessTransactions() {
                 className="rounded-lg border border-gray-200 bg-white pl-8 pr-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500/40 focus:border-teal-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 w-36"
               />
             </div>
+
+            {/* Profit sort */}
+            <button
+              onClick={() => { setProfitSort((s) => s === null ? 'desc' : s === 'desc' ? 'asc' : null); setAccPage(1) }}
+              className={[
+                'flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors',
+                profitSort
+                  ? 'border-emerald-400 bg-emerald-50 text-emerald-700 dark:border-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400'
+                  : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
+              ].join(' ')}
+            >
+              {profitSort === 'desc' ? <ArrowDown size={13} /> : profitSort === 'asc' ? <ArrowUp size={13} /> : <ArrowUpDown size={13} />}
+              Profit
+            </button>
 
             {/* Archive toggle */}
             <button

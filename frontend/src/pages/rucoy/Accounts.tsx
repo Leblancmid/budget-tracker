@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Plus, Pencil, Trash2, Users, User, TrendingUp, TrendingDown, DollarSign, Search, Check, Archive, RotateCcw, Download, CalendarClock } from 'lucide-react'
+import { Plus, Pencil, Trash2, Users, User, TrendingUp, TrendingDown, DollarSign, Search, Check, Archive, RotateCcw, Download, CalendarClock, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -162,6 +162,8 @@ export default function Accounts() {
   const { accounts, loading, error, create, update, archive, unarchive, remove } = useRucoyAccounts()
 
   const [search, setSearch]     = useState('')
+  const [profitSort, setProfitSort] = useState<'asc' | 'desc' | null>(null)
+  const [priceSort,  setPriceSort]  = useState<'asc' | 'desc' | null>(null)
   const [page, setPage]         = useState(1)
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing]   = useState<RucoyAccount | null>(null)
@@ -212,15 +214,30 @@ export default function Accounts() {
   const openEdit   = (a: RucoyAccount) => { setEditing(a); setModalOpen(true) }
 
   const filteredAccounts = useMemo(() => {
-    if (!search.trim()) return accounts
     const q = search.trim().toLowerCase()
-    return accounts.filter((a) =>
-      a.email.toLowerCase().includes(q) ||
-      (a.description ?? '').toLowerCase().includes(q)
-    )
-  }, [accounts, search])
+    let result = q
+      ? accounts.filter((a) =>
+          a.email.toLowerCase().includes(q) ||
+          (a.description ?? '').toLowerCase().includes(q)
+        )
+      : [...accounts]
+    if (profitSort) {
+      result = result.slice().sort((a, b) => {
+        const pa = a.profit ?? 0
+        const pb = b.profit ?? 0
+        return profitSort === 'asc' ? pa - pb : pb - pa
+      })
+    } else if (priceSort) {
+      result = result.slice().sort((a, b) => {
+        const pa = a.price ?? 0
+        const pb = b.price ?? 0
+        return priceSort === 'asc' ? pa - pb : pb - pa
+      })
+    }
+    return result
+  }, [accounts, search, profitSort, priceSort])
 
-  const { paginated, meta } = paginateLocally(filteredAccounts, page, 6)
+  const { paginated, meta } = paginateLocally(filteredAccounts, page, 9)
 
   const totals = useMemo(() => {
     let price = 0, cost = 0, profit = 0
@@ -278,6 +295,40 @@ export default function Accounts() {
             className="w-full rounded-lg border border-gray-200 bg-white pl-8 pr-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-400/40 focus:border-indigo-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
           />
         </div>
+
+        <button
+          onClick={() => {
+            setPriceSort(null)
+            setProfitSort((s) => s === null ? 'desc' : s === 'desc' ? 'asc' : null)
+            setPage(1)
+          }}
+          className={[
+            'flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors',
+            profitSort
+              ? 'border-emerald-400 bg-emerald-50 text-emerald-700 dark:border-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400'
+              : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
+          ].join(' ')}
+        >
+          {profitSort === 'desc' ? <ArrowDown size={13} /> : profitSort === 'asc' ? <ArrowUp size={13} /> : <ArrowUpDown size={13} />}
+          Profit
+        </button>
+
+        <button
+          onClick={() => {
+            setProfitSort(null)
+            setPriceSort((s) => s === null ? 'desc' : s === 'desc' ? 'asc' : null)
+            setPage(1)
+          }}
+          className={[
+            'flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors',
+            priceSort
+              ? 'border-indigo-400 bg-indigo-50 text-indigo-700 dark:border-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400'
+              : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
+          ].join(' ')}
+        >
+          {priceSort === 'desc' ? <ArrowDown size={13} /> : priceSort === 'asc' ? <ArrowUp size={13} /> : <ArrowUpDown size={13} />}
+          Price
+        </button>
 
         <button
           onClick={() => setShowArchive((v) => !v)}
@@ -343,7 +394,7 @@ export default function Accounts() {
       {/* Skeleton loading */}
       {loading && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => (
+          {Array.from({ length: 9 }).map((_, i) => (
             <div key={i} className="rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 animate-pulse">
               <div className="flex items-start gap-3 mb-3">
                 <div className="h-11 w-11 rounded-full bg-gray-100 dark:bg-gray-800 shrink-0" />

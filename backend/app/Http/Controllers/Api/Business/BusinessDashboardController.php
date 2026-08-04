@@ -20,7 +20,10 @@ class BusinessDashboardController extends Controller
         $income        = (float) (clone $base)->sum('price_php');
         $expense       = (float) (clone $base)->sum('cost_php');
         $initialProfit = $income - $expense;
-        $archivedBase    = (clone $base)->where('type', 'account')->whereNotNull('archived_at');
+        $archivedBase    = BusinessTransaction::where('type', 'account')
+            ->whereNotNull('archived_at')
+            ->whereMonth('archived_at', $month)
+            ->whereYear('archived_at', $year);
         $profit          = (float) (clone $archivedBase)->sum('profit_php');
         $archivedIncome  = (float) (clone $archivedBase)->sum('price_php');
         $archivedExpense = (float) (clone $archivedBase)->sum('cost_php');

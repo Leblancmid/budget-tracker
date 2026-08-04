@@ -71,8 +71,6 @@ export default function BusinessTransactions() {
     }
   }
 
-  const totalProfit = useMemo(() => archivedTxs.filter(tx => tx.profit_php != null).reduce((s, tx) => s + parseFloat(tx.profit_php!), 0), [archivedTxs])
-
   const _now = new Date()
   const CUR_M = _now.getMonth()
   const CUR_Y = _now.getFullYear()
@@ -123,7 +121,6 @@ export default function BusinessTransactions() {
             <p className={['text-3xl font-bold', profitPositive ? 'text-teal-300' : 'text-red-400'].join(' ')}>
               <Amt value={formatCurrency(monthlyProfit)} />
             </p>
-            <p className="text-xs text-slate-500 mt-1">All time: <Amt value={formatCurrency(totalProfit)} /></p>
           </div>
 
           {/* Sub-stats: income / cost */}

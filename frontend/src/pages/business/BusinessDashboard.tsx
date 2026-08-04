@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown, ArrowRight, BarChart3, Briefcase } from 'lucide-react'
+import { TrendingUp, TrendingDown, ArrowRight, BarChart3 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useBusinessDashboard } from '@/hooks/useBusinessDashboard'
 import { Card } from '@/components/ui/Card'
@@ -15,12 +15,9 @@ export default function BusinessDashboard() {
   const { stats, month, year, loading, setMonth, setYear } = useBusinessDashboard()
 
   const yearOptions    = buildYearOptions()
-  const profit            = stats?.initial_profit  ?? 0
   const archivedProfit    = stats?.total_profit    ?? 0
   const archivedIncome    = stats?.archived_income  ?? 0
   const archivedExpense   = stats?.archived_expense ?? 0
-  const totalIncome       = stats?.total_income    ?? 0
-  const totalExpense      = stats?.total_expense   ?? 0
 
   return (
     <div className="flex flex-col gap-6">
@@ -69,11 +66,6 @@ export default function BusinessDashboard() {
               <p className={['text-3xl font-bold', archivedProfit >= 0 ? 'text-teal-300' : 'text-red-400'].join(' ')}>
                 {archivedProfit >= 0 ? '' : '−'}<Amt value={formatCurrency(Math.abs(archivedProfit))} />
               </p>
-              <p className="text-xs text-slate-500 flex items-center gap-1.5 mt-1">
-                <Briefcase className="h-3 w-3" />
-                Initial profit:
-                <span className="font-semibold text-slate-400"><Amt value={formatCurrency(profit)} /></span>
-              </p>
             </div>
 
             {/* Sub-stats */}
@@ -85,9 +77,6 @@ export default function BusinessDashboard() {
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Income</p>
                   <p className="text-sm font-bold text-emerald-400"><Amt value={formatCurrency(archivedIncome)} /></p>
-                  <p className="text-[10px] text-slate-500 mt-0.5">
-                    Initial: <span className="font-semibold text-emerald-500/70"><Amt value={formatCurrency(totalIncome)} /></span>
-                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-2.5">
@@ -97,9 +86,6 @@ export default function BusinessDashboard() {
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Expense</p>
                   <p className="text-sm font-bold text-red-400"><Amt value={formatCurrency(archivedExpense)} /></p>
-                  <p className="text-[10px] text-slate-500 mt-0.5">
-                    Initial: <span className="font-semibold text-red-400/70"><Amt value={formatCurrency(totalExpense)} /></span>
-                  </p>
                 </div>
               </div>
             </div>

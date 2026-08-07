@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ScrollText, Wallet, Briefcase, PiggyBank, DollarSign, Coins, RefreshCw, Smartphone, Monitor } from 'lucide-react'
+import { ScrollText, Wallet, Briefcase, PiggyBank, DollarSign, Coins, RefreshCw, Smartphone, Monitor, ArrowLeftRight } from 'lucide-react'
 import { useLogs } from '@/hooks/useLogs'
 import { Card } from '@/components/ui/Card'
 import { Pagination } from '@/components/ui/Pagination'
@@ -18,6 +18,7 @@ const MODULE_TABS: { key: ModuleKey; label: string }[] = [
   { key: 'savings',  label: 'Savings' },
   { key: 'balance',  label: 'Balance' },
   { key: 'gold',     label: 'Gold' },
+  { key: 'trade',    label: 'Trades' },
 ]
 
 const MODULE_STYLES: Record<LogEntry['module'], {
@@ -30,7 +31,8 @@ const MODULE_STYLES: Record<LogEntry['module'], {
   business: { Icon: Briefcase,  dot: 'bg-teal-500',    badge: 'bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300',            label: 'Business' },
   savings:  { Icon: PiggyBank,  dot: 'bg-emerald-500', badge: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300', label: 'Savings' },
   balance:  { Icon: DollarSign, dot: 'bg-violet-500',  badge: 'bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',    label: 'Balance' },
-  gold:     { Icon: Coins,      dot: 'bg-amber-500',   badge: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',        label: 'Gold' },
+  gold:     { Icon: Coins,         dot: 'bg-amber-500',  badge: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',        label: 'Gold' },
+  trade:    { Icon: ArrowLeftRight, dot: 'bg-rose-500',   badge: 'bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',            label: 'Trade' },
 }
 
 const TYPE_LABEL: Record<string, string> = {
@@ -38,6 +40,8 @@ const TYPE_LABEL: Record<string, string> = {
   deposit: 'Deposit', withdraw: 'Withdraw',
   add: 'Add', sell: 'Sell', fee: 'Fee',
   account: 'Account', gold: 'Gold',
+  kks: 'KKS', cash: 'Cash',
+  archived: 'Archived',
 }
 
 function isPositiveEntry(e: LogEntry): boolean {
@@ -46,6 +50,7 @@ function isPositiveEntry(e: LogEntry): boolean {
   if (e.module === 'balance')  return e.type === 'add'
   if (e.module === 'gold')     return e.type === 'add'
   if (e.module === 'business') return parseFloat(e.amount ?? '0') >= 0
+  if (e.module === 'trade')    return true
   return true
 }
 
@@ -54,6 +59,7 @@ function formatAmount(e: LogEntry): string {
   const n = Math.abs(parseFloat(e.amount))
   if (e.module === 'gold')    return `${n.toLocaleString()} G`
   if (e.module === 'balance') return `$${n.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  if (e.module === 'trade')   return n.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   return `₱${n.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 

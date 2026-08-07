@@ -8,6 +8,7 @@ use App\Models\BalanceEntry;
 use App\Models\BusinessTransaction;
 use App\Models\GoldLog;
 use App\Models\Saving;
+use App\Models\Trade;
 use App\Models\Transaction;
 use Illuminate\Http\JsonResponse;
 
@@ -15,10 +16,14 @@ class LogController extends Controller
 {
     public function index(): JsonResponse
     {
-        // Index activity logs by "type|id" for O(1) lookup
-        $activityMap = ActivityLog::all()->keyBy(
-            fn($l) => $l->loggable_type . '|' . $l->loggable_id
-        );
+        $allActivityLogs = ActivityLog::all();
+
+        // created events → keyed for IP/device merge into original table rows
+        $activityMap = $allActivityLogs->where('type', '!=', 'archived')
+            ->keyBy(fn($l) => $l->loggable_type . '|' . $l->loggable_id);
+
+        // archived events → standalone log entries
+        $archivedEvents = $allActivityLogs->where('type', 'archived');
 
         $logs = collect();
 
@@ -57,6 +62,31 @@ class LogController extends Controller
                 $log = $activityMap->get(GoldLog::class . '|' . $t->id);
                 $logs->push($this->entry('gold', $t->type, $t->description, $t->amount, null, $t->created_at, $log));
             });
+
+        Trade::select('id', 'status', 'description', 'amount', 'currency', 'created_at')
+            ->orderBy('created_at', 'desc')->limit(500)->get()
+            ->each(function ($t) use (&$logs, $activityMap) {
+                $log         = $activityMap->get(Trade::class . '|' . $t->id);
+                $description = $t->description;
+                if ($t->currency) {
+                    $description = trim(($description ? $description . ' · ' : '') . $t->currency);
+                }
+                $logs->push($this->entry('trade', $t->status, $description, $t->amount, null, $t->created_at, $log));
+            });
+
+        // Append archived events as standalone entries
+        $archivedEvents->each(function ($log) use (&$logs) {
+            $logs->push([
+                'module'      => $log->module,
+                'type'        => 'archived',
+                'description' => $log->description,
+                'amount'      => $log->amount,
+                'date'        => null,
+                'created_at'  => $log->created_at->toISOString(),
+                'ip_address'  => $log->ip_address,
+                'user_agent'  => $log->user_agent,
+            ]);
+        });
 
         return response()->json([
             'data' => $logs->sortByDesc('created_at')->values(),

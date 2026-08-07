@@ -1,7 +1,7 @@
 import api from './axios'
 
 export interface LogEntry {
-  module: 'daily' | 'business' | 'savings' | 'balance' | 'gold'
+  module: 'daily' | 'business' | 'savings' | 'balance' | 'gold' | 'trade'
   type: string
   description: string | null
   amount: string | null

@@ -7,6 +7,8 @@ export interface LogEntry {
   amount: string | null
   date: string | null
   created_at: string
+  ip_address: string | null
+  user_agent: string | null
 }
 
 export const logsApi = {

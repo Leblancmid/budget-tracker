@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\BalanceEntry;
 use App\Models\BusinessTransaction;
 use App\Models\GoldLog;
@@ -14,65 +15,65 @@ class LogController extends Controller
 {
     public function index(): JsonResponse
     {
+        // Index activity logs by "type|id" for O(1) lookup
+        $activityMap = ActivityLog::all()->keyBy(
+            fn($l) => $l->loggable_type . '|' . $l->loggable_id
+        );
+
         $logs = collect();
 
-        Transaction::select('type', 'amount', 'description', 'date', 'created_at')
+        Transaction::select('id', 'type', 'amount', 'description', 'date', 'created_at')
             ->orderBy('created_at', 'desc')->limit(500)->get()
-            ->each(fn($t) => $logs->push([
-                'module'      => 'daily',
-                'type'        => $t->type,
-                'description' => $t->description,
-                'amount'      => $t->amount,
-                'date'        => $t->date,
-                'created_at'  => $t->created_at->toISOString(),
-            ]));
+            ->each(function ($t) use (&$logs, $activityMap) {
+                $log = $activityMap->get(Transaction::class . '|' . $t->id);
+                $logs->push($this->entry('daily', $t->type, $t->description, $t->amount, $t->date, $t->created_at, $log));
+            });
 
-        BusinessTransaction::select('type', 'description', 'amount', 'price_php', 'cost_php', 'profit_php', 'date', 'created_at')
+        BusinessTransaction::select('id', 'type', 'description', 'amount', 'price_php', 'cost_php', 'profit_php', 'date', 'created_at')
             ->orderBy('created_at', 'desc')->limit(500)->get()
-            ->each(fn($t) => $logs->push([
-                'module'      => 'business',
-                'type'        => $t->type,
-                'description' => $t->description,
-                'amount'      => $t->profit_php ?? $t->price_php ?? $t->cost_php ?? $t->amount,
-                'date'        => $t->date,
-                'created_at'  => $t->created_at->toISOString(),
-            ]));
+            ->each(function ($t) use (&$logs, $activityMap) {
+                $log    = $activityMap->get(BusinessTransaction::class . '|' . $t->id);
+                $amount = $t->profit_php ?? $t->price_php ?? $t->cost_php ?? $t->amount;
+                $logs->push($this->entry('business', $t->type, $t->description, $amount, $t->date, $t->created_at, $log));
+            });
 
-        Saving::select('type', 'description', 'amount', 'date', 'created_at')
+        Saving::select('id', 'type', 'description', 'amount', 'date', 'created_at')
             ->orderBy('created_at', 'desc')->limit(500)->get()
-            ->each(fn($t) => $logs->push([
-                'module'      => 'savings',
-                'type'        => $t->type,
-                'description' => $t->description,
-                'amount'      => $t->amount,
-                'date'        => $t->date,
-                'created_at'  => $t->created_at->toISOString(),
-            ]));
+            ->each(function ($t) use (&$logs, $activityMap) {
+                $log = $activityMap->get(Saving::class . '|' . $t->id);
+                $logs->push($this->entry('savings', $t->type, $t->description, $t->amount, $t->date, $t->created_at, $log));
+            });
 
-        BalanceEntry::select('type', 'description', 'amount', 'date', 'created_at')
+        BalanceEntry::select('id', 'type', 'description', 'amount', 'date', 'created_at')
             ->orderBy('created_at', 'desc')->limit(500)->get()
-            ->each(fn($t) => $logs->push([
-                'module'      => 'balance',
-                'type'        => $t->type,
-                'description' => $t->description,
-                'amount'      => $t->amount,
-                'date'        => $t->date,
-                'created_at'  => $t->created_at->toISOString(),
-            ]));
+            ->each(function ($t) use (&$logs, $activityMap) {
+                $log = $activityMap->get(BalanceEntry::class . '|' . $t->id);
+                $logs->push($this->entry('balance', $t->type, $t->description, $t->amount, $t->date, $t->created_at, $log));
+            });
 
-        GoldLog::select('type', 'description', 'amount', 'created_at')
+        GoldLog::select('id', 'type', 'description', 'amount', 'created_at')
             ->orderBy('created_at', 'desc')->limit(500)->get()
-            ->each(fn($t) => $logs->push([
-                'module'      => 'gold',
-                'type'        => $t->type,
-                'description' => $t->description,
-                'amount'      => $t->amount,
-                'date'        => null,
-                'created_at'  => $t->created_at->toISOString(),
-            ]));
+            ->each(function ($t) use (&$logs, $activityMap) {
+                $log = $activityMap->get(GoldLog::class . '|' . $t->id);
+                $logs->push($this->entry('gold', $t->type, $t->description, $t->amount, null, $t->created_at, $log));
+            });
 
         return response()->json([
             'data' => $logs->sortByDesc('created_at')->values(),
         ]);
+    }
+
+    private function entry(string $module, string $type, ?string $description, $amount, ?string $date, $createdAt, ?ActivityLog $log): array
+    {
+        return [
+            'module'      => $module,
+            'type'        => $type,
+            'description' => $description,
+            'amount'      => $amount,
+            'date'        => $date,
+            'created_at'  => $createdAt instanceof \Carbon\Carbon ? $createdAt->toISOString() : $createdAt,
+            'ip_address'  => $log?->ip_address,
+            'user_agent'  => $log?->user_agent,
+        ];
     }
 }

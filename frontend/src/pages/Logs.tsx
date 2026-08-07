@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ScrollText, Wallet, Briefcase, PiggyBank, DollarSign, Coins, RefreshCw } from 'lucide-react'
+import { ScrollText, Wallet, Briefcase, PiggyBank, DollarSign, Coins, RefreshCw, Smartphone, Monitor } from 'lucide-react'
 import { useLogs } from '@/hooks/useLogs'
 import { Card } from '@/components/ui/Card'
 import { Pagination } from '@/components/ui/Pagination'
@@ -75,6 +75,11 @@ function formatDateTime(iso: string): string {
     month: 'short', day: 'numeric', year: 'numeric',
     hour: 'numeric', minute: '2-digit', hour12: true,
   })
+}
+
+function detectDevice(ua: string | null): 'mobile' | 'desktop' | null {
+  if (!ua) return null
+  return /mobile|android|iphone|ipad|tablet/i.test(ua) ? 'mobile' : 'desktop'
 }
 
 export default function Logs() {
@@ -170,6 +175,7 @@ export default function Logs() {
               const cfg      = MODULE_STYLES[e.module]
               const positive = isPositiveEntry(e)
               const typeLabel = TYPE_LABEL[e.type] ?? e.type
+              const device   = detectDevice(e.user_agent)
               return (
                 <div key={i} className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
                   {/* Module dot */}
@@ -184,10 +190,22 @@ export default function Logs() {
                       <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">
                         {typeLabel}
                       </span>
+                      {device && (
+                        <span className="flex items-center gap-0.5 text-[10px] text-gray-400 dark:text-gray-500">
+                          {device === 'mobile'
+                            ? <Smartphone className="h-3 w-3" />
+                            : <Monitor className="h-3 w-3" />
+                          }
+                          {device === 'mobile' ? 'Mobile' : 'Desktop'}
+                        </span>
+                      )}
                     </div>
                     <p className="text-sm text-gray-800 dark:text-gray-200 truncate mt-0.5">
                       {e.description ?? <span className="italic text-gray-400 dark:text-gray-500 text-xs">No description</span>}
                     </p>
+                    {e.ip_address && (
+                      <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5 font-mono">{e.ip_address}</p>
+                    )}
                   </div>
 
                   {/* Amount + time */}

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\LogController;
 use App\Http\Controllers\Api\BudgetController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\Master\MasterDashboardController;
@@ -20,6 +21,9 @@ Route::prefix('v1')->group(function () {
     // Auth
     Route::post('auth/login',  [AuthController::class, 'login']);
     Route::post('auth/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+
+    // Logs
+    Route::get('logs', [LogController::class, 'index']);
 
     // Reports
     Route::get('reports/daily-expenses', [ReportController::class, 'dailyExpenses']);

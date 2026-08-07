@@ -29,6 +29,8 @@ const BusinessTransactions = lazy(() => import('@/pages/business/BusinessTransac
 const DailyExpensesReport = lazy(() => import('@/pages/reports/DailyExpensesReport'))
 const BusinessReport      = lazy(() => import('@/pages/reports/BusinessReport'))
 
+const Logs                = lazy(() => import('@/pages/Logs'))
+
 function Loading() {
   return <div className="flex items-center justify-center h-40 text-gray-400">Loading…</div>
 }
@@ -67,6 +69,8 @@ export default function App() {
 
                   <Route path="/reports/daily-expenses" element={<Suspense fallback={<Loading />}><DailyExpensesReport /></Suspense>} />
                   <Route path="/reports/business"       element={<Suspense fallback={<Loading />}><BusinessReport /></Suspense>} />
+
+                  <Route path="/logs" element={<Suspense fallback={<Loading />}><Logs /></Suspense>} />
                 </Route>
               </Route>
 

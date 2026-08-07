@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
-import { ChevronDown, ChevronRight, Wallet, Gamepad2, Briefcase, FolderOpen, PanelLeftClose, PanelLeftOpen, BarChart2 } from 'lucide-react'
+import { ChevronDown, ChevronRight, Wallet, Gamepad2, Briefcase, FolderOpen, PanelLeftClose, PanelLeftOpen, BarChart2, ScrollText } from 'lucide-react'
 
-type SectionVariant = 'master' | 'default' | 'business' | 'rucoy' | 'reports'
+type SectionVariant = 'master' | 'default' | 'business' | 'rucoy' | 'reports' | 'logs'
 
 const SECTION_COLORS: Record<SectionVariant, {
   icon: string
@@ -45,6 +45,13 @@ const SECTION_COLORS: Record<SectionVariant, {
     activeBg: 'bg-sky-50 dark:bg-sky-900/25',
     activeBorder: 'border-sky-500 dark:border-sky-400',
     activeText: 'text-sky-700 dark:text-sky-300',
+  },
+  logs: {
+    icon: 'text-slate-600 dark:text-slate-400',
+    iconBg: 'bg-slate-100 dark:bg-slate-800',
+    activeBg: 'bg-slate-50 dark:bg-slate-800/40',
+    activeBorder: 'border-slate-500 dark:border-slate-400',
+    activeText: 'text-slate-700 dark:text-slate-300',
   },
 }
 
@@ -110,10 +117,20 @@ const SECTIONS = [
       { to: '/master/balance', label: 'Balance', end: false },
     ],
   },
+  {
+    id: 'logs',
+    label: 'Logs',
+    icon: ScrollText,
+    variant: 'logs' as SectionVariant,
+    basePath: '/logs',
+    items: [
+      { to: '/logs', label: 'Activity', end: true },
+    ],
+  },
 ]
 
 function isUnderBasePath(pathname: string, basePath: string) {
-  if (basePath === '/') return !pathname.startsWith('/rucoy') && !pathname.startsWith('/business') && !pathname.startsWith('/master') && !pathname.startsWith('/reports')
+  if (basePath === '/') return !pathname.startsWith('/rucoy') && !pathname.startsWith('/business') && !pathname.startsWith('/master') && !pathname.startsWith('/reports') && !pathname.startsWith('/logs')
   return pathname === basePath || pathname.startsWith(basePath + '/')
 }
 

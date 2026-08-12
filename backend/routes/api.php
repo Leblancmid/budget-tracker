@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\LogController;
 use App\Http\Controllers\Api\BudgetController;
 use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\Master\BalanceEntryController;
 use App\Http\Controllers\Api\Master\MasterDashboardController;
 use App\Http\Controllers\Api\Master\SavingController;
 use App\Http\Controllers\Api\Business\BusinessDashboardController;
@@ -12,6 +13,7 @@ use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\TransactionController;
 use App\Http\Controllers\Api\Rucoy\GoldController;
+use App\Http\Controllers\Api\Rucoy\MiddlemanFeeController;
 use App\Http\Controllers\Api\Rucoy\RucoyAccountController;
 use App\Http\Controllers\Api\Rucoy\RucoyDashboardController;
 use App\Http\Controllers\Api\Rucoy\TradeController;
@@ -42,6 +44,7 @@ Route::prefix('v1')->group(function () {
     Route::prefix('master')->group(function () {
         Route::get('dashboard', [MasterDashboardController::class, 'index']);
         Route::apiResource('savings', SavingController::class)->except(['show', 'create', 'edit']);
+        Route::apiResource('balance-entries', BalanceEntryController::class)->except(['show', 'create', 'edit']);
     });
 
     // Business
@@ -61,6 +64,9 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('golds', GoldController::class)->except(['show', 'create', 'edit']);
         Route::post('golds/sell', [GoldController::class, 'sell']);
         Route::get('gold-logs', [GoldController::class, 'logs']);
+        Route::get('middleman-fees', [MiddlemanFeeController::class, 'index']);
+        Route::post('middleman-fees', [MiddlemanFeeController::class, 'store']);
+        Route::delete('middleman-fees/{middlemanFee}', [MiddlemanFeeController::class, 'destroy']);
         Route::get('trades/archived', [TradeController::class, 'archived']);
         Route::post('trades/{trade}/archive', [TradeController::class, 'archive']);
         Route::post('trades/{trade}/unarchive', [TradeController::class, 'unarchive']);

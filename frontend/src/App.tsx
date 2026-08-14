@@ -1,8 +1,8 @@
 import { lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { ThemeProvider } from '@/context/ThemeContext'
 import { AmountVisibilityProvider } from '@/context/AmountVisibilityContext'
-import { AuthProvider } from '@/context/AuthContext'
+import { AuthProvider, useAuth } from '@/context/AuthContext'
 import { Layout } from '@/components/layout/Layout'
 import { PrivateRoute } from '@/components/PrivateRoute'
 import { Dashboard } from '@/pages/Dashboard'
@@ -10,6 +10,12 @@ import { Transactions } from '@/pages/Transactions'
 import { Categories } from '@/pages/Categories'
 import { Budgets } from '@/pages/Budgets'
 import { ToastContainer } from '@/components/ui/Toast'
+
+function AdminRoute() {
+  const { user } = useAuth()
+  if (user?.role === 'daily_only') return <Navigate to="/" replace />
+  return <Outlet />
+}
 
 const Login               = lazy(() => import('@/pages/Login'))
 
@@ -54,23 +60,25 @@ export default function App() {
                   <Route path="/categories"   element={<Categories />} />
                   <Route path="/budgets"      element={<Budgets />} />
 
-                  <Route path="/master"          element={<Suspense fallback={<Loading />}><MasterDashboard /></Suspense>} />
-                  <Route path="/master/savings" element={<Suspense fallback={<Loading />}><Savings /></Suspense>} />
-                  <Route path="/master/balance" element={<Suspense fallback={<Loading />}><Balance /></Suspense>} />
+                  <Route element={<AdminRoute />}>
+                    <Route path="/master"          element={<Suspense fallback={<Loading />}><MasterDashboard /></Suspense>} />
+                    <Route path="/master/savings" element={<Suspense fallback={<Loading />}><Savings /></Suspense>} />
+                    <Route path="/master/balance" element={<Suspense fallback={<Loading />}><Balance /></Suspense>} />
 
-                  <Route path="/rucoy"              element={<Suspense fallback={<Loading />}><RucoyDashboard /></Suspense>} />
-                  <Route path="/rucoy/golds"        element={<Suspense fallback={<Loading />}><Golds /></Suspense>} />
-                  <Route path="/rucoy/trades"       element={<Suspense fallback={<Loading />}><Trades /></Suspense>} />
-                  <Route path="/rucoy/accounts"     element={<Suspense fallback={<Loading />}><Accounts /></Suspense>} />
-                  <Route path="/rucoy/calculator"   element={<Suspense fallback={<Loading />}><GoldCalculator /></Suspense>} />
+                    <Route path="/rucoy"              element={<Suspense fallback={<Loading />}><RucoyDashboard /></Suspense>} />
+                    <Route path="/rucoy/golds"        element={<Suspense fallback={<Loading />}><Golds /></Suspense>} />
+                    <Route path="/rucoy/trades"       element={<Suspense fallback={<Loading />}><Trades /></Suspense>} />
+                    <Route path="/rucoy/accounts"     element={<Suspense fallback={<Loading />}><Accounts /></Suspense>} />
+                    <Route path="/rucoy/calculator"   element={<Suspense fallback={<Loading />}><GoldCalculator /></Suspense>} />
 
-                  <Route path="/business"              element={<Suspense fallback={<Loading />}><BusinessDashboard /></Suspense>} />
-                  <Route path="/business/transactions" element={<Suspense fallback={<Loading />}><BusinessTransactions /></Suspense>} />
+                    <Route path="/business"              element={<Suspense fallback={<Loading />}><BusinessDashboard /></Suspense>} />
+                    <Route path="/business/transactions" element={<Suspense fallback={<Loading />}><BusinessTransactions /></Suspense>} />
 
-                  <Route path="/reports/daily-expenses" element={<Suspense fallback={<Loading />}><DailyExpensesReport /></Suspense>} />
-                  <Route path="/reports/business"       element={<Suspense fallback={<Loading />}><BusinessReport /></Suspense>} />
+                    <Route path="/reports/daily-expenses" element={<Suspense fallback={<Loading />}><DailyExpensesReport /></Suspense>} />
+                    <Route path="/reports/business"       element={<Suspense fallback={<Loading />}><BusinessReport /></Suspense>} />
 
-                  <Route path="/logs" element={<Suspense fallback={<Loading />}><Logs /></Suspense>} />
+                    <Route path="/logs" element={<Suspense fallback={<Loading />}><Logs /></Suspense>} />
+                  </Route>
                 </Route>
               </Route>
 

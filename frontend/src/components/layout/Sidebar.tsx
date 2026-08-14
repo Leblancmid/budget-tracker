@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { ChevronDown, ChevronRight, Wallet, Gamepad2, Briefcase, FolderOpen, PanelLeftClose, PanelLeftOpen, BarChart2, ScrollText } from 'lucide-react'
+import { useAuth } from '@/context/AuthContext'
 
 type SectionVariant = 'master' | 'default' | 'business' | 'rucoy' | 'reports' | 'logs'
 
@@ -143,6 +144,11 @@ interface SidebarProps {
 
 export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
   const { pathname } = useLocation()
+  const { user } = useAuth()
+
+  const visibleSections = user?.role === 'daily_only'
+    ? SECTIONS.filter((s) => s.id === 'daily')
+    : SECTIONS
 
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem(COLLAPSED_KEY) === 'true')
 
@@ -151,6 +157,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
     SECTIONS.forEach((s) => { state[s.id] = isUnderBasePath(pathname, s.basePath) })
     return state
   })
+
 
   const toggle = (id: string) => setOpen((prev) => ({ ...prev, [id]: !prev[id] }))
 
@@ -181,14 +188,14 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
       <div className={['flex items-center border-b border-gray-100 dark:border-gray-700/60 shrink-0', collapsed ? 'md:justify-center md:py-3.5 md:px-0 gap-3 px-4 py-4' : 'gap-3 px-4 py-4'].join(' ')}>
         <img src="/logo.svg" alt="Logo" className="h-8 w-8 shrink-0 rounded-xl" />
         <div className={['flex-1 min-w-0', collapsed ? 'md:hidden' : ''].join(' ')}>
-          <p className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">Mikey's Tracker</p>
-          <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">Finance & Gaming</p>
+          <p className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate capitalize">{user?.name ?? 'Tracker'}'s Tracker</p>
+          <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">{user?.role === 'daily_only' ? 'Daily Expenses' : 'Finance & Gaming'}</p>
         </div>
       </div>
 
       {/* Nav */}
       <nav className="flex flex-col gap-0.5 p-2 flex-1">
-        {SECTIONS.map((section) => {
+        {visibleSections.map((section) => {
           const Icon = section.icon
           const c = SECTION_COLORS[section.variant]
           const isOpen = open[section.id]

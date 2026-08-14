@@ -20,62 +20,66 @@ use App\Http\Controllers\Api\Rucoy\TradeController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
-    // Auth
-    Route::post('auth/login',  [AuthController::class, 'login']);
-    Route::post('auth/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+    // Public
+    Route::post('auth/login', [AuthController::class, 'login']);
 
-    // Logs
-    Route::get('logs', [LogController::class, 'index']);
+    // Protected
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('auth/logout', [AuthController::class, 'logout']);
 
-    // Reports
-    Route::get('reports/daily-expenses', [ReportController::class, 'dailyExpenses']);
-    Route::get('reports/business',       [ReportController::class, 'business']);
+        // Logs
+        Route::get('logs', [LogController::class, 'index']);
 
-    // Budget Tracker
-    Route::get('dashboard', [DashboardController::class, 'index']);
-    Route::apiResource('categories', CategoryController::class);
-    Route::apiResource('transactions', TransactionController::class);
-    Route::get('budgets', [BudgetController::class, 'index']);
-    Route::post('budgets', [BudgetController::class, 'store']);
-    Route::put('budgets/{budget}', [BudgetController::class, 'update']);
-    Route::delete('budgets/{budget}', [BudgetController::class, 'destroy']);
+        // Reports
+        Route::get('reports/daily-expenses', [ReportController::class, 'dailyExpenses']);
+        Route::get('reports/business',       [ReportController::class, 'business']);
 
-    // Master
-    Route::prefix('master')->group(function () {
-        Route::get('dashboard', [MasterDashboardController::class, 'index']);
-        Route::apiResource('savings', SavingController::class)->except(['show', 'create', 'edit']);
-        Route::apiResource('balance-entries', BalanceEntryController::class)->except(['show', 'create', 'edit']);
-    });
+        // Budget Tracker
+        Route::get('dashboard', [DashboardController::class, 'index']);
+        Route::apiResource('categories', CategoryController::class);
+        Route::apiResource('transactions', TransactionController::class);
+        Route::get('budgets', [BudgetController::class, 'index']);
+        Route::post('budgets', [BudgetController::class, 'store']);
+        Route::put('budgets/{budget}', [BudgetController::class, 'update']);
+        Route::delete('budgets/{budget}', [BudgetController::class, 'destroy']);
 
-    // Business
-    Route::prefix('business')->group(function () {
-        Route::get('dashboard', [BusinessDashboardController::class, 'index']);
-        Route::apiResource('transactions', BusinessTransactionController::class)
-            ->except(['show', 'create', 'edit'])
-            ->parameters(['transactions' => 'businessTransaction']);
-        Route::get('transactions/archived', [BusinessTransactionController::class, 'archived']);
-        Route::post('transactions/{businessTransaction}/archive', [BusinessTransactionController::class, 'archive']);
-        Route::post('transactions/{businessTransaction}/unarchive', [BusinessTransactionController::class, 'unarchive']);
-    });
+        // Master
+        Route::prefix('master')->group(function () {
+            Route::get('dashboard', [MasterDashboardController::class, 'index']);
+            Route::apiResource('savings', SavingController::class)->except(['show', 'create', 'edit']);
+            Route::apiResource('balance-entries', BalanceEntryController::class)->except(['show', 'create', 'edit']);
+        });
 
-    // Rucoy
-    Route::prefix('rucoy')->group(function () {
-        Route::get('dashboard', [RucoyDashboardController::class, 'index']);
-        Route::apiResource('golds', GoldController::class)->except(['show', 'create', 'edit']);
-        Route::post('golds/sell', [GoldController::class, 'sell']);
-        Route::get('gold-logs', [GoldController::class, 'logs']);
-        Route::get('middleman-fees', [MiddlemanFeeController::class, 'index']);
-        Route::post('middleman-fees', [MiddlemanFeeController::class, 'store']);
-        Route::delete('middleman-fees/{middlemanFee}', [MiddlemanFeeController::class, 'destroy']);
-        Route::get('trades/archived', [TradeController::class, 'archived']);
-        Route::post('trades/{trade}/archive', [TradeController::class, 'archive']);
-        Route::post('trades/{trade}/unarchive', [TradeController::class, 'unarchive']);
-        Route::apiResource('trades', TradeController::class)->except(['show', 'create', 'edit']);
-        Route::get('accounts/archived', [RucoyAccountController::class, 'archived']);
-        Route::post('accounts/{rucoyAccount}/archive', [RucoyAccountController::class, 'archive']);
-        Route::post('accounts/{rucoyAccount}/unarchive', [RucoyAccountController::class, 'unarchive']);
-        Route::apiResource('accounts', RucoyAccountController::class)
-            ->except(['show', 'create', 'edit'])
-            ->parameters(['accounts' => 'rucoyAccount']);
+        // Business
+        Route::prefix('business')->group(function () {
+            Route::get('dashboard', [BusinessDashboardController::class, 'index']);
+            Route::apiResource('transactions', BusinessTransactionController::class)
+                ->except(['show', 'create', 'edit'])
+                ->parameters(['transactions' => 'businessTransaction']);
+            Route::get('transactions/archived', [BusinessTransactionController::class, 'archived']);
+            Route::post('transactions/{businessTransaction}/archive', [BusinessTransactionController::class, 'archive']);
+            Route::post('transactions/{businessTransaction}/unarchive', [BusinessTransactionController::class, 'unarchive']);
+        });
+
+        // Rucoy
+        Route::prefix('rucoy')->group(function () {
+            Route::get('dashboard', [RucoyDashboardController::class, 'index']);
+            Route::apiResource('golds', GoldController::class)->except(['show', 'create', 'edit']);
+            Route::post('golds/sell', [GoldController::class, 'sell']);
+            Route::get('gold-logs', [GoldController::class, 'logs']);
+            Route::get('middleman-fees', [MiddlemanFeeController::class, 'index']);
+            Route::post('middleman-fees', [MiddlemanFeeController::class, 'store']);
+            Route::delete('middleman-fees/{middlemanFee}', [MiddlemanFeeController::class, 'destroy']);
+            Route::get('trades/archived', [TradeController::class, 'archived']);
+            Route::post('trades/{trade}/archive', [TradeController::class, 'archive']);
+            Route::post('trades/{trade}/unarchive', [TradeController::class, 'unarchive']);
+            Route::apiResource('trades', TradeController::class)->except(['show', 'create', 'edit']);
+            Route::get('accounts/archived', [RucoyAccountController::class, 'archived']);
+            Route::post('accounts/{rucoyAccount}/archive', [RucoyAccountController::class, 'archive']);
+            Route::post('accounts/{rucoyAccount}/unarchive', [RucoyAccountController::class, 'unarchive']);
+            Route::apiResource('accounts', RucoyAccountController::class)
+                ->except(['show', 'create', 'edit'])
+                ->parameters(['accounts' => 'rucoyAccount']);
+        });
     });
 });

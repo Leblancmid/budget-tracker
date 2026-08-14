@@ -60,6 +60,8 @@ export default function App() {
                   <Route path="/categories"   element={<Categories />} />
                   <Route path="/budgets"      element={<Budgets />} />
 
+                  <Route path="/reports/daily-expenses" element={<Suspense fallback={<Loading />}><DailyExpensesReport /></Suspense>} />
+
                   <Route element={<AdminRoute />}>
                     <Route path="/master"          element={<Suspense fallback={<Loading />}><MasterDashboard /></Suspense>} />
                     <Route path="/master/savings" element={<Suspense fallback={<Loading />}><Savings /></Suspense>} />
@@ -74,8 +76,7 @@ export default function App() {
                     <Route path="/business"              element={<Suspense fallback={<Loading />}><BusinessDashboard /></Suspense>} />
                     <Route path="/business/transactions" element={<Suspense fallback={<Loading />}><BusinessTransactions /></Suspense>} />
 
-                    <Route path="/reports/daily-expenses" element={<Suspense fallback={<Loading />}><DailyExpensesReport /></Suspense>} />
-                    <Route path="/reports/business"       element={<Suspense fallback={<Loading />}><BusinessReport /></Suspense>} />
+                    <Route path="/reports/business" element={<Suspense fallback={<Loading />}><BusinessReport /></Suspense>} />
 
                     <Route path="/logs" element={<Suspense fallback={<Loading />}><Logs /></Suspense>} />
                   </Route>

@@ -147,7 +147,13 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
   const { user } = useAuth()
 
   const visibleSections = user?.role === 'daily_only'
-    ? SECTIONS.filter((s) => s.id === 'daily')
+    ? SECTIONS
+        .filter((s) => s.id === 'daily' || s.id === 'reports')
+        .map((s) =>
+          s.id === 'reports'
+            ? { ...s, items: s.items.filter((i) => i.to === '/reports/daily-expenses') }
+            : s
+        )
     : SECTIONS
 
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem(COLLAPSED_KEY) === 'true')

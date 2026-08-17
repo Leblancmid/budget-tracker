@@ -7,7 +7,7 @@ import { TradeModal } from '@/components/modals/TradeModal'
 import { useTrades } from '@/hooks/useTrades'
 import { tradesApi } from '@/api/rucoy'
 import { toast } from '@/components/ui/Toast'
-import { formatCurrency, formatDateLong } from '@/utils/format'
+import { formatCurrency, formatDateLong, formatTime } from '@/utils/format'
 import { exportCsv } from '@/utils/csv'
 import { CURRENCY_SYMBOLS } from '@/utils/rucoy'
 import type { TradePayload } from '@/api/rucoy'
@@ -329,8 +329,9 @@ export default function Trades() {
                       <td className="px-5 py-3.5 text-right font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">
                         {formatAmount(t)}
                       </td>
-                      <td className="px-5 py-3.5 text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">
-                        {formatDateLong(t.completion_date)}
+                      <td className="px-5 py-3.5 whitespace-nowrap">
+                        <span className="text-xs text-gray-400 dark:text-gray-500">{formatDateLong(t.completion_date)}</span>
+                        <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">{formatTime(t.created_at)}</p>
                       </td>
                       <td className="px-4 py-3.5">
                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

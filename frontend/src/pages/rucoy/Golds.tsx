@@ -12,7 +12,7 @@ import { useRucoyDashboard } from '@/hooks/useRucoyDashboard'
 import { useMiddlemanFees } from '@/hooks/useMiddlemanFees'
 import { goldsApi } from '@/api/rucoy'
 import { toast } from '@/components/ui/Toast'
-import { formatWithCommas, formatDateLong, paginateLocally } from '@/utils/format'
+import { formatWithCommas, formatDateLong, formatTime, paginateLocally } from '@/utils/format'
 import { exportCsv } from '@/utils/csv'
 
 export default function Golds() {
@@ -374,8 +374,9 @@ export default function Golds() {
                       ].join(' ')}>
                         {cancelled ? '0' : (log.type === 'sell' ? '−' : '+') + Number(log.amount).toLocaleString()} G
                       </td>
-                      <td className="px-5 py-3.5 text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">
-                        {formatDateLong(log.created_at)}
+                      <td className="px-5 py-3.5 whitespace-nowrap">
+                        <span className="text-xs text-gray-400 dark:text-gray-500">{formatDateLong(log.created_at)}</span>
+                        <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">{formatTime(log.created_at)}</p>
                       </td>
                       <td className="px-4 py-3.5">
                         {!cancelled && (

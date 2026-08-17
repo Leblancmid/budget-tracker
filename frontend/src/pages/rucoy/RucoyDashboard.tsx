@@ -6,7 +6,7 @@ import { useRucoyDashboard } from '@/hooks/useRucoyDashboard'
 import { useTrades } from '@/hooks/useTrades'
 import { useGoldLogs } from '@/hooks/useGoldLogs'
 import { tradesApi } from '@/api/rucoy'
-import { formatCurrency, formatDateLong } from '@/utils/format'
+import { formatCurrency, formatDateLong, formatTime } from '@/utils/format'
 import { CURRENCY_SYMBOLS } from '@/utils/rucoy'
 import type { Trade, TradeCurrency, TradeStatus } from '@/types'
 
@@ -206,7 +206,7 @@ export default function RucoyDashboard() {
                     <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded-md">
                       {item.subtitle}
                     </span>
-                    <span className="text-[10px] text-gray-400 dark:text-gray-500">{formatDateLong(item.date)}</span>
+                    <span className="text-[10px] text-gray-400 dark:text-gray-500">{formatDateLong(item.date)} · {formatTime(item.date)}</span>
                   </div>
                 </div>
                 <span className={['text-sm font-bold whitespace-nowrap', item.amountColor].join(' ')}>

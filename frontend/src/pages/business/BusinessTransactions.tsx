@@ -23,7 +23,7 @@ const TYPE_LABELS: Record<BusinessTransactionType, string> = {
   expense: 'Item',
 }
 
-const PER_PAGE = 10
+const PER_PAGE = 9
 
 export default function BusinessTransactions() {
   const { transactions, loading, create, update, remove } = useBusinessTransactions()
@@ -118,6 +118,7 @@ export default function BusinessTransactions() {
     [transactions]
   )
 
+  const [archiveTxPage, setArchiveTxPage] = useState(1)
   const [showTxModal, setShowTxModal] = useState(false)
   const [txModalPage, setTxModalPage] = useState(1)
   const [reclassifyTarget, setReclassifyTarget] = useState<BusinessTransaction | null>(null)
@@ -426,38 +427,48 @@ export default function BusinessTransactions() {
               </div>
             ) : archivedTxs.length === 0 ? (
               <p className="px-5 py-8 text-center text-sm text-gray-400 dark:text-gray-500">No archived transactions.</p>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4 opacity-75">
-                {archivedTxs.map((tx) => {
-                  const isIncome = isBusinessIncome(tx)
-                  return (
-                    <div
-                      key={tx.id}
-                      className="flex flex-col gap-3 rounded-xl border border-gray-100 dark:border-gray-700/40 bg-gray-50 dark:bg-gray-800/20 p-4"
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700/60">
-                          {isIncome
-                            ? <TrendingUp size={14} className="text-gray-400 dark:text-gray-500" />
-                            : <TrendingDown size={14} className="text-gray-400 dark:text-gray-500" />
-                          }
+            ) : (() => {
+              const { paginated: archPaged, meta: archMeta } = paginateLocally(archivedTxs, archiveTxPage, 6)
+              return (
+                <div className="p-4 opacity-75">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {archPaged.map((tx) => {
+                      const isIncome = isBusinessIncome(tx)
+                      return (
+                        <div
+                          key={tx.id}
+                          className="flex flex-col gap-3 rounded-xl border border-gray-100 dark:border-gray-700/40 bg-gray-50 dark:bg-gray-800/20 p-4"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700/60">
+                              {isIncome
+                                ? <TrendingUp size={14} className="text-gray-400 dark:text-gray-500" />
+                                : <TrendingDown size={14} className="text-gray-400 dark:text-gray-500" />
+                              }
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">{tx.description ?? '—'}</p>
+                              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{formatDate(tx.archived_at ?? tx.date)}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between rounded-lg bg-gray-100 dark:bg-gray-700/30 px-3 py-2">
+                            <span className="text-xs text-gray-400 dark:text-gray-500">Profit</span>
+                            <span className="text-sm font-semibold text-gray-500 dark:text-gray-400">
+                              <Amt value={formatCurrency(tx.amount)} />
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">{tx.description ?? '—'}</p>
-                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{formatDate(tx.archived_at ?? tx.date)}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between rounded-lg bg-gray-100 dark:bg-gray-700/30 px-3 py-2">
-                        <span className="text-xs text-gray-400 dark:text-gray-500">Profit</span>
-                        <span className="text-sm font-semibold text-gray-500 dark:text-gray-400">
-                          <Amt value={formatCurrency(tx.amount)} />
-                        </span>
-                      </div>
+                      )
+                    })}
+                  </div>
+                  {archMeta.last_page > 1 && (
+                    <div className="mt-4">
+                      <Pagination meta={archMeta} onPageChange={setArchiveTxPage} />
                     </div>
-                  )
-                })}
-              </div>
-            )}
+                  )}
+                </div>
+              )
+            })()}
           </div>
         )}
       </Card>

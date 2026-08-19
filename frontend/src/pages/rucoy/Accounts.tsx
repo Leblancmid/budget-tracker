@@ -430,7 +430,9 @@ export default function Accounts() {
           Transactions
         </button>
         <Button variant="secondary" size="sm" icon={<Download className="h-3.5 w-3.5" />} onClick={handleExport}>Export</Button>
-        <Button size="sm" icon={<Plus className="h-3.5 w-3.5" />} onClick={openAddTransaction}>Add Transaction</Button>
+        <div className="ml-auto">
+          <Button size="sm" icon={<Plus className="h-3.5 w-3.5" />} onClick={openAddTransaction}>Add Transaction</Button>
+        </div>
       </div>
 
       {/* Stats strip */}

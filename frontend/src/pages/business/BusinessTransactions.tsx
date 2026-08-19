@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Plus, Search, Pencil, Trash2, Briefcase, TrendingUp, TrendingDown, Archive, Download, BarChart3, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, Briefcase, TrendingUp, TrendingDown, Archive, Download, BarChart3, ArrowUp, ArrowDown, ArrowUpDown, Receipt } from 'lucide-react'
 import { useBusinessTransactions } from '@/hooks/useBusinessTransactions'
 import { useArchive } from '@/hooks/useArchive'
 import { businessTransactionsApi } from '@/api/business'
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Pagination } from '@/components/ui/Pagination'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Card } from '@/components/ui/Card'
+import { Modal } from '@/components/ui/Modal'
 import { BusinessTransactionModal } from '@/components/modals/BusinessTransactionModal'
 import { toast } from '@/components/ui/Toast'
 import { formatCurrency, formatDate, paginateLocally, MONTHS } from '@/utils/format'
@@ -105,6 +106,14 @@ export default function BusinessTransactions() {
   const activeAccountIds = useMemo(
     () => transactions.filter(tx => tx.type === 'account' && tx.account_id != null && tx.archived_at == null).map(tx => tx.account_id as number),
     [transactions]
+  )
+
+  const [showTxModal, setShowTxModal] = useState(false)
+  const [txModalPage, setTxModalPage] = useState(1)
+
+  const allTxsSorted = useMemo(() =>
+    [...transactions, ...archivedTxs].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+    [transactions, archivedTxs]
   )
 
   const profitPositive = monthlyProfit >= 0
@@ -219,6 +228,13 @@ export default function BusinessTransactions() {
               )}
             </button>
 
+            <button
+              onClick={() => { setShowTxModal(true); setTxModalPage(1) }}
+              className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-500 hover:bg-gray-50 transition-colors dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+            >
+              <Receipt size={13} />
+              Transactions
+            </button>
             <Button size="sm" variant="secondary" icon={<Download className="h-3.5 w-3.5" />} onClick={handleExport}>Export</Button>
             <Button size="sm" icon={<Plus className="h-3.5 w-3.5" />} onClick={openAddAccount}>Add</Button>
           </div>
@@ -395,6 +411,57 @@ export default function BusinessTransactions() {
           </div>
         )}
       </Card>
+
+      {/* All Transactions modal */}
+      <Modal open={showTxModal} onClose={() => setShowTxModal(false)} title="All Transactions" size="xl">
+        {(() => {
+          const { paginated, meta: txMeta } = paginateLocally(allTxsSorted, txModalPage, 10)
+          const TYPE_COLORS: Record<string, string> = { account: '#6366f1', gold: '#f59e0b', expense: '#ef4444' }
+          return (
+            <div className="flex flex-col gap-0 -mx-6 -my-5">
+              {paginated.length === 0 ? (
+                <p className="px-6 py-12 text-center text-sm text-gray-400 dark:text-gray-500">No transactions yet.</p>
+              ) : (
+                <>
+                  <div className="flex flex-col divide-y divide-gray-50 dark:divide-gray-700/40">
+                    {paginated.map((tx) => {
+                      const isIncome = isBusinessIncome(tx)
+                      const color = TYPE_COLORS[tx.type] ?? '#14b8a6'
+                      return (
+                        <div key={tx.id} className="flex items-center gap-3 px-6 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+                          <div
+                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white text-xs font-bold shadow-sm"
+                            style={{ backgroundColor: color }}
+                          >
+                            {TYPE_LABELS[tx.type]?.charAt(0) ?? '?'}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">
+                              {tx.description || TYPE_LABELS[tx.type]}
+                            </p>
+                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{formatDate(tx.date)}</p>
+                          </div>
+                          <div className="flex flex-col items-end shrink-0">
+                            <span className={['text-sm font-bold', isIncome ? 'text-teal-600 dark:text-teal-400' : 'text-red-500 dark:text-red-400'].join(' ')}>
+                              {isIncome ? '+' : '−'}<Amt value={formatCurrency(tx.amount)} />
+                            </span>
+                            <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500 mt-0.5">
+                              {TYPE_LABELS[tx.type]}
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <div className="px-6 py-3 border-t border-gray-50 dark:border-gray-700/40">
+                    <Pagination meta={txMeta} onPageChange={setTxModalPage} />
+                  </div>
+                </>
+              )}
+            </div>
+          )
+        })()}
+      </Modal>
 
       <BusinessTransactionModal
         open={modalOpen}

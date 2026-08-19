@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Plus, Search, Pencil, Trash2, Briefcase, TrendingUp, TrendingDown, Archive, Download, BarChart3, ArrowUp, ArrowDown, ArrowUpDown, Receipt, Coins } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, Briefcase, TrendingUp, TrendingDown, Archive, Download, BarChart3, ArrowUp, ArrowDown, ArrowUpDown, Receipt, Coins, RotateCcw } from 'lucide-react'
 import { useBusinessTransactions } from '@/hooks/useBusinessTransactions'
 import { useArchive } from '@/hooks/useArchive'
 import { businessTransactionsApi } from '@/api/business'
@@ -112,6 +112,7 @@ export default function BusinessTransactions() {
   const [txModalPage, setTxModalPage] = useState(1)
   const [reclassifyTarget, setReclassifyTarget] = useState<BusinessTransaction | null>(null)
   const [reclassifying, setReclassifying] = useState(false)
+  const [reclassifiedMap, setReclassifiedMap] = useState<Record<number, BusinessTransaction>>({})
 
   const allTxsSorted = useMemo(() =>
     [...transactions, ...archivedTxs].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
@@ -130,6 +131,16 @@ export default function BusinessTransactions() {
     php_rate:    tx.php_rate   != null ? Number(tx.php_rate)   : null,
   })
 
+  const handleUndoReclassify = async (original: BusinessTransaction) => {
+    try {
+      await update(original.id, buildPayload(original))
+      setReclassifiedMap((prev) => { const n = { ...prev }; delete n[original.id]; return n })
+      toast.success('Reverted to ' + TYPE_LABELS[original.type] + '.')
+    } catch {
+      toast.error('Failed to undo.')
+    }
+  }
+
   const handleReclassify = async () => {
     if (!reclassifyTarget) return
     const original = reclassifyTarget
@@ -137,18 +148,9 @@ export default function BusinessTransactions() {
     try {
       await update(original.id, buildPayload(original, 'gold'))
       setReclassifyTarget(null)
+      setReclassifiedMap((prev) => ({ ...prev, [original.id]: original }))
       toast.success('Reclassified as Gold.', {
-        action: {
-          label: 'Undo',
-          onClick: async () => {
-            try {
-              await update(original.id, buildPayload(original))
-              toast.success('Reverted to ' + TYPE_LABELS[original.type] + '.')
-            } catch {
-              toast.error('Failed to undo.')
-            }
-          },
-        },
+        action: { label: 'Undo', onClick: () => handleUndoReclassify(original) },
       })
     } catch {
       toast.error('Failed to reclassify transaction.')
@@ -467,14 +469,16 @@ export default function BusinessTransactions() {
                   <div className="flex flex-col divide-y divide-gray-50 dark:divide-gray-700/40">
                     {paginated.map((tx) => {
                       const isIncome = isBusinessIncome(tx)
-                      const color = TYPE_COLORS[tx.type] ?? '#14b8a6'
+                      const wasReclassified = !!reclassifiedMap[tx.id]
+                      const originalTx = reclassifiedMap[tx.id]
+                      const color = wasReclassified ? '#9ca3af' : (TYPE_COLORS[tx.type] ?? '#14b8a6')
                       return (
-                        <div key={tx.id} className="group flex items-center gap-3 px-6 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+                        <div key={tx.id} className={['group flex items-center gap-3 px-6 py-3 transition-colors', wasReclassified ? 'opacity-50 bg-gray-50 dark:bg-gray-800/30' : 'hover:bg-gray-50 dark:hover:bg-gray-800/40'].join(' ')}>
                           <div
                             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white text-xs font-bold shadow-sm"
                             style={{ backgroundColor: color }}
                           >
-                            {TYPE_LABELS[tx.type]?.charAt(0) ?? '?'}
+                            {wasReclassified ? (originalTx ? TYPE_LABELS[originalTx.type]?.charAt(0) : '?') : (TYPE_LABELS[tx.type]?.charAt(0) ?? '?')}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">
@@ -483,7 +487,15 @@ export default function BusinessTransactions() {
                             <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{formatDate(tx.date)}</p>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
-                            {tx.type !== 'gold' && (
+                            {wasReclassified ? (
+                              <button
+                                onClick={() => handleUndoReclassify(originalTx)}
+                                className="flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-2 py-1 text-[10px] font-semibold text-gray-600 hover:bg-gray-100 transition-all dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                              >
+                                <RotateCcw size={11} />
+                                Undo
+                              </button>
+                            ) : tx.type !== 'gold' && (
                               <button
                                 onClick={() => setReclassifyTarget(tx)}
                                 title="Mark as Gold"
@@ -494,11 +506,11 @@ export default function BusinessTransactions() {
                               </button>
                             )}
                             <div className="flex flex-col items-end">
-                              <span className={['text-sm font-bold', isIncome ? 'text-teal-600 dark:text-teal-400' : 'text-red-500 dark:text-red-400'].join(' ')}>
+                              <span className={['text-sm font-bold', wasReclassified ? 'text-gray-400 dark:text-gray-500' : isIncome ? 'text-teal-600 dark:text-teal-400' : 'text-red-500 dark:text-red-400'].join(' ')}>
                                 {isIncome ? '+' : '−'}<Amt value={formatCurrency(tx.amount)} />
                               </span>
                               <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500 mt-0.5">
-                                {TYPE_LABELS[tx.type]}
+                                {wasReclassified ? 'Gold ✓' : TYPE_LABELS[tx.type]}
                               </span>
                             </div>
                           </div>

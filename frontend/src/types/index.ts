@@ -143,6 +143,8 @@ export interface BusinessTransaction {
   account_id: number | null
   price_rate: string | null
   cost_rate: string | null
+  price_gold: string | null
+  cost_gold: string | null
   php_rate: string | null
   price_php: string | null
   cost_php: string | null

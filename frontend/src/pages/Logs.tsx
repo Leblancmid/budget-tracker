@@ -48,7 +48,7 @@ function isPositiveEntry(e: LogEntry): boolean {
   if (e.module === 'daily')    return e.type === 'income'
   if (e.module === 'savings')  return e.type === 'deposit'
   if (e.module === 'balance')  return e.type === 'add'
-  if (e.module === 'gold')     return e.type === 'add'
+  if (e.module === 'gold')     return e.type === 'add' || e.type === 'fee'
   if (e.module === 'business') return parseFloat(e.amount ?? '0') >= 0
   if (e.module === 'trade')    return true
   return true

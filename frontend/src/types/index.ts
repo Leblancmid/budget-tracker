@@ -165,6 +165,7 @@ export interface BusinessDashboardStats {
   initial_profit: number
   recent_transactions: BusinessTransaction[]
   expense_by_type: Array<{ type: string; total: string }>
+  profit_by_type: Array<{ type: string; total: string }>
   monthly_trend: Array<{
     month: number
     year: number

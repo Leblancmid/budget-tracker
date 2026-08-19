@@ -41,6 +41,15 @@ class BusinessDashboardController extends Controller
             ->orderByDesc('total')
             ->get();
 
+        $profitByType = BusinessTransaction::select('type', DB::raw('SUM(profit_php) as total'))
+            ->whereNotNull('archived_at')
+            ->whereMonth('archived_at', $month)
+            ->whereYear('archived_at', $year)
+            ->whereNotNull('profit_php')
+            ->groupBy('type')
+            ->orderByDesc('total')
+            ->get();
+
         $monthlyTrend = BusinessTransaction::select(
                 DB::raw('MONTH(date) as month'),
                 DB::raw('YEAR(date) as year'),
@@ -74,6 +83,7 @@ class BusinessDashboardController extends Controller
             'initial_profit'      => $initialProfit,
             'recent_transactions' => $recentTransactions,
             'expense_by_type'     => $expenseByType,
+            'profit_by_type'      => $profitByType,
             'monthly_trend'       => $monthlyTrend,
         ]);
     }

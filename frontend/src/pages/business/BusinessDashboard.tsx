@@ -155,10 +155,10 @@ export default function BusinessDashboard() {
           </div>
         </Card>
 
-        {/* Expenses by Type */}
+        {/* Profit by Type */}
         <Card className="flex flex-col">
           <div className="px-5 py-3.5 border-b border-gray-100 dark:border-gray-700/60">
-            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Expenses by Type</h2>
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Profit by Type</h2>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{MONTHS[month - 1]} {year}</p>
           </div>
 
@@ -173,41 +173,45 @@ export default function BusinessDashboard() {
                   <div className="h-2 rounded-full bg-gray-100 dark:bg-gray-800" />
                 </div>
               ))
-            ) : (stats?.expense_by_type.length ?? 0) === 0 ? (
-              <p className="py-8 text-center text-sm text-gray-400 dark:text-gray-500">No expenses recorded.</p>
+            ) : (stats?.profit_by_type.length ?? 0) === 0 ? (
+              <p className="py-8 text-center text-sm text-gray-400 dark:text-gray-500">No profit recorded this month.</p>
             ) : (
-              stats!.expense_by_type.map((item) => {
-                const pct   = Math.round((Number(item.total) / (stats!.total_expense || 1)) * 100)
-                const color = TYPE_COLORS[item.type] ?? '#14b8a6'
-                const label = TYPE_LABELS[item.type] ?? item.type
-                return (
-                  <div key={item.type}>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2.5">
-                        <span
-                          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-white text-[10px] font-bold"
-                          style={{ backgroundColor: color }}
-                        >
-                          {label.charAt(0)}
-                        </span>
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</span>
+              (() => {
+                const totalProfit = stats!.profit_by_type.reduce((s, i) => s + Number(i.total), 0)
+                return stats!.profit_by_type.map((item) => {
+                  const pct   = Math.round((Number(item.total) / (totalProfit || 1)) * 100)
+                  const color = TYPE_COLORS[item.type] ?? '#14b8a6'
+                  const label = TYPE_LABELS[item.type] ?? item.type
+                  const positive = Number(item.total) >= 0
+                  return (
+                    <div key={item.type}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2.5">
+                          <span
+                            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-white text-[10px] font-bold"
+                            style={{ backgroundColor: color }}
+                          >
+                            {label.charAt(0)}
+                          </span>
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-400 dark:text-gray-500">{pct}%</span>
+                          <span className={['text-sm font-semibold', positive ? 'text-teal-600 dark:text-teal-400' : 'text-red-500 dark:text-red-400'].join(' ')}>
+                            {positive ? '' : '−'}<Amt value={formatCurrency(Math.abs(Number(item.total)))} />
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-400 dark:text-gray-500">{pct}%</span>
-                        <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                          <Amt value={formatCurrency(item.total)} />
-                        </span>
+                      <div className="h-1.5 rounded-full bg-gray-100 dark:bg-gray-700/60 overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-700"
+                          style={{ width: `${pct}%`, backgroundColor: color }}
+                        />
                       </div>
                     </div>
-                    <div className="h-1.5 rounded-full bg-gray-100 dark:bg-gray-700/60 overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-700"
-                        style={{ width: `${pct}%`, backgroundColor: color }}
-                      />
-                    </div>
-                  </div>
-                )
-              })
+                  )
+                })
+              })()
             )}
           </div>
         </Card>

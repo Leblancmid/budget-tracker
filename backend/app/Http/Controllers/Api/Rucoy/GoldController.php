@@ -66,6 +66,13 @@ class GoldController extends Controller
         return response()->json(GoldLog::latest()->get());
     }
 
+    public function cancelLog(GoldLog $goldLog): JsonResponse
+    {
+        $goldLog->delete();
+
+        return response()->json(['message' => 'Log cancelled.']);
+    }
+
     public function update(UpdateGoldRequest $request, Gold $gold): JsonResponse
     {
         $gold->update($request->validated());

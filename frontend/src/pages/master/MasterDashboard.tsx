@@ -46,7 +46,6 @@ export default function MasterDashboard() {
 
   const now            = new Date()
   const curLabel       = `${MONTHS[now.getMonth()]} ${now.getFullYear()}`
-  const overallProfit  = stats?.overall_profit  ?? 0
   const monthlyProfit  = stats?.monthly_profit  ?? 0
   const savingsBalance = stats?.savings_balance  ?? 0
   const balanceTotalUsd = stats?.balance_total   ?? 0
@@ -86,7 +85,6 @@ export default function MasterDashboard() {
             <p className={['text-3xl font-bold', monthlyProfit >= 0 ? 'text-violet-300' : 'text-red-400'].join(' ')}>
               <Amt value={formatCurrency(monthlyProfit)} />
             </p>
-            <p className="text-xs text-slate-500 mt-1">All time: <Amt value={formatCurrency(overallProfit)} /></p>
           </div>
 
           {/* Sub-stats */}

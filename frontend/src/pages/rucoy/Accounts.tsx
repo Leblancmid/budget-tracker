@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { Plus, Pencil, Trash2, Users, User, TrendingUp, TrendingDown, DollarSign, Search, Check, Archive, RotateCcw, Download, CalendarClock, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react'
+import { Plus, Pencil, Trash2, Users, User, TrendingUp, TrendingDown, DollarSign, Search, Check, Archive, RotateCcw, Download, CalendarClock, ArrowUp, ArrowDown, ArrowUpDown, ArrowRight } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -7,13 +8,18 @@ import { Pagination } from '@/components/ui/Pagination'
 import { AccountModal } from '@/components/modals/AccountModal'
 import { useRucoyAccounts } from '@/hooks/useRucoyAccounts'
 import { useArchive } from '@/hooks/useArchive'
+import { useBusinessDashboard } from '@/hooks/useBusinessDashboard'
 import { rucoyAccountsApi, type AccountPayload } from '@/api/rucoy'
 import { toast } from '@/components/ui/Toast'
-import { paginateLocally } from '@/utils/format'
+import { paginateLocally, formatCurrency, formatDate } from '@/utils/format'
 import { exportCsv } from '@/utils/csv'
+import { isBusinessIncome } from '@/utils/business'
+import { Amt } from '@/context/AmountVisibilityContext'
 import type { AccountPaymentStatus, RucoyAccount } from '@/types'
 
 const fmtGold = (n: number) => `${n.toLocaleString()} G`
+const BIZ_TYPE_LABELS: Record<string, string> = { account: 'Account', gold: 'Gold', expense: 'Item' }
+const BIZ_TYPE_COLORS: Record<string, string>  = { account: '#6366f1', gold: '#f59e0b', expense: '#ef4444' }
 
 const PAYMENT_STATUS_STYLES: Record<AccountPaymentStatus, { label: string; className: string }> = {
   not_paid:       { label: 'Not Paid',       className: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
@@ -171,6 +177,7 @@ export default function Accounts() {
   const [deleting, setDeleting] = useState(false)
 
   const { showArchive, setShowArchive, archivedItems: archivedAccounts, archiveLoading, fetchArchived, removeFromArchived } = useArchive(rucoyAccountsApi.getArchived)
+  const { stats: bizStats, loading: bizLoading } = useBusinessDashboard()
 
   const [archiveTarget, setArchiveTarget]     = useState<RucoyAccount | null>(null)
   const [archiving, setArchiving]             = useState(false)
@@ -491,6 +498,65 @@ export default function Accounts() {
           </div>
         </Card>
       )}
+
+      {/* Recent Transactions */}
+      <Card className="flex flex-col">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 dark:border-gray-700/60">
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Recent Transactions</h2>
+          <Link
+            to="/business/transactions"
+            className="flex items-center gap-1 text-xs text-teal-600 hover:text-teal-800 font-medium dark:text-teal-400 dark:hover:text-teal-300 transition-colors"
+          >
+            View all <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+
+        <div className="flex flex-col divide-y divide-gray-50 dark:divide-gray-700/40">
+          {bizLoading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3 px-5 py-3.5 animate-pulse">
+                <div className="h-9 w-9 rounded-xl bg-gray-100 dark:bg-gray-800 shrink-0" />
+                <div className="flex-1 flex flex-col gap-1.5">
+                  <div className="h-3 w-32 rounded bg-gray-100 dark:bg-gray-800" />
+                  <div className="h-2.5 w-20 rounded bg-gray-100 dark:bg-gray-800" />
+                </div>
+                <div className="h-4 w-16 rounded bg-gray-100 dark:bg-gray-800" />
+              </div>
+            ))
+          ) : (bizStats?.recent_transactions.length ?? 0) === 0 ? (
+            <p className="px-5 py-10 text-center text-sm text-gray-400 dark:text-gray-500">No transactions yet.</p>
+          ) : (
+            bizStats!.recent_transactions.map((tx) => {
+              const isIncome = isBusinessIncome(tx)
+              const color    = BIZ_TYPE_COLORS[tx.type] ?? '#14b8a6'
+              return (
+                <div key={tx.id} className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+                  <div
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white text-xs font-bold shadow-sm"
+                    style={{ backgroundColor: color }}
+                  >
+                    {BIZ_TYPE_LABELS[tx.type]?.charAt(0) ?? '?'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">
+                      {tx.description || BIZ_TYPE_LABELS[tx.type]}
+                    </p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{formatDate(tx.date)}</p>
+                  </div>
+                  <div className="flex flex-col items-end shrink-0">
+                    <span className={['text-sm font-bold', isIncome ? 'text-teal-600 dark:text-teal-400' : 'text-red-500 dark:text-red-400'].join(' ')}>
+                      {isIncome ? '+' : '−'}<Amt value={formatCurrency(tx.amount)} />
+                    </span>
+                    <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500 mt-0.5">
+                      {BIZ_TYPE_LABELS[tx.type]}
+                    </span>
+                  </div>
+                </div>
+              )
+            })
+          )}
+        </div>
+      </Card>
 
       <AccountModal open={modalOpen} onClose={() => setModalOpen(false)} onSubmit={handleSubmit} account={editing} />
 

@@ -34,10 +34,15 @@ export function useBusinessTransactions() {
     return updated
   }
 
+  const archive = async (id: number) => {
+    await businessTransactionsApi.archive(id)
+    setTransactions((prev) => prev.filter((t) => t.id !== id))
+  }
+
   const remove = async (id: number) => {
     await businessTransactionsApi.delete(id)
     setTransactions((prev) => prev.filter((t) => t.id !== id))
   }
 
-  return { transactions, loading, error, refetch: fetch, create, update, remove }
+  return { transactions, loading, error, refetch: fetch, create, update, archive, remove }
 }

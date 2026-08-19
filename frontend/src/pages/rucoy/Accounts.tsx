@@ -178,7 +178,7 @@ export default function Accounts() {
   const [deleting, setDeleting] = useState(false)
 
   const { showArchive, setShowArchive, archivedItems: archivedAccounts, archiveLoading, fetchArchived, removeFromArchived } = useArchive(rucoyAccountsApi.getArchived)
-  const { transactions: bizTxs, loading: bizTxLoading, remove: removeBizTx } = useBusinessTransactions()
+  const { transactions: bizTxs, loading: bizTxLoading, archive: archiveBizTx, remove: removeBizTx } = useBusinessTransactions()
   const [showTxModal, setShowTxModal] = useState(false)
   const [txPage, setTxPage]           = useState(1)
 
@@ -187,8 +187,10 @@ export default function Accounts() {
   const [unarchiveTarget, setUnarchiveTarget] = useState<RucoyAccount | null>(null)
   const [unarchiving, setUnarchiving]         = useState(false)
 
-  const [deletePendingTarget, setDeletePendingTarget] = useState<number | null>(null)
-  const [deletingPending, setDeletingPending]         = useState(false)
+  const [deletePendingTarget, setDeletePendingTarget]   = useState<number | null>(null)
+  const [deletingPending, setDeletingPending]           = useState(false)
+  const [archivePendingTarget, setArchivePendingTarget] = useState<number | null>(null)
+  const [archivingPending, setArchivingPending]         = useState(false)
 
   const handleDeletePending = async () => {
     if (!deletePendingTarget) return
@@ -201,6 +203,20 @@ export default function Accounts() {
     } finally {
       setDeletingPending(false)
       setDeletePendingTarget(null)
+    }
+  }
+
+  const handleArchivePending = async () => {
+    if (!archivePendingTarget) return
+    setArchivingPending(true)
+    try {
+      await archiveBizTx(archivePendingTarget)
+      toast.success('Gold trade archived.')
+    } catch {
+      toast.error('Failed to archive gold trade.')
+    } finally {
+      setArchivingPending(false)
+      setArchivePendingTarget(null)
     }
   }
 
@@ -309,7 +325,7 @@ export default function Accounts() {
   const { paginated, meta } = paginateLocally(filteredAccounts, page, 9)
 
   const pendingGoldTrades = useMemo(() =>
-    bizTxs.filter(tx => tx.type === 'gold' && tx.price_php == null && tx.archived_at == null),
+    bizTxs.filter(tx => tx.type === 'gold' && tx.archived_at == null),
     [bizTxs]
   )
 
@@ -536,7 +552,7 @@ export default function Accounts() {
             <Coins size={13} className="text-amber-500 dark:text-amber-400" />
             <h2 className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">Pending Gold Trades</h2>
             <span className="ml-auto text-[11px] font-semibold text-amber-600 dark:text-amber-500">
-              {pendingGoldTrades.length} pending · confirm pricing in Business → Transactions
+              {pendingGoldTrades.filter(tx => tx.price_php == null).length} awaiting · {pendingGoldTrades.filter(tx => tx.price_php != null).length} confirmed
             </span>
           </div>
           <div className="divide-y divide-gray-50 dark:divide-gray-700/40">
@@ -549,26 +565,43 @@ export default function Accounts() {
                   <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{tx.description || 'Gold Trade'}</p>
                   <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{formatDate(tx.date)}</p>
                 </div>
-                <div className="flex flex-col items-end shrink-0 text-right">
-                  {tx.price_rate != null && (
-                    <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                      Price: {Number(tx.price_rate).toLocaleString()} G
-                    </span>
-                  )}
-                  {tx.cost_rate != null && (
-                    <span className="text-xs font-semibold text-red-500 dark:text-red-400">
-                      Cost: {Number(tx.cost_rate).toLocaleString()} G
-                    </span>
-                  )}
-                  <span className="text-[10px] text-amber-500 dark:text-amber-400 font-medium mt-0.5">Awaiting pricing</span>
+                <div className="flex items-center gap-2 shrink-0">
+                  {/* Buttons — hover only */}
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+                    {tx.price_php != null && (
+                      <button
+                        onClick={() => setArchivePendingTarget(tx.id)}
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+                        title="Archive"
+                      >
+                        <Check size={13} />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setDeletePendingTarget(tx.id)}
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                      title="Remove"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                  {/* Price / status */}
+                  <div className="flex flex-col items-end text-right">
+                    {tx.price_php != null ? (
+                      <>
+                        <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Price: {formatCurrency(tx.price_php)}</span>
+                        <span className="text-xs font-semibold text-red-500 dark:text-red-400">Cost: {formatCurrency(tx.cost_php ?? 0)}</span>
+                        <span className="text-[10px] text-emerald-500 dark:text-emerald-400 font-medium mt-0.5">Confirmed</span>
+                      </>
+                    ) : (
+                      <>
+                        {tx.price_rate != null && <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Price: {Number(tx.price_rate).toLocaleString()} G</span>}
+                        {tx.cost_rate  != null && <span className="text-xs font-semibold text-red-500 dark:text-red-400">Cost: {Number(tx.cost_rate).toLocaleString()} G</span>}
+                        <span className="text-[10px] text-amber-500 dark:text-amber-400 font-medium mt-0.5">Awaiting pricing</span>
+                      </>
+                    )}
+                  </div>
                 </div>
-                <button
-                  onClick={() => setDeletePendingTarget(tx.id)}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity ml-2 p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 shrink-0"
-                  title="Remove"
-                >
-                  <Trash2 size={13} />
-                </button>
               </div>
             ))}
           </div>
@@ -775,6 +808,9 @@ export default function Accounts() {
           )
         })()}
       </Modal>
+
+      <ConfirmDialog open={!!archivePendingTarget} onClose={() => setArchivePendingTarget(null)} onConfirm={handleArchivePending} loading={archivingPending}
+        title="Archive Gold Trade" message="Archive this pending gold trade?" confirmLabel="Archive" />
 
       <ConfirmDialog open={!!deletePendingTarget} onClose={() => setDeletePendingTarget(null)} onConfirm={handleDeletePending} loading={deletingPending}
         title="Remove Pending Trade" message="Remove this pending gold trade? This cannot be undone." confirmLabel="Remove" />

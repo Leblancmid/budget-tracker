@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Plus, Search, Pencil, Trash2, Briefcase, TrendingUp, TrendingDown, Archive, Download, BarChart3, ArrowUp, ArrowDown, ArrowUpDown, Receipt } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, Briefcase, TrendingUp, TrendingDown, Archive, Download, BarChart3, ArrowUp, ArrowDown, ArrowUpDown, Receipt, Coins } from 'lucide-react'
 import { useBusinessTransactions } from '@/hooks/useBusinessTransactions'
 import { useArchive } from '@/hooks/useArchive'
 import { businessTransactionsApi } from '@/api/business'
@@ -110,11 +110,37 @@ export default function BusinessTransactions() {
 
   const [showTxModal, setShowTxModal] = useState(false)
   const [txModalPage, setTxModalPage] = useState(1)
+  const [reclassifyTarget, setReclassifyTarget] = useState<BusinessTransaction | null>(null)
+  const [reclassifying, setReclassifying] = useState(false)
 
   const allTxsSorted = useMemo(() =>
     [...transactions, ...archivedTxs].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
     [transactions, archivedTxs]
   )
+
+  const handleReclassify = async () => {
+    if (!reclassifyTarget) return
+    setReclassifying(true)
+    try {
+      await update(reclassifyTarget.id, {
+        type:      'gold',
+        action:    reclassifyTarget.action,
+        amount:    Number(reclassifyTarget.amount),
+        date:      reclassifyTarget.date,
+        description: reclassifyTarget.description,
+        notes:     reclassifyTarget.notes,
+        price_rate: reclassifyTarget.price_rate != null ? Number(reclassifyTarget.price_rate) : null,
+        cost_rate:  reclassifyTarget.cost_rate  != null ? Number(reclassifyTarget.cost_rate)  : null,
+        php_rate:   reclassifyTarget.php_rate   != null ? Number(reclassifyTarget.php_rate)   : null,
+      })
+      toast.success('Transaction reclassified as Gold.')
+      setReclassifyTarget(null)
+    } catch {
+      toast.error('Failed to reclassify transaction.')
+    } finally {
+      setReclassifying(false)
+    }
+  }
 
   const profitPositive = monthlyProfit >= 0
 
@@ -428,7 +454,7 @@ export default function BusinessTransactions() {
                       const isIncome = isBusinessIncome(tx)
                       const color = TYPE_COLORS[tx.type] ?? '#14b8a6'
                       return (
-                        <div key={tx.id} className="flex items-center gap-3 px-6 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+                        <div key={tx.id} className="group flex items-center gap-3 px-6 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
                           <div
                             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white text-xs font-bold shadow-sm"
                             style={{ backgroundColor: color }}
@@ -441,13 +467,25 @@ export default function BusinessTransactions() {
                             </p>
                             <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{formatDate(tx.date)}</p>
                           </div>
-                          <div className="flex flex-col items-end shrink-0">
-                            <span className={['text-sm font-bold', isIncome ? 'text-teal-600 dark:text-teal-400' : 'text-red-500 dark:text-red-400'].join(' ')}>
-                              {isIncome ? '+' : '−'}<Amt value={formatCurrency(tx.amount)} />
-                            </span>
-                            <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500 mt-0.5">
-                              {TYPE_LABELS[tx.type]}
-                            </span>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {tx.type !== 'gold' && (
+                              <button
+                                onClick={() => setReclassifyTarget(tx)}
+                                title="Mark as Gold"
+                                className="opacity-0 group-hover:opacity-100 flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] font-semibold text-amber-700 hover:bg-amber-100 transition-all dark:border-amber-700/40 dark:bg-amber-900/20 dark:text-amber-400 dark:hover:bg-amber-900/40"
+                              >
+                                <Coins size={11} />
+                                Gold
+                              </button>
+                            )}
+                            <div className="flex flex-col items-end">
+                              <span className={['text-sm font-bold', isIncome ? 'text-teal-600 dark:text-teal-400' : 'text-red-500 dark:text-red-400'].join(' ')}>
+                                {isIncome ? '+' : '−'}<Amt value={formatCurrency(tx.amount)} />
+                              </span>
+                              <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500 mt-0.5">
+                                {TYPE_LABELS[tx.type]}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       )
@@ -480,6 +518,16 @@ export default function BusinessTransactions() {
         loading={deleteLoading}
         title="Delete Transaction"
         message={`Are you sure you want to delete this ${deleteTarget ? TYPE_LABELS[deleteTarget.type] : ''} transaction of ${formatCurrency(deleteTarget?.amount ?? 0)}? This action cannot be undone.`}
+      />
+
+      <ConfirmDialog
+        open={!!reclassifyTarget}
+        onClose={() => setReclassifyTarget(null)}
+        onConfirm={handleReclassify}
+        loading={reclassifying}
+        title="Reclassify as Gold"
+        confirmLabel="Mark as Gold"
+        message={`Mark "${reclassifyTarget?.description || 'this transaction'}" as Gold instead of ${reclassifyTarget ? TYPE_LABELS[reclassifyTarget.type] : ''}? This will update its type and recalculate profits.`}
       />
     </div>
   )

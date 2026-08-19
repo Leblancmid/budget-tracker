@@ -1,5 +1,5 @@
 import api from './axios'
-import type { MasterDashboardStats, Saving } from '@/types'
+import type { BalanceEntry, MasterDashboardStats, Saving } from '@/types'
 
 export const masterDashboardApi = {
   getStats: () => api.get<MasterDashboardStats>('/master/dashboard').then((r) => r.data),
@@ -18,4 +18,19 @@ export const savingsApi = {
   create:  (data: SavingPayload)       => api.post<Saving>('/master/savings', data).then((r) => r.data),
   update:  (id: number, data: SavingPayload) => api.put<Saving>(`/master/savings/${id}`, data).then((r) => r.data),
   delete:  (id: number)                => api.delete<{ message: string }>(`/master/savings/${id}`).then((r) => r.data),
+}
+
+export interface BalanceEntryPayload {
+  account:     'PAYPAL' | 'BINANCE'
+  type:        'add' | 'sell'
+  amount:      number
+  description?: string | null
+  date:        string
+}
+
+export const balanceEntriesApi = {
+  getAll:  ()                                    => api.get<BalanceEntry[]>('/master/balance-entries').then((r) => r.data),
+  create:  (data: BalanceEntryPayload)           => api.post<BalanceEntry>('/master/balance-entries', data).then((r) => r.data),
+  update:  (id: number, data: BalanceEntryPayload) => api.put<BalanceEntry>(`/master/balance-entries/${id}`, data).then((r) => r.data),
+  delete:  (id: number)                          => api.delete<{ message: string }>(`/master/balance-entries/${id}`).then((r) => r.data),
 }

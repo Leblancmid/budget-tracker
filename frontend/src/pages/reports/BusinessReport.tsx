@@ -34,6 +34,7 @@ export default function BusinessReport() {
   const [perPage, setPerPage] = useState(10)
 
   const { data, loading } = useReport('business', period, year, month)
+  const { data: thisMonth } = useReport('business', 'weekly', now.getFullYear(), now.getMonth() + 1)
 
   const { paginated, meta } = useMemo(
     () => paginateLocally(data?.rows ?? [], page, perPage),
@@ -41,7 +42,9 @@ export default function BusinessReport() {
   )
 
   const totals     = data?.totals
-  const isPositive = (totals?.profit ?? 0) >= 0
+  const mTotals    = thisMonth?.totals
+  const isPositive = (mTotals?.profit ?? 0) >= 0
+  const curLabel   = `${MONTHS[now.getMonth()]} ${now.getFullYear()}`
 
   const handleExport = () => {
     if (!data?.rows.length) return
@@ -68,12 +71,13 @@ export default function BusinessReport() {
                 <BarChart2 className="h-3.5 w-3.5 text-teal-400" />
               </div>
               <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Profit</span>
+              <span className="ml-auto text-[10px] font-semibold text-slate-500 bg-white/10 px-2 py-0.5 rounded-full">{curLabel}</span>
             </div>
             {loading ? (
               <div className="h-9 w-40 rounded-lg bg-white/10 animate-pulse" />
             ) : (
               <p className={['text-3xl font-bold', isPositive ? 'text-teal-300' : 'text-red-400'].join(' ')}>
-                <Amt value={formatCurrency(totals?.profit ?? 0)} />
+                <Amt value={formatCurrency(mTotals?.profit ?? 0)} />
               </p>
             )}
           </div>
@@ -87,7 +91,7 @@ export default function BusinessReport() {
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Income</p>
                 {loading
                   ? <div className="h-4 w-24 rounded bg-white/10 animate-pulse mt-0.5" />
-                  : <p className="text-base font-bold text-emerald-400"><Amt value={formatCurrency(totals?.income ?? 0)} /></p>
+                  : <p className="text-base font-bold text-emerald-400"><Amt value={formatCurrency(mTotals?.income ?? 0)} /></p>
                 }
               </div>
             </div>
@@ -99,7 +103,7 @@ export default function BusinessReport() {
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Expense</p>
                 {loading
                   ? <div className="h-4 w-24 rounded bg-white/10 animate-pulse mt-0.5" />
-                  : <p className="text-base font-bold text-red-400"><Amt value={formatCurrency(totals?.expense ?? 0)} /></p>
+                  : <p className="text-base font-bold text-red-400"><Amt value={formatCurrency(mTotals?.expense ?? 0)} /></p>
                 }
               </div>
             </div>

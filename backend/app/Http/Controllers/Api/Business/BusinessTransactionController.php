@@ -21,7 +21,7 @@ class BusinessTransactionController extends Controller
     public function archived(): JsonResponse
     {
         return response()->json(
-            BusinessTransaction::whereNotNull('archived_at')->where('type', 'account')->latest('archived_at')->get()
+            BusinessTransaction::whereNotNull('archived_at')->latest('archived_at')->get()
         );
     }
 

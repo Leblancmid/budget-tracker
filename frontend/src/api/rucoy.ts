@@ -1,5 +1,5 @@
 import api from './axios'
-import type { AccountPaymentStatus, Gold, GoldLog, RucoyAccount, RucoyDashboardStats, Trade, TradeCurrency, TradePaymentMethod, TradeStatus } from '@/types'
+import type { AccountPaymentStatus, Gold, GoldLog, MiddlemanFee, MiddlemanFeeIndex, RucoyAccount, RucoyDashboardStats, Trade, TradeCurrency, TradePaymentMethod, TradeStatus } from '@/types'
 
 export interface TradePayload {
   description?: string
@@ -33,7 +33,14 @@ export const goldsApi = {
 }
 
 export const goldLogsApi = {
-  getAll: () => api.get<GoldLog[]>('/rucoy/gold-logs').then((r) => r.data),
+  getAll:  ()           => api.get<GoldLog[]>('/rucoy/gold-logs').then((r) => r.data),
+  cancel:  (id: number) => api.post<GoldLog>(`/rucoy/gold-logs/${id}/cancel`).then((r) => r.data),
+}
+
+export const middlemanFeesApi = {
+  getAll:  ()                                        => api.get<MiddlemanFeeIndex>('/rucoy/middleman-fees').then((r) => r.data),
+  create:  (amount: number, description?: string)    => api.post<MiddlemanFee>('/rucoy/middleman-fees', { amount, description }).then((r) => r.data),
+  delete:  (id: number)                              => api.delete<{ message: string }>(`/rucoy/middleman-fees/${id}`).then((r) => r.data),
 }
 
 export const tradesApi = {

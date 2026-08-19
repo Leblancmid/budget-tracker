@@ -40,6 +40,11 @@ export function todayISO(): string {
   return new Date().toISOString().split('T')[0]
 }
 
+export const formatTime = (iso: string | null): string => {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+}
+
 export function formatDateLong(iso: string | null): string {
   if (!iso) return '—'
   const [year, month, day] = iso.split('T')[0].split('-').map(Number)

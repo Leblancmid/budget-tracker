@@ -7,10 +7,13 @@ import type { Trade, TradeCurrency, TradePaymentMethod, TradeStatus } from '@/ty
 import { formatWithCommas, handleAmountInput } from '@/utils/format'
 import { flattenApiErrors } from '@/utils/api'
 
+const MM_FEE_OPTIONS = [1_000_000, 2_000_000]
+
 interface TradeModalProps {
   open: boolean
   onClose: () => void
   onSubmit: (data: TradePayload) => Promise<void>
+  onMmFee?: (amount: number, description: string) => Promise<void>
   trade?: Trade | null
 }
 
@@ -45,14 +48,16 @@ const EMPTY: TradeForm = {
 
 
 
-export function TradeModal({ open, onClose, onSubmit, trade }: TradeModalProps) {
+export function TradeModal({ open, onClose, onSubmit, onMmFee, trade }: TradeModalProps) {
   const [form, setForm] = useState<TradeForm>(EMPTY)
   const [errors, setErrors] = useState<Partial<Record<keyof TradeForm, string>>>({})
   const [loading, setLoading] = useState(false)
+  const [mmFee, setMmFee] = useState<number | null>(null)
 
   useEffect(() => {
     if (open) {
       setErrors({})
+      setMmFee(null)
       setForm(trade ? {
         description:     trade.description ?? '',
         status:          trade.status,
@@ -87,6 +92,9 @@ export function TradeModal({ open, onClose, onSubmit, trade }: TradeModalProps) 
         payment_method:  form.status === 'cash' && form.payment_method ? form.payment_method : null,
         completion_date: form.completion_date || null,
       })
+      if (mmFee && onMmFee) {
+        await onMmFee(mmFee, form.description || '')
+      }
       onClose()
     } catch (err: unknown) {
       const flat = flattenApiErrors(err)
@@ -177,6 +185,35 @@ export function TradeModal({ open, onClose, onSubmit, trade }: TradeModalProps) 
             </p>
           )}
         </div>
+
+        {/* Middleman Fee — KKS only */}
+        {!isCash && (
+          <div>
+            <p className="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Middleman Fee</p>
+            <div className="flex gap-2">
+              {MM_FEE_OPTIONS.map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => setMmFee(mmFee === opt ? null : opt)}
+                  className={[
+                    'flex-1 rounded-lg border py-2 text-sm font-semibold transition-colors',
+                    mmFee === opt
+                      ? 'border-violet-500 bg-violet-50 text-violet-700 dark:bg-violet-900/20 dark:text-violet-400 dark:border-violet-700'
+                      : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
+                  ].join(' ')}
+                >
+                  {opt.toLocaleString()} G
+                </button>
+              ))}
+            </div>
+            {mmFee && (
+              <p className="mt-1 text-xs text-violet-600 dark:text-violet-400">
+                {mmFee.toLocaleString()} G fee will be logged in gold records.
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Payment method — CASH only */}
         {isCash && (

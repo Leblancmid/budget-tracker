@@ -20,7 +20,9 @@ class BusinessDashboardController extends Controller
         $income        = (float) (clone $base)->sum('price_php');
         $expense       = (float) (clone $base)->sum('cost_php');
         $initialProfit = $income - $expense;
-        $archivedBase    = (clone $base)->where('type', 'account')->whereNotNull('archived_at');
+        $archivedBase    = BusinessTransaction::whereNotNull('archived_at')
+            ->whereMonth('archived_at', $month)
+            ->whereYear('archived_at', $year);
         $profit          = (float) (clone $archivedBase)->sum('profit_php');
         $archivedIncome  = (float) (clone $archivedBase)->sum('price_php');
         $archivedExpense = (float) (clone $archivedBase)->sum('cost_php');
@@ -34,6 +36,15 @@ class BusinessDashboardController extends Controller
             ->whereMonth('date', $month)
             ->whereYear('date', $year)
             ->whereNotNull('cost_php')
+            ->groupBy('type')
+            ->orderByDesc('total')
+            ->get();
+
+        $profitByType = BusinessTransaction::select('type', DB::raw('SUM(profit_php) as total'))
+            ->whereNotNull('archived_at')
+            ->whereMonth('archived_at', $month)
+            ->whereYear('archived_at', $year)
+            ->whereNotNull('profit_php')
             ->groupBy('type')
             ->orderByDesc('total')
             ->get();
@@ -71,6 +82,7 @@ class BusinessDashboardController extends Controller
             'initial_profit'      => $initialProfit,
             'recent_transactions' => $recentTransactions,
             'expense_by_type'     => $expenseByType,
+            'profit_by_type'      => $profitByType,
             'monthly_trend'       => $monthlyTrend,
         ]);
     }

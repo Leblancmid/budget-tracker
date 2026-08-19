@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import type { BusinessTransaction, BusinessTransactionAction, BusinessTransactionType, RucoyAccount } from '@/types'
 import type { BusinessTransactionPayload } from '@/api/business'
+import { businessTransactionsApi } from '@/api/business'
 import { rucoyAccountsApi } from '@/api/rucoy'
-import { formatWithCommas, handleAmountInput, todayISO } from '@/utils/format'
+import { formatWithCommas, handleAmountInput, todayISO, formatDate } from '@/utils/format'
 import { flattenApiErrors } from '@/utils/api'
 
 type Category = 'account' | 'gold-item'
@@ -15,6 +16,7 @@ interface BusinessTransactionModalProps {
   open: boolean
   onClose: () => void
   onSubmit: (data: BusinessTransactionPayload) => Promise<void>
+  onGoldConfirm?: (goldTrade: BusinessTransaction, data: BusinessTransactionPayload) => Promise<void>
   transaction?: BusinessTransaction | null
   defaultAction?: BusinessTransactionAction | null
   defaultType?: BusinessTransactionType | null
@@ -30,7 +32,7 @@ const EMPTY = (type: BusinessTransactionType = 'gold'): BusinessTransactionPaylo
   notes:       '',
 })
 
-export function BusinessTransactionModal({ open, onClose, onSubmit, transaction, defaultAction, defaultType, usedAccountIds = [] }: BusinessTransactionModalProps) {
+export function BusinessTransactionModal({ open, onClose, onSubmit, onGoldConfirm, transaction, defaultAction, defaultType, usedAccountIds = [] }: BusinessTransactionModalProps) {
   const [form, setForm]   = useState<BusinessTransactionPayload>(EMPTY())
   const [errors, setErrors]       = useState<Partial<Record<string, string>>>({})
   const [loading, setLoading]     = useState(false)
@@ -46,6 +48,13 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction,
   const [costRate, setCostRate]               = useState('')
   const [phpRate, setPhpRate]                 = useState('')
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Gold trade dropdown state
+  const [goldTrades, setGoldTrades]             = useState<BusinessTransaction[]>([])
+  const [goldTradeSearch, setGoldTradeSearch]   = useState('')
+  const [selectedGoldTrade, setSelectedGoldTrade] = useState<BusinessTransaction | null>(null)
+  const [goldDropdownOpen, setGoldDropdownOpen] = useState(false)
+  const goldDropdownRef = useRef<HTMLDivElement>(null)
 
   // Gold & Item manual gold values
   const [priceGoldStr, setPriceGoldStr] = useState('')
@@ -64,11 +73,23 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction,
     }
   }, [open, category])
 
-  // Close dropdown on outside click
+  // Fetch gold trades when category = gold-item (only pending = no PHP yet)
+  useEffect(() => {
+    if (open && category === 'gold-item') {
+      businessTransactionsApi.getAll().then((list) => {
+        setGoldTrades(list.filter((tx) => tx.type === 'gold' && tx.price_php == null))
+      }).catch(() => {})
+    }
+  }, [open, category])
+
+  // Close dropdowns on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setDropdownOpen(false)
+      }
+      if (goldDropdownRef.current && !goldDropdownRef.current.contains(e.target as Node)) {
+        setGoldDropdownOpen(false)
       }
     }
     document.addEventListener('mousedown', handler)
@@ -104,6 +125,9 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction,
       setErrors({})
       setAccountSearch('')
       setDropdownOpen(false)
+      setGoldTradeSearch('')
+      setGoldDropdownOpen(false)
+      setSelectedGoldTrade(null)
       setPriceGoldStr('')
       setCostGoldStr('')
       if (transaction) {
@@ -147,6 +171,8 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction,
       setForm((p) => ({ ...p, type: 'account', action: null }))
       setPriceGoldStr('')
       setCostGoldStr('')
+      setSelectedGoldTrade(null)
+      setGoldTradeSearch('')
     } else {
       setSelectedAccount(null)
       setAccountSearch('')
@@ -161,10 +187,30 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction,
     set('description', account.description || account.email)
   }
 
+  const selectGoldTrade = (tx: BusinessTransaction) => {
+    setSelectedGoldTrade(tx)
+    setGoldTradeSearch('')
+    setGoldDropdownOpen(false)
+    set('description', tx.description ?? '')
+    // G amounts from Add Gold are stored in price_gold/cost_gold — fill into gold amount fields
+    if (tx.price_gold) setPriceGoldStr(String(parseFloat(tx.price_gold)))
+    if (tx.cost_gold)  setCostGoldStr(String(parseFloat(tx.cost_gold)))
+    // Clear exchange rates — user must fill them in to confirm pricing
+    setPriceRate('')
+    setCostRate('')
+    if (tx.php_rate)   setPhpRate(String(parseFloat(tx.php_rate)))
+    setForm((p) => ({ ...p, date: tx.date }))
+  }
+
   const filteredAccounts = accounts.filter((a) => {
     if (usedAccountIds.includes(a.id) && a.id !== transaction?.account_id) return false
     const q = accountSearch.toLowerCase()
     return (a.description ?? '').toLowerCase().includes(q) || a.email.toLowerCase().includes(q)
+  })
+
+  const filteredGoldTrades = goldTrades.filter((tx) => {
+    const q = goldTradeSearch.toLowerCase()
+    return !q || (tx.description ?? '').toLowerCase().includes(q)
   })
 
   const validate = () => {
@@ -180,9 +226,20 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction,
     setLoading(true)
     const payload = category === 'account'
       ? { ...form, account_id: selectedAccount?.id ?? null, price_rate: parseFloat(priceRate) || null, cost_rate: parseFloat(costRate) || null, php_rate: parseFloat(phpRate) || null }
-      : form
+      : {
+          ...form,
+          price_rate: parseFloat(priceRate) || null,
+          cost_rate:  parseFloat(costRate)  || null,
+          php_rate:   parseFloat(phpRate)   || null,
+          price_php:  priceInPhp  ?? null,
+          cost_php:   costInPhp   ?? null,
+        }
     try {
-      await onSubmit(payload)
+      if (selectedGoldTrade && onGoldConfirm) {
+        await onGoldConfirm(selectedGoldTrade, payload)
+      } else {
+        await onSubmit(payload)
+      }
       onClose()
     } catch (err: unknown) {
       const flat = flattenApiErrors(err)
@@ -242,12 +299,12 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction,
                   : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
               ].join(' ')}
             >
-              {cat === 'account' ? 'Account' : 'Gold & Item'}
+              {cat === 'account' ? 'Account' : 'Gold'}
             </button>
           ))}
         </div>
 
-        {/* Selector: Account dropdown OR Gold & Item text input */}
+        {/* Selector: Account dropdown OR Gold trade dropdown */}
         {category === 'account' ? (
           <div className="relative" ref={dropdownRef}>
             <p className="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Account</p>
@@ -305,12 +362,63 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction,
             )}
           </div>
         ) : (
-          <Input
-            label="Gold & Item"
-            value={form.description ?? ''}
-            onChange={(e) => set('description', e.target.value)}
-            placeholder="Item name…"
-          />
+          <div className="relative" ref={goldDropdownRef}>
+            <p className="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Gold</p>
+            <button
+              type="button"
+              onClick={() => setGoldDropdownOpen((v) => !v)}
+              className="flex w-full items-center justify-between rounded-lg border border-gray-300 hover:border-gray-400 bg-white px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:hover:border-gray-500"
+            >
+              <span className={selectedGoldTrade ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}>
+                {selectedGoldTrade
+                  ? (selectedGoldTrade.description || `Gold · ${formatDate(selectedGoldTrade.date)}`)
+                  : 'Select a gold trade…'}
+              </span>
+              <div className="flex items-center gap-1 shrink-0">
+                {selectedGoldTrade && (
+                  <span
+                    role="button"
+                    onClick={(e) => { e.stopPropagation(); setSelectedGoldTrade(null); setGoldTradeSearch(''); set('description', '') }}
+                    className="rounded p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                  >
+                    <X size={13} />
+                  </span>
+                )}
+                <ChevronDown size={15} className="text-gray-400" />
+              </div>
+            </button>
+
+            {goldDropdownOpen && (
+              <div className="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
+                <div className="flex items-center gap-2 border-b border-gray-100 px-3 py-2 dark:border-gray-700">
+                  <Search size={13} className="shrink-0 text-gray-400" />
+                  <input
+                    autoFocus
+                    type="text"
+                    value={goldTradeSearch}
+                    onChange={(e) => setGoldTradeSearch(e.target.value)}
+                    placeholder="Search…"
+                    className="flex-1 bg-transparent text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none dark:text-gray-200 dark:placeholder:text-gray-500"
+                  />
+                </div>
+                <div className="max-h-48 overflow-y-auto">
+                  {filteredGoldTrades.length === 0 ? (
+                    <p className="px-3 py-4 text-center text-xs text-gray-400 dark:text-gray-500">No gold trades found.</p>
+                  ) : filteredGoldTrades.map((tx) => (
+                    <button
+                      key={tx.id}
+                      type="button"
+                      onClick={() => selectGoldTrade(tx)}
+                      className="flex w-full flex-col px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <span className="text-sm font-medium text-gray-800 dark:text-gray-100">{tx.description || '—'}</span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500">{formatDate(tx.date)}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
         {/* Formula rows */}
@@ -318,7 +426,7 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction,
           <div key={row.goldLabel} className="flex items-end gap-2">
             <div className="flex-1">
               <p className="mb-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">{row.goldLabel}</p>
-              {category === 'account' ? (
+              {category === 'account' || selectedGoldTrade ? (
                 <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 dark:bg-gray-800/60 dark:border-gray-700 dark:text-gray-300">
                   {row.goldValue != null ? row.goldValue.toLocaleString() : '—'}
                 </div>
@@ -403,7 +511,7 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, transaction,
           <p className="text-xs text-red-500 -mt-2">{errors.amount}</p>
         )}
 
-        {/* Description (account only — gold-item uses the top input as description) */}
+        {/* Description (account only — gold uses the dropdown as description) */}
         {category === 'account' && (
           <Input
             label="Description"

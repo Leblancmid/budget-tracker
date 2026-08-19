@@ -13,7 +13,9 @@ class TransactionController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Transaction::with('category')->latest('date')->latest('id');
+        $query = Transaction::with('category')
+            ->where('user_id', auth()->id())
+            ->latest('date')->latest('id');
 
         if ($request->filled('type')) {
             $query->where('type', $request->type);
@@ -43,18 +45,20 @@ class TransactionController extends Controller
 
     public function store(StoreTransactionRequest $request): JsonResponse
     {
-        $transaction = Transaction::create($request->validated());
+        $transaction = Transaction::create(array_merge($request->validated(), ['user_id' => auth()->id()]));
 
         return response()->json($transaction->load('category'), 201);
     }
 
     public function show(Transaction $transaction): JsonResponse
     {
+        abort_if($transaction->user_id !== auth()->id(), 403);
         return response()->json($transaction->load('category'));
     }
 
     public function update(UpdateTransactionRequest $request, Transaction $transaction): JsonResponse
     {
+        abort_if($transaction->user_id !== auth()->id(), 403);
         $transaction->update($request->validated());
 
         return response()->json($transaction->load('category'));
@@ -62,6 +66,7 @@ class TransactionController extends Controller
 
     public function destroy(Transaction $transaction): JsonResponse
     {
+        abort_if($transaction->user_id !== auth()->id(), 403);
         $transaction->delete();
 
         return response()->json(['message' => 'Transaction deleted successfully.']);

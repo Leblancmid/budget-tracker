@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { TrendingUp, Coins, DollarSign, PiggyBank, SlidersHorizontal } from 'lucide-react'
+import { TrendingUp, Coins, DollarSign, PiggyBank, SlidersHorizontal, Wallet } from 'lucide-react'
+import { MONTHS } from '@/utils/format'
 import { useMasterDashboard } from '@/hooks/useMasterDashboard'
 import { Card } from '@/components/ui/Card'
 import { formatCurrency } from '@/utils/format'
@@ -43,8 +44,15 @@ export default function MasterDashboard() {
   const goldUsd        = goldBase * usdRate
   const goldPhp        = goldUsd * phpRate
 
+  const now            = new Date()
+  const curLabel       = `${MONTHS[now.getMonth()]} ${now.getFullYear()}`
   const overallProfit  = stats?.overall_profit  ?? 0
+  const monthlyProfit  = stats?.monthly_profit  ?? 0
   const savingsBalance = stats?.savings_balance  ?? 0
+  const balanceTotalUsd = stats?.balance_total   ?? 0
+  const balanceTotalPhp = balanceTotalUsd * phpRate
+
+  const overallAmountPhp = goldPhp + phpAmount + savingsBalance + balanceTotalPhp
 
   if (loading) return (
     <div className="flex flex-col gap-4">
@@ -73,11 +81,12 @@ export default function MasterDashboard() {
                 <TrendingUp className="h-3.5 w-3.5 text-violet-400" />
               </div>
               <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Overall Profit</span>
+              <span className="ml-auto text-[10px] font-semibold text-slate-500 bg-white/10 px-2 py-0.5 rounded-full">{curLabel}</span>
             </div>
-            <p className={['text-3xl font-bold', overallProfit >= 0 ? 'text-violet-300' : 'text-red-400'].join(' ')}>
-              <Amt value={formatCurrency(overallProfit)} />
+            <p className={['text-3xl font-bold', monthlyProfit >= 0 ? 'text-violet-300' : 'text-red-400'].join(' ')}>
+              <Amt value={formatCurrency(monthlyProfit)} />
             </p>
-            <p className="text-xs text-slate-500 mt-1">Business + Daily Expenses</p>
+            <p className="text-xs text-slate-500 mt-1">All time: <Amt value={formatCurrency(overallProfit)} /></p>
           </div>
 
           {/* Sub-stats */}
@@ -160,6 +169,33 @@ export default function MasterDashboard() {
         </Card>
 
       </div>
+
+      {/* Overall Amount */}
+      <Card className="flex flex-col overflow-hidden">
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-700/60 bg-violet-50/60 dark:bg-violet-900/10">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-100 dark:bg-violet-900/40">
+            <Wallet className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">Overall Amount</p>
+            <p className="text-[11px] text-gray-400 dark:text-gray-500">Gold + Account Cost + Savings + Balance</p>
+          </div>
+        </div>
+        <div className="px-5 py-5 flex items-end justify-between gap-4">
+          <div>
+            <p className="text-2xl font-bold text-violet-700 dark:text-violet-400">
+              <Amt value={`₱${overallAmountPhp.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+            </p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Overall Amount (PHP)</p>
+          </div>
+          <div className="text-right shrink-0">
+            <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+              <Amt value={`$${balanceTotalUsd.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+            </p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Total Balance (USD)</p>
+          </div>
+        </div>
+      </Card>
 
       {/* Exchange rate inputs */}
       <Card className="flex items-center gap-4 px-5 py-3.5">

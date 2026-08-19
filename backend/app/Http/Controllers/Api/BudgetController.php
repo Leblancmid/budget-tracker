@@ -14,21 +14,24 @@ class BudgetController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $month = (int) $request->get('month', now()->month);
-        $year  = (int) $request->get('year', now()->year);
+        $userId = auth()->id();
+        $month  = (int) $request->get('month', now()->month);
+        $year   = (int) $request->get('year', now()->year);
 
         $budgets = Budget::with('category')
+            ->where('user_id', $userId)
             ->where('month', $month)
             ->where('year', $year)
             ->get()
-            ->map(function (Budget $budget) use ($month, $year) {
-                $spent = Transaction::where('category_id', $budget->category_id)
+            ->map(function (Budget $budget) use ($userId, $month, $year) {
+                $spent = Transaction::where('user_id', $userId)
+                    ->where('category_id', $budget->category_id)
                     ->where('type', 'expense')
                     ->whereMonth('date', $month)
                     ->whereYear('date', $year)
                     ->sum('amount');
 
-                $budget->spent   = (float) $spent;
+                $budget->spent     = (float) $spent;
                 $budget->remaining = max(0, (float) $budget->amount - (float) $spent);
                 $budget->percentage = $budget->amount > 0
                     ? round(((float) $spent / (float) $budget->amount) * 100, 1)
@@ -42,13 +45,14 @@ class BudgetController extends Controller
 
     public function store(StoreBudgetRequest $request): JsonResponse
     {
-        $budget = Budget::create($request->validated());
+        $budget = Budget::create(array_merge($request->validated(), ['user_id' => auth()->id()]));
 
         return response()->json($budget->load('category'), 201);
     }
 
     public function update(UpdateBudgetRequest $request, Budget $budget): JsonResponse
     {
+        abort_if($budget->user_id !== auth()->id(), 403);
         $budget->update($request->validated());
 
         return response()->json($budget->load('category'));
@@ -56,6 +60,7 @@ class BudgetController extends Controller
 
     public function destroy(Budget $budget): JsonResponse
     {
+        abort_if($budget->user_id !== auth()->id(), 403);
         $budget->delete();
 
         return response()->json(['message' => 'Budget deleted successfully.']);

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Search, Filter, Pencil, Trash2, Download, TrendingUp, TrendingDown } from 'lucide-react'
+import { Plus, Search, Filter, Pencil, Trash2, Download, TrendingUp } from 'lucide-react'
 import { useTransactions } from '@/hooks/useTransactions'
 import { useCategories } from '@/hooks/useCategories'
 import { Button } from '@/components/ui/Button'
@@ -11,7 +11,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Card } from '@/components/ui/Card'
 import { TransactionModal, type TransactionFormData } from '@/components/modals/TransactionModal'
 import { toast } from '@/components/ui/Toast'
-import { formatCurrency, formatDate } from '@/utils/format'
+import { formatCurrency, formatDate, formatTime } from '@/utils/format'
 import { Amt } from '@/context/AmountVisibilityContext'
 import { exportCsv } from '@/utils/csv'
 import type { Transaction } from '@/types'
@@ -186,6 +186,7 @@ export function Transactions() {
                         <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
                           {formatDate(tx.date)}
                         </span>
+                        <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">{formatTime(tx.created_at)}</p>
                       </td>
 
                       {/* Category */}

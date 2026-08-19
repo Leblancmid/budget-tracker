@@ -10,7 +10,7 @@ class Budget extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['category_id', 'amount', 'month', 'year'];
+    protected $fillable = ['user_id', 'category_id', 'amount', 'month', 'year'];
 
     protected $casts = [
         'amount' => 'decimal:2',

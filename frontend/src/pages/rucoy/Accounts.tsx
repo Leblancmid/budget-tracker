@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Plus, Pencil, Trash2, Users, User, TrendingUp, TrendingDown, DollarSign, Search, Check, Archive, RotateCcw, Download, CalendarClock } from 'lucide-react'
+import { Plus, Pencil, Trash2, Users, User, TrendingUp, TrendingDown, DollarSign, Search, Check, Archive, RotateCcw, Download, CalendarClock, ArrowUp, ArrowDown, ArrowUpDown, Receipt, Coins } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -7,13 +7,20 @@ import { Pagination } from '@/components/ui/Pagination'
 import { AccountModal } from '@/components/modals/AccountModal'
 import { useRucoyAccounts } from '@/hooks/useRucoyAccounts'
 import { useArchive } from '@/hooks/useArchive'
+import { useBusinessTransactions } from '@/hooks/useBusinessTransactions'
+import { Modal } from '@/components/ui/Modal'
 import { rucoyAccountsApi, type AccountPayload } from '@/api/rucoy'
+import { businessTransactionsApi } from '@/api/business'
 import { toast } from '@/components/ui/Toast'
-import { paginateLocally } from '@/utils/format'
+import { paginateLocally, formatCurrency, formatDate, formatWithCommas, handleAmountInput } from '@/utils/format'
 import { exportCsv } from '@/utils/csv'
-import type { AccountPaymentStatus, RucoyAccount } from '@/types'
+import { isBusinessIncome } from '@/utils/business'
+import { Amt } from '@/context/AmountVisibilityContext'
+import type { AccountPaymentStatus, BusinessTransaction, RucoyAccount } from '@/types'
 
 const fmtGold = (n: number) => `${n.toLocaleString()} G`
+const BIZ_TYPE_LABELS: Record<string, string> = { account: 'Account', gold: 'Gold', expense: 'Item' }
+const BIZ_TYPE_COLORS: Record<string, string>  = { account: '#6366f1', gold: '#f59e0b', expense: '#ef4444' }
 
 const PAYMENT_STATUS_STYLES: Record<AccountPaymentStatus, { label: string; className: string }> = {
   not_paid:       { label: 'Not Paid',       className: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
@@ -162,6 +169,8 @@ export default function Accounts() {
   const { accounts, loading, error, create, update, archive, unarchive, remove } = useRucoyAccounts()
 
   const [search, setSearch]     = useState('')
+  const [profitSort, setProfitSort] = useState<'asc' | 'desc' | null>(null)
+  const [priceSort,  setPriceSort]  = useState<'asc' | 'desc' | null>(null)
   const [page, setPage]         = useState(1)
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing]   = useState<RucoyAccount | null>(null)
@@ -169,11 +178,125 @@ export default function Accounts() {
   const [deleting, setDeleting] = useState(false)
 
   const { showArchive, setShowArchive, archivedItems: archivedAccounts, archiveLoading, fetchArchived, removeFromArchived } = useArchive(rucoyAccountsApi.getArchived)
+  const { transactions: bizTxs, loading: bizTxLoading, archive: archiveBizTx, unarchive: unarchiveBizTx, remove: removeBizTx } = useBusinessTransactions()
+
+  const [showGoldArchive, setShowGoldArchive]         = useState(false)
+  const [archivedGoldTrades, setArchivedGoldTrades]   = useState<BusinessTransaction[]>([])
+  const [goldArchiveLoading, setGoldArchiveLoading]   = useState(false)
+  const [archivePage, setArchivePage]                 = useState(1)
+  const [goldArchivePage, setGoldArchivePage]         = useState(1)
+
+  const fetchArchivedGold = async () => {
+    setGoldArchiveLoading(true)
+    try {
+      const all = await businessTransactionsApi.getArchived()
+      setArchivedGoldTrades(all.filter(tx => tx.type === 'gold'))
+    } catch {
+      toast.error('Failed to load archived gold.')
+    } finally {
+      setGoldArchiveLoading(false)
+    }
+  }
+
+  const toggleGoldArchive = () => {
+    if (!showGoldArchive) fetchArchivedGold()
+    setShowGoldArchive(v => !v)
+  }
+  const [showTxModal, setShowTxModal] = useState(false)
+  const [txPage, setTxPage]           = useState(1)
 
   const [archiveTarget, setArchiveTarget]     = useState<RucoyAccount | null>(null)
   const [archiving, setArchiving]             = useState(false)
   const [unarchiveTarget, setUnarchiveTarget] = useState<RucoyAccount | null>(null)
   const [unarchiving, setUnarchiving]         = useState(false)
+
+  const [deletePendingTarget, setDeletePendingTarget]   = useState<number | null>(null)
+  const [deletingPending, setDeletingPending]           = useState(false)
+  const [archivePendingTarget, setArchivePendingTarget] = useState<number | null>(null)
+  const [archivingPending, setArchivingPending]         = useState(false)
+
+  const handleDeletePending = async () => {
+    if (!deletePendingTarget) return
+    setDeletingPending(true)
+    try {
+      await removeBizTx(deletePendingTarget)
+      toast.success('Pending gold trade removed.')
+    } catch {
+      toast.error('Failed to remove pending gold trade.')
+    } finally {
+      setDeletingPending(false)
+      setDeletePendingTarget(null)
+    }
+  }
+
+  const handleArchivePending = async () => {
+    if (!archivePendingTarget) return
+    const targetId = archivePendingTarget
+    setArchivingPending(true)
+    try {
+      await archiveBizTx(targetId)
+      toast.success('Gold trade archived.', {
+        action: { label: 'Undo', onClick: () => handleUnarchiveGold(targetId) },
+      })
+    } catch {
+      toast.error('Failed to archive gold trade.')
+    } finally {
+      setArchivingPending(false)
+      setArchivePendingTarget(null)
+    }
+  }
+
+  const handleUnarchiveGold = async (id: number) => {
+    try {
+      await unarchiveBizTx(id)
+      setArchivedGoldTrades((prev) => prev.filter((t) => t.id !== id))
+      toast.success('Gold trade restored.')
+    } catch {
+      toast.error('Failed to restore gold trade.')
+    }
+  }
+
+  const [showTypePicker, setShowTypePicker] = useState(false)
+  const [showGoldModal, setShowGoldModal]   = useState(false)
+  const [goldDesc, setGoldDesc]             = useState('')
+  const [goldPrice, setGoldPrice]           = useState('')
+  const [goldCost, setGoldCost]             = useState('')
+  const [goldDate, setGoldDate]             = useState('')
+  const [goldSubmitting, setGoldSubmitting] = useState(false)
+
+  const openAddTransaction = () => setShowTypePicker(true)
+
+  const openGoldModal = () => {
+    setGoldDesc(''); setGoldPrice(''); setGoldCost('')
+    setGoldDate(new Date().toISOString().split('T')[0])
+    setShowTypePicker(false)
+    setShowGoldModal(true)
+  }
+
+  const handleGoldSubmit = async () => {
+    const price = Number(goldPrice)
+    const cost  = Number(goldCost)
+    if (!goldPrice || !goldCost || price < 0 || cost < 0) return
+    setGoldSubmitting(true)
+    try {
+      const date = goldDate || new Date().toISOString().split('T')[0]
+      await businessTransactionsApi.create({
+        type: 'gold',
+        action: null,
+        amount: 0.01,
+        description: goldDesc || null,
+        date,
+        price_gold: price,
+        cost_gold: cost,
+      })
+      setShowGoldModal(false)
+      toast.success('Gold transaction added — confirm pricing in Business → Transactions.')
+    } catch {
+      toast.error('Failed to add gold transaction.')
+    } finally {
+      setGoldSubmitting(false)
+    }
+  }
 
   const handleArchive = async () => {
     if (!archiveTarget) return
@@ -212,15 +335,35 @@ export default function Accounts() {
   const openEdit   = (a: RucoyAccount) => { setEditing(a); setModalOpen(true) }
 
   const filteredAccounts = useMemo(() => {
-    if (!search.trim()) return accounts
     const q = search.trim().toLowerCase()
-    return accounts.filter((a) =>
-      a.email.toLowerCase().includes(q) ||
-      (a.description ?? '').toLowerCase().includes(q)
-    )
-  }, [accounts, search])
+    let result = q
+      ? accounts.filter((a) =>
+          a.email.toLowerCase().includes(q) ||
+          (a.description ?? '').toLowerCase().includes(q)
+        )
+      : [...accounts]
+    if (profitSort) {
+      result = result.slice().sort((a, b) => {
+        const pa = a.profit ?? 0
+        const pb = b.profit ?? 0
+        return profitSort === 'asc' ? pa - pb : pb - pa
+      })
+    } else if (priceSort) {
+      result = result.slice().sort((a, b) => {
+        const pa = a.price ?? 0
+        const pb = b.price ?? 0
+        return priceSort === 'asc' ? pa - pb : pb - pa
+      })
+    }
+    return result
+  }, [accounts, search, profitSort, priceSort])
 
-  const { paginated, meta } = paginateLocally(filteredAccounts, page, 6)
+  const { paginated, meta } = paginateLocally(filteredAccounts, page, 9)
+
+  const pendingGoldTrades = useMemo(() =>
+    bizTxs.filter(tx => tx.type === 'gold' && tx.archived_at == null),
+    [bizTxs]
+  )
 
   const totals = useMemo(() => {
     let price = 0, cost = 0, profit = 0
@@ -267,7 +410,9 @@ export default function Accounts() {
       {error && <div className="text-red-500 text-sm text-center py-2">{error}</div>}
 
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2">
+
+        {/* Search */}
         <div className="relative flex-1 min-w-0 max-w-xs">
           <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
           <input
@@ -279,26 +424,76 @@ export default function Accounts() {
           />
         </div>
 
-        <button
-          onClick={() => setShowArchive((v) => !v)}
-          className={[
-            'flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors',
-            showArchive
-              ? 'border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-600 dark:bg-amber-900/20 dark:text-amber-400'
-              : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
-          ].join(' ')}
-        >
-          <Archive size={13} />
-          Archive
-          {archivedAccounts.length > 0 && showArchive && (
-            <span className="ml-0.5 rounded-full bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200 text-[10px] font-bold px-1.5">
-              {archivedAccounts.length}
-            </span>
-          )}
-        </button>
+        {/* Sort group */}
+        <div className="flex items-center divide-x divide-gray-200 dark:divide-gray-700 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-800">
+          <button
+            onClick={() => { setPriceSort(null); setProfitSort((s) => s === null ? 'desc' : s === 'desc' ? 'asc' : null); setPage(1) }}
+            className={['flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors', profitSort ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400' : 'text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700'].join(' ')}
+          >
+            {profitSort === 'desc' ? <ArrowDown size={13} /> : profitSort === 'asc' ? <ArrowUp size={13} /> : <ArrowUpDown size={13} />}
+            Profit
+          </button>
+          <button
+            onClick={() => { setProfitSort(null); setPriceSort((s) => s === null ? 'desc' : s === 'desc' ? 'asc' : null); setPage(1) }}
+            className={['flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors', priceSort ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400' : 'text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700'].join(' ')}
+          >
+            {priceSort === 'desc' ? <ArrowDown size={13} /> : priceSort === 'asc' ? <ArrowUp size={13} /> : <ArrowUpDown size={13} />}
+            Price
+          </button>
+        </div>
 
-        <Button variant="secondary" size="sm" icon={<Download className="h-3.5 w-3.5" />} onClick={handleExport}>Export</Button>
-        <Button size="sm" icon={<Plus className="h-3.5 w-3.5" />} onClick={openCreate}>Add Account</Button>
+        {/* Archive toggles group */}
+        <div className="flex items-center divide-x divide-gray-200 dark:divide-gray-700 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-800">
+          <button
+            onClick={() => setShowArchive((v) => !v)}
+            title="Sold Accounts"
+            className={['flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors', showArchive ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400' : 'text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700'].join(' ')}
+          >
+            <Archive size={13} />
+            Sold Accounts
+            {archivedAccounts.length > 0 && showArchive && (
+              <span className="rounded-full bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200 text-[10px] font-bold px-1.5">
+                {archivedAccounts.length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={toggleGoldArchive}
+            title="Sold Golds"
+            className={['flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors', showGoldArchive ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400' : 'text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700'].join(' ')}
+          >
+            <Coins size={13} />
+            Sold Golds
+            {archivedGoldTrades.length > 0 && showGoldArchive && (
+              <span className="rounded-full bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200 text-[10px] font-bold px-1.5">
+                {archivedGoldTrades.length}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Utility actions — icon only */}
+        <div className="flex items-center divide-x divide-gray-200 dark:divide-gray-700 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-800">
+          <button
+            onClick={() => { setShowTxModal(true); setTxPage(1) }}
+            title="Transactions"
+            className="flex items-center px-2.5 py-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 dark:hover:text-gray-200 transition-colors"
+          >
+            <Receipt size={14} />
+          </button>
+          <button
+            onClick={handleExport}
+            title="Export CSV"
+            className="flex items-center px-2.5 py-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 dark:hover:text-gray-200 transition-colors"
+          >
+            <Download size={14} />
+          </button>
+        </div>
+
+        {/* Primary CTA */}
+        <div className="ml-auto">
+          <Button size="sm" icon={<Plus className="h-3.5 w-3.5" />} onClick={openAddTransaction}>Add Transaction</Button>
+        </div>
       </div>
 
       {/* Stats strip */}
@@ -343,7 +538,7 @@ export default function Accounts() {
       {/* Skeleton loading */}
       {loading && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => (
+          {Array.from({ length: 9 }).map((_, i) => (
             <div key={i} className="rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 animate-pulse">
               <div className="flex items-start gap-3 mb-3">
                 <div className="h-11 w-11 rounded-full bg-gray-100 dark:bg-gray-800 shrink-0" />
@@ -395,12 +590,75 @@ export default function Accounts() {
         </div>
       )}
 
+      {/* Pending Gold Trades section */}
+      {pendingGoldTrades.length > 0 && (
+        <Card className="flex flex-col">
+          <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-gray-100 dark:border-gray-700/60 bg-amber-50/40 dark:bg-amber-900/10">
+            <Coins size={13} className="text-amber-500 dark:text-amber-400" />
+            <h2 className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">Pending Gold Trades</h2>
+            <span className="ml-auto text-[11px] font-semibold text-amber-600 dark:text-amber-500">
+              {pendingGoldTrades.filter(tx => tx.price_php == null).length} awaiting · {pendingGoldTrades.filter(tx => tx.price_php != null).length} confirmed
+            </span>
+          </div>
+          <div className="divide-y divide-gray-50 dark:divide-gray-700/40">
+            {pendingGoldTrades.map((tx) => (
+              <div key={tx.id} className="flex items-center gap-3 px-5 py-3 group">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/30">
+                  <Coins size={15} className="text-amber-600 dark:text-amber-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{tx.description || 'Gold Trade'}</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{formatDate(tx.date)}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {/* Buttons — hover only */}
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+                    {tx.price_php != null && (
+                      <button
+                        onClick={() => setArchivePendingTarget(tx.id)}
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+                        title="Archive"
+                      >
+                        <Check size={13} />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setDeletePendingTarget(tx.id)}
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                      title="Remove"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                  {/* Price / status */}
+                  <div className="flex flex-col items-end text-right">
+                    {tx.price_php != null ? (
+                      <>
+                        {tx.price_gold != null && <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Price: {Number(tx.price_gold).toLocaleString()} G</span>}
+                        {tx.cost_gold  != null && <span className="text-xs font-semibold text-red-500 dark:text-red-400">Cost: {Number(tx.cost_gold).toLocaleString()} G</span>}
+                        <span className="text-[10px] text-emerald-500 dark:text-emerald-400 font-medium mt-0.5">Confirmed</span>
+                      </>
+                    ) : (
+                      <>
+                        {tx.price_gold != null && <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Price: {Number(tx.price_gold).toLocaleString()} G</span>}
+                        {tx.cost_gold  != null && <span className="text-xs font-semibold text-red-500 dark:text-red-400">Cost: {Number(tx.cost_gold).toLocaleString()} G</span>}
+                        <span className="text-[10px] text-amber-500 dark:text-amber-400 font-medium mt-0.5">Awaiting pricing</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
       {/* Archive section */}
       {showArchive && (
         <Card className="flex flex-col">
           <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-gray-100 dark:border-gray-700/60 bg-amber-50/40 dark:bg-amber-900/10">
             <Archive size={13} className="text-amber-500 dark:text-amber-400" />
-            <h2 className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">Archived Accounts</h2>
+            <h2 className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">Sold Accounts</h2>
             {archivedAccounts.length > 0 && (
               <span className="ml-auto text-[11px] font-semibold text-amber-600 dark:text-amber-500">
                 {archivedAccounts.length} total
@@ -424,27 +682,266 @@ export default function Accounts() {
                 ))}
               </div>
             ) : archivedAccounts.length === 0 ? (
-              <p className="py-8 text-center text-sm text-gray-400 dark:text-gray-500">No archived accounts.</p>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {archivedAccounts.map((a) => (
-                  <AccountCard
-                    key={a.id}
-                    a={a}
-                    archived
-                    onUnarchive={() => setUnarchiveTarget(a)}
-                  />
+              <p className="py-8 text-center text-sm text-gray-400 dark:text-gray-500">No sold accounts.</p>
+            ) : (() => {
+              const { paginated: archPaged, meta: archMeta } = paginateLocally(archivedAccounts, archivePage, 6)
+              return (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {archPaged.map((a) => (
+                      <AccountCard
+                        key={a.id}
+                        a={a}
+                        archived
+                        onUnarchive={() => setUnarchiveTarget(a)}
+                      />
+                    ))}
+                  </div>
+                  <div className="mt-4">
+                    <Pagination meta={archMeta} onPageChange={setArchivePage} />
+                  </div>
+                </>
+              )
+            })()}
+          </div>
+        </Card>
+      )}
+
+      {/* Archived Gold section */}
+      {showGoldArchive && (
+        <Card className="flex flex-col">
+          <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-gray-100 dark:border-gray-700/60 bg-amber-50/40 dark:bg-amber-900/10">
+            <Coins size={13} className="text-amber-500 dark:text-amber-400" />
+            <h2 className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">Sold Golds</h2>
+            {archivedGoldTrades.length > 0 && (
+              <span className="ml-auto text-[11px] font-semibold text-amber-600 dark:text-amber-500">
+                {archivedGoldTrades.length} total
+              </span>
+            )}
+          </div>
+          <div className="divide-y divide-gray-50 dark:divide-gray-700/40">
+            {goldArchiveLoading ? (
+              <div className="flex flex-col divide-y divide-gray-50 dark:divide-gray-700/40">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-3 px-5 py-3 animate-pulse">
+                    <div className="h-9 w-9 rounded-xl bg-gray-100 dark:bg-gray-800 shrink-0" />
+                    <div className="flex-1 flex flex-col gap-1.5">
+                      <div className="h-3 w-32 rounded bg-gray-100 dark:bg-gray-800" />
+                      <div className="h-2.5 w-20 rounded bg-gray-100 dark:bg-gray-800" />
+                    </div>
+                  </div>
                 ))}
               </div>
-            )}
+            ) : archivedGoldTrades.length === 0 ? (
+              <p className="px-5 py-8 text-center text-sm text-gray-400 dark:text-gray-500">No sold gold trades.</p>
+            ) : (() => {
+              const { paginated: goldPaged, meta: goldMeta } = paginateLocally(archivedGoldTrades, goldArchivePage, 5)
+              return (
+                <>
+                  {goldPaged.map((tx) => (
+                    <div key={tx.id} className="flex items-center gap-3 px-5 py-3 opacity-75 group">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/30">
+                        <Coins size={15} className="text-amber-600 dark:text-amber-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{tx.description || 'Gold Trade'}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{formatDate(tx.date)}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          onClick={() => handleUnarchiveGold(tx.id)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
+                          title="Restore"
+                        >
+                          <RotateCcw size={13} />
+                        </button>
+                        <div className="flex flex-col items-end text-right">
+                          {tx.price_gold != null && <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Price: {Number(tx.price_gold).toLocaleString()} G</span>}
+                          {tx.cost_gold  != null && <span className="text-xs font-semibold text-red-500 dark:text-red-400">Cost: {Number(tx.cost_gold).toLocaleString()} G</span>}
+                          {tx.price_php != null && (
+                            <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium mt-0.5">
+                              ₱{(parseFloat(tx.price_php) - parseFloat(tx.cost_php ?? '0')).toLocaleString('en', { minimumFractionDigits: 2 })} profit
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {goldMeta.last_page > 1 && (
+                    <div className="px-5 py-3 border-t border-gray-50 dark:border-gray-700/40">
+                      <Pagination meta={goldMeta} onPageChange={setGoldArchivePage} />
+                    </div>
+                  )}
+                </>
+              )
+            })()}
           </div>
         </Card>
       )}
 
       <AccountModal open={modalOpen} onClose={() => setModalOpen(false)} onSubmit={handleSubmit} account={editing} />
 
+      {/* Type picker modal */}
+      <Modal open={showTypePicker} onClose={() => setShowTypePicker(false)} title="Add Transaction" size="sm">
+        <div className="flex flex-col gap-3">
+          <button
+            onClick={() => { setShowTypePicker(false); openCreate() }}
+            className="flex items-center gap-4 rounded-xl border border-indigo-100 dark:border-indigo-900/40 bg-indigo-50/60 dark:bg-indigo-900/10 px-5 py-4 text-left hover:bg-indigo-100/60 dark:hover:bg-indigo-900/20 transition-colors"
+          >
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 dark:bg-indigo-900/40">
+              <User className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">Account</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Track an account sale with gold pricing</p>
+            </div>
+          </button>
+          <button
+            onClick={openGoldModal}
+            className="flex items-center gap-4 rounded-xl border border-amber-100 dark:border-amber-900/40 bg-amber-50/60 dark:bg-amber-900/10 px-5 py-4 text-left hover:bg-amber-100/60 dark:hover:bg-amber-900/20 transition-colors"
+          >
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/40">
+              <Coins className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">Gold</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Record a gold sale with direct PHP values</p>
+            </div>
+          </button>
+        </div>
+      </Modal>
+
+      {/* Gold form modal */}
+      <Modal open={showGoldModal} onClose={() => setShowGoldModal(false)} title="Add Gold" size="sm">
+        <div className="flex flex-col gap-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Description</label>
+            <input
+              type="text"
+              value={goldDesc}
+              onChange={(e) => setGoldDesc(e.target.value)}
+              placeholder="Optional"
+              className="w-full rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Price (G)</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={formatWithCommas(goldPrice)}
+                onChange={(e) => handleAmountInput(e.target.value, setGoldPrice)}
+                placeholder="e.g. 1,000,000"
+                className="w-full rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Cost (G)</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={formatWithCommas(goldCost)}
+                onChange={(e) => handleAmountInput(e.target.value, setGoldCost)}
+                placeholder="e.g. 1,000,000"
+                className="w-full rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Date</label>
+            <input
+              type="date"
+              value={goldDate}
+              onChange={(e) => setGoldDate(e.target.value)}
+              className="w-full rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400"
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-1">
+            <Button variant="secondary" size="sm" onClick={() => setShowGoldModal(false)}>Cancel</Button>
+            <Button
+              size="sm"
+              icon={<Coins className="h-3.5 w-3.5" />}
+              onClick={handleGoldSubmit}
+              disabled={goldSubmitting || !goldPrice || !goldCost}
+            >
+              {goldSubmitting ? 'Saving…' : 'Add Gold'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Transactions modal */}
+      <Modal open={showTxModal} onClose={() => setShowTxModal(false)} title="Business Transactions" size="xl">
+        {(() => {
+          const { paginated: txPaged, meta: txMeta } = paginateLocally(bizTxs, txPage, 10)
+          return (
+            <div className="flex flex-col gap-0 -mx-6 -my-5">
+              {bizTxLoading ? (
+                <div className="flex flex-col divide-y divide-gray-50 dark:divide-gray-700/40">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="flex items-center gap-3 px-6 py-3.5 animate-pulse">
+                      <div className="h-9 w-9 rounded-xl bg-gray-100 dark:bg-gray-800 shrink-0" />
+                      <div className="flex-1 flex flex-col gap-1.5">
+                        <div className="h-3 w-32 rounded bg-gray-100 dark:bg-gray-800" />
+                        <div className="h-2.5 w-20 rounded bg-gray-100 dark:bg-gray-800" />
+                      </div>
+                      <div className="h-4 w-16 rounded bg-gray-100 dark:bg-gray-800" />
+                    </div>
+                  ))}
+                </div>
+              ) : bizTxs.length === 0 ? (
+                <p className="px-6 py-12 text-center text-sm text-gray-400 dark:text-gray-500">No transactions yet.</p>
+              ) : (
+                <>
+                  <div className="flex flex-col divide-y divide-gray-50 dark:divide-gray-700/40">
+                    {txPaged.map((tx) => {
+                      const isIncome = isBusinessIncome(tx)
+                      const color    = BIZ_TYPE_COLORS[tx.type] ?? '#14b8a6'
+                      return (
+                        <div key={tx.id} className="flex items-center gap-3 px-6 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+                          <div
+                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white text-xs font-bold shadow-sm"
+                            style={{ backgroundColor: color }}
+                          >
+                            {BIZ_TYPE_LABELS[tx.type]?.charAt(0) ?? '?'}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">
+                              {tx.description || BIZ_TYPE_LABELS[tx.type]}
+                            </p>
+                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{formatDate(tx.date)}</p>
+                          </div>
+                          <div className="flex flex-col items-end shrink-0">
+                            <span className={['text-sm font-bold', isIncome ? 'text-teal-600 dark:text-teal-400' : 'text-red-500 dark:text-red-400'].join(' ')}>
+                              {isIncome ? '+' : '−'}<Amt value={formatCurrency(tx.amount)} />
+                            </span>
+                            <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500 mt-0.5">
+                              {BIZ_TYPE_LABELS[tx.type]}
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <div className="px-6 py-3 border-t border-gray-50 dark:border-gray-700/40">
+                    <Pagination meta={txMeta} onPageChange={setTxPage} />
+                  </div>
+                </>
+              )}
+            </div>
+          )
+        })()}
+      </Modal>
+
+      <ConfirmDialog open={!!archivePendingTarget} onClose={() => setArchivePendingTarget(null)} onConfirm={handleArchivePending} loading={archivingPending}
+        title="Mark as Sold" message="Mark this gold trade as sold?" confirmLabel="Mark as Sold" />
+
+      <ConfirmDialog open={!!deletePendingTarget} onClose={() => setDeletePendingTarget(null)} onConfirm={handleDeletePending} loading={deletingPending}
+        title="Remove Pending Trade" message="Remove this pending gold trade? This cannot be undone." confirmLabel="Remove" />
+
       <ConfirmDialog open={!!archiveTarget} onClose={() => setArchiveTarget(null)} onConfirm={handleArchive} loading={archiving}
-        title="Archive Account" message={`Archive "${archiveTarget?.email}"? You can restore it anytime.`} confirmLabel="Archive" />
+        title="Mark as Sold" message={`Mark "${archiveTarget?.email}" as sold? You can restore it anytime.`} confirmLabel="Mark as Sold" />
 
       <ConfirmDialog open={!!unarchiveTarget} onClose={() => setUnarchiveTarget(null)} onConfirm={handleUnarchive} loading={unarchiving}
         title="Restore Account" message={`Restore "${unarchiveTarget?.email}" back to active accounts?`} confirmLabel="Restore" />

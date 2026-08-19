@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
-import { ChevronDown, ChevronRight, Wallet, Gamepad2, Briefcase, FolderOpen, PanelLeftClose, PanelLeftOpen, BarChart2 } from 'lucide-react'
+import { ChevronDown, ChevronRight, Wallet, Gamepad2, Briefcase, FolderOpen, PanelLeftClose, PanelLeftOpen, BarChart2, ScrollText } from 'lucide-react'
+import { useAuth } from '@/context/AuthContext'
 
-type SectionVariant = 'master' | 'default' | 'business' | 'rucoy' | 'reports'
+type SectionVariant = 'master' | 'default' | 'business' | 'rucoy' | 'reports' | 'logs'
 
 const SECTION_COLORS: Record<SectionVariant, {
   icon: string
@@ -46,6 +47,13 @@ const SECTION_COLORS: Record<SectionVariant, {
     activeBorder: 'border-sky-500 dark:border-sky-400',
     activeText: 'text-sky-700 dark:text-sky-300',
   },
+  logs: {
+    icon: 'text-slate-600 dark:text-slate-400',
+    iconBg: 'bg-slate-100 dark:bg-slate-800',
+    activeBg: 'bg-slate-50 dark:bg-slate-800/40',
+    activeBorder: 'border-slate-500 dark:border-slate-400',
+    activeText: 'text-slate-700 dark:text-slate-300',
+  },
 }
 
 const SECTIONS = [
@@ -83,7 +91,7 @@ const SECTIONS = [
       { to: '/rucoy', label: 'Summary', end: true },
       { to: '/rucoy/golds', label: 'Golds', end: false },
       { to: '/rucoy/trades', label: 'Trades', end: false },
-      { to: '/rucoy/accounts', label: 'Accounts', end: false },
+      { to: '/rucoy/accounts', label: 'Transactions', end: false },
       { to: '/rucoy/calculator', label: 'Gold Calculator', end: false },
     ],
   },
@@ -107,12 +115,23 @@ const SECTIONS = [
     items: [
       { to: '/master', label: 'Overview', end: true },
       { to: '/master/savings', label: 'Savings', end: false },
+      { to: '/master/balance', label: 'Balance', end: false },
+    ],
+  },
+  {
+    id: 'logs',
+    label: 'Logs',
+    icon: ScrollText,
+    variant: 'logs' as SectionVariant,
+    basePath: '/logs',
+    items: [
+      { to: '/logs', label: 'Activity', end: true },
     ],
   },
 ]
 
 function isUnderBasePath(pathname: string, basePath: string) {
-  if (basePath === '/') return !pathname.startsWith('/rucoy') && !pathname.startsWith('/business') && !pathname.startsWith('/master') && !pathname.startsWith('/reports')
+  if (basePath === '/') return !pathname.startsWith('/rucoy') && !pathname.startsWith('/business') && !pathname.startsWith('/master') && !pathname.startsWith('/reports') && !pathname.startsWith('/logs')
   return pathname === basePath || pathname.startsWith(basePath + '/')
 }
 
@@ -125,6 +144,17 @@ interface SidebarProps {
 
 export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
   const { pathname } = useLocation()
+  const { user } = useAuth()
+
+  const visibleSections = user?.role === 'daily_only'
+    ? SECTIONS
+        .filter((s) => s.id === 'daily' || s.id === 'reports')
+        .map((s) =>
+          s.id === 'reports'
+            ? { ...s, items: s.items.filter((i) => i.to === '/reports/daily-expenses') }
+            : s
+        )
+    : SECTIONS
 
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem(COLLAPSED_KEY) === 'true')
 
@@ -133,6 +163,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
     SECTIONS.forEach((s) => { state[s.id] = isUnderBasePath(pathname, s.basePath) })
     return state
   })
+
 
   const toggle = (id: string) => setOpen((prev) => ({ ...prev, [id]: !prev[id] }))
 
@@ -161,24 +192,22 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
 
       {/* Brand */}
       <div className={['flex items-center border-b border-gray-100 dark:border-gray-700/60 shrink-0', collapsed ? 'md:justify-center md:py-3.5 md:px-0 gap-3 px-4 py-4' : 'gap-3 px-4 py-4'].join(' ')}>
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-indigo-600 shadow-sm shadow-indigo-400/30">
-          <Wallet className="h-4 w-4 text-white" />
-        </div>
+        <img src="/logo.svg" alt="Logo" className="h-8 w-8 shrink-0 rounded-xl" />
         <div className={['flex-1 min-w-0', collapsed ? 'md:hidden' : ''].join(' ')}>
-          <p className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">Mikey's Tracker</p>
-          <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">Finance & Gaming</p>
+          <p className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate capitalize">{user?.name ?? 'Tracker'}'s Tracker</p>
+          <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">{user?.role === 'daily_only' ? 'Daily Expenses' : 'Finance & Gaming'}</p>
         </div>
       </div>
 
       {/* Nav */}
       <nav className="flex flex-col gap-0.5 p-2 flex-1">
-        {SECTIONS.map((section) => {
+        {visibleSections.map((section) => {
           const Icon = section.icon
           const c = SECTION_COLORS[section.variant]
           const isOpen = open[section.id]
           const isActive = isUnderBasePath(pathname, section.basePath)
 
-          if (collapsed) {
+          if (collapsed && !mobileOpen) {
             return (
               <NavLink
                 key={section.id}

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Category;
 use App\Models\Transaction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,20 +12,24 @@ class DashboardController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $month = (int) $request->get('month', now()->month);
-        $year  = (int) $request->get('year', now()->year);
+        $userId = auth()->id();
+        $month  = (int) $request->get('month', now()->month);
+        $year   = (int) $request->get('year', now()->year);
 
-        $totalIncome = Transaction::where('type', 'income')
+        $totalIncome = Transaction::where('user_id', $userId)
+            ->where('type', 'income')
             ->whereMonth('date', $month)
             ->whereYear('date', $year)
             ->sum('amount');
 
-        $totalExpense = Transaction::where('type', 'expense')
+        $totalExpense = Transaction::where('user_id', $userId)
+            ->where('type', 'expense')
             ->whereMonth('date', $month)
             ->whereYear('date', $year)
             ->sum('amount');
 
         $recentTransactions = Transaction::with('category')
+            ->where('user_id', $userId)
             ->latest('date')
             ->latest('id')
             ->limit(5)
@@ -34,6 +37,7 @@ class DashboardController extends Controller
 
         $expenseByCategory = Transaction::select('category_id', DB::raw('SUM(amount) as total'))
             ->with('category:id,name,color,icon')
+            ->where('user_id', $userId)
             ->where('type', 'expense')
             ->whereMonth('date', $month)
             ->whereYear('date', $year)
@@ -48,6 +52,7 @@ class DashboardController extends Controller
                 'type',
                 DB::raw('SUM(amount) as total')
             )
+            ->where('user_id', $userId)
             ->whereYear('date', $year)
             ->groupBy('year', 'month', 'type')
             ->orderBy('month')

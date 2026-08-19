@@ -12,11 +12,15 @@ export interface BusinessTransactionPayload {
   account_id?: number | null
   price_rate?: number | null
   cost_rate?: number | null
+  price_gold?: number | null
+  cost_gold?: number | null
   php_rate?: number | null
   amount: number
   description?: string | null
   date: string
   notes?: string | null
+  price_php?: number | null
+  cost_php?: number | null
 }
 
 export const businessTransactionsApi = {

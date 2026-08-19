@@ -471,9 +471,11 @@ export default function BusinessTransactions() {
                       const isIncome = isBusinessIncome(tx)
                       const wasReclassified = !!reclassifiedMap[tx.id]
                       const originalTx = reclassifiedMap[tx.id]
-                      const color = wasReclassified ? '#9ca3af' : (TYPE_COLORS[tx.type] ?? '#14b8a6')
+                      const isGold = tx.type === 'gold' && !wasReclassified
+                      const isDimmed = isGold || wasReclassified
+                      const color = isDimmed ? '#9ca3af' : (TYPE_COLORS[tx.type] ?? '#14b8a6')
                       return (
-                        <div key={tx.id} className={['group flex items-center gap-3 px-6 py-3 transition-colors', wasReclassified ? 'opacity-50 bg-gray-50 dark:bg-gray-800/30' : 'hover:bg-gray-50 dark:hover:bg-gray-800/40'].join(' ')}>
+                        <div key={tx.id} className={['group flex items-center gap-3 px-6 py-3 transition-colors', isDimmed ? 'opacity-50 bg-gray-50 dark:bg-gray-800/30' : 'hover:bg-gray-50 dark:hover:bg-gray-800/40'].join(' ')}>
                           <div
                             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white text-xs font-bold shadow-sm"
                             style={{ backgroundColor: color }}
@@ -487,7 +489,7 @@ export default function BusinessTransactions() {
                             <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{formatDate(tx.date)}</p>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
-                            {wasReclassified ? (
+                            {wasReclassified && (
                               <button
                                 onClick={() => handleUndoReclassify(originalTx)}
                                 className="flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-2 py-1 text-[10px] font-semibold text-gray-600 hover:bg-gray-100 transition-all dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
@@ -495,7 +497,8 @@ export default function BusinessTransactions() {
                                 <RotateCcw size={11} />
                                 Undo
                               </button>
-                            ) : tx.type !== 'gold' && (
+                            )}
+                            {!isDimmed && (
                               <button
                                 onClick={() => setReclassifyTarget(tx)}
                                 title="Mark as Gold"
@@ -506,11 +509,11 @@ export default function BusinessTransactions() {
                               </button>
                             )}
                             <div className="flex flex-col items-end">
-                              <span className={['text-sm font-bold', wasReclassified ? 'text-gray-400 dark:text-gray-500' : isIncome ? 'text-teal-600 dark:text-teal-400' : 'text-red-500 dark:text-red-400'].join(' ')}>
+                              <span className={['text-sm font-bold', isDimmed ? 'text-gray-400 dark:text-gray-500' : isIncome ? 'text-teal-600 dark:text-teal-400' : 'text-red-500 dark:text-red-400'].join(' ')}>
                                 {isIncome ? '+' : '−'}<Amt value={formatCurrency(tx.amount)} />
                               </span>
                               <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500 mt-0.5">
-                                {wasReclassified ? 'Gold ✓' : TYPE_LABELS[tx.type]}
+                                {isDimmed ? 'Gold ✓' : TYPE_LABELS[tx.type]}
                               </span>
                             </div>
                           </div>

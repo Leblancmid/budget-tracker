@@ -118,23 +118,38 @@ export default function BusinessTransactions() {
     [transactions, archivedTxs]
   )
 
+  const buildPayload = (tx: BusinessTransaction, overrideType?: BusinessTransactionType): BusinessTransactionPayload => ({
+    type:        overrideType ?? tx.type,
+    action:      tx.action,
+    amount:      Number(tx.amount),
+    date:        tx.date,
+    description: tx.description,
+    notes:       tx.notes,
+    price_rate:  tx.price_rate != null ? Number(tx.price_rate) : null,
+    cost_rate:   tx.cost_rate  != null ? Number(tx.cost_rate)  : null,
+    php_rate:    tx.php_rate   != null ? Number(tx.php_rate)   : null,
+  })
+
   const handleReclassify = async () => {
     if (!reclassifyTarget) return
+    const original = reclassifyTarget
     setReclassifying(true)
     try {
-      await update(reclassifyTarget.id, {
-        type:      'gold',
-        action:    reclassifyTarget.action,
-        amount:    Number(reclassifyTarget.amount),
-        date:      reclassifyTarget.date,
-        description: reclassifyTarget.description,
-        notes:     reclassifyTarget.notes,
-        price_rate: reclassifyTarget.price_rate != null ? Number(reclassifyTarget.price_rate) : null,
-        cost_rate:  reclassifyTarget.cost_rate  != null ? Number(reclassifyTarget.cost_rate)  : null,
-        php_rate:   reclassifyTarget.php_rate   != null ? Number(reclassifyTarget.php_rate)   : null,
-      })
-      toast.success('Transaction reclassified as Gold.')
+      await update(original.id, buildPayload(original, 'gold'))
       setReclassifyTarget(null)
+      toast.success('Reclassified as Gold.', {
+        action: {
+          label: 'Undo',
+          onClick: async () => {
+            try {
+              await update(original.id, buildPayload(original))
+              toast.success('Reverted to ' + TYPE_LABELS[original.type] + '.')
+            } catch {
+              toast.error('Failed to undo.')
+            }
+          },
+        },
+      })
     } catch {
       toast.error('Failed to reclassify transaction.')
     } finally {

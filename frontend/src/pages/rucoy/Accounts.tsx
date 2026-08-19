@@ -410,7 +410,9 @@ export default function Accounts() {
       {error && <div className="text-red-500 text-sm text-center py-2">{error}</div>}
 
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2">
+
+        {/* Search */}
         <div className="relative flex-1 min-w-0 max-w-xs">
           <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
           <input
@@ -422,84 +424,73 @@ export default function Accounts() {
           />
         </div>
 
-        <button
-          onClick={() => {
-            setPriceSort(null)
-            setProfitSort((s) => s === null ? 'desc' : s === 'desc' ? 'asc' : null)
-            setPage(1)
-          }}
-          className={[
-            'flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors',
-            profitSort
-              ? 'border-emerald-400 bg-emerald-50 text-emerald-700 dark:border-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400'
-              : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
-          ].join(' ')}
-        >
-          {profitSort === 'desc' ? <ArrowDown size={13} /> : profitSort === 'asc' ? <ArrowUp size={13} /> : <ArrowUpDown size={13} />}
-          Profit
-        </button>
+        {/* Sort group */}
+        <div className="flex items-center divide-x divide-gray-200 dark:divide-gray-700 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-800">
+          <button
+            onClick={() => { setPriceSort(null); setProfitSort((s) => s === null ? 'desc' : s === 'desc' ? 'asc' : null); setPage(1) }}
+            className={['flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors', profitSort ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400' : 'text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700'].join(' ')}
+          >
+            {profitSort === 'desc' ? <ArrowDown size={13} /> : profitSort === 'asc' ? <ArrowUp size={13} /> : <ArrowUpDown size={13} />}
+            Profit
+          </button>
+          <button
+            onClick={() => { setProfitSort(null); setPriceSort((s) => s === null ? 'desc' : s === 'desc' ? 'asc' : null); setPage(1) }}
+            className={['flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors', priceSort ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400' : 'text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700'].join(' ')}
+          >
+            {priceSort === 'desc' ? <ArrowDown size={13} /> : priceSort === 'asc' ? <ArrowUp size={13} /> : <ArrowUpDown size={13} />}
+            Price
+          </button>
+        </div>
 
-        <button
-          onClick={() => {
-            setProfitSort(null)
-            setPriceSort((s) => s === null ? 'desc' : s === 'desc' ? 'asc' : null)
-            setPage(1)
-          }}
-          className={[
-            'flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors',
-            priceSort
-              ? 'border-indigo-400 bg-indigo-50 text-indigo-700 dark:border-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400'
-              : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
-          ].join(' ')}
-        >
-          {priceSort === 'desc' ? <ArrowDown size={13} /> : priceSort === 'asc' ? <ArrowUp size={13} /> : <ArrowUpDown size={13} />}
-          Price
-        </button>
+        {/* Archive toggles group */}
+        <div className="flex items-center divide-x divide-gray-200 dark:divide-gray-700 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-800">
+          <button
+            onClick={() => setShowArchive((v) => !v)}
+            title="Archived Accounts"
+            className={['flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors', showArchive ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400' : 'text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700'].join(' ')}
+          >
+            <Archive size={13} />
+            Accounts
+            {archivedAccounts.length > 0 && showArchive && (
+              <span className="rounded-full bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200 text-[10px] font-bold px-1.5">
+                {archivedAccounts.length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={toggleGoldArchive}
+            title="Archived Gold"
+            className={['flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors', showGoldArchive ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400' : 'text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700'].join(' ')}
+          >
+            <Coins size={13} />
+            Gold
+            {archivedGoldTrades.length > 0 && showGoldArchive && (
+              <span className="rounded-full bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200 text-[10px] font-bold px-1.5">
+                {archivedGoldTrades.length}
+              </span>
+            )}
+          </button>
+        </div>
 
-        <button
-          onClick={() => setShowArchive((v) => !v)}
-          className={[
-            'flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors',
-            showArchive
-              ? 'border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-600 dark:bg-amber-900/20 dark:text-amber-400'
-              : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
-          ].join(' ')}
-        >
-          <Archive size={13} />
-          Archived Accounts
-          {archivedAccounts.length > 0 && showArchive && (
-            <span className="ml-0.5 rounded-full bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200 text-[10px] font-bold px-1.5">
-              {archivedAccounts.length}
-            </span>
-          )}
-        </button>
+        {/* Utility actions — icon only */}
+        <div className="flex items-center divide-x divide-gray-200 dark:divide-gray-700 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-800">
+          <button
+            onClick={() => { setShowTxModal(true); setTxPage(1) }}
+            title="Transactions"
+            className="flex items-center px-2.5 py-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 dark:hover:text-gray-200 transition-colors"
+          >
+            <Receipt size={14} />
+          </button>
+          <button
+            onClick={handleExport}
+            title="Export CSV"
+            className="flex items-center px-2.5 py-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 dark:hover:text-gray-200 transition-colors"
+          >
+            <Download size={14} />
+          </button>
+        </div>
 
-        <button
-          onClick={toggleGoldArchive}
-          className={[
-            'flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors',
-            showGoldArchive
-              ? 'border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-600 dark:bg-amber-900/20 dark:text-amber-400'
-              : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
-          ].join(' ')}
-        >
-          <Coins size={13} />
-          Archived Gold
-          {archivedGoldTrades.length > 0 && showGoldArchive && (
-            <span className="ml-0.5 rounded-full bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200 text-[10px] font-bold px-1.5">
-              {archivedGoldTrades.length}
-            </span>
-          )}
-        </button>
-
-        <button
-          onClick={() => { setShowTxModal(true); setTxPage(1) }}
-          className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-500 hover:bg-gray-50 transition-colors dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
-        >
-          <Receipt size={13} />
-          Transactions
-        </button>
-        <Button variant="secondary" size="sm" icon={<Download className="h-3.5 w-3.5" />} onClick={handleExport}>Export</Button>
+        {/* Primary CTA */}
         <div className="ml-auto">
           <Button size="sm" icon={<Plus className="h-3.5 w-3.5" />} onClick={openAddTransaction}>Add Transaction</Button>
         </div>

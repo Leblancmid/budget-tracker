@@ -446,11 +446,11 @@ export default function Accounts() {
         <div className="flex items-center divide-x divide-gray-200 dark:divide-gray-700 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-800">
           <button
             onClick={() => setShowArchive((v) => !v)}
-            title="Archived Accounts"
+            title="Sold Accounts"
             className={['flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors', showArchive ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400' : 'text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700'].join(' ')}
           >
             <Archive size={13} />
-            Accounts
+            Sold Accounts
             {archivedAccounts.length > 0 && showArchive && (
               <span className="rounded-full bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200 text-[10px] font-bold px-1.5">
                 {archivedAccounts.length}
@@ -459,11 +459,11 @@ export default function Accounts() {
           </button>
           <button
             onClick={toggleGoldArchive}
-            title="Archived Gold"
+            title="Sold Golds"
             className={['flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors', showGoldArchive ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400' : 'text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700'].join(' ')}
           >
             <Coins size={13} />
-            Gold
+            Sold Golds
             {archivedGoldTrades.length > 0 && showGoldArchive && (
               <span className="rounded-full bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200 text-[10px] font-bold px-1.5">
                 {archivedGoldTrades.length}
@@ -658,7 +658,7 @@ export default function Accounts() {
         <Card className="flex flex-col">
           <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-gray-100 dark:border-gray-700/60 bg-amber-50/40 dark:bg-amber-900/10">
             <Archive size={13} className="text-amber-500 dark:text-amber-400" />
-            <h2 className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">Archived Accounts</h2>
+            <h2 className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">Sold Accounts</h2>
             {archivedAccounts.length > 0 && (
               <span className="ml-auto text-[11px] font-semibold text-amber-600 dark:text-amber-500">
                 {archivedAccounts.length} total
@@ -682,7 +682,7 @@ export default function Accounts() {
                 ))}
               </div>
             ) : archivedAccounts.length === 0 ? (
-              <p className="py-8 text-center text-sm text-gray-400 dark:text-gray-500">No archived accounts.</p>
+              <p className="py-8 text-center text-sm text-gray-400 dark:text-gray-500">No sold accounts.</p>
             ) : (() => {
               const { paginated: archPaged, meta: archMeta } = paginateLocally(archivedAccounts, archivePage, 6)
               return (
@@ -712,7 +712,7 @@ export default function Accounts() {
         <Card className="flex flex-col">
           <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-gray-100 dark:border-gray-700/60 bg-amber-50/40 dark:bg-amber-900/10">
             <Coins size={13} className="text-amber-500 dark:text-amber-400" />
-            <h2 className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">Archived Gold</h2>
+            <h2 className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">Sold Golds</h2>
             {archivedGoldTrades.length > 0 && (
               <span className="ml-auto text-[11px] font-semibold text-amber-600 dark:text-amber-500">
                 {archivedGoldTrades.length} total
@@ -733,7 +733,7 @@ export default function Accounts() {
                 ))}
               </div>
             ) : archivedGoldTrades.length === 0 ? (
-              <p className="px-5 py-8 text-center text-sm text-gray-400 dark:text-gray-500">No archived gold trades.</p>
+              <p className="px-5 py-8 text-center text-sm text-gray-400 dark:text-gray-500">No sold gold trades.</p>
             ) : (() => {
               const { paginated: goldPaged, meta: goldMeta } = paginateLocally(archivedGoldTrades, goldArchivePage, 5)
               return (
@@ -935,13 +935,13 @@ export default function Accounts() {
       </Modal>
 
       <ConfirmDialog open={!!archivePendingTarget} onClose={() => setArchivePendingTarget(null)} onConfirm={handleArchivePending} loading={archivingPending}
-        title="Archive Gold Trade" message="Archive this pending gold trade?" confirmLabel="Archive" />
+        title="Mark as Sold" message="Mark this gold trade as sold?" confirmLabel="Mark as Sold" />
 
       <ConfirmDialog open={!!deletePendingTarget} onClose={() => setDeletePendingTarget(null)} onConfirm={handleDeletePending} loading={deletingPending}
         title="Remove Pending Trade" message="Remove this pending gold trade? This cannot be undone." confirmLabel="Remove" />
 
       <ConfirmDialog open={!!archiveTarget} onClose={() => setArchiveTarget(null)} onConfirm={handleArchive} loading={archiving}
-        title="Archive Account" message={`Archive "${archiveTarget?.email}"? You can restore it anytime.`} confirmLabel="Archive" />
+        title="Mark as Sold" message={`Mark "${archiveTarget?.email}" as sold? You can restore it anytime.`} confirmLabel="Mark as Sold" />
 
       <ConfirmDialog open={!!unarchiveTarget} onClose={() => setUnarchiveTarget(null)} onConfirm={handleUnarchive} loading={unarchiving}
         title="Restore Account" message={`Restore "${unarchiveTarget?.email}" back to active accounts?`} confirmLabel="Restore" />

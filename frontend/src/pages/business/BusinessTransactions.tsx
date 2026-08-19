@@ -274,7 +274,7 @@ export default function BusinessTransactions() {
               ].join(' ')}
             >
               <Archive size={13} />
-              Archive
+              Sold
               {archivedTxs.length > 0 && (
                 <span className={['rounded-full px-1.5 py-0.5 text-[10px] font-bold', showArchive ? 'bg-amber-200 text-amber-800 dark:bg-amber-800 dark:text-amber-200' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'].join(' ')}>
                   {archivedTxs.length}
@@ -403,7 +403,7 @@ export default function BusinessTransactions() {
             <div className="flex items-center gap-2 px-5 py-3 bg-amber-50/60 dark:bg-amber-900/10">
               <Archive size={13} className="text-amber-500 dark:text-amber-400" />
               <h3 className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">
-                Archived Transactions
+                Sold Transactions
               </h3>
               <span className="ml-auto text-[11px] font-semibold text-amber-600 dark:text-amber-500">
                 {archivedTxs.length} total
@@ -426,7 +426,7 @@ export default function BusinessTransactions() {
                 ))}
               </div>
             ) : archivedTxs.length === 0 ? (
-              <p className="px-5 py-8 text-center text-sm text-gray-400 dark:text-gray-500">No archived transactions.</p>
+              <p className="px-5 py-8 text-center text-sm text-gray-400 dark:text-gray-500">No sold transactions.</p>
             ) : (() => {
               const { paginated: archPaged, meta: archMeta } = paginateLocally(archivedTxs, archiveTxPage, 6)
               return (

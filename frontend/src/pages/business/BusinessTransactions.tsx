@@ -44,7 +44,12 @@ export default function BusinessTransactions() {
 
   const accountTxs = useMemo(() => {
     const q = accSearch.toLowerCase()
-    let result = transactions.filter(tx => tx.archived_at == null && (!q || (tx.description ?? '').toLowerCase().includes(q)))
+    let result = transactions.filter(tx => {
+      if (tx.archived_at != null) return false
+      // Pending gold (no PHP values yet) stays hidden until confirmed via dropdown
+      if (tx.type === 'gold' && tx.price_php == null) return false
+      return !q || (tx.description ?? '').toLowerCase().includes(q)
+    })
     if (profitSort) {
       result = result.slice().sort((a, b) => {
         const pa = parseFloat(a.profit_php ?? '0')
@@ -98,6 +103,11 @@ export default function BusinessTransactions() {
 
   const openEdit       = (tx: BusinessTransaction) => { setDefaultType(tx.type === 'account' ? 'account' : null); setEditTarget(tx); setModalOpen(true) }
   const openAddAccount = () => { setDefaultType('account'); setEditTarget(null); setModalOpen(true) }
+
+  const handleGoldConfirm = async (trade: BusinessTransaction, data: BusinessTransactionPayload) => {
+    await update(trade.id, data)
+    toast.success('Gold transaction confirmed.')
+  }
 
   const handleExport = () => exportCsv('business-transactions', [...transactions, ...archivedTxs].map((tx) => ({
     date: tx.date, type: tx.type, description: tx.description ?? '', price_php: tx.price_php ?? '', cost_php: tx.cost_php ?? '', profit_php: tx.profit_php ?? '',
@@ -217,7 +227,7 @@ export default function BusinessTransactions() {
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-100 dark:bg-teal-900/40">
               <Briefcase className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
             </div>
-            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Accounts</h2>
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Transactions</h2>
             {accountTxs.length > 0 && (
               <span className="text-[11px] font-semibold bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300 px-2 py-0.5 rounded-full">
                 {accountTxs.length}
@@ -339,11 +349,8 @@ export default function BusinessTransactions() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-gray-800 dark:text-gray-100 truncate text-sm leading-snug">
-                          {tx.type === 'account' ? (tx.description ?? '—') : 'Gold & Item'}
+                          {tx.description || TYPE_LABELS[tx.type]}
                         </p>
-                        {tx.type !== 'account' && tx.description && (
-                          <p className="text-xs text-gray-400 dark:text-gray-500 truncate">{tx.description}</p>
-                        )}
                         <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{formatDate(tx.date)}</p>
                       </div>
 
@@ -535,6 +542,7 @@ export default function BusinessTransactions() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         onSubmit={handleSubmit}
+        onGoldConfirm={handleGoldConfirm}
         transaction={editTarget}
         defaultAction={null}
         defaultType={defaultType}

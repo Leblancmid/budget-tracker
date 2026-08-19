@@ -17,6 +17,8 @@ export interface BusinessTransactionPayload {
   description?: string | null
   date: string
   notes?: string | null
+  price_php?: number | null
+  cost_php?: number | null
 }
 
 export const businessTransactionsApi = {

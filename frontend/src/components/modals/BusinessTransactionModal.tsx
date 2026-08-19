@@ -192,9 +192,9 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, onGoldConfir
     setGoldTradeSearch('')
     setGoldDropdownOpen(false)
     set('description', tx.description ?? '')
-    // G amounts from Add Gold are stored in price_rate/cost_rate — fill into gold amount fields
-    if (tx.price_rate) setPriceGoldStr(String(parseFloat(tx.price_rate)))
-    if (tx.cost_rate)  setCostGoldStr(String(parseFloat(tx.cost_rate)))
+    // G amounts from Add Gold are stored in price_gold/cost_gold — fill into gold amount fields
+    if (tx.price_gold) setPriceGoldStr(String(parseFloat(tx.price_gold)))
+    if (tx.cost_gold)  setCostGoldStr(String(parseFloat(tx.cost_gold)))
     // Clear exchange rates — user must fill them in to confirm pricing
     setPriceRate('')
     setCostRate('')

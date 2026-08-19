@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { TradeModal } from '@/components/modals/TradeModal'
 import { useTrades } from '@/hooks/useTrades'
-import { tradesApi } from '@/api/rucoy'
+import { tradesApi, middlemanFeesApi } from '@/api/rucoy'
 import { toast } from '@/components/ui/Toast'
 import { formatCurrency, formatDateLong, formatTime } from '@/utils/format'
 import { exportCsv } from '@/utils/csv'
@@ -472,7 +472,16 @@ export default function Trades() {
         </Card>
       )}
 
-      <TradeModal open={modalOpen} onClose={() => setModalOpen(false)} onSubmit={handleSubmit} trade={editing} />
+      <TradeModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSubmit={handleSubmit}
+        onMmFee={async (amount, description) => {
+          await middlemanFeesApi.create(amount, description || undefined)
+          toast.success(`MM Fee of ${amount.toLocaleString()} G logged.`)
+        }}
+        trade={editing}
+      />
 
       <ConfirmDialog open={!!archiveTarget} onClose={() => setArchiveTarget(null)} onConfirm={handleArchive} loading={archiving}
         title="Archive Trade" message={`Archive trade #${archiveTarget?.id}? You can restore it anytime.`} confirmLabel="Archive" />

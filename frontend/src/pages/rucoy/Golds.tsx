@@ -3,6 +3,7 @@ import { Plus, Minus, Coins, TrendingUp, TrendingDown, AlertCircle, Search, Down
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Input } from '@/components/ui/Input'
 import { Pagination } from '@/components/ui/Pagination'
 import { GoldModal } from '@/components/modals/GoldModal'
@@ -10,21 +11,28 @@ import { useGolds } from '@/hooks/useGolds'
 import { useGoldLogs } from '@/hooks/useGoldLogs'
 import { useRucoyDashboard } from '@/hooks/useRucoyDashboard'
 import { useMiddlemanFees } from '@/hooks/useMiddlemanFees'
+import { useTrades } from '@/hooks/useTrades'
 import { goldsApi } from '@/api/rucoy'
+import type { GoldLog, Trade } from '@/types'
 import { toast } from '@/components/ui/Toast'
 import { formatWithCommas, formatDateLong, formatTime, paginateLocally } from '@/utils/format'
 import { exportCsv } from '@/utils/csv'
 
+type UnifiedEntry =
+  | { kind: 'log';   log: GoldLog; date: string }
+  | { kind: 'trade'; trade: Trade; date: string }
+
 export default function Golds() {
   const { totalGold, loading, error, refetch: refetchGolds, create } = useGolds()
   const { logs, loading: logsLoading, refetch: refetchLogs, cancel: cancelLog } = useGoldLogs()
+  const { trades, loading: tradesLoading } = useTrades()
   const { stats } = useRucoyDashboard()
   const { create: createFee } = useMiddlemanFees()
   const accountCost = Number(stats?.account_total_cost ?? 0)
   const accountsToPay = Number(stats?.accounts_to_pay ?? 0)
 
   const [search, setSearch]         = useState('')
-  const [typeFilter, setTypeFilter] = useState<'all' | 'add' | 'sell' | 'fee'>('all')
+  const [typeFilter, setTypeFilter] = useState<'all' | 'add' | 'sell' | 'fee' | 'kks' | 'cash'>('all')
   const [page, setPage]             = useState(1)
   const [addOpen, setAddOpen]       = useState(false)
   const [sellOpen, setSellOpen]     = useState(false)
@@ -97,22 +105,43 @@ export default function Golds() {
     }
   }
 
-  const filteredLogs = useMemo(() => {
-    let result = typeFilter === 'all' ? logs : logs.filter((l) => l.type === typeFilter)
-    if (search.trim()) {
-      const q = search.trim().toLowerCase()
-      result = result.filter((l) => (l.description ?? '').toLowerCase().includes(q))
+  const allEntries = useMemo((): UnifiedEntry[] => {
+    const logEntries: UnifiedEntry[] = logs.map((l) => ({ kind: 'log', log: l, date: l.created_at }))
+    const tradeEntries: UnifiedEntry[] = trades.map((t) => ({ kind: 'trade', trade: t, date: t.created_at }))
+    return [...logEntries, ...tradeEntries].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  }, [logs, trades])
+
+  const filteredEntries = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    return allEntries.filter((e) => {
+      const desc = e.kind === 'log' ? (e.log.description ?? '') : (e.trade.description ?? '')
+      if (q && !desc.toLowerCase().includes(q)) return false
+      if (typeFilter === 'all') return true
+      if (e.kind === 'log') return e.log.type === typeFilter
+      if (e.kind === 'trade') return e.trade.status === typeFilter
+      return true
+    })
+  }, [allEntries, typeFilter, search])
+
+  const { paginated: paginatedEntries, meta } = paginateLocally(filteredEntries, page, 10)
+
+
+  const [cancelTarget, setCancelTarget] = useState<number | null>(null)
+  const [cancelling, setCancelling]     = useState(false)
+
+  const handleCancelLog = async () => {
+    if (!cancelTarget) return
+    setCancelling(true)
+    try {
+      await cancelLog(cancelTarget)
+      await refetchGolds()
+      toast.success('Entry cancelled.')
+    } catch {
+      toast.error('Failed to cancel entry.')
+    } finally {
+      setCancelling(false)
+      setCancelTarget(null)
     }
-    return result
-  }, [logs, typeFilter, search])
-
-  const { paginated: paginatedLogs, meta } = paginateLocally(filteredLogs, page, 10)
-
-
-  const handleCancelLog = async (id: number) => {
-    await cancelLog(id)
-    await refetchGolds()
-    toast.success('Entry cancelled.')
   }
 
   const openSell  = () => { setSellOpen(true); setSellAmount(''); setSellDesc(''); setSellError('') }
@@ -277,9 +306,9 @@ export default function Golds() {
         <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
           <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
             Transaction History
-            {filteredLogs.length > 0 && (
+            {filteredEntries.length > 0 && (
               <span className="ml-2 text-[11px] font-semibold text-gray-400 dark:text-gray-500">
-                {filteredLogs.length} entries
+                {filteredEntries.length} entries
               </span>
             )}
           </h2>
@@ -303,6 +332,8 @@ export default function Golds() {
               <option value="add">Add</option>
               <option value="sell">Sell</option>
               <option value="fee">MM Fee</option>
+              <option value="kks">KKS Trade</option>
+              <option value="cash">Cash Trade</option>
             </select>
             <Button variant="secondary" size="sm" icon={<Download className="h-3.5 w-3.5" />} onClick={handleExport}>
               Export
@@ -310,7 +341,7 @@ export default function Golds() {
           </div>
         </div>
 
-        {logsLoading ? (
+        {logsLoading || tradesLoading ? (
           <div className="flex flex-col divide-y divide-gray-50 dark:divide-gray-700/40">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="flex items-center gap-4 px-5 py-3.5 animate-pulse">
@@ -321,13 +352,13 @@ export default function Golds() {
               </div>
             ))}
           </div>
-        ) : filteredLogs.length === 0 ? (
+        ) : filteredEntries.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800">
               <Coins className="h-4 w-4 text-gray-400 dark:text-gray-500" />
             </div>
             <p className="text-sm text-gray-400 dark:text-gray-500">
-              {search || typeFilter !== 'all' ? 'No results match your filters.' : 'No gold logs yet.'}
+              {search || typeFilter !== 'all' ? 'No results match your filters.' : 'No transactions yet.'}
             </p>
           </div>
         ) : (
@@ -344,52 +375,84 @@ export default function Golds() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50 dark:divide-gray-700/40">
-                  {paginatedLogs.map((log) => {
+                  {paginatedEntries.map((entry) => {
+                    if (entry.kind === 'trade') {
+                      const t = entry.trade
+                      const isKks = t.status === 'kks'
+                      return (
+                        <tr key={`trade-${t.id}`} className="hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+                          <td className="px-5 py-3.5">
+                            <span className={[
+                              'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold',
+                              isKks
+                                ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                                : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+                            ].join(' ')}>
+                              <Coins size={10} />
+                              {isKks ? 'KKS' : 'CASH'}
+                            </span>
+                          </td>
+                          <td className="px-5 py-3.5 text-gray-600 dark:text-gray-400 max-w-xs truncate">
+                            {t.description || <span className="text-gray-300 dark:text-gray-600">—</span>}
+                          </td>
+                          <td className="px-5 py-3.5 text-right font-bold whitespace-nowrap text-amber-600 dark:text-amber-400">
+                            {isKks ? `+${Number(t.amount).toLocaleString()} G` : <span className="text-gray-400 dark:text-gray-500">—</span>}
+                          </td>
+                          <td className="px-5 py-3.5 whitespace-nowrap">
+                            <span className="text-xs text-gray-400 dark:text-gray-500">{formatDateLong(t.created_at)}</span>
+                            <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">{formatTime(t.created_at)}</p>
+                          </td>
+                          <td className="px-4 py-3.5" />
+                        </tr>
+                      )
+                    }
+
+                    const log = entry.log
                     const cancelled = !!log.cancelled_at
                     return (
-                    <tr key={log.id} className={['transition-colors', cancelled ? 'opacity-50' : 'hover:bg-gray-50 dark:hover:bg-gray-800/40'].join(' ')}>
-                      <td className="px-5 py-3.5">
-                        <span className={[
-                          'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold',
+                      <tr key={`log-${log.id}`} className={['transition-colors', cancelled ? 'opacity-50' : 'hover:bg-gray-50 dark:hover:bg-gray-800/40'].join(' ')}>
+                        <td className="px-5 py-3.5">
+                          <span className={[
+                            'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold',
+                            cancelled
+                              ? 'bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500 line-through'
+                              : log.type === 'add'
+                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                : log.type === 'fee'
+                                  ? 'bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400'
+                                  : 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400',
+                          ].join(' ')}>
+                            {log.type === 'add' ? <TrendingUp size={10} /> : log.type === 'fee' ? <HandCoins size={10} /> : <TrendingDown size={10} />}
+                            {log.type === 'add' ? 'Add' : log.type === 'fee' ? 'MM Fee' : 'Sell'}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3.5 text-gray-600 dark:text-gray-400 max-w-xs truncate">
+                          {log.description || <span className="text-gray-300 dark:text-gray-600">—</span>}
+                        </td>
+                        <td className={[
+                          'px-5 py-3.5 text-right font-bold whitespace-nowrap',
                           cancelled
-                            ? 'bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500 line-through'
-                            : log.type === 'add'
-                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                              : log.type === 'fee'
-                                ? 'bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400'
-                                : 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400',
+                            ? 'text-gray-400 dark:text-gray-600'
+                            : log.type === 'sell' ? 'text-red-500 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400',
                         ].join(' ')}>
-                          {log.type === 'add' ? <TrendingUp size={10} /> : log.type === 'fee' ? <HandCoins size={10} /> : <TrendingDown size={10} />}
-                          {log.type === 'add' ? 'Add' : log.type === 'fee' ? 'MM Fee' : 'Sell'}
-                        </span>
-                      </td>
-                      <td className="px-5 py-3.5 text-gray-600 dark:text-gray-400 max-w-xs truncate">
-                        {log.description || <span className="text-gray-300 dark:text-gray-600">—</span>}
-                      </td>
-                      <td className={[
-                        'px-5 py-3.5 text-right font-bold whitespace-nowrap',
-                        cancelled
-                          ? 'text-gray-400 dark:text-gray-600'
-                          : log.type === 'sell' ? 'text-red-500 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400',
-                      ].join(' ')}>
-                        {cancelled ? '0' : (log.type === 'sell' ? '−' : '+') + Number(log.amount).toLocaleString()} G
-                      </td>
-                      <td className="px-5 py-3.5 whitespace-nowrap">
-                        <span className="text-xs text-gray-400 dark:text-gray-500">{formatDateLong(log.created_at)}</span>
-                        <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">{formatTime(log.created_at)}</p>
-                      </td>
-                      <td className="px-4 py-3.5">
-                        {!cancelled && (
-                          <button
-                            onClick={() => handleCancelLog(log.id)}
-                            title="Cancel entry"
-                            className="flex h-6 w-6 items-center justify-center rounded-md text-gray-300 hover:bg-red-50 hover:text-red-500 dark:text-gray-600 dark:hover:bg-red-900/20 dark:hover:text-red-400 transition-colors"
-                          >
-                            <span className="text-xs font-bold leading-none">✕</span>
-                          </button>
-                        )}
-                      </td>
-                    </tr>
+                          {cancelled ? '0' : (log.type === 'sell' ? '−' : '+') + Number(log.amount).toLocaleString()} G
+                        </td>
+                        <td className="px-5 py-3.5 whitespace-nowrap">
+                          <span className="text-xs text-gray-400 dark:text-gray-500">{formatDateLong(log.created_at)}</span>
+                          <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">{formatTime(log.created_at)}</p>
+                        </td>
+                        <td className="px-4 py-3.5">
+                          {!cancelled && (
+                            <button
+                              onClick={() => setCancelTarget(log.id)}
+                              title="Cancel entry"
+                              className="flex h-6 w-6 items-center justify-center rounded-md text-gray-300 hover:bg-red-50 hover:text-red-500 dark:text-gray-600 dark:hover:bg-red-900/20 dark:hover:text-red-400 transition-colors"
+                            >
+                              <span className="text-xs font-bold leading-none">✕</span>
+                            </button>
+                          )}
+                        </td>
+                      </tr>
                     )
                   })}
                 </tbody>
@@ -493,6 +556,16 @@ export default function Golds() {
           </div>
         </div>
       </Modal>
+
+      <ConfirmDialog
+        open={!!cancelTarget}
+        onClose={() => setCancelTarget(null)}
+        onConfirm={handleCancelLog}
+        loading={cancelling}
+        title="Cancel Entry"
+        message="Cancel this gold log entry? This will reverse its effect on your gold stash."
+        confirmLabel="Cancel Entry"
+      />
     </div>
   )
 }

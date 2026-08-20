@@ -178,7 +178,7 @@ export default function Accounts() {
   const [deleting, setDeleting] = useState(false)
 
   const { showArchive, setShowArchive, archivedItems: archivedAccounts, archiveLoading, fetchArchived, removeFromArchived } = useArchive(rucoyAccountsApi.getArchived)
-  const { transactions: bizTxs, loading: bizTxLoading, archive: archiveBizTx, unarchive: unarchiveBizTx, remove: removeBizTx } = useBusinessTransactions()
+  const { transactions: bizTxs, loading: bizTxLoading, create: createBizTx, archive: archiveBizTx, unarchive: unarchiveBizTx, remove: removeBizTx } = useBusinessTransactions()
 
   const [showGoldArchive, setShowGoldArchive]         = useState(false)
   const [archivedGoldTrades, setArchivedGoldTrades]   = useState<BusinessTransaction[]>([])
@@ -280,7 +280,7 @@ export default function Accounts() {
     setGoldSubmitting(true)
     try {
       const date = goldDate || new Date().toISOString().split('T')[0]
-      await businessTransactionsApi.create({
+      await createBizTx({
         type: 'gold',
         action: null,
         amount: 0.01,

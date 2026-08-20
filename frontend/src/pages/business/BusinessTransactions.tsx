@@ -97,9 +97,12 @@ export default function BusinessTransactions() {
     return d.getFullYear() === CUR_Y && d.getMonth() === CUR_M
   }), [archivedTxs])
 
-  const monthlyIncome  = useMemo(() => monthlyArchived.filter(tx => tx.price_php  != null).reduce((s, tx) => s + parseFloat(tx.price_php!),  0), [monthlyArchived])
-  const monthlyExpense = useMemo(() => monthlyArchived.filter(tx => tx.cost_php   != null).reduce((s, tx) => s + parseFloat(tx.cost_php!),   0), [monthlyArchived])
-  const monthlyProfit  = useMemo(() => monthlyArchived.filter(tx => tx.profit_php != null).reduce((s, tx) => s + parseFloat(tx.profit_php!), 0), [monthlyArchived])
+  const monthlyIncome  = useMemo(() => monthlyArchived.filter(tx => tx.type !== 'expense').reduce((s, tx) => s + parseFloat(tx.price_php ?? '0'), 0), [monthlyArchived])
+  const monthlyExpense = useMemo(() => monthlyArchived.reduce((s, tx) => {
+    if (tx.type === 'expense') return s + parseFloat(tx.amount ?? '0')
+    return s + parseFloat(tx.cost_php ?? '0')
+  }, 0), [monthlyArchived])
+  const monthlyProfit  = monthlyIncome - monthlyExpense
 
   const openEdit       = (tx: BusinessTransaction) => { setDefaultType(tx.type === 'account' ? 'account' : null); setEditTarget(tx); setModalOpen(true) }
   const openAddAccount = () => { setDefaultType('account'); setEditTarget(null); setModalOpen(true) }
@@ -383,7 +386,11 @@ export default function BusinessTransactions() {
                       }
                       <span className="text-xs text-gray-500 dark:text-gray-400">Profit</span>
                       <span className={['text-sm font-bold ml-auto', isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'].join(' ')}>
-                        <Amt value={formatCurrency(tx.amount)} />
+                        <Amt value={formatCurrency(
+                          tx.type === 'expense'
+                            ? parseFloat(tx.amount ?? '0')
+                            : parseFloat(tx.price_php ?? '0') - parseFloat(tx.cost_php ?? '0')
+                        )} />
                       </span>
                     </div>
                   </div>

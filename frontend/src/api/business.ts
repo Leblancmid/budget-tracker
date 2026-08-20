@@ -23,9 +23,13 @@ export interface BusinessTransactionPayload {
   cost_php?: number | null
 }
 
+export interface BusinessSummary { income: number; expense: number; profit: number; month: number; year: number }
+
 export const businessTransactionsApi = {
-  getAll:    () => api.get<BusinessTransaction[]>('/business/transactions').then((r) => r.data),
+  getAll:      () => api.get<BusinessTransaction[]>('/business/transactions').then((r) => r.data),
   getArchived: () => api.get<BusinessTransaction[]>('/business/transactions/archived').then((r) => r.data),
+  getSummary:  (month: number, year: number) =>
+    api.get<BusinessSummary>('/business/transactions/summary', { params: { month, year } }).then((r) => r.data),
   create:    (data: BusinessTransactionPayload) =>
     api.post<BusinessTransaction>('/business/transactions', data).then((r) => r.data),
   update:    (id: number, data: BusinessTransactionPayload) =>

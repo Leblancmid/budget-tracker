@@ -56,6 +56,7 @@ Route::prefix('v1')->group(function () {
             Route::apiResource('transactions', BusinessTransactionController::class)
                 ->except(['show', 'create', 'edit'])
                 ->parameters(['transactions' => 'businessTransaction']);
+            Route::get('transactions/summary',  [BusinessTransactionController::class, 'summary']);
             Route::get('transactions/archived', [BusinessTransactionController::class, 'archived']);
             Route::post('transactions/{businessTransaction}/archive', [BusinessTransactionController::class, 'archive']);
             Route::post('transactions/{businessTransaction}/unarchive', [BusinessTransactionController::class, 'unarchive']);

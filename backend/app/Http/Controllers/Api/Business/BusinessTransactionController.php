@@ -8,9 +8,33 @@ use App\Http\Requests\Business\UpdateBusinessTransactionRequest;
 use App\Models\BusinessTransaction;
 use App\Models\RucoyAccount;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class BusinessTransactionController extends Controller
 {
+    public function summary(Request $request): JsonResponse
+    {
+        $month = $request->integer('month', now()->month);
+        $year  = $request->integer('year', now()->year);
+
+        $txns    = BusinessTransaction::whereNotNull('archived_at')
+            ->whereMonth('archived_at', $month)
+            ->whereYear('archived_at', $year)
+            ->get();
+
+        $income  = (float) $txns->whereNotIn('type', ['expense'])->sum('price_php');
+        $expense = (float) $txns->whereNotIn('type', ['expense'])->sum('cost_php')
+                 + (float) $txns->where('type', 'expense')->sum('amount');
+
+        return response()->json([
+            'income'  => round($income, 2),
+            'expense' => round($expense, 2),
+            'profit'  => round($income - $expense, 2),
+            'month'   => $month,
+            'year'    => $year,
+        ]);
+    }
+
     public function index(): JsonResponse
     {
         return response()->json(

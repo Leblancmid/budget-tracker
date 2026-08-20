@@ -91,18 +91,13 @@ export default function BusinessTransactions() {
   const CUR_Y = _now.getFullYear()
   const CUR_LABEL = `${MONTHS[CUR_M]} ${CUR_Y}`
 
-  const monthlyArchived = useMemo(() => archivedTxs.filter(tx => {
-    if (!tx.archived_at) return false
-    const d = new Date(tx.archived_at)
-    return d.getFullYear() === CUR_Y && d.getMonth() === CUR_M
-  }), [archivedTxs])
+  const [summary, setSummary] = useState({ income: 0, expense: 0, profit: 0 })
 
-  const monthlyIncome  = useMemo(() => monthlyArchived.filter(tx => tx.type !== 'expense').reduce((s, tx) => s + parseFloat(tx.price_php ?? '0'), 0), [monthlyArchived])
-  const monthlyExpense = useMemo(() => monthlyArchived.reduce((s, tx) => {
-    if (tx.type === 'expense') return s + parseFloat(tx.amount ?? '0')
-    return s + parseFloat(tx.cost_php ?? '0')
-  }, 0), [monthlyArchived])
-  const monthlyProfit  = monthlyIncome - monthlyExpense
+  useEffect(() => {
+    businessTransactionsApi.getSummary(CUR_M + 1, CUR_Y).then(setSummary)
+  }, [archivedTxs.length]) // re-fetch whenever the archived list grows/shrinks
+
+  const { income: monthlyIncome, expense: monthlyExpense, profit: monthlyProfit } = summary
 
   const openEdit       = (tx: BusinessTransaction) => { setDefaultType(tx.type === 'account' ? 'account' : null); setEditTarget(tx); setModalOpen(true) }
   const openAddAccount = () => { setDefaultType('account'); setEditTarget(null); setModalOpen(true) }

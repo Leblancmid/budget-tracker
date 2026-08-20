@@ -66,26 +66,36 @@ class BusinessTransactionController extends Controller
 
     private function computePhpValues(BusinessTransaction $tx): void
     {
-        // Only account-type transactions derive values from the linked RucoyAccount
-        if ($tx->type !== 'account' || !$tx->account_id || !$tx->php_rate) {
+        if ($tx->type === 'account') {
+            if (!$tx->account_id || !$tx->php_rate) return;
+
+            $account = RucoyAccount::find($tx->account_id);
+            if (!$account) return;
+
+            $phpRate = (float) $tx->php_rate;
+
+            $pricePhp = ($account->price !== null && $tx->price_rate)
+                ? round(((float) $account->price / 1_000_000) * (float) $tx->price_rate * $phpRate, 2)
+                : null;
+
+            $costPhp = ($account->cost !== null && $tx->cost_rate)
+                ? round(((float) $account->cost / 1_000_000) * (float) $tx->cost_rate * $phpRate, 2)
+                : null;
+
+            $tx->price_php  = $pricePhp;
+            $tx->cost_php   = $costPhp;
+            $tx->profit_php = ($pricePhp !== null && $costPhp !== null)
+                ? round($pricePhp - $costPhp, 2)
+                : null;
+
+            $tx->save();
             return;
         }
 
-        $account = RucoyAccount::find($tx->account_id);
-        if (!$account) return;
+        // For gold/expense: price_php and cost_php come from the request; just derive profit_php
+        $pricePhp = $tx->price_php !== null ? (float) $tx->price_php : null;
+        $costPhp  = $tx->cost_php  !== null ? (float) $tx->cost_php  : null;
 
-        $phpRate = (float) $tx->php_rate;
-
-        $pricePhp = ($account->price !== null && $tx->price_rate)
-            ? round(((float) $account->price / 1_000_000) * (float) $tx->price_rate * $phpRate, 2)
-            : null;
-
-        $costPhp = ($account->cost !== null && $tx->cost_rate)
-            ? round(((float) $account->cost / 1_000_000) * (float) $tx->cost_rate * $phpRate, 2)
-            : null;
-
-        $tx->price_php  = $pricePhp;
-        $tx->cost_php   = $costPhp;
         $tx->profit_php = ($pricePhp !== null && $costPhp !== null)
             ? round($pricePhp - $costPhp, 2)
             : null;

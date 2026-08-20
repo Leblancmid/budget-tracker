@@ -20,12 +20,14 @@ class BusinessDashboardController extends Controller
         $income        = (float) (clone $base)->sum('price_php');
         $expense       = (float) (clone $base)->sum('cost_php');
         $initialProfit = $income - $expense;
-        $archivedBase    = BusinessTransaction::whereNotNull('archived_at')
+        $archivedAll     = BusinessTransaction::whereNotNull('archived_at')
             ->whereMonth('archived_at', $month)
-            ->whereYear('archived_at', $year);
-        $profit          = (float) (clone $archivedBase)->sum('profit_php');
-        $archivedIncome  = (float) (clone $archivedBase)->sum('price_php');
-        $archivedExpense = (float) (clone $archivedBase)->sum('cost_php');
+            ->whereYear('archived_at', $year)
+            ->get();
+        $archivedIncome  = (float) $archivedAll->whereNotIn('type', ['expense'])->sum('price_php');
+        $archivedExpense = (float) $archivedAll->whereNotIn('type', ['expense'])->sum('cost_php')
+                         + (float) $archivedAll->where('type', 'expense')->sum('amount');
+        $profit          = $archivedIncome - $archivedExpense;
 
         $recentTransactions = BusinessTransaction::latest('date')
             ->latest('id')
@@ -40,11 +42,11 @@ class BusinessDashboardController extends Controller
             ->orderByDesc('total')
             ->get();
 
-        $profitByType = BusinessTransaction::select('type', DB::raw('SUM(profit_php) as total'))
+        $profitByType = BusinessTransaction::select('type', DB::raw('SUM(price_php) - SUM(cost_php) as total'))
             ->whereNotNull('archived_at')
             ->whereMonth('archived_at', $month)
             ->whereYear('archived_at', $year)
-            ->whereNotNull('profit_php')
+            ->whereNotIn('type', ['expense'])
             ->groupBy('type')
             ->orderByDesc('total')
             ->get();

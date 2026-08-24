@@ -24,6 +24,20 @@ const EMPTY = (account: BalanceAccount, type: BalanceEntryType): BalanceEntryPay
   date:        todayISO(),
 })
 
+const PHP_ACCOUNTS: BalanceAccount[] = ['MARIBANK', 'MAYA', 'BANKO']
+
+const ACCOUNT_STYLES: Record<BalanceAccount, string> = {
+  PAYPAL:   'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-700',
+  BINANCE:  'border-yellow-500 bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-700',
+  MARIBANK: 'border-green-500 bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 dark:border-green-700',
+  MAYA:     'border-violet-500 bg-violet-50 text-violet-700 dark:bg-violet-900/20 dark:text-violet-400 dark:border-violet-700',
+  BANKO:    'border-orange-500 bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-700',
+}
+
+const ACCOUNT_LABELS: Record<BalanceAccount, string> = {
+  PAYPAL: 'PayPal', BINANCE: 'Binance', MARIBANK: 'Maribank', MAYA: 'Maya', BANKO: 'BanKo',
+}
+
 export function BalanceModal({ open, onClose, onSubmit, entry, defaultAccount = 'PAYPAL', defaultType = 'add' }: BalanceModalProps) {
   const [form, setForm]           = useState<BalanceEntryPayload>(EMPTY(defaultAccount, defaultType))
   const [amountStr, setAmountStr] = useState('')
@@ -69,7 +83,9 @@ export function BalanceModal({ open, onClose, onSubmit, entry, defaultAccount = 
     }
   }
 
-  const accountBtn = (acc: BalanceAccount, label: string, color: string) => (
+  const isPhp = PHP_ACCOUNTS.includes(form.account)
+
+  const accountBtn = (acc: BalanceAccount) => (
     <button
       key={acc}
       type="button"
@@ -77,11 +93,11 @@ export function BalanceModal({ open, onClose, onSubmit, entry, defaultAccount = 
       className={[
         'flex-1 rounded-lg border py-2 text-sm font-medium transition-colors',
         form.account === acc
-          ? color
+          ? ACCOUNT_STYLES[acc]
           : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
       ].join(' ')}
     >
-      {label}
+      {ACCOUNT_LABELS[acc]}
     </button>
   )
 
@@ -89,14 +105,21 @@ export function BalanceModal({ open, onClose, onSubmit, entry, defaultAccount = 
     <Modal open={open} onClose={onClose} title={entry ? 'Edit Entry' : 'Add / Sell Balance'}>
       <div className="flex flex-col gap-4">
 
-        {/* Account toggle */}
-        <div className="flex gap-2">
-          {accountBtn('PAYPAL',  'PayPal',  'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-700')}
-          {accountBtn('BINANCE', 'Binance', 'border-yellow-500 bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-700')}
+        {/* Account toggle — USD row */}
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2">
+            {accountBtn('PAYPAL')}
+            {accountBtn('BINANCE')}
+          </div>
+          <div className="flex gap-2">
+            {accountBtn('MARIBANK')}
+            {accountBtn('MAYA')}
+            {accountBtn('BANKO')}
+          </div>
         </div>
 
         <Input
-          label="Amount (USD)"
+          label={`Amount (${isPhp ? 'PHP' : 'USD'})`}
           type="text"
           inputMode="decimal"
           value={formatWithCommas(amountStr)}

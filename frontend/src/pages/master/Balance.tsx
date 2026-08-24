@@ -32,7 +32,22 @@ function calcBalance(entries: BalanceEntry[], account: BalanceAccount): number {
 const fmtUsd = (n: number) => `$${n.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 const fmtPhp = (n: number) => `₱${n.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
-const PER_PAGE = 10
+const PHP_ACCOUNTS: BalanceAccount[] = ['MARIBANK', 'MAYA', 'BANKO']
+const isPhpAccount = (acc: BalanceAccount) => PHP_ACCOUNTS.includes(acc)
+
+const ACCOUNT_LABELS: Record<BalanceAccount, string> = {
+  PAYPAL: 'PayPal', BINANCE: 'Binance', MARIBANK: 'Maribank', MAYA: 'Maya', BANKO: 'BanKo',
+}
+
+const ACCOUNT_BADGE: Record<BalanceAccount, string> = {
+  PAYPAL:   'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  BINANCE:  'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+  MARIBANK: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+  MAYA:     'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400',
+  BANKO:    'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+}
+
+const PER_PAGE = 5
 
 export default function Balance() {
   const { entries, loading, create, update, remove } = useBalanceEntries()
@@ -48,9 +63,14 @@ export default function Balance() {
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [page, setPage] = useState(1)
 
-  const paypalBalance  = useMemo(() => calcBalance(entries, 'PAYPAL'),  [entries])
-  const binanceBalance = useMemo(() => calcBalance(entries, 'BINANCE'), [entries])
-  const totalBalance   = paypalBalance + binanceBalance
+  const paypalBalance   = useMemo(() => calcBalance(entries, 'PAYPAL'),   [entries])
+  const binanceBalance  = useMemo(() => calcBalance(entries, 'BINANCE'),  [entries])
+  const maribankBalance = useMemo(() => calcBalance(entries, 'MARIBANK'), [entries])
+  const mayaBalance     = useMemo(() => calcBalance(entries, 'MAYA'),     [entries])
+  const bankoBalance    = useMemo(() => calcBalance(entries, 'BANKO'),    [entries])
+
+  const totalUSD = paypalBalance + binanceBalance
+  const totalPHP = maribankBalance + mayaBalance + bankoBalance
 
   const totalPages = Math.max(1, Math.ceil(entries.length / PER_PAGE))
   const safePage   = Math.min(page, totalPages)
@@ -110,6 +130,59 @@ export default function Balance() {
     }
   }
 
+  // Reusable account card
+  const AccountCard = ({
+    account, balance, headerClass, iconClass, icon, valueClass,
+  }: {
+    account: BalanceAccount
+    balance: number
+    headerClass: string
+    iconClass: string
+    icon: React.ReactNode
+    valueClass: string
+  }) => {
+    const isPhp = isPhpAccount(account)
+    return (
+      <Card className="flex flex-col overflow-hidden">
+        <div className={`flex items-center gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-700/60 ${headerClass}`}>
+          <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${iconClass}`}>
+            {icon}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">{ACCOUNT_LABELS[account]}</p>
+            <p className="text-[11px] text-gray-400 dark:text-gray-500">{isPhp ? 'PHP Balance' : 'USD Balance'}</p>
+          </div>
+        </div>
+        <div className="px-5 py-4 flex flex-col gap-3">
+          <div>
+            <p className={`text-2xl font-bold ${valueClass}`}>
+              <Amt value={isPhp ? fmtPhp(balance) : fmtUsd(balance)} />
+            </p>
+            {!isPhp && (
+              <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
+                <Amt value={fmtPhp(balance * phpRate)} /> PHP
+              </p>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => openAdd(account, 'add')}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white px-3 py-2 text-xs font-semibold transition-colors shadow-sm"
+            >
+              <Plus size={13} /> Add
+            </button>
+            <button
+              onClick={() => openAdd(account, 'sell')}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-red-500 hover:bg-red-600 active:bg-red-700 text-white px-3 py-2 text-xs font-semibold transition-colors shadow-sm"
+            >
+              <Minus size={13} /> Sell
+            </button>
+          </div>
+        </div>
+      </Card>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-4">
 
@@ -119,107 +192,104 @@ export default function Balance() {
         <div className="absolute -bottom-10 -left-6 h-32 w-32 rounded-full bg-white/[0.03]" />
 
         <div className="relative flex flex-col gap-4">
-          <div className="flex items-center justify-between gap-4">
+          {/* Two totals row */}
+          <div className="grid grid-cols-2 gap-6">
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-400/20">
                   <DollarSign className="h-3.5 w-3.5 text-emerald-400" />
                 </div>
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Total Balance</span>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">USD Balance</span>
               </div>
               <p className="text-3xl font-bold text-emerald-300">
-                <Amt value={fmtUsd(totalBalance)} />
+                <Amt value={fmtUsd(totalUSD)} />
               </p>
               <p className="text-xs text-slate-500 mt-1">
-                <Amt value={fmtPhp(totalBalance * phpRate)} /> PHP · PayPal + Binance
+                <Amt value={fmtPhp(totalUSD * phpRate)} /> PHP · PayPal + Binance
               </p>
             </div>
 
-            {/* Actions */}
-            <div className="flex flex-col gap-2 shrink-0">
-              <button
-                onClick={() => openAdd('PAYPAL', 'add')}
-                className="flex items-center gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white px-4 py-2.5 text-sm font-semibold transition-colors shadow-sm"
-              >
-                <Plus size={15} /> Add
-              </button>
-              <button
-                onClick={() => openAdd('PAYPAL', 'sell')}
-                className="flex items-center gap-2 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white/80 hover:text-white px-4 py-2.5 text-sm font-semibold transition-colors"
-              >
-                <Minus size={15} /> Sell
-              </button>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-violet-400/20">
+                  <Wallet className="h-3.5 w-3.5 text-violet-400" />
+                </div>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">PHP Balance</span>
+              </div>
+              <p className="text-3xl font-bold text-violet-300">
+                <Amt value={fmtPhp(totalPHP)} />
+              </p>
+              <p className="text-xs text-slate-500 mt-1">Maribank + Maya + BanKo</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 pt-3 border-t border-white/10">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10">
-                <Wallet className="h-3.5 w-3.5 text-slate-300" />
+          {/* Sub-stats breakdown */}
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-3 border-t border-white/10">
+            {([
+              { acc: 'PAYPAL',   bal: paypalBalance,   color: 'text-blue-300'   },
+              { acc: 'BINANCE',  bal: binanceBalance,  color: 'text-yellow-300' },
+              { acc: 'MARIBANK', bal: maribankBalance, color: 'text-green-300'  },
+              { acc: 'MAYA',     bal: mayaBalance,     color: 'text-violet-300' },
+              { acc: 'BANKO',    bal: bankoBalance,    color: 'text-orange-300' },
+            ] as const).map(({ acc, bal, color }) => (
+              <div key={acc} className="flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10 shrink-0">
+                  <DollarSign className="h-3.5 w-3.5 text-slate-300" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">{ACCOUNT_LABELS[acc]}</p>
+                  <p className={`text-sm font-bold ${color}`}>
+                    <Amt value={isPhpAccount(acc) ? fmtPhp(bal) : fmtUsd(bal)} />
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">PayPal</p>
-                <p className="text-base font-bold text-blue-300"><Amt value={fmtUsd(paypalBalance)} /></p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10">
-                <DollarSign className="h-3.5 w-3.5 text-slate-300" />
-              </div>
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Binance</p>
-                <p className="text-base font-bold text-yellow-300"><Amt value={fmtUsd(binanceBalance)} /></p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>
 
       {/* Account cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-        {/* PayPal */}
-        <Card className="flex flex-col overflow-hidden">
-          <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-700/60 bg-blue-50/60 dark:bg-blue-900/10">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40">
-              <Wallet className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">PayPal</p>
-              <p className="text-[11px] text-gray-400 dark:text-gray-500">USD Balance</p>
-            </div>
-          </div>
-          <div className="px-5 py-5">
-            <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">
-              <Amt value={fmtUsd(paypalBalance)} />
-            </p>
-            <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-              <Amt value={fmtPhp(paypalBalance * phpRate)} /> PHP
-            </p>
-          </div>
-        </Card>
-
-        {/* Binance */}
-        <Card className="flex flex-col overflow-hidden">
-          <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-700/60 bg-yellow-50/60 dark:bg-yellow-900/10">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-yellow-100 dark:bg-yellow-900/40">
-              <DollarSign className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">Binance</p>
-              <p className="text-[11px] text-gray-400 dark:text-gray-500">USD Balance</p>
-            </div>
-          </div>
-          <div className="px-5 py-5">
-            <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-400">
-              <Amt value={fmtUsd(binanceBalance)} />
-            </p>
-            <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-              <Amt value={fmtPhp(binanceBalance * phpRate)} /> PHP
-            </p>
-          </div>
-        </Card>
-
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <AccountCard
+          account="PAYPAL"
+          balance={paypalBalance}
+          headerClass="bg-blue-50/60 dark:bg-blue-900/10"
+          iconClass="bg-blue-100 dark:bg-blue-900/40"
+          icon={<Wallet className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
+          valueClass="text-blue-700 dark:text-blue-400"
+        />
+        <AccountCard
+          account="BINANCE"
+          balance={binanceBalance}
+          headerClass="bg-yellow-50/60 dark:bg-yellow-900/10"
+          iconClass="bg-yellow-100 dark:bg-yellow-900/40"
+          icon={<DollarSign className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />}
+          valueClass="text-yellow-700 dark:text-yellow-400"
+        />
+        <AccountCard
+          account="MARIBANK"
+          balance={maribankBalance}
+          headerClass="bg-green-50/60 dark:bg-green-900/10"
+          iconClass="bg-green-100 dark:bg-green-900/40"
+          icon={<Wallet className="h-4 w-4 text-green-600 dark:text-green-400" />}
+          valueClass="text-green-700 dark:text-green-400"
+        />
+        <AccountCard
+          account="MAYA"
+          balance={mayaBalance}
+          headerClass="bg-violet-50/60 dark:bg-violet-900/10"
+          iconClass="bg-violet-100 dark:bg-violet-900/40"
+          icon={<Wallet className="h-4 w-4 text-violet-600 dark:text-violet-400" />}
+          valueClass="text-violet-700 dark:text-violet-400"
+        />
+        <AccountCard
+          account="BANKO"
+          balance={bankoBalance}
+          headerClass="bg-orange-50/60 dark:bg-orange-900/10"
+          iconClass="bg-orange-100 dark:bg-orange-900/40"
+          icon={<Wallet className="h-4 w-4 text-orange-600 dark:text-orange-400" />}
+          valueClass="text-orange-700 dark:text-orange-400"
+        />
       </div>
 
       {/* Exchange rate */}
@@ -270,7 +340,7 @@ export default function Balance() {
               <DollarSign className="h-6 w-6 text-gray-400 dark:text-gray-500" />
             </div>
             <p className="text-sm font-medium text-gray-700 dark:text-gray-300">No transactions yet.</p>
-            <p className="text-xs text-gray-400 dark:text-gray-500">Use the Add or Sell buttons above to record transactions.</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500">Use the Add or Sell buttons on each account card.</p>
           </div>
         ) : (
           <div className="overflow-x-auto scrollbar-thin">
@@ -286,48 +356,47 @@ export default function Balance() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 dark:divide-gray-700/40">
-                {paginated.map((e) => (
-                  <tr key={e.id} className="group hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
-                    <td className="px-5 py-3.5 whitespace-nowrap text-xs text-gray-400 dark:text-gray-500">{formatDate(e.date)}</td>
-                    <td className="px-5 py-3.5">
-                      <span className={[
-                        'rounded-full px-2.5 py-0.5 text-[11px] font-semibold',
-                        e.account === 'PAYPAL'
-                          ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                          : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-                      ].join(' ')}>
-                        {e.account === 'PAYPAL' ? 'PayPal' : 'Binance'}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <Badge variant={e.type === 'add' ? 'income' : 'expense'}>
-                        {e.type === 'add' ? 'Add' : 'Sell'}
-                      </Badge>
-                    </td>
-                    <td className="px-5 py-3.5 text-gray-600 dark:text-gray-400 max-w-xs truncate text-xs">
-                      {e.description ?? <span className="text-gray-300 dark:text-gray-600">—</span>}
-                    </td>
-                    <td className={['px-5 py-3.5 text-right font-bold whitespace-nowrap', e.type === 'add' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'].join(' ')}>
-                      {e.type === 'add' ? '+' : '−'}<Amt value={fmtUsd(parseFloat(e.amount))} />
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => openEdit(e)}
-                          className="rounded-lg p-1.5 text-gray-400 hover:bg-indigo-50 hover:text-indigo-600 transition-colors dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          onClick={() => setDeleteTarget(e)}
-                          className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors dark:hover:bg-red-900/20 dark:hover:text-red-400"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {paginated.map((e) => {
+                  const isPhp = isPhpAccount(e.account)
+                  const fmt = isPhp ? fmtPhp : fmtUsd
+                  return (
+                    <tr key={e.id} className="group hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+                      <td className="px-5 py-3.5 whitespace-nowrap text-xs text-gray-400 dark:text-gray-500">{formatDate(e.date)}</td>
+                      <td className="px-5 py-3.5">
+                        <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${ACCOUNT_BADGE[e.account]}`}>
+                          {ACCOUNT_LABELS[e.account]}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <Badge variant={e.type === 'add' ? 'income' : 'expense'}>
+                          {e.type === 'add' ? 'Add' : 'Sell'}
+                        </Badge>
+                      </td>
+                      <td className="px-5 py-3.5 text-gray-600 dark:text-gray-400 max-w-xs truncate text-xs">
+                        {e.description ?? <span className="text-gray-300 dark:text-gray-600">—</span>}
+                      </td>
+                      <td className={['px-5 py-3.5 text-right font-bold whitespace-nowrap', e.type === 'add' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'].join(' ')}>
+                        {e.type === 'add' ? '+' : '−'}<Amt value={fmt(parseFloat(e.amount))} />
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => openEdit(e)}
+                            className="rounded-lg p-1.5 text-gray-400 hover:bg-indigo-50 hover:text-indigo-600 transition-colors dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => setDeleteTarget(e)}
+                            className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
             {totalPages > 1 && (
@@ -354,7 +423,9 @@ export default function Balance() {
         onConfirm={handleDelete}
         loading={deleteLoading}
         title="Delete Entry"
-        message={`Delete this ${deleteTarget?.type} of ${fmtUsd(parseFloat(deleteTarget?.amount ?? '0'))}? This cannot be undone.`}
+        message={`Delete this ${deleteTarget?.type} of ${
+          deleteTarget ? (isPhpAccount(deleteTarget.account) ? fmtPhp : fmtUsd)(parseFloat(deleteTarget.amount)) : ''
+        }? This cannot be undone.`}
       />
     </div>
   )

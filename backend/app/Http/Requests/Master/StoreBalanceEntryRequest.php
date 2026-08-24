@@ -11,7 +11,7 @@ class StoreBalanceEntryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'account'     => 'required|in:PAYPAL,BINANCE',
+            'account'     => 'required|in:PAYPAL,BINANCE,MARIBANK,MAYA,BANKO',
             'type'        => 'required|in:add,sell',
             'description' => 'nullable|string|max:255',
             'amount'      => 'required|numeric|min:0.01',

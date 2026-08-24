@@ -114,7 +114,6 @@ const SECTIONS = [
     basePath: '/master',
     items: [
       { to: '/master', label: 'Overview', end: true },
-      { to: '/master/savings', label: 'Savings', end: false },
       { to: '/master/balance', label: 'Balance', end: false },
     ],
   },

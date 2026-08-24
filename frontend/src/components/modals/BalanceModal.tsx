@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { formatWithCommas, handleAmountInput, todayISO } from '@/utils/format'
 import { flattenApiErrors } from '@/utils/api'
+import { toast } from '@/components/ui/Toast'
 import type { BalanceAccount, BalanceEntry, BalanceEntryType } from '@/types'
 import type { BalanceEntryPayload } from '@/api/master'
 
@@ -26,6 +27,10 @@ const EMPTY = (account: BalanceAccount, type: BalanceEntryType): BalanceEntryPay
 
 const PHP_ACCOUNTS: BalanceAccount[] = ['MARIBANK', 'MAYA', 'BANKO']
 
+const ACCOUNT_LABELS: Record<BalanceAccount, string> = {
+  PAYPAL: 'PayPal', BINANCE: 'Binance', MEXC: 'MEXC', MARIBANK: 'Maribank', MAYA: 'Maya', BANKO: 'BanKo',
+}
+
 const ACCOUNT_STYLES: Record<BalanceAccount, string> = {
   PAYPAL:   'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-700',
   BINANCE:  'border-yellow-500 bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-700',
@@ -33,10 +38,6 @@ const ACCOUNT_STYLES: Record<BalanceAccount, string> = {
   MARIBANK: 'border-green-500 bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 dark:border-green-700',
   MAYA:     'border-violet-500 bg-violet-50 text-violet-700 dark:bg-violet-900/20 dark:text-violet-400 dark:border-violet-700',
   BANKO:    'border-orange-500 bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-700',
-}
-
-const ACCOUNT_LABELS: Record<BalanceAccount, string> = {
-  PAYPAL: 'PayPal', BINANCE: 'Binance', MEXC: 'MEXC', MARIBANK: 'Maribank', MAYA: 'Maya', BANKO: 'BanKo',
 }
 
 export function BalanceModal({ open, onClose, onSubmit, entry, defaultAccount = 'PAYPAL', defaultType = 'add' }: BalanceModalProps) {
@@ -79,12 +80,21 @@ export function BalanceModal({ open, onClose, onSubmit, entry, defaultAccount = 
     } catch (err: unknown) {
       const flat = flattenApiErrors(err)
       if (flat) setErrors(flat)
+      else toast.error('Failed to save entry. Please try again.')
     } finally {
       setLoading(false)
     }
   }
 
   const isPhp = PHP_ACCOUNTS.includes(form.account)
+  const accountLabel = ACCOUNT_LABELS[form.account]
+
+  // Title: dynamic for new entries, generic for edits
+  const title = entry
+    ? 'Edit Entry'
+    : form.type === 'add'
+      ? `Add to ${accountLabel}`
+      : `Sell from ${accountLabel}`
 
   const accountBtn = (acc: BalanceAccount) => (
     <button
@@ -103,22 +113,24 @@ export function BalanceModal({ open, onClose, onSubmit, entry, defaultAccount = 
   )
 
   return (
-    <Modal open={open} onClose={onClose} title={entry ? 'Edit Entry' : 'Add / Sell Balance'}>
+    <Modal open={open} onClose={onClose} title={title}>
       <div className="flex flex-col gap-4">
 
-        {/* Account toggle — USD row */}
-        <div className="flex flex-col gap-2">
-          <div className="flex gap-2">
-            {accountBtn('PAYPAL')}
-            {accountBtn('BINANCE')}
-            {accountBtn('MEXC')}
+        {/* Account picker — only shown when editing (new entries are locked to the clicked card) */}
+        {entry && (
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-2">
+              {accountBtn('PAYPAL')}
+              {accountBtn('BINANCE')}
+              {accountBtn('MEXC')}
+            </div>
+            <div className="flex gap-2">
+              {accountBtn('MARIBANK')}
+              {accountBtn('MAYA')}
+              {accountBtn('BANKO')}
+            </div>
           </div>
-          <div className="flex gap-2">
-            {accountBtn('MARIBANK')}
-            {accountBtn('MAYA')}
-            {accountBtn('BANKO')}
-          </div>
-        </div>
+        )}
 
         <Input
           label={`Amount (${isPhp ? 'PHP' : 'USD'})`}

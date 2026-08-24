@@ -20,7 +20,6 @@ function AdminRoute() {
 const Login               = lazy(() => import('@/pages/Login'))
 
 const MasterDashboard     = lazy(() => import('@/pages/master/MasterDashboard'))
-const Savings             = lazy(() => import('@/pages/master/Savings'))
 const Balance             = lazy(() => import('@/pages/master/Balance'))
 
 const RucoyDashboard      = lazy(() => import('@/pages/rucoy/RucoyDashboard'))
@@ -64,7 +63,6 @@ export default function App() {
 
                   <Route element={<AdminRoute />}>
                     <Route path="/master"          element={<Suspense fallback={<Loading />}><MasterDashboard /></Suspense>} />
-                    <Route path="/master/savings" element={<Suspense fallback={<Loading />}><Savings /></Suspense>} />
                     <Route path="/master/balance" element={<Suspense fallback={<Loading />}><Balance /></Suspense>} />
 
                     <Route path="/rucoy"              element={<Suspense fallback={<Loading />}><RucoyDashboard /></Suspense>} />

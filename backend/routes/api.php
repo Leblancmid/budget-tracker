@@ -46,7 +46,6 @@ Route::prefix('v1')->group(function () {
         // Master
         Route::prefix('master')->group(function () {
             Route::get('dashboard', [MasterDashboardController::class, 'index']);
-            Route::apiResource('savings', SavingController::class)->except(['show', 'create', 'edit']);
             Route::apiResource('balance-entries', BalanceEntryController::class)->except(['show', 'create', 'edit']);
         });
 

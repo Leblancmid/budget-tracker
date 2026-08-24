@@ -107,6 +107,7 @@ export default function Balance() {
       await create(data)
       toast.success('Entry added.')
     }
+    // Note: errors are thrown to BalanceModal which catches and displays them
   }
 
   const handleDelete = async () => {
@@ -146,40 +147,38 @@ export default function Balance() {
     const isPhp = isPhpAccount(account)
     return (
       <Card className="flex flex-col overflow-hidden">
-        <div className={`flex items-center gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-700/60 ${headerClass}`}>
-          <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${iconClass}`}>
+        <div className={`flex items-center gap-3 px-4 py-3.5 border-b border-gray-100 dark:border-gray-700/60 ${headerClass}`}>
+          <div className={`flex h-8 w-8 items-center justify-center rounded-lg shrink-0 ${iconClass}`}>
             {icon}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">{ACCOUNT_LABELS[account]}</p>
             <p className="text-[11px] text-gray-400 dark:text-gray-500">{isPhp ? 'PHP Balance' : 'USD Balance'}</p>
           </div>
-        </div>
-        <div className="px-5 py-4 flex flex-col gap-3">
-          <div>
-            <p className={`text-2xl font-bold ${valueClass}`}>
-              <Amt value={isPhp ? fmtPhp(balance) : fmtUsd(balance)} />
-            </p>
-            {!isPhp && (
-              <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-                <Amt value={fmtPhp(balance * phpRate)} /> PHP
-              </p>
-            )}
-          </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-1 shrink-0">
             <button
               onClick={() => openAdd(account, 'add')}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white px-3 py-2 text-xs font-semibold transition-colors shadow-sm"
+              className="flex items-center gap-1 rounded-md bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white px-2.5 py-1 text-[10px] font-semibold transition-colors"
             >
-              <Plus size={13} /> Add
+              <Plus size={10} /> Add
             </button>
             <button
               onClick={() => openAdd(account, 'sell')}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-red-500 hover:bg-red-600 active:bg-red-700 text-white px-3 py-2 text-xs font-semibold transition-colors shadow-sm"
+              className="flex items-center gap-1 rounded-md bg-red-500 hover:bg-red-600 active:bg-red-700 text-white px-2.5 py-1 text-[10px] font-semibold transition-colors"
             >
-              <Minus size={13} /> Sell
+              <Minus size={10} /> Sell
             </button>
           </div>
+        </div>
+        <div className="px-5 py-4">
+          <p className={`text-2xl font-bold ${valueClass}`}>
+            <Amt value={isPhp ? fmtPhp(balance) : fmtUsd(balance)} />
+          </p>
+          {!isPhp && (
+            <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
+              <Amt value={fmtPhp(balance * phpRate)} /> PHP
+            </p>
+          )}
         </div>
       </Card>
     )

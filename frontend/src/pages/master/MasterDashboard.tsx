@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { TrendingUp, Coins, DollarSign, PiggyBank, SlidersHorizontal, Wallet } from 'lucide-react'
+import { TrendingUp, Coins, DollarSign, SlidersHorizontal, Wallet } from 'lucide-react'
 import { MONTHS } from '@/utils/format'
 import { useMasterDashboard } from '@/hooks/useMasterDashboard'
 import { Card } from '@/components/ui/Card'
@@ -46,12 +46,11 @@ export default function MasterDashboard() {
 
   const now            = new Date()
   const curLabel       = `${MONTHS[now.getMonth()]} ${now.getFullYear()}`
-  const monthlyProfit  = stats?.monthly_profit  ?? 0
-  const savingsBalance = stats?.savings_balance  ?? 0
-  const balanceTotalUsd = stats?.balance_total   ?? 0
+  const monthlyProfit   = stats?.monthly_profit ?? 0
+  const balanceTotalUsd = stats?.balance_total  ?? 0
   const balanceTotalPhp = balanceTotalUsd * phpRate
 
-  const overallAmountPhp = goldPhp + phpAmount + savingsBalance + balanceTotalPhp
+  const overallAmountPhp = goldPhp + phpAmount + balanceTotalPhp
 
   if (loading) return (
     <div className="flex flex-col gap-4">
@@ -91,23 +90,23 @@ export default function MasterDashboard() {
           <div className="grid grid-cols-2 gap-3 pt-3 border-t border-white/10">
             <div className="flex items-center gap-2.5">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10">
-                <PiggyBank className="h-3.5 w-3.5 text-slate-300" />
-              </div>
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Savings</p>
-                <p className={['text-base font-bold', savingsBalance >= 0 ? 'text-slate-200' : 'text-red-400'].join(' ')}>
-                  <Amt value={formatCurrency(savingsBalance)} />
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10">
                 <Coins className="h-3.5 w-3.5 text-slate-300" />
               </div>
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Gold Stash</p>
                 <p className="text-base font-bold text-amber-400">
                   {rawCurrentGold.toLocaleString()} G
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10">
+                <Wallet className="h-3.5 w-3.5 text-slate-300" />
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Balance</p>
+                <p className="text-base font-bold text-emerald-400">
+                  <Amt value={`$${balanceTotalUsd.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
                 </p>
               </div>
             </div>
@@ -176,7 +175,7 @@ export default function MasterDashboard() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">Overall Amount</p>
-            <p className="text-[11px] text-gray-400 dark:text-gray-500">Gold + Account Cost + Savings + Balance</p>
+            <p className="text-[11px] text-gray-400 dark:text-gray-500">Gold + Account Cost + Balance</p>
           </div>
         </div>
         <div className="px-5 py-5 flex items-end justify-between gap-4">

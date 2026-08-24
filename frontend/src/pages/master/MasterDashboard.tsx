@@ -107,7 +107,7 @@ export default function MasterDashboard() {
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Balance</p>
                 <p className="text-base font-bold text-emerald-400">
-                  <Amt value={`$${balanceTotalUsd.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+                  <Amt value={`₱${balanceTotalPhp.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
                 </p>
               </div>
             </div>

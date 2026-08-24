@@ -46,11 +46,12 @@ export default function MasterDashboard() {
 
   const now            = new Date()
   const curLabel       = `${MONTHS[now.getMonth()]} ${now.getFullYear()}`
-  const monthlyProfit   = stats?.monthly_profit ?? 0
-  const balanceTotalUsd = stats?.balance_total  ?? 0
-  const balanceTotalPhp = balanceTotalUsd * phpRate
+  const monthlyProfit   = stats?.monthly_profit    ?? 0
+  const balanceTotalUsd = stats?.balance_usd_total ?? 0  // PayPal + Binance + MEXC
+  const balanceTotalPhp = stats?.balance_php_total ?? 0  // Maribank + Maya + BanKo (already PHP)
 
-  const overallAmountPhp = goldPhp + phpAmount + balanceTotalPhp
+  // overall = gold(PHP) + account cost(PHP) + USD accounts→PHP + PHP accounts
+  const overallAmountPhp = goldPhp + phpAmount + (balanceTotalUsd * phpRate) + balanceTotalPhp
 
   if (loading) return (
     <div className="flex flex-col gap-4">
@@ -189,7 +190,7 @@ export default function MasterDashboard() {
             <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
               <Amt value={`$${balanceTotalUsd.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
             </p>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Total Balance (USD)</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">PayPal + Binance + MEXC (USD)</p>
           </div>
         </div>
       </Card>

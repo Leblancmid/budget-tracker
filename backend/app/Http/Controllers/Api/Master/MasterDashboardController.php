@@ -49,18 +49,23 @@ class MasterDashboardController extends Controller
         $savingsWithdraw = (float) Saving::where('type', 'withdraw')->sum('amount');
         $savingsBalance  = $savingsDeposit - $savingsWithdraw;
 
-        // Balance (USD)
-        $balanceAdd   = (float) BalanceEntry::where('type', 'add')->sum('amount');
-        $balanceSell  = (float) BalanceEntry::where('type', 'sell')->sum('amount');
-        $balanceTotal = $balanceAdd - $balanceSell;
+        // Balance — split USD vs PHP accounts
+        $usdAccounts = ['PAYPAL', 'BINANCE', 'MEXC'];
+        $phpAccounts = ['MARIBANK', 'MAYA', 'BANKO'];
+
+        $balanceUsdTotal = (float) BalanceEntry::whereIn('account', $usdAccounts)->where('type', 'add')->sum('amount')
+                         - (float) BalanceEntry::whereIn('account', $usdAccounts)->where('type', 'sell')->sum('amount');
+
+        $balancePhpTotal = (float) BalanceEntry::whereIn('account', $phpAccounts)->where('type', 'add')->sum('amount')
+                         - (float) BalanceEntry::whereIn('account', $phpAccounts)->where('type', 'sell')->sum('amount');
 
         return response()->json([
-            'overall_profit'   => $overallProfit,
-            'monthly_profit'   => $monthlyProfit,
-            'gold_stash'       => $manualGold,
-            'total_price'      => $totalPrice,
-            'savings_balance'  => $savingsBalance,
-            'balance_total'    => $balanceTotal,
+            'overall_profit'    => $overallProfit,
+            'monthly_profit'    => $monthlyProfit,
+            'gold_stash'        => $manualGold,
+            'total_price'       => $totalPrice,
+            'balance_usd_total' => $balanceUsdTotal,
+            'balance_php_total' => $balancePhpTotal,
         ]);
     }
 }

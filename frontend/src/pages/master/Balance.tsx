@@ -71,7 +71,7 @@ export default function Balance() {
   const mayaBalance     = useMemo(() => calcBalance(entries, 'MAYA'),     [entries])
   const bankoBalance    = useMemo(() => calcBalance(entries, 'BANKO'),    [entries])
 
-  const totalUSD = paypalBalance + binanceBalance + mexcBalance
+  const totalUSD = paypalBalance + binanceBalance
   const totalPHP = maribankBalance + mayaBalance + bankoBalance
 
   const totalPages = Math.max(1, Math.ceil(entries.length / PER_PAGE))
@@ -206,7 +206,7 @@ export default function Balance() {
                 <Amt value={fmtUsd(totalUSD)} />
               </p>
               <p className="text-xs text-slate-500 mt-1">
-                <Amt value={fmtPhp(totalUSD * phpRate)} /> PHP · PayPal + Binance + MEXC
+                <Amt value={fmtPhp(totalUSD * phpRate)} /> PHP · PayPal + Binance
               </p>
             </div>
 

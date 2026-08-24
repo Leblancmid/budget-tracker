@@ -123,12 +123,12 @@ export interface BalanceEntry {
 }
 
 export interface MasterDashboardStats {
-  overall_profit: number
-  monthly_profit: number
-  gold_stash: number
-  total_price: number
-  savings_balance: number
-  balance_total: number
+  overall_profit:    number
+  monthly_profit:    number
+  gold_stash:        number
+  total_price:       number
+  balance_usd_total: number
+  balance_php_total: number
 }
 
 // ── Business ─────────────────────────────────────────────────────────────────

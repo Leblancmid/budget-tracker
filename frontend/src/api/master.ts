@@ -21,7 +21,7 @@ export const savingsApi = {
 }
 
 export interface BalanceEntryPayload {
-  account:     'PAYPAL' | 'BINANCE' | 'MARIBANK' | 'MAYA' | 'BANKO'
+  account:     'PAYPAL' | 'BINANCE' | 'MEXC' | 'MARIBANK' | 'MAYA' | 'BANKO'
   type:        'add' | 'sell'
   amount:      number
   description?: string | null

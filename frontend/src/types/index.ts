@@ -108,7 +108,7 @@ export interface Saving {
   updated_at: string
 }
 
-export type BalanceAccount = 'PAYPAL' | 'BINANCE' | 'MARIBANK' | 'MAYA' | 'BANKO'
+export type BalanceAccount = 'PAYPAL' | 'BINANCE' | 'MEXC' | 'MARIBANK' | 'MAYA' | 'BANKO'
 export type BalanceEntryType = 'add' | 'sell'
 
 export interface BalanceEntry {

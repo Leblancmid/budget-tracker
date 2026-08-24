@@ -29,13 +29,14 @@ const PHP_ACCOUNTS: BalanceAccount[] = ['MARIBANK', 'MAYA', 'BANKO']
 const ACCOUNT_STYLES: Record<BalanceAccount, string> = {
   PAYPAL:   'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-700',
   BINANCE:  'border-yellow-500 bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-700',
+  MEXC:     'border-cyan-500 bg-cyan-50 text-cyan-700 dark:bg-cyan-900/20 dark:text-cyan-400 dark:border-cyan-700',
   MARIBANK: 'border-green-500 bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 dark:border-green-700',
   MAYA:     'border-violet-500 bg-violet-50 text-violet-700 dark:bg-violet-900/20 dark:text-violet-400 dark:border-violet-700',
   BANKO:    'border-orange-500 bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-700',
 }
 
 const ACCOUNT_LABELS: Record<BalanceAccount, string> = {
-  PAYPAL: 'PayPal', BINANCE: 'Binance', MARIBANK: 'Maribank', MAYA: 'Maya', BANKO: 'BanKo',
+  PAYPAL: 'PayPal', BINANCE: 'Binance', MEXC: 'MEXC', MARIBANK: 'Maribank', MAYA: 'Maya', BANKO: 'BanKo',
 }
 
 export function BalanceModal({ open, onClose, onSubmit, entry, defaultAccount = 'PAYPAL', defaultType = 'add' }: BalanceModalProps) {
@@ -110,6 +111,7 @@ export function BalanceModal({ open, onClose, onSubmit, entry, defaultAccount = 
           <div className="flex gap-2">
             {accountBtn('PAYPAL')}
             {accountBtn('BINANCE')}
+            {accountBtn('MEXC')}
           </div>
           <div className="flex gap-2">
             {accountBtn('MARIBANK')}

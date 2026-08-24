@@ -36,12 +36,13 @@ const PHP_ACCOUNTS: BalanceAccount[] = ['MARIBANK', 'MAYA', 'BANKO']
 const isPhpAccount = (acc: BalanceAccount) => PHP_ACCOUNTS.includes(acc)
 
 const ACCOUNT_LABELS: Record<BalanceAccount, string> = {
-  PAYPAL: 'PayPal', BINANCE: 'Binance', MARIBANK: 'Maribank', MAYA: 'Maya', BANKO: 'BanKo',
+  PAYPAL: 'PayPal', BINANCE: 'Binance', MEXC: 'MEXC', MARIBANK: 'Maribank', MAYA: 'Maya', BANKO: 'BanKo',
 }
 
 const ACCOUNT_BADGE: Record<BalanceAccount, string> = {
   PAYPAL:   'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
   BINANCE:  'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+  MEXC:     'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400',
   MARIBANK: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
   MAYA:     'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400',
   BANKO:    'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
@@ -65,11 +66,12 @@ export default function Balance() {
 
   const paypalBalance   = useMemo(() => calcBalance(entries, 'PAYPAL'),   [entries])
   const binanceBalance  = useMemo(() => calcBalance(entries, 'BINANCE'),  [entries])
+  const mexcBalance     = useMemo(() => calcBalance(entries, 'MEXC'),     [entries])
   const maribankBalance = useMemo(() => calcBalance(entries, 'MARIBANK'), [entries])
   const mayaBalance     = useMemo(() => calcBalance(entries, 'MAYA'),     [entries])
   const bankoBalance    = useMemo(() => calcBalance(entries, 'BANKO'),    [entries])
 
-  const totalUSD = paypalBalance + binanceBalance
+  const totalUSD = paypalBalance + binanceBalance + mexcBalance
   const totalPHP = maribankBalance + mayaBalance + bankoBalance
 
   const totalPages = Math.max(1, Math.ceil(entries.length / PER_PAGE))
@@ -205,7 +207,7 @@ export default function Balance() {
                 <Amt value={fmtUsd(totalUSD)} />
               </p>
               <p className="text-xs text-slate-500 mt-1">
-                <Amt value={fmtPhp(totalUSD * phpRate)} /> PHP · PayPal + Binance
+                <Amt value={fmtPhp(totalUSD * phpRate)} /> PHP · PayPal + Binance + MEXC
               </p>
             </div>
 
@@ -224,10 +226,11 @@ export default function Balance() {
           </div>
 
           {/* Sub-stats breakdown */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-3 border-t border-white/10">
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 pt-3 border-t border-white/10">
             {([
               { acc: 'PAYPAL',   bal: paypalBalance,   color: 'text-blue-300'   },
               { acc: 'BINANCE',  bal: binanceBalance,  color: 'text-yellow-300' },
+              { acc: 'MEXC',     bal: mexcBalance,     color: 'text-cyan-300'   },
               { acc: 'MARIBANK', bal: maribankBalance, color: 'text-green-300'  },
               { acc: 'MAYA',     bal: mayaBalance,     color: 'text-violet-300' },
               { acc: 'BANKO',    bal: bankoBalance,    color: 'text-orange-300' },
@@ -265,6 +268,14 @@ export default function Balance() {
           iconClass="bg-yellow-100 dark:bg-yellow-900/40"
           icon={<DollarSign className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />}
           valueClass="text-yellow-700 dark:text-yellow-400"
+        />
+        <AccountCard
+          account="MEXC"
+          balance={mexcBalance}
+          headerClass="bg-cyan-50/60 dark:bg-cyan-900/10"
+          iconClass="bg-cyan-100 dark:bg-cyan-900/40"
+          icon={<DollarSign className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />}
+          valueClass="text-cyan-700 dark:text-cyan-400"
         />
         <AccountCard
           account="MARIBANK"

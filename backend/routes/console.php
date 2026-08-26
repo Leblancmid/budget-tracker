@@ -9,4 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 // Auto-export database daily at 2:00 AM
-Schedule::command('db:export')->dailyAt('02:00');
+Schedule::command('db:export --keep=2')->twiceDaily(2, 14);

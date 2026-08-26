@@ -149,6 +149,8 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, onGoldConfir
         setPriceRate(transaction.price_rate ? String(parseFloat(transaction.price_rate)) : '')
         setCostRate(transaction.cost_rate ? String(parseFloat(transaction.cost_rate)) : '')
         setPhpRate(transaction.php_rate ? String(parseFloat(transaction.php_rate)) : '')
+        setPriceGoldStr(transaction.price_gold ? String(parseFloat(transaction.price_gold)) : '')
+        setCostGoldStr(transaction.cost_gold ? String(parseFloat(transaction.cost_gold)) : '')
         setSelectedAccount(null)
       } else {
         const cat: Category = defaultType === 'account' ? 'account' : 'gold-item'

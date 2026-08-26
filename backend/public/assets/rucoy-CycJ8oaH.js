@@ -1,0 +1,1 @@
+var e={PHP:`₱`,USD:`$`,EUR:`€`};export{e as t};

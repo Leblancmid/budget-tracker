@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#6d28d9"/>
+      <stop offset="100%" stop-color="#4f46e5"/>
+    </linearGradient>
+  </defs>
+  <!-- Chart bars -->
+  <rect x="12" y="36" width="8" height="14" rx="2" fill="white" opacity="0.5"/>
+  <rect x="23" y="26" width="8" height="24" rx="2" fill="white" opacity="0.75"/>
+  <rect x="34" y="18" width="8" height="32" rx="2" fill="white"/>
+  <!-- Coin -->
+  <circle cx="49" cy="18" r="8" fill="#fbbf24"/>
+  <text x="49" y="22" text-anchor="middle" font-size="10" font-weight="bold" fill="#78350f">₱</text>
+</svg>

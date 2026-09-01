@@ -41,7 +41,7 @@ export default function Golds() {
   const [sellError, setSellError]   = useState('')
   const [selling, setSelling]       = useState(false)
 
-  type MmFeePeriod = 'today' | 'weekly' | 'monthly' | 'yearly' | 'total'
+  type MmFeePeriod = 'today' | 'last_month' | 'monthly' | 'yearly' | 'total'
   const [mmFeePeriod,   setMmFeePeriod]   = useState<MmFeePeriod>('monthly')
   const [mmFeeDropOpen, setMmFeeDropOpen] = useState(false)
   const mmFeeRef = useRef<HTMLDivElement>(null)
@@ -61,9 +61,9 @@ export default function Golds() {
       .filter((l) => {
         const d = new Date(l.created_at)
         if (mmFeePeriod === 'today')   return d.toDateString() === now.toDateString()
-        if (mmFeePeriod === 'weekly')  {
-          const start = new Date(now); start.setDate(now.getDate() - ((now.getDay() + 6) % 7)); start.setHours(0,0,0,0)
-          return d >= start
+        if (mmFeePeriod === 'last_month') {
+          const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+          return d.getMonth() === lastMonth.getMonth() && d.getFullYear() === lastMonth.getFullYear()
         }
         if (mmFeePeriod === 'monthly') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
         if (mmFeePeriod === 'yearly')  return d.getFullYear() === now.getFullYear()
@@ -74,7 +74,7 @@ export default function Golds() {
 
   const mmFeePeriodLabel: Record<MmFeePeriod, string> = {
     today:   new Date().toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' }),
-    weekly:  'This Week',
+    last_month: new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1).toLocaleDateString('en', { month: 'short', year: 'numeric' }),
     monthly: new Date().toLocaleDateString('en', { month: 'short', year: 'numeric' }),
     yearly:  String(new Date().getFullYear()),
     total:   'All Time',
@@ -261,7 +261,7 @@ export default function Golds() {
 
                 {mmFeeDropOpen && (
                   <div className="absolute bottom-full left-0 mb-2 z-20 min-w-[140px] rounded-xl border border-white/10 bg-slate-800 shadow-xl shadow-black/40 overflow-hidden">
-                    {(['today', 'weekly', 'monthly', 'yearly', 'total'] as MmFeePeriod[]).map((p) => (
+                    {(['today', 'last_month', 'monthly', 'yearly', 'total'] as MmFeePeriod[]).map((p) => (
                       <button
                         key={p}
                         type="button"
@@ -273,7 +273,7 @@ export default function Golds() {
                             : 'text-slate-400 hover:bg-white/5 hover:text-slate-200',
                         ].join(' ')}
                       >
-                        <span>{{ today: 'Today', weekly: 'This Week', monthly: 'This Month', yearly: 'This Year', total: 'All Time' }[p]}</span>
+                        <span>{{ today: 'Today', last_month: 'Last Month', monthly: 'This Month', yearly: 'This Year', total: 'All Time' }[p]}</span>
                         {p === mmFeePeriod && <span className="h-1.5 w-1.5 rounded-full bg-violet-400" />}
                       </button>
                     ))}

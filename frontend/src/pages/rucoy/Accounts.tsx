@@ -178,7 +178,7 @@ export default function Accounts() {
   const [deleting, setDeleting] = useState(false)
 
   const { showArchive, setShowArchive, archivedItems: archivedAccounts, archiveLoading, fetchArchived, removeFromArchived } = useArchive(rucoyAccountsApi.getArchived)
-  const { transactions: bizTxs, loading: bizTxLoading, create: createBizTx, archive: archiveBizTx, unarchive: unarchiveBizTx, remove: removeBizTx } = useBusinessTransactions()
+  const { transactions: bizTxs, loading: bizTxLoading, create: createBizTx, update: updateBizTx, archive: archiveBizTx, unarchive: unarchiveBizTx, remove: removeBizTx } = useBusinessTransactions()
 
   const [showGoldArchive, setShowGoldArchive]         = useState(false)
   const [archivedGoldTrades, setArchivedGoldTrades]   = useState<BusinessTransaction[]>([])
@@ -258,6 +258,7 @@ export default function Accounts() {
 
   const [showTypePicker, setShowTypePicker] = useState(false)
   const [showGoldModal, setShowGoldModal]   = useState(false)
+  const [goldEditTarget, setGoldEditTarget] = useState<BusinessTransaction | null>(null)
   const [goldDesc, setGoldDesc]             = useState('')
   const [goldPrice, setGoldPrice]           = useState('')
   const [goldCost, setGoldCost]             = useState('')
@@ -266,10 +267,25 @@ export default function Accounts() {
 
   const openAddTransaction = () => setShowTypePicker(true)
 
+  const closeGoldModal = () => {
+    setShowGoldModal(false)
+    setGoldEditTarget(null)
+  }
+
   const openGoldModal = () => {
+    setGoldEditTarget(null)
     setGoldDesc(''); setGoldPrice(''); setGoldCost('')
     setGoldDate(new Date().toISOString().split('T')[0])
     setShowTypePicker(false)
+    setShowGoldModal(true)
+  }
+
+  const openGoldEditModal = (tx: BusinessTransaction) => {
+    setGoldEditTarget(tx)
+    setGoldDesc(tx.description ?? '')
+    setGoldPrice(tx.price_gold != null ? String(parseFloat(tx.price_gold)) : '')
+    setGoldCost(tx.cost_gold != null ? String(parseFloat(tx.cost_gold)) : '')
+    setGoldDate(tx.date)
     setShowGoldModal(true)
   }
 
@@ -280,19 +296,27 @@ export default function Accounts() {
     setGoldSubmitting(true)
     try {
       const date = goldDate || new Date().toISOString().split('T')[0]
-      await createBizTx({
-        type: 'gold',
+      const payload = {
+        type: 'gold' as const,
         action: null,
         amount: 0.01,
         description: goldDesc || null,
         date,
         price_gold: price,
         cost_gold: cost,
-      })
-      setShowGoldModal(false)
-      toast.success('Gold transaction added — confirm pricing in Business → Transactions.')
+      }
+
+      if (goldEditTarget) {
+        await updateBizTx(goldEditTarget.id, payload)
+        toast.success('Gold trade updated.')
+      } else {
+        await createBizTx(payload)
+        toast.success('Gold transaction added — confirm pricing in Business → Transactions.')
+      }
+
+      closeGoldModal()
     } catch {
-      toast.error('Failed to add gold transaction.')
+      toast.error(goldEditTarget ? 'Failed to update gold transaction.' : 'Failed to add gold transaction.')
     } finally {
       setGoldSubmitting(false)
     }
@@ -613,6 +637,13 @@ export default function Accounts() {
                 <div className="flex items-center gap-2 shrink-0">
                   {/* Buttons — hover only */}
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+                    <button
+                      onClick={() => openGoldEditModal(tx)}
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                      title="Edit"
+                    >
+                      <Pencil size={13} />
+                    </button>
                     {tx.price_php != null && (
                       <button
                         onClick={() => setArchivePendingTarget(tx.id)}
@@ -812,7 +843,7 @@ export default function Accounts() {
       </Modal>
 
       {/* Gold form modal */}
-      <Modal open={showGoldModal} onClose={() => setShowGoldModal(false)} title="Add Gold" size="sm">
+      <Modal open={showGoldModal} onClose={closeGoldModal} title={goldEditTarget ? 'Edit Gold' : 'Add Gold'} size="sm">
         <div className="flex flex-col gap-4">
           <div>
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Description</label>
@@ -858,14 +889,14 @@ export default function Accounts() {
             />
           </div>
           <div className="flex justify-end gap-2 pt-1">
-            <Button variant="secondary" size="sm" onClick={() => setShowGoldModal(false)}>Cancel</Button>
+            <Button variant="secondary" size="sm" onClick={closeGoldModal}>Cancel</Button>
             <Button
               size="sm"
               icon={<Coins className="h-3.5 w-3.5" />}
               onClick={handleGoldSubmit}
               disabled={goldSubmitting || !goldPrice || !goldCost}
             >
-              {goldSubmitting ? 'Saving…' : 'Add Gold'}
+              {goldSubmitting ? 'Saving…' : goldEditTarget ? 'Save Changes' : 'Add Gold'}
             </Button>
           </div>
         </div>

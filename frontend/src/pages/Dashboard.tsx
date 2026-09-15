@@ -10,11 +10,11 @@ import { Amt } from '@/context/AmountVisibilityContext'
 export function Dashboard() {
   const { stats, month, year, loading, setMonth, setYear } = useDashboard()
 
-  const yearOptions   = buildYearOptions()
-  const totalIncome   = stats?.total_income  ?? 0
-  const totalExpense  = stats?.total_expense ?? 0
-  const net           = totalIncome - totalExpense
-  const netPositive   = net >= 0
+  const yearOptions = buildYearOptions()
+  const totalIncome = stats?.total_income ?? 0
+  const totalExpense = stats?.total_expense ?? 0
+  const net = totalIncome - totalExpense
+  const netPositive = net >= 0
 
   return (
     <div className="flex flex-col gap-6">
@@ -122,7 +122,7 @@ export function Dashboard() {
                   <div className="h-4 w-16 rounded bg-gray-100 dark:bg-gray-800" />
                 </div>
               ))
-            ) : (stats?.recent_transactions.length ?? 0) === 0 ? (
+            ) : (stats?.recent_transactions?.length ?? 0) === 0 ? (
               <p className="px-5 py-10 text-center text-sm text-gray-400 dark:text-gray-500">No transactions yet.</p>
             ) : (
               stats!.recent_transactions.slice(0, 5).map((tx) => (
@@ -171,7 +171,7 @@ export function Dashboard() {
                   <div className="h-2 rounded-full bg-gray-100 dark:bg-gray-800" />
                 </div>
               ))
-            ) : (stats?.expense_by_category.length ?? 0) === 0 ? (
+            ) : (stats?.expense_by_category?.length ?? 0) === 0 ? (
               <p className="py-8 text-center text-sm text-gray-400 dark:text-gray-500">No expenses recorded.</p>
             ) : (
               stats!.expense_by_category.map((item) => {
@@ -210,7 +210,7 @@ export function Dashboard() {
       </div>
 
       {/* Monthly Trend */}
-      {(stats?.monthly_trend.length ?? 0) > 0 && (
+      {(stats?.monthly_trend?.length ?? 0) > 0 && (
         <Card>
           <div className="px-5 py-3.5 border-b border-gray-100 dark:border-gray-700/60">
             <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Monthly Trend</h2>
@@ -228,7 +228,7 @@ export function Dashboard() {
               </thead>
               <tbody className="divide-y divide-gray-50 dark:divide-gray-700/40">
                 {Array.from({ length: 12 }, (_, mi) => {
-                  const m   = mi + 1
+                  const m = mi + 1
                   const inc = stats?.monthly_trend.find((t) => t.month === m && t.type === 'income')
                   const exp = stats?.monthly_trend.find((t) => t.month === m && t.type === 'expense')
                   if (!inc && !exp) return null

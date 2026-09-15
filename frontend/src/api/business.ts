@@ -15,6 +15,7 @@ export interface BusinessTransactionPayload {
   price_gold?: number | null
   cost_gold?: number | null
   php_rate?: number | null
+  cost_php_rate?: number | null
   amount: number
   description?: string | null
   date: string

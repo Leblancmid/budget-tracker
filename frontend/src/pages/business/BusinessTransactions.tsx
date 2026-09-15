@@ -135,9 +135,12 @@ export default function BusinessTransactions() {
     date:        tx.date,
     description: tx.description,
     notes:       tx.notes,
-    price_rate:  tx.price_rate != null ? Number(tx.price_rate) : null,
-    cost_rate:   tx.cost_rate  != null ? Number(tx.cost_rate)  : null,
-    php_rate:    tx.php_rate   != null ? Number(tx.php_rate)   : null,
+    price_rate:    tx.price_rate != null ? Number(tx.price_rate) : null,
+    cost_rate:     tx.cost_rate  != null ? Number(tx.cost_rate)  : null,
+    php_rate:      tx.php_rate   != null ? Number(tx.php_rate)   : null,
+    cost_php_rate: tx.cost_php_rate != null ? Number(tx.cost_php_rate) : null,
+    price_php:     tx.price_php  != null ? Number(tx.price_php)  : null,
+    cost_php:      tx.cost_php   != null ? Number(tx.cost_php)   : null,
   })
 
   const handleUndoReclassify = async (original: BusinessTransaction) => {

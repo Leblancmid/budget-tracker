@@ -46,7 +46,8 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, onGoldConfir
   const [dropdownOpen, setDropdownOpen]       = useState(false)
   const [priceRate, setPriceRate]             = useState('')
   const [costRate, setCostRate]               = useState('')
-  const [phpRate, setPhpRate]                 = useState('')
+  const [pricePhpRate, setPricePhpRate]       = useState('')
+  const [costPhpRate, setCostPhpRate]         = useState('')
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   // Gold trade dropdown state
@@ -101,23 +102,28 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, onGoldConfir
   const costGoldValue  = category === 'account' ? (selectedAccount?.cost  ?? null) : (parseFloat(costGoldStr)  || null)
   const priceRateNum   = parseFloat(priceRate) || 0
   const costRateNum    = parseFloat(costRate)  || 0
-  const pricePhp       = priceGoldValue != null && priceRateNum ? (priceGoldValue / 1_000_000) * priceRateNum : null
-  const costPhp        = costGoldValue  != null && costRateNum  ? (costGoldValue  / 1_000_000) * costRateNum  : null
-  const profitPhp      = pricePhp != null && costPhp != null ? pricePhp - costPhp : null
-  const phpRateNum     = parseFloat(phpRate) || 0
-  const priceInPhp     = pricePhp != null && phpRateNum ? pricePhp * phpRateNum : null
-  const costInPhp      = costPhp  != null && phpRateNum ? costPhp  * phpRateNum : null
-  const profitInPhp    = profitPhp != null && phpRateNum ? profitPhp * phpRateNum : null
+
+  // USD values
+  const priceUsd       = priceGoldValue != null && priceRateNum ? (priceGoldValue / 1_000_000) * priceRateNum : null
+  const costUsd        = costGoldValue  != null && costRateNum  ? (costGoldValue  / 1_000_000) * costRateNum  : null
+  const profitUsd      = priceUsd != null && costUsd != null ? priceUsd - costUsd : null
+
+  // PHP Rates & values
+  const pricePhpRateNum = parseFloat(pricePhpRate) || 0
+  const costPhpRateNum  = parseFloat(costPhpRate)  || 0
+  const priceInPhp     = priceUsd != null && pricePhpRateNum ? priceUsd * pricePhpRateNum : null
+  const costInPhp      = costUsd  != null && costPhpRateNum  ? costUsd  * costPhpRateNum  : null
+  const profitInPhp    = priceInPhp != null && costInPhp != null ? priceInPhp - costInPhp : null
 
   // Auto-set amount from formula
   useEffect(() => {
-    const computed = form.action === 'sell' ? pricePhp
-      : form.action === 'buy'  ? costPhp
-      : profitInPhp ?? profitPhp
+    const computed = form.action === 'sell' ? (priceInPhp ?? priceUsd)
+      : form.action === 'buy'  ? (costInPhp ?? costUsd)
+      : (profitInPhp ?? profitUsd)
     if (computed != null) {
       setForm((p) => ({ ...p, amount: Math.round(computed * 100) / 100 }))
     }
-  }, [form.action, pricePhp, costPhp, profitPhp, profitInPhp])
+  }, [form.action, priceUsd, costUsd, profitUsd, priceInPhp, costInPhp, profitInPhp])
 
   // Reset on open
   useEffect(() => {
@@ -141,6 +147,9 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, onGoldConfir
           price_rate: transaction.price_rate ? parseFloat(transaction.price_rate) : null,
           cost_rate: transaction.cost_rate ? parseFloat(transaction.cost_rate) : null,
           php_rate: transaction.php_rate ? parseFloat(transaction.php_rate) : null,
+          cost_php_rate: transaction.cost_php_rate ? parseFloat(transaction.cost_php_rate) : null,
+          price_php: transaction.price_php ? parseFloat(transaction.price_php) : null,
+          cost_php: transaction.cost_php ? parseFloat(transaction.cost_php) : null,
           amount: amt,
           description: transaction.description ?? '',
           date: transaction.date,
@@ -148,7 +157,12 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, onGoldConfir
         })
         setPriceRate(transaction.price_rate ? String(parseFloat(transaction.price_rate)) : '')
         setCostRate(transaction.cost_rate ? String(parseFloat(transaction.cost_rate)) : '')
-        setPhpRate(transaction.php_rate ? String(parseFloat(transaction.php_rate)) : '')
+        setPricePhpRate(transaction.php_rate ? String(parseFloat(transaction.php_rate)) : '')
+        setCostPhpRate(
+          transaction.cost_php_rate
+            ? String(parseFloat(transaction.cost_php_rate))
+            : (transaction.php_rate ? String(parseFloat(transaction.php_rate)) : '')
+        )
         setPriceGoldStr(transaction.price_gold ? String(parseFloat(transaction.price_gold)) : '')
         setCostGoldStr(transaction.cost_gold ? String(parseFloat(transaction.cost_gold)) : '')
         setSelectedAccount(null)
@@ -158,7 +172,8 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, onGoldConfir
         setSelectedAccount(null)
         setPriceRate('')
         setCostRate('')
-        setPhpRate('')
+        setPricePhpRate('')
+        setCostPhpRate('')
         setForm({ ...EMPTY(cat === 'account' ? 'account' : 'gold'), action: defaultAction ?? null })
       }
     }
@@ -200,7 +215,14 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, onGoldConfir
     // Clear exchange rates — user must fill them in to confirm pricing
     setPriceRate('')
     setCostRate('')
-    if (tx.php_rate)   setPhpRate(String(parseFloat(tx.php_rate)))
+    if (tx.php_rate) setPricePhpRate(String(parseFloat(tx.php_rate)))
+    if (tx.cost_php_rate) {
+      setCostPhpRate(String(parseFloat(tx.cost_php_rate)))
+    } else if (tx.php_rate) {
+      setCostPhpRate(String(parseFloat(tx.php_rate)))
+    } else {
+      setCostPhpRate('')
+    }
     setForm((p) => ({ ...p, date: tx.date }))
   }
 
@@ -226,16 +248,18 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, onGoldConfir
   const handleSubmit = async () => {
     if (!validate()) return
     setLoading(true)
-    const payload = category === 'account'
-      ? { ...form, account_id: selectedAccount?.id ?? null, price_rate: parseFloat(priceRate) || null, cost_rate: parseFloat(costRate) || null, php_rate: parseFloat(phpRate) || null }
-      : {
-          ...form,
-          price_rate: parseFloat(priceRate) || null,
-          cost_rate:  parseFloat(costRate)  || null,
-          php_rate:   parseFloat(phpRate)   || null,
-          price_php:  priceInPhp  ?? null,
-          cost_php:   costInPhp   ?? null,
-        }
+    const pPhpRate = parseFloat(pricePhpRate) || null
+    const cPhpRate = parseFloat(costPhpRate) || null
+    const payload: BusinessTransactionPayload = {
+      ...form,
+      account_id: category === 'account' ? (selectedAccount?.id ?? null) : null,
+      price_rate: parseFloat(priceRate) || null,
+      cost_rate:  parseFloat(costRate)  || null,
+      php_rate:   pPhpRate,
+      cost_php_rate: cPhpRate,
+      price_php:  priceInPhp != null ? Math.round(priceInPhp * 100) / 100 : null,
+      cost_php:   costInPhp  != null ? Math.round(costInPhp * 100) / 100 : null,
+    }
     try {
       if (selectedGoldTrade && onGoldConfirm) {
         await onGoldConfirm(selectedGoldTrade, payload)
@@ -251,7 +275,7 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, onGoldConfir
     }
   }
 
-  const fmtPHP = (v: number | null) =>
+  const fmtUSD = (v: number | null) =>
     v != null ? `$${v.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'
 
   const formulaRows = [
@@ -260,31 +284,39 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, onGoldConfir
       goldValue: priceGoldValue,
       goldStr: priceGoldStr,
       onGoldChange: setPriceGoldStr,
-      rateLabel: 'Price Rate ($)',
-      rateValue: priceRate,
-      onRateChange: setPriceRate,
-      resultLabel: 'Price ($)',
-      resultValue: fmtPHP(pricePhp),
-      resultPhp: priceInPhp,
-      resultColor: 'text-emerald-600 dark:text-emerald-400',
+      usdRateLabel: 'Price Rate ($)',
+      usdRateValue: priceRate,
+      onUsdRateChange: setPriceRate,
+      usdResultLabel: 'Price ($)',
+      usdResultValue: fmtUSD(priceUsd),
+      phpRateLabel: 'PHP Rate',
+      phpRateValue: pricePhpRate,
+      onPhpRateChange: setPricePhpRate,
+      phpResultLabel: 'Price (₱)',
+      phpResultValue: priceInPhp != null ? `₱${priceInPhp.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—',
+      color: 'text-emerald-600 dark:text-emerald-400',
     },
     {
       goldLabel: 'Cost (G)',
       goldValue: costGoldValue,
       goldStr: costGoldStr,
       onGoldChange: setCostGoldStr,
-      rateLabel: 'Cost Rate ($)',
-      rateValue: costRate,
-      onRateChange: setCostRate,
-      resultLabel: 'Cost ($)',
-      resultValue: fmtPHP(costPhp),
-      resultPhp: costInPhp,
-      resultColor: 'text-red-600 dark:text-red-400',
+      usdRateLabel: 'Cost Rate ($)',
+      usdRateValue: costRate,
+      onUsdRateChange: setCostRate,
+      usdResultLabel: 'Cost ($)',
+      usdResultValue: fmtUSD(costUsd),
+      phpRateLabel: 'PHP Rate',
+      phpRateValue: costPhpRate,
+      onPhpRateChange: setCostPhpRate,
+      phpResultLabel: 'Cost (₱)',
+      phpResultValue: costInPhp != null ? `₱${costInPhp.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—',
+      color: 'text-red-600 dark:text-red-400',
     },
   ]
 
   return (
-    <Modal open={open} onClose={onClose} title={transaction ? 'Edit Transaction' : 'Add Transaction'}>
+    <Modal open={open} onClose={onClose} title={transaction ? 'Edit Transaction' : 'Add Transaction'} size="xl">
       <div className="flex flex-col gap-4">
 
         {/* Category tabs */}
@@ -425,11 +457,11 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, onGoldConfir
 
         {/* Formula rows */}
         {formulaRows.map((row) => (
-          <div key={row.goldLabel} className="flex items-end gap-2">
-            <div className="flex-1">
-              <p className="mb-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">{row.goldLabel}</p>
+          <div key={row.goldLabel} className="flex items-end gap-1.5 sm:gap-2">
+            <div className="flex-1 min-w-0">
+              <p className="mb-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 truncate">{row.goldLabel}</p>
               {category === 'account' || selectedGoldTrade ? (
-                <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 dark:bg-gray-800/60 dark:border-gray-700 dark:text-gray-300">
+                <div className="rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-2 text-xs sm:text-sm text-gray-700 dark:bg-gray-800/60 dark:border-gray-700 dark:text-gray-300 truncate">
                   {row.goldValue != null ? row.goldValue.toLocaleString() : '—'}
                 </div>
               ) : (
@@ -439,59 +471,60 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, onGoldConfir
                   value={formatWithCommas(row.goldStr)}
                   onChange={(e) => handleAmountInput(e.target.value, row.onGoldChange)}
                   placeholder="0"
-                  className="block w-full rounded-lg border border-gray-300 hover:border-gray-400 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 dark:border-gray-600 dark:hover:border-gray-500 transition-colors"
+                  className="block w-full rounded-lg border border-gray-300 hover:border-gray-400 bg-white px-2.5 py-2 text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 dark:border-gray-600 dark:hover:border-gray-500 transition-colors"
                 />
               )}
             </div>
-            <span className="pb-2 text-gray-400 dark:text-gray-500 text-sm font-medium shrink-0">×</span>
-            <div className="flex-1">
-              <p className="mb-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">{row.rateLabel}</p>
+            <span className="pb-2 text-gray-400 dark:text-gray-500 text-xs sm:text-sm font-medium shrink-0">×</span>
+            <div className="flex-1 min-w-0">
+              <p className="mb-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 truncate">{row.usdRateLabel}</p>
               <input
                 type="text"
                 inputMode="decimal"
-                value={row.rateValue}
-                onChange={(e) => handleAmountInput(e.target.value, row.onRateChange)}
+                value={row.usdRateValue}
+                onChange={(e) => handleAmountInput(e.target.value, row.onUsdRateChange)}
                 placeholder="0.25"
-                className="block w-full rounded-lg border border-gray-300 hover:border-gray-400 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 dark:border-gray-600 dark:hover:border-gray-500 transition-colors"
+                className="block w-full rounded-lg border border-gray-300 hover:border-gray-400 bg-white px-2.5 py-2 text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 dark:border-gray-600 dark:hover:border-gray-500 transition-colors"
               />
             </div>
-            <span className="pb-2 text-gray-400 dark:text-gray-500 text-sm font-medium shrink-0">=</span>
-            <div className="flex-1">
-              <p className="mb-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">{row.resultLabel}</p>
-              <div className={['rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-semibold dark:border-gray-700 dark:bg-gray-800/60', row.resultColor].join(' ')}>
-                {row.resultValue}
-                {row.resultPhp != null && (
-                  <p className="text-xs font-medium text-gray-400 dark:text-gray-500 mt-0.5">
-                    ₱{row.resultPhp.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </p>
-                )}
+            <span className="pb-2 text-gray-400 dark:text-gray-500 text-xs sm:text-sm font-medium shrink-0">=</span>
+            <div className="flex-1 min-w-0">
+              <p className="mb-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 truncate">{row.usdResultLabel}</p>
+              <div className={['rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-2 text-xs sm:text-sm font-semibold dark:border-gray-700 dark:bg-gray-800/60 truncate', row.color].join(' ')}>
+                {row.usdResultValue}
+              </div>
+            </div>
+            <span className="pb-2 text-gray-400 dark:text-gray-500 text-xs sm:text-sm font-medium shrink-0">×</span>
+            <div className="flex-1 min-w-0">
+              <p className="mb-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 truncate">{row.phpRateLabel}</p>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={row.phpRateValue}
+                onChange={(e) => handleAmountInput(e.target.value, row.onPhpRateChange)}
+                placeholder="58.5"
+                className="block w-full rounded-lg border border-gray-300 hover:border-gray-400 bg-white px-2.5 py-2 text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 dark:border-gray-600 dark:hover:border-gray-500 transition-colors"
+              />
+            </div>
+            <span className="pb-2 text-gray-400 dark:text-gray-500 text-xs sm:text-sm font-medium shrink-0">=</span>
+            <div className="flex-1 min-w-0">
+              <p className="mb-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 truncate">{row.phpResultLabel}</p>
+              <div className={['rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-2 text-xs sm:text-sm font-semibold dark:border-gray-700 dark:bg-gray-800/60 truncate', row.color].join(' ')}>
+                {row.phpResultValue}
               </div>
             </div>
           </div>
         ))}
 
-        {/* Profit + PHP conversion */}
-        <div className="flex items-end gap-2">
-          <div className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-800/60">
+        {/* Profit ($) and Profit (₱) */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-800/60">
             <p className="text-xs text-gray-500 dark:text-gray-400">Profit ($)</p>
-            <p className={['text-sm font-semibold mt-0.5', profitPhp == null || profitPhp >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'].join(' ')}>
-              {fmtPHP(profitPhp)}
+            <p className={['text-sm font-semibold mt-0.5', profitUsd == null || profitUsd >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'].join(' ')}>
+              {fmtUSD(profitUsd)}
             </p>
           </div>
-          <span className="pb-2 text-gray-400 dark:text-gray-500 text-sm font-medium shrink-0">×</span>
-          <div className="flex-1">
-            <p className="mb-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">PHP Rate</p>
-            <input
-              type="text"
-              inputMode="decimal"
-              value={phpRate}
-              onChange={(e) => handleAmountInput(e.target.value, setPhpRate)}
-              placeholder="58.5"
-              className="block w-full rounded-lg border border-gray-300 hover:border-gray-400 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 dark:border-gray-600 dark:hover:border-gray-500 transition-colors"
-            />
-          </div>
-          <span className="pb-2 text-gray-400 dark:text-gray-500 text-sm font-medium shrink-0">=</span>
-          <div className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-800/60">
+          <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-800/60">
             <p className="text-xs text-gray-500 dark:text-gray-400">Profit (₱)</p>
             <p className={['text-sm font-semibold mt-0.5', profitInPhp == null || profitInPhp >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'].join(' ')}>
               {profitInPhp != null ? `₱${profitInPhp.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}

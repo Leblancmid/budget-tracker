@@ -9,6 +9,7 @@ use App\Models\BusinessTransaction;
 use App\Models\RucoyAccount;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class BusinessTransactionController extends Controller
 {
@@ -67,7 +68,12 @@ class BusinessTransactionController extends Controller
 
     public function store(StoreBusinessTransactionRequest $request): JsonResponse
     {
-        $tx = BusinessTransaction::create($request->validated());
+        $data = $request->validated();
+        if (!Schema::hasColumn('business_transactions', 'cost_php_rate')) {
+            unset($data['cost_php_rate']);
+        }
+
+        $tx = BusinessTransaction::create($data);
         $this->computePhpValues($tx);
 
         return response()->json($tx->fresh(), 201);
@@ -75,7 +81,12 @@ class BusinessTransactionController extends Controller
 
     public function update(UpdateBusinessTransactionRequest $request, BusinessTransaction $businessTransaction): JsonResponse
     {
-        $businessTransaction->update($request->validated());
+        $data = $request->validated();
+        if (!Schema::hasColumn('business_transactions', 'cost_php_rate')) {
+            unset($data['cost_php_rate']);
+        }
+
+        $businessTransaction->update($data);
         $this->computePhpValues($businessTransaction);
 
         return response()->json($businessTransaction->fresh());
@@ -91,20 +102,27 @@ class BusinessTransactionController extends Controller
     private function computePhpValues(BusinessTransaction $tx): void
     {
         if ($tx->type === 'account') {
-            if (!$tx->account_id || !$tx->php_rate) return;
+            if (!$tx->account_id) return;
 
             $account = RucoyAccount::find($tx->account_id);
             if (!$account) return;
 
-            $phpRate = (float) $tx->php_rate;
+            $pricePhpRate = $tx->php_rate ? (float) $tx->php_rate : null;
+            $costPhpRate = (isset($tx->cost_php_rate) && $tx->cost_php_rate !== null)
+                ? (float) $tx->cost_php_rate
+                : $pricePhpRate;
 
-            $pricePhp = ($account->price !== null && $tx->price_rate)
-                ? round(((float) $account->price / 1_000_000) * (float) $tx->price_rate * $phpRate, 2)
-                : null;
+            $pricePhp = $tx->price_php !== null
+                ? (float) $tx->price_php
+                : (($account->price !== null && $tx->price_rate && $pricePhpRate)
+                    ? round(((float) $account->price / 1_000_000) * (float) $tx->price_rate * $pricePhpRate, 2)
+                    : null);
 
-            $costPhp = ($account->cost !== null && $tx->cost_rate)
-                ? round(((float) $account->cost / 1_000_000) * (float) $tx->cost_rate * $phpRate, 2)
-                : null;
+            $costPhp = $tx->cost_php !== null
+                ? (float) $tx->cost_php
+                : (($account->cost !== null && $tx->cost_rate && $costPhpRate)
+                    ? round(((float) $account->cost / 1_000_000) * (float) $tx->cost_rate * $costPhpRate, 2)
+                    : null);
 
             $tx->price_php  = $pricePhp;
             $tx->cost_php   = $costPhp;

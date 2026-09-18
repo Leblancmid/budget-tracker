@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ScrollText, Wallet, Briefcase, PiggyBank, DollarSign, Coins, RefreshCw, Smartphone, Monitor, ArrowLeftRight } from 'lucide-react'
+import { ScrollText, Wallet, Briefcase, PiggyBank, DollarSign, Coins, RefreshCw, Smartphone, Monitor, ArrowLeftRight, User } from 'lucide-react'
 import { useLogs } from '@/hooks/useLogs'
 import { Card } from '@/components/ui/Card'
 import { Pagination } from '@/components/ui/Pagination'
@@ -10,6 +10,7 @@ import type { LogEntry } from '@/api/logs'
 const PER_PAGE = 30
 
 type ModuleKey = LogEntry['module'] | 'all'
+type UserFilterKey = 'all' | number
 
 const MODULE_TABS: { key: ModuleKey; label: string }[] = [
   { key: 'all',      label: 'All' },
@@ -91,16 +92,35 @@ function detectDevice(ua: string | null): 'mobile' | 'desktop' | null {
 export default function Logs() {
   const { entries, loading, refetch } = useLogs()
   const [activeModule, setActiveModule] = useState<ModuleKey>('all')
+  const [activeUser, setActiveUser] = useState<UserFilterKey>('all')
   const [page, setPage] = useState(1)
 
+  // Extract unique users from logs
+  const users = useMemo(() => {
+    const userMap = new Map<number, { id: number; name: string; email: string }>()
+    entries.forEach((e) => {
+      if (e.user_id && e.user_name) {
+        userMap.set(e.user_id, { id: e.user_id, name: e.user_name, email: e.user_email || '' })
+      }
+    })
+    return Array.from(userMap.values()).sort((a, b) => a.name.localeCompare(b.name))
+  }, [entries])
+
   const filtered = useMemo(() => {
-    if (activeModule === 'all') return entries
-    return entries.filter((e) => e.module === activeModule)
-  }, [entries, activeModule])
+    let result = entries
+    if (activeModule !== 'all') {
+      result = result.filter((e) => e.module === activeModule)
+    }
+    if (activeUser !== 'all') {
+      result = result.filter((e) => e.user_id === activeUser)
+    }
+    return result
+  }, [entries, activeModule, activeUser])
 
   const { paginated, meta } = paginateLocally(filtered, page, PER_PAGE)
 
   const handleModule = (m: ModuleKey) => { setActiveModule(m); setPage(1) }
+  const handleUser = (u: UserFilterKey) => { setActiveUser(u); setPage(1) }
 
   return (
     <div className="flex flex-col gap-4">
@@ -128,28 +148,81 @@ export default function Logs() {
         </button>
       </div>
 
-      {/* Module filter pills */}
-      <div className="flex flex-wrap gap-1.5">
-        {MODULE_TABS.map(({ key, label }) => {
-          const count = key === 'all' ? entries.length : entries.filter((e) => e.module === key).length
-          return (
+      {/* User filter pills */}
+      {users.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <User className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500" />
+            <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">Filter by User</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
             <button
-              key={key}
-              onClick={() => handleModule(key)}
+              onClick={() => handleUser('all')}
               className={[
                 'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors',
-                activeModule === key
-                  ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900'
+                activeUser === 'all'
+                  ? 'bg-blue-600 text-white dark:bg-blue-500'
                   : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
               ].join(' ')}
             >
-              {label}
-              <span className={['text-[10px] font-bold', activeModule === key ? 'opacity-70' : 'opacity-50'].join(' ')}>
-                {count}
+              All Users
+              <span className={['text-[10px] font-bold', activeUser === 'all' ? 'opacity-70' : 'opacity-50'].join(' ')}>
+                {entries.length}
               </span>
             </button>
-          )
-        })}
+            {users.map((user) => {
+              const count = entries.filter((e) => e.user_id === user.id).length
+              return (
+                <button
+                  key={user.id}
+                  onClick={() => handleUser(user.id)}
+                  className={[
+                    'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors',
+                    activeUser === user.id
+                      ? 'bg-blue-600 text-white dark:bg-blue-500'
+                      : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
+                  ].join(' ')}
+                  title={user.email}
+                >
+                  {user.name}
+                  <span className={['text-[10px] font-bold', activeUser === user.id ? 'opacity-70' : 'opacity-50'].join(' ')}>
+                    {count}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Module filter pills */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <ScrollText className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500" />
+          <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">Filter by Module</span>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {MODULE_TABS.map(({ key, label }) => {
+            const count = key === 'all' ? filtered.length : entries.filter((e) => e.module === key && (activeUser === 'all' || e.user_id === activeUser)).length
+            return (
+              <button
+                key={key}
+                onClick={() => handleModule(key)}
+                className={[
+                  'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors',
+                  activeModule === key
+                    ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900'
+                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
+                ].join(' ')}
+              >
+                {label}
+                <span className={['text-[10px] font-bold', activeModule === key ? 'opacity-70' : 'opacity-50'].join(' ')}>
+                  {count}
+                </span>
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       {/* List */}
@@ -196,6 +269,12 @@ export default function Logs() {
                       <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">
                         {typeLabel}
                       </span>
+                      {e.user_name && (
+                        <span className="flex items-center gap-0.5 text-[10px] text-blue-600 dark:text-blue-400 font-medium">
+                          <User className="h-3 w-3" />
+                          {e.user_name}
+                        </span>
+                      )}
                       {device && (
                         <span className="flex items-center gap-0.5 text-[10px] text-gray-400 dark:text-gray-500">
                           {device === 'mobile'

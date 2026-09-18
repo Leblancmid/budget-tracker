@@ -10,6 +10,7 @@ class BalanceEntryObserver
     public function created(BalanceEntry $model): void
     {
         ActivityLog::create([
+            'user_id'       => auth()->id(),
             'loggable_type' => BalanceEntry::class,
             'loggable_id'   => $model->id,
             'module'        => 'balance',

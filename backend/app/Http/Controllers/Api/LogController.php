@@ -16,7 +16,7 @@ class LogController extends Controller
 {
     public function index(): JsonResponse
     {
-        $allActivityLogs = ActivityLog::all();
+        $allActivityLogs = ActivityLog::with('user:id,name,email')->get();
 
         // created events → keyed for IP/device merge into original table rows
         $activityMap = $allActivityLogs->where('type', '!=', 'archived')
@@ -85,6 +85,9 @@ class LogController extends Controller
                 'created_at'  => $log->created_at->toISOString(),
                 'ip_address'  => $log->ip_address,
                 'user_agent'  => $log->user_agent,
+                'user_id'     => $log->user_id,
+                'user_name'   => $log->user?->name,
+                'user_email'  => $log->user?->email,
             ]);
         });
 
@@ -104,6 +107,9 @@ class LogController extends Controller
             'created_at'  => $createdAt instanceof \Carbon\Carbon ? $createdAt->toISOString() : $createdAt,
             'ip_address'  => $log?->ip_address,
             'user_agent'  => $log?->user_agent,
+            'user_id'     => $log?->user_id,
+            'user_name'   => $log?->user?->name,
+            'user_email'  => $log?->user?->email,
         ];
     }
 }

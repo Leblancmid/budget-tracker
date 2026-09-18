@@ -9,6 +9,9 @@ export interface LogEntry {
   created_at: string
   ip_address: string | null
   user_agent: string | null
+  user_id: number | null
+  user_name: string | null
+  user_email: string | null
 }
 
 export const logsApi = {

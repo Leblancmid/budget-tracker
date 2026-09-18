@@ -10,6 +10,7 @@ class TradeObserver
     public function created(Trade $model): void
     {
         ActivityLog::create([
+            'user_id'       => auth()->id(),
             'loggable_type' => Trade::class,
             'loggable_id'   => $model->id,
             'module'        => 'trade',
@@ -25,6 +26,7 @@ class TradeObserver
     {
         if ($model->isDirty('archived_at') && $model->archived_at !== null) {
             ActivityLog::create([
+                'user_id'       => auth()->id(),
                 'loggable_type' => Trade::class,
                 'loggable_id'   => $model->id,
                 'module'        => 'trade',

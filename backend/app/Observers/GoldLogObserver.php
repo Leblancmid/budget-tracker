@@ -10,6 +10,7 @@ class GoldLogObserver
     public function created(GoldLog $model): void
     {
         ActivityLog::create([
+            'user_id'       => auth()->id(),
             'loggable_type' => GoldLog::class,
             'loggable_id'   => $model->id,
             'module'        => 'gold',

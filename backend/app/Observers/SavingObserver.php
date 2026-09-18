@@ -10,6 +10,7 @@ class SavingObserver
     public function created(Saving $model): void
     {
         ActivityLog::create([
+            'user_id'       => auth()->id(),
             'loggable_type' => Saving::class,
             'loggable_id'   => $model->id,
             'module'        => 'savings',

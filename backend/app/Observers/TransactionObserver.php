@@ -10,6 +10,7 @@ class TransactionObserver
     public function created(Transaction $model): void
     {
         ActivityLog::create([
+            'user_id'       => auth()->id(),
             'loggable_type' => Transaction::class,
             'loggable_id'   => $model->id,
             'module'        => 'daily',

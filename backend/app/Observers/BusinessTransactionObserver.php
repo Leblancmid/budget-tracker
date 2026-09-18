@@ -10,6 +10,7 @@ class BusinessTransactionObserver
     public function created(BusinessTransaction $model): void
     {
         ActivityLog::create([
+            'user_id'       => auth()->id(),
             'loggable_type' => BusinessTransaction::class,
             'loggable_id'   => $model->id,
             'module'        => 'business',
@@ -25,6 +26,7 @@ class BusinessTransactionObserver
     {
         if ($model->isDirty('archived_at') && $model->archived_at !== null) {
             ActivityLog::create([
+                'user_id'       => auth()->id(),
                 'loggable_type' => BusinessTransaction::class,
                 'loggable_id'   => $model->id,
                 'module'        => 'business',

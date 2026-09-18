@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
-import { ScrollText, Wallet, Briefcase, PiggyBank, DollarSign, Coins, RefreshCw, Smartphone, Monitor, ArrowLeftRight, User } from 'lucide-react'
+import { ScrollText, Wallet, Briefcase, PiggyBank, DollarSign, Coins, RefreshCw, Smartphone, Monitor, ArrowLeftRight, User, Search } from 'lucide-react'
 import { useLogs } from '@/hooks/useLogs'
 import { Card } from '@/components/ui/Card'
 import { Pagination } from '@/components/ui/Pagination'
 import { Amt } from '@/context/AmountVisibilityContext'
 import { paginateLocally } from '@/utils/format'
+import { Input } from '@/components/ui/Input'
 import type { LogEntry } from '@/api/logs'
 
 const PER_PAGE = 30
@@ -93,6 +94,7 @@ export default function Logs() {
   const { entries, loading, refetch } = useLogs()
   const [activeModule, setActiveModule] = useState<ModuleKey>('all')
   const [activeUser, setActiveUser] = useState<UserFilterKey>('all')
+  const [searchQuery, setSearchQuery] = useState('')
   const [page, setPage] = useState(1)
 
   // Extract unique users from logs
@@ -108,19 +110,45 @@ export default function Logs() {
 
   const filtered = useMemo(() => {
     let result = entries
+    
+    // Filter by module
     if (activeModule !== 'all') {
       result = result.filter((e) => e.module === activeModule)
     }
+    
+    // Filter by user
     if (activeUser !== 'all') {
       result = result.filter((e) => e.user_id === activeUser)
     }
+    
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      result = result.filter((e) => {
+        const description = (e.description || '').toLowerCase()
+        const type = (TYPE_LABEL[e.type] || e.type).toLowerCase()
+        const userName = (e.user_name || '').toLowerCase()
+        const amount = (e.amount || '').toString()
+        const ipAddress = (e.ip_address || '').toLowerCase()
+        
+        return (
+          description.includes(query) ||
+          type.includes(query) ||
+          userName.includes(query) ||
+          amount.includes(query) ||
+          ipAddress.includes(query)
+        )
+      })
+    }
+    
     return result
-  }, [entries, activeModule, activeUser])
+  }, [entries, activeModule, activeUser, searchQuery])
 
   const { paginated, meta } = paginateLocally(filtered, page, PER_PAGE)
 
   const handleModule = (m: ModuleKey) => { setActiveModule(m); setPage(1) }
   const handleUser = (u: UserFilterKey) => { setActiveUser(u); setPage(1) }
+  const handleSearch = (value: string) => { setSearchQuery(value); setPage(1) }
 
   return (
     <div className="flex flex-col gap-4">
@@ -134,7 +162,9 @@ export default function Logs() {
           <div>
             <h1 className="text-base font-bold text-gray-900 dark:text-gray-100">Activity Logs</h1>
             {!loading && (
-              <p className="text-xs text-gray-400 dark:text-gray-500">{entries.length} total entries</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">
+                {filtered.length} {filtered.length !== entries.length && `of ${entries.length}`} entries
+              </p>
             )}
           </div>
         </div>
@@ -147,6 +177,14 @@ export default function Logs() {
           Refresh
         </button>
       </div>
+
+      {/* Search */}
+      <Input
+        placeholder="Search logs by description, type, user, amount, or IP..."
+        value={searchQuery}
+        onChange={(e) => handleSearch(e.target.value)}
+        leftIcon={<Search className="h-4 w-4" />}
+      />
 
       {/* User filter pills */}
       {users.length > 0 && (

@@ -15,10 +15,6 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: { '@': path.resolve(__dirname, './src') },
     },
-    build: {
-      outDir: path.resolve(__dirname, '../backend/public'),
-      emptyOutDir: true,
-    },
     server: {
       host: true,
       port: 5173,

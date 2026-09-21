@@ -6,6 +6,7 @@ import { Pagination } from '@/components/ui/Pagination'
 import { Amt } from '@/context/AmountVisibilityContext'
 import { paginateLocally } from '@/utils/format'
 import { Input } from '@/components/ui/Input'
+import { useAuth } from '@/context/AuthContext'
 import type { LogEntry } from '@/api/logs'
 
 const PER_PAGE = 30
@@ -92,21 +93,34 @@ function detectDevice(ua: string | null): 'mobile' | 'desktop' | null {
 
 export default function Logs() {
   const { entries, loading, refetch } = useLogs()
+  const { user: currentUser } = useAuth()
   const [activeModule, setActiveModule] = useState<ModuleKey>('all')
-  const [activeUser, setActiveUser] = useState<UserFilterKey>('all')
+  const [activeUser, setActiveUser] = useState<UserFilterKey>(() => currentUser?.id ?? 'all')
   const [searchQuery, setSearchQuery] = useState('')
   const [page, setPage] = useState(1)
 
-  // Extract unique users from logs
+  // Extract unique users from logs and add current user if not in list
   const users = useMemo(() => {
     const userMap = new Map<number, { id: number; name: string; email: string }>()
+    
+    // Add current user first if available
+    if (currentUser) {
+      userMap.set(currentUser.id, { 
+        id: currentUser.id, 
+        name: currentUser.name, 
+        email: currentUser.email 
+      })
+    }
+    
+    // Add users from logs
     entries.forEach((e) => {
       if (e.user_id && e.user_name) {
         userMap.set(e.user_id, { id: e.user_id, name: e.user_name, email: e.user_email || '' })
       }
     })
+    
     return Array.from(userMap.values()).sort((a, b) => a.name.localeCompare(b.name))
-  }, [entries])
+  }, [entries, currentUser])
 
   const filtered = useMemo(() => {
     let result = entries

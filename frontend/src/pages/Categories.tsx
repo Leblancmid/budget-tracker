@@ -86,7 +86,9 @@ export function Categories() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" icon={<Download className="h-4 w-4" />} onClick={handleExport}>Export</Button>
+          <div className="hidden md:block">
+            <Button variant="secondary" icon={<Download className="h-4 w-4" />} onClick={handleExport}>Export</Button>
+          </div>
           <Button icon={<Plus className="h-4 w-4" />} onClick={openAdd}>New Category</Button>
         </div>
       </div>

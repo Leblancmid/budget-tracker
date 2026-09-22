@@ -95,10 +95,7 @@ export default function Logs() {
   const { entries, loading, refetch } = useLogs()
   const { user: currentUser } = useAuth()
   const [activeModule, setActiveModule] = useState<ModuleKey>('all')
-  const [activeUser, setActiveUser] = useState<UserFilterKey>(() => currentUser?.id ?? 'all')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [page, setPage] = useState(1)
-
+  
   // Extract unique users from logs and add current user if not in list
   const users = useMemo(() => {
     const userMap = new Map<number, { id: number; name: string; email: string }>()
@@ -121,6 +118,14 @@ export default function Logs() {
     
     return Array.from(userMap.values()).sort((a, b) => a.name.localeCompare(b.name))
   }, [entries, currentUser])
+
+  // Find Mikey's user ID, fallback to 'all' if not found
+  const mikeyUser = users.find(u => u.name.toLowerCase() === 'mikey')
+  const defaultUser: UserFilterKey = mikeyUser?.id ?? 'all'
+  
+  const [activeUser, setActiveUser] = useState<UserFilterKey>(defaultUser)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [page, setPage] = useState(1)
 
   const filtered = useMemo(() => {
     let result = entries

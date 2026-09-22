@@ -73,9 +73,11 @@ export function Transactions() {
               leftIcon={<Search className="h-4 w-4" />}
             />
           </div>
-          <Button variant="secondary" icon={<Download className="h-4 w-4" />} onClick={handleExport}>
-            Export
-          </Button>
+          <div className="hidden md:block">
+            <Button variant="secondary" icon={<Download className="h-4 w-4" />} onClick={handleExport}>
+              Export
+            </Button>
+          </div>
           <Button icon={<Plus className="h-4 w-4" />} onClick={openAdd}>
             Add
           </Button>
@@ -88,16 +90,16 @@ export function Transactions() {
             value={filters.type ?? ''}
             onChange={(e) => applyFilters({ type: e.target.value as 'income' | 'expense' | '' })}
             options={[{ value: 'income', label: 'Income' }, { value: 'expense', label: 'Expense' }]}
-            className="w-32"
+            className="w-32 hidden md:block"
           />
           <Select
             placeholder="All categories"
             value={filters.category_id ?? ''}
             onChange={(e) => applyFilters({ category_id: e.target.value ? Number(e.target.value) : '' })}
             options={categories.map((c) => ({ value: c.id, label: c.name }))}
-            className="w-40"
+            className="w-40 hidden md:block"
           />
-          <div className="flex items-center gap-1.5">
+          <div className="hidden md:flex items-center gap-1.5">
             <Input
               type="date"
               value={filters.date_from ?? ''}
@@ -116,7 +118,7 @@ export function Transactions() {
             value={filters.per_page ?? 10}
             onChange={(e) => applyFilters({ per_page: Number(e.target.value) })}
             options={[10, 25, 50].map((n) => ({ value: n, label: `${n} / page` }))}
-            className="w-28"
+            className="w-28 hidden md:block"
           />
           {hasFilters && (
             <button

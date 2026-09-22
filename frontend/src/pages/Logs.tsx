@@ -205,9 +205,9 @@ export default function Logs() {
         leftIcon={<Search className="h-4 w-4" />}
       />
 
-      {/* User filter pills */}
+      {/* User filter pills — hidden on mobile */}
       {users.length > 0 && (
-        <div className="flex flex-col gap-2">
+        <div className="hidden md:flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <User className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500" />
             <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">Filter by User</span>
@@ -252,8 +252,8 @@ export default function Logs() {
         </div>
       )}
 
-      {/* Module filter pills */}
-      <div className="flex flex-col gap-2">
+      {/* Module filter pills — hidden on mobile */}
+      <div className="hidden md:flex flex-col gap-2">
         <div className="flex items-center gap-2">
           <ScrollText className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500" />
           <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">Filter by Module</span>

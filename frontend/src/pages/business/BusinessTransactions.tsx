@@ -254,7 +254,7 @@ export default function BusinessTransactions() {
             <button
               onClick={() => { setProfitSort((s) => s === null ? 'desc' : s === 'desc' ? 'asc' : null); setAccPage(1) }}
               className={[
-                'flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors',
+                'hidden md:flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors',
                 profitSort
                   ? 'border-emerald-400 bg-emerald-50 text-emerald-700 dark:border-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400'
                   : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
@@ -268,7 +268,7 @@ export default function BusinessTransactions() {
             <button
               onClick={() => setShowArchive((v) => !v)}
               className={[
-                'flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors',
+                'hidden md:flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors',
                 showArchive
                   ? 'border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-600 dark:bg-amber-900/20 dark:text-amber-400'
                   : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
@@ -285,12 +285,14 @@ export default function BusinessTransactions() {
 
             <button
               onClick={() => { setShowTxModal(true); setTxModalPage(1) }}
-              className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-500 hover:bg-gray-50 transition-colors dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+              className="hidden md:flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-500 hover:bg-gray-50 transition-colors dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
             >
               <Receipt size={13} />
               Transactions
             </button>
-            <Button size="sm" variant="secondary" icon={<Download className="h-3.5 w-3.5" />} onClick={handleExport}>Export</Button>
+            <div className="hidden md:block">
+              <Button size="sm" variant="secondary" icon={<Download className="h-3.5 w-3.5" />} onClick={handleExport}>Export</Button>
+            </div>
             <Button size="sm" icon={<Plus className="h-3.5 w-3.5" />} onClick={openAddAccount}>Add</Button>
           </div>
         </div>

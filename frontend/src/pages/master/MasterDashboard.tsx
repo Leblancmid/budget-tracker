@@ -196,41 +196,41 @@ export default function MasterDashboard() {
       </Card>
 
       {/* Exchange rate inputs */}
-      <Card className="flex items-center gap-4 px-5 py-3.5">
+      <Card className="flex flex-col md:flex-row md:items-center gap-4 px-5 py-4">
         <div className="flex items-center gap-2 shrink-0">
           <SlidersHorizontal className="h-3.5 w-3.5 text-gray-400" />
           <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Exchange Rates</span>
         </div>
 
-        <div className="flex-1 h-px bg-gray-100 dark:bg-gray-700/60" />
+        <div className="hidden md:block flex-1 h-px bg-gray-100 dark:bg-gray-700/60" />
 
-        <div className="flex items-center gap-4 shrink-0">
+        <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4 shrink-0">
           <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">1M G =</span>
-            <div className="relative">
+            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium w-16 shrink-0">1M G =</span>
+            <div className="relative flex-1 md:flex-none">
               <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400">$</span>
               <input
                 type="number" min="0.000001" step="0.01" value={usdInput}
                 onChange={(e) => handleUsdRate(e.target.value)}
-                className="w-20 rounded-lg border border-gray-200 bg-gray-50 pl-6 pr-2 py-1.5 text-xs text-gray-900 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-400/30 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                className="w-full md:w-20 rounded-lg border border-gray-200 bg-gray-50 pl-6 pr-2 py-1.5 text-xs text-gray-900 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-400/30 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
               />
             </div>
-            <span className="text-xs text-gray-400">USD</span>
+            <span className="text-xs text-gray-400 shrink-0">USD</span>
           </div>
 
-          <div className="h-4 w-px bg-gray-200 dark:bg-gray-700" />
+          <div className="hidden md:block h-4 w-px bg-gray-200 dark:bg-gray-700" />
 
           <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">1 USD =</span>
-            <div className="relative">
+            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium w-16 shrink-0">1 USD =</span>
+            <div className="relative flex-1 md:flex-none">
               <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400">₱</span>
               <input
                 type="number" min="0.01" step="0.01" value={phpInput}
                 onChange={(e) => handlePhpRate(e.target.value)}
-                className="w-20 rounded-lg border border-gray-200 bg-gray-50 pl-6 pr-2 py-1.5 text-xs text-gray-900 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-400/30 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                className="w-full md:w-20 rounded-lg border border-gray-200 bg-gray-50 pl-6 pr-2 py-1.5 text-xs text-gray-900 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-400/30 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
               />
             </div>
-            <span className="text-xs text-gray-400">PHP</span>
+            <span className="text-xs text-gray-400 shrink-0">PHP</span>
           </div>
         </div>
       </Card>

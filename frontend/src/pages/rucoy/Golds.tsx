@@ -326,7 +326,7 @@ export default function Golds() {
             <select
               value={typeFilter}
               onChange={(e) => { setTypeFilter(e.target.value as typeof typeFilter); setPage(1) }}
-              className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-400/40 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+              className="hidden md:block rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-400/40 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
             >
               <option value="all">All Types</option>
               <option value="add">Add</option>
@@ -335,9 +335,11 @@ export default function Golds() {
               <option value="kks">KKS Trade</option>
               <option value="cash">Cash Trade</option>
             </select>
-            <Button variant="secondary" size="sm" icon={<Download className="h-3.5 w-3.5" />} onClick={handleExport}>
-              Export
-            </Button>
+            <div className="hidden md:block">
+              <Button variant="secondary" size="sm" icon={<Download className="h-3.5 w-3.5" />} onClick={handleExport}>
+                Export
+              </Button>
+            </div>
           </div>
         </div>
 

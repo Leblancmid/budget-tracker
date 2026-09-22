@@ -448,8 +448,8 @@ export default function Accounts() {
           />
         </div>
 
-        {/* Sort group */}
-        <div className="flex items-center divide-x divide-gray-200 dark:divide-gray-700 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-800">
+        {/* Sort group — hidden on mobile */}
+        <div className="hidden md:flex items-center divide-x divide-gray-200 dark:divide-gray-700 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-800">
           <button
             onClick={() => { setPriceSort(null); setProfitSort((s) => s === null ? 'desc' : s === 'desc' ? 'asc' : null); setPage(1) }}
             className={['flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors', profitSort ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400' : 'text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700'].join(' ')}
@@ -466,8 +466,8 @@ export default function Accounts() {
           </button>
         </div>
 
-        {/* Archive toggles group */}
-        <div className="flex items-center divide-x divide-gray-200 dark:divide-gray-700 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-800">
+        {/* Archive toggles group — hidden on mobile */}
+        <div className="hidden md:flex items-center divide-x divide-gray-200 dark:divide-gray-700 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-800">
           <button
             onClick={() => setShowArchive((v) => !v)}
             title="Sold Accounts"
@@ -496,8 +496,8 @@ export default function Accounts() {
           </button>
         </div>
 
-        {/* Utility actions — icon only */}
-        <div className="flex items-center divide-x divide-gray-200 dark:divide-gray-700 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-800">
+        {/* Utility actions — hidden on mobile */}
+        <div className="hidden md:flex items-center divide-x divide-gray-200 dark:divide-gray-700 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-800">
           <button
             onClick={() => { setShowTxModal(true); setTxPage(1) }}
             title="Transactions"

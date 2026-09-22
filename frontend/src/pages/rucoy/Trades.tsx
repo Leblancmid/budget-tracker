@@ -187,7 +187,7 @@ export default function Trades() {
         </div>
 
         {/* Type filter pills */}
-        <div className="flex items-center gap-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-1">
+        <div className="hidden md:flex items-center gap-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-1">
           {(['all', 'kks', 'cash'] as const).map((f) => (
             <button
               key={f}
@@ -207,7 +207,7 @@ export default function Trades() {
         <button
           onClick={() => setShowArchive((v) => !v)}
           className={[
-            'flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors',
+            'hidden md:flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors',
             showArchive
               ? 'border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-600 dark:bg-amber-900/20 dark:text-amber-400'
               : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
@@ -222,7 +222,9 @@ export default function Trades() {
           )}
         </button>
 
-        <Button variant="secondary" size="sm" icon={<Download className="h-3.5 w-3.5" />} onClick={handleExport}>Export</Button>
+        <div className="hidden md:block">
+          <Button variant="secondary" size="sm" icon={<Download className="h-3.5 w-3.5" />} onClick={handleExport}>Export</Button>
+        </div>
         <Button size="sm" icon={<Plus className="h-3.5 w-3.5" />} onClick={openCreate}>New Trade</Button>
       </div>
 

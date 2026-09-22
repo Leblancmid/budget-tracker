@@ -7,6 +7,7 @@ export interface TradePayload {
   amount: number
   currency?: TradeCurrency | null
   payment_method?: TradePaymentMethod | null
+  middleman_fee?: number | null
   completion_date?: string | null
 }
 

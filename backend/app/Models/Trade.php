@@ -17,6 +17,7 @@ class Trade extends Model
         'amount',
         'currency',
         'payment_method',
+        'middleman_fee',
         'start_date',
         'completion_date',
     ];

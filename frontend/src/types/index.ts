@@ -199,6 +199,7 @@ export interface Trade {
   amount: string
   currency: TradeCurrency | null
   payment_method: TradePaymentMethod | null
+  middleman_fee: number | null
   completion_date: string | null
   archived_at: string | null
   created_at: string

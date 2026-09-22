@@ -57,15 +57,21 @@ export function TradeModal({ open, onClose, onSubmit, onMmFee, trade }: TradeMod
   useEffect(() => {
     if (open) {
       setErrors({})
-      setMmFee(null)
-      setForm(trade ? {
-        description:     trade.description ?? '',
-        status:          trade.status,
-        amount:          parseFloat(trade.amount).toString(),
-        currency:        trade.currency ?? 'PHP',
-        payment_method:  trade.payment_method ?? '',
-        completion_date: trade.completion_date ?? '',
-      } : EMPTY)
+      if (trade) {
+        // Convert middleman_fee to number if it exists
+        setMmFee(trade.middleman_fee ? Number(trade.middleman_fee) : null)
+        setForm({
+          description:     trade.description ?? '',
+          status:          trade.status,
+          amount:          parseFloat(trade.amount).toString(),
+          currency:        trade.currency ?? 'PHP',
+          payment_method:  trade.payment_method ?? '',
+          completion_date: trade.completion_date ?? '',
+        })
+      } else {
+        setMmFee(null)
+        setForm(EMPTY)
+      }
     }
   }, [open, trade])
 
@@ -90,9 +96,10 @@ export function TradeModal({ open, onClose, onSubmit, onMmFee, trade }: TradeMod
         amount:          parseFloat(form.amount),
         currency:        form.status === 'cash' ? form.currency : null,
         payment_method:  form.status === 'cash' && form.payment_method ? form.payment_method : null,
+        middleman_fee:   form.status === 'kks' ? mmFee : null,
         completion_date: form.completion_date || null,
       })
-      if (mmFee && onMmFee) {
+      if (mmFee && onMmFee && !trade) {
         await onMmFee(mmFee, form.description || '')
       }
       onClose()
@@ -186,34 +193,39 @@ export function TradeModal({ open, onClose, onSubmit, onMmFee, trade }: TradeMod
           )}
         </div>
 
-        {/* Middleman Fee — KKS only */}
-        {!isCash && (
-          <div>
-            <p className="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Middleman Fee</p>
-            <div className="flex gap-2">
-              {MM_FEE_OPTIONS.map((opt) => (
-                <button
-                  key={opt}
-                  type="button"
-                  onClick={() => setMmFee(mmFee === opt ? null : opt)}
-                  className={[
-                    'flex-1 rounded-lg border py-2 text-sm font-semibold transition-colors',
-                    mmFee === opt
-                      ? 'border-violet-500 bg-violet-50 text-violet-700 dark:bg-violet-900/20 dark:text-violet-400 dark:border-violet-700'
-                      : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
-                  ].join(' ')}
-                >
-                  {opt.toLocaleString()} G
-                </button>
-              ))}
-            </div>
-            {mmFee && (
-              <p className="mt-1 text-xs text-violet-600 dark:text-violet-400">
-                {mmFee.toLocaleString()} G fee will be logged in gold records.
-              </p>
-            )}
+        {/* Middleman Fee */}
+        <div>
+          <p className="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Middleman Fee</p>
+          <div className="flex gap-2">
+            {MM_FEE_OPTIONS.map((opt) => (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => setMmFee(mmFee === opt ? null : opt)}
+                disabled={isCash}
+                className={[
+                  'flex-1 rounded-lg border py-2 text-sm font-semibold transition-colors',
+                  mmFee === opt
+                    ? 'border-violet-500 bg-violet-50 text-violet-700 dark:bg-violet-900/20 dark:text-violet-400 dark:border-violet-700'
+                    : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
+                  isCash && 'opacity-50 cursor-not-allowed',
+                ].join(' ')}
+              >
+                {opt.toLocaleString()} G
+              </button>
+            ))}
           </div>
-        )}
+          {mmFee && !isCash && (
+            <p className="mt-1 text-xs text-violet-600 dark:text-violet-400">
+              {mmFee.toLocaleString()} G fee will be logged in gold records.
+            </p>
+          )}
+          {isCash && (
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Middleman fee only applies to KKS trades.
+            </p>
+          )}
+        </div>
 
         {/* Payment method — CASH only */}
         {isCash && (

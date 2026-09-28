@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Sep 28, 2026 at 08:33 AM
+-- Generation Time: Sep 28, 2026 at 09:50 AM
 -- Server version: 8.4.3
 -- PHP Version: 8.3.30
 
@@ -30,14 +30,14 @@ SET time_zone = "+00:00";
 CREATE TABLE `activity_logs` (
   `id` bigint UNSIGNED NOT NULL,
   `user_id` bigint UNSIGNED DEFAULT NULL,
-  `loggable_type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `loggable_type` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `loggable_id` bigint UNSIGNED NOT NULL,
-  `module` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `type` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `description` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `amount` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `ip_address` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `user_agent` text COLLATE utf8mb4_unicode_ci,
+  `module` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `amount` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `ip_address` varchar(45) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `user_agent` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -728,7 +728,20 @@ INSERT INTO `activity_logs` (`id`, `user_id`, `loggable_type`, `loggable_id`, `m
 (676, 1, 'App\\Models\\BusinessTransaction', 118, 'business', 'archived', '9.5 / 100 Gcash', '476.59', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', '2026-09-27 17:30:24', '2026-09-27 17:30:24'),
 (677, 1, 'App\\Models\\BusinessTransaction', 119, 'business', 'gold', '(balance - no cost yet)', '0.01', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', '2026-09-27 17:31:30', '2026-09-27 17:31:30'),
 (678, 1, 'App\\Models\\Trade', 109, 'trade', 'archived', '9/26 3700', '3700000000.00', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', '2026-09-27 17:31:40', '2026-09-27 17:31:40'),
-(679, 1, 'App\\Models\\Trade', 111, 'trade', 'archived', '9/27 518', '518000000.00', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', '2026-09-27 17:33:48', '2026-09-27 17:33:48');
+(679, 1, 'App\\Models\\Trade', 111, 'trade', 'archived', '9/27 518', '518000000.00', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', '2026-09-27 17:33:48', '2026-09-27 17:33:48'),
+(680, 1, 'App\\Models\\GoldLog', 378, 'gold', 'sell', '.21$ binance', '57000000.00', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', '2026-09-28 00:45:32', '2026-09-28 00:45:32'),
+(681, 1, 'App\\Models\\GoldLog', 379, 'gold', 'sell', 'Leblanc 609 Dist', '900000000.00', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', '2026-09-28 00:47:40', '2026-09-28 00:47:40'),
+(682, 1, 'App\\Models\\Trade', 113, 'trade', 'kks', '10/3 51', '51000000.00', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', '2026-09-28 00:49:06', '2026-09-28 00:49:06'),
+(683, 1, 'App\\Models\\GoldLog', 380, 'gold', 'fee', '10/3 51', '1000000.00', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', '2026-09-28 00:49:06', '2026-09-28 00:49:06'),
+(684, 1, 'App\\Models\\GoldLog', 381, 'gold', 'fee', 'Gold mm fee', '2000000.00', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', '2026-09-28 00:51:45', '2026-09-28 00:51:45'),
+(685, 1, 'App\\Models\\BusinessTransaction', 120, 'business', 'gold', '.21$ sold (no cost yet)', '0.01', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', '2026-09-28 00:54:19', '2026-09-28 00:54:19'),
+(686, 1, 'App\\Models\\GoldLog', 382, 'gold', 'add', 'test', '218500000.00', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', '2026-09-28 00:56:16', '2026-09-28 00:56:16'),
+(687, 1, 'App\\Models\\GoldLog', 383, 'gold', 'add', '9.5/100 gcash', '19000000.00', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', '2026-09-28 00:59:42', '2026-09-28 00:59:42'),
+(688, 1, 'App\\Models\\GoldLog', 384, 'gold', 'add', 'add', '4.00', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', '2026-09-28 01:13:49', '2026-09-28 01:13:49'),
+(689, 1, 'App\\Models\\GoldLog', 385, 'gold', 'sell', 'dismantled', '93000000.00', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', '2026-09-28 01:14:42', '2026-09-28 01:14:42'),
+(690, 1, 'App\\Models\\BusinessTransaction', 118, 'business', 'archived', '9.5 / 100 Gcash', '518.02', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', '2026-09-28 01:16:45', '2026-09-28 01:16:45'),
+(691, 1, 'App\\Models\\GoldLog', 386, 'gold', 'fee', 'bakat', '3000000.00', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', '2026-09-28 01:22:44', '2026-09-28 01:22:44'),
+(692, 1, 'App\\Models\\GoldLog', 387, 'gold', 'sell', 'pantay', '3000000.00', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', '2026-09-28 01:22:57', '2026-09-28 01:22:57');
 
 -- --------------------------------------------------------
 
@@ -738,10 +751,10 @@ INSERT INTO `activity_logs` (`id`, `user_id`, `loggable_type`, `loggable_id`, `m
 
 CREATE TABLE `balance_entries` (
   `id` bigint UNSIGNED NOT NULL,
-  `account` enum('PAYPAL','BINANCE','MEXC','MARIBANK','MAYA','BANKO') COLLATE utf8mb4_unicode_ci NOT NULL,
-  `type` enum('add','sell') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `account` enum('PAYPAL','BINANCE','MEXC','MARIBANK','MAYA','BANKO') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `type` enum('add','sell') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `amount` decimal(15,2) NOT NULL,
-  `description` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `date` date NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
@@ -862,10 +875,10 @@ CREATE TABLE `business_budgets` (
 
 CREATE TABLE `business_categories` (
   `id` bigint UNSIGNED NOT NULL,
-  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `type` enum('account','gold','expense') COLLATE utf8mb4_unicode_ci NOT NULL,
-  `color` varchar(7) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '#6366f1',
-  `icon` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'tag',
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `type` enum('account','gold','expense') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `color` varchar(7) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '#6366f1',
+  `icon` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'tag',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -889,8 +902,8 @@ INSERT INTO `business_categories` (`id`, `name`, `type`, `color`, `icon`, `creat
 CREATE TABLE `business_transactions` (
   `id` bigint UNSIGNED NOT NULL,
   `account_id` bigint UNSIGNED DEFAULT NULL,
-  `type` enum('account','gold','expense') COLLATE utf8mb4_unicode_ci NOT NULL,
-  `action` enum('buy','sell') COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `type` enum('account','gold','expense') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `action` enum('buy','sell') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `price_rate` decimal(20,6) DEFAULT NULL,
   `cost_rate` decimal(20,6) DEFAULT NULL,
   `price_gold` decimal(20,0) DEFAULT NULL,
@@ -901,9 +914,9 @@ CREATE TABLE `business_transactions` (
   `cost_php` decimal(15,2) DEFAULT NULL,
   `profit_php` decimal(15,2) DEFAULT NULL,
   `amount` decimal(15,2) NOT NULL,
-  `description` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `date` date NOT NULL,
-  `notes` text COLLATE utf8mb4_unicode_ci,
+  `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `archived_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
@@ -985,8 +998,9 @@ INSERT INTO `business_transactions` (`id`, `account_id`, `type`, `action`, `pric
 (115, NULL, 'gold', NULL, 0.220000, 0.169700, 251500000, 251500000, 60.4292, 62.0000, 3343.55, 2646.13, 697.42, 697.42, '9.5/100 gcash', '2026-09-20', NULL, '2026-09-23 01:33:03', '2026-09-20 03:05:19', '2026-09-23 01:33:03'),
 (116, NULL, 'gold', NULL, 0.220000, 0.170000, 57000000, 57000000, 60.4292, 62.6600, 757.78, 607.18, 150.60, 150.61, '.17$ (62.66 pesos)', '2026-09-23', NULL, '2026-09-23 01:35:05', '2026-09-23 01:34:16', '2026-09-23 01:35:05'),
 (117, 41, 'account', NULL, 0.220000, 0.170000, NULL, NULL, 60.5000, 62.0000, 18634.00, 12121.00, 6513.00, 6513.00, 'Leblanc 644 Melee', '2026-09-24', NULL, NULL, '2026-09-23 17:39:12', '2026-09-23 17:39:12'),
-(118, NULL, 'gold', NULL, 0.209300, 0.175500, 218500000, 218500000, 60.7318, 60.0000, 2777.39, 2300.80, 476.59, 476.58, '9.5 / 100 Gcash', '2026-09-28', NULL, '2026-09-27 17:30:24', '2026-09-27 17:28:27', '2026-09-27 17:30:24'),
-(119, NULL, 'gold', NULL, NULL, NULL, 1129500000, 1129500000, NULL, NULL, NULL, NULL, NULL, 0.01, '(balance - no cost yet)', '2026-09-28', NULL, NULL, '2026-09-27 17:31:30', '2026-09-27 17:31:30');
+(118, NULL, 'gold', NULL, 0.209300, 0.175500, 237500000, 237500000, 60.7318, 60.0000, 3018.90, 2500.88, 518.02, 518.03, '9.5 / 100 Gcash', '2026-09-28', NULL, '2026-09-28 01:16:45', '2026-09-27 17:28:27', '2026-09-28 01:16:45'),
+(119, NULL, 'gold', NULL, NULL, NULL, 1129500000, 1129500000, NULL, NULL, NULL, NULL, NULL, 0.01, '(balance - no cost yet) (0.2093 | 60.7318)', '2026-09-28', NULL, NULL, '2026-09-27 17:31:30', '2026-09-28 00:53:57'),
+(120, NULL, 'gold', NULL, NULL, NULL, 57000000, 57000000, NULL, NULL, NULL, NULL, NULL, 0.01, '.21$ sold (no cost yet)', '2026-09-28', NULL, NULL, '2026-09-28 00:54:19', '2026-09-28 00:54:19');
 
 -- --------------------------------------------------------
 
@@ -995,8 +1009,8 @@ INSERT INTO `business_transactions` (`id`, `account_id`, `type`, `action`, `pric
 --
 
 CREATE TABLE `cache` (
-  `key` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `value` mediumtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `key` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `value` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `expiration` int NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -1007,8 +1021,8 @@ CREATE TABLE `cache` (
 --
 
 CREATE TABLE `cache_locks` (
-  `key` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `owner` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `key` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `owner` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `expiration` int NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -1021,10 +1035,10 @@ CREATE TABLE `cache_locks` (
 CREATE TABLE `categories` (
   `id` bigint UNSIGNED NOT NULL,
   `user_id` bigint UNSIGNED DEFAULT NULL,
-  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `type` enum('income','expense') COLLATE utf8mb4_unicode_ci NOT NULL,
-  `color` varchar(7) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '#6366f1',
-  `icon` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'tag',
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `type` enum('income','expense') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `color` varchar(7) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '#6366f1',
+  `icon` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'tag',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -1058,11 +1072,11 @@ INSERT INTO `categories` (`id`, `user_id`, `name`, `type`, `color`, `icon`, `cre
 
 CREATE TABLE `failed_jobs` (
   `id` bigint UNSIGNED NOT NULL,
-  `uuid` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `connection` text COLLATE utf8mb4_unicode_ci NOT NULL,
-  `queue` text COLLATE utf8mb4_unicode_ci NOT NULL,
-  `payload` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
-  `exception` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `uuid` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `connection` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `queue` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `payload` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `exception` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `failed_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -1075,7 +1089,7 @@ CREATE TABLE `failed_jobs` (
 CREATE TABLE `golds` (
   `id` bigint UNSIGNED NOT NULL,
   `amount` decimal(20,2) NOT NULL,
-  `description` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -1292,13 +1306,13 @@ INSERT INTO `golds` (`id`, `amount`, `description`, `created_at`, `updated_at`) 
 (222, 0.00, '9/16 228', '2026-09-08 15:44:32', '2026-09-09 06:59:13'),
 (223, 0.00, NULL, '2026-09-08 16:39:48', '2026-09-09 06:59:13'),
 (224, -2730285964.00, NULL, '2026-09-09 06:59:14', '2026-09-09 06:59:14'),
-(225, 473000000.00, '.175$ binance', '2026-09-09 14:13:09', '2026-09-10 19:13:30'),
+(225, 0.00, '.175$ binance', '2026-09-09 14:13:09', '2026-09-28 00:47:40'),
 (226, 2000000.00, 'gold mm fee', '2026-09-09 18:27:52', '2026-09-09 18:27:52'),
 (227, 2000000.00, '9/17 800 + acc x acc', '2026-09-09 21:47:28', '2026-09-09 21:47:28'),
 (228, 248000000.00, 'First Payment for Leblanc 637 Dist', '2026-09-10 17:06:31', '2026-09-13 22:14:13'),
 (229, 1000000.00, '9/18', '2026-09-10 19:12:32', '2026-09-10 19:12:32'),
 (230, 206000000.00, '9/100 gcash', '2026-09-11 16:23:02', '2026-09-11 16:23:02'),
-(231, 351000000.00, '9/100 gcash', '2026-09-11 19:35:18', '2026-09-11 19:35:18'),
+(231, 348000000.00, '9/100 gcash', '2026-09-11 19:35:18', '2026-09-28 01:22:57'),
 (232, 1000000.00, '9/19 75', '2026-09-12 00:55:30', '2026-09-12 00:55:30'),
 (233, 18000000.00, '9/100 gcash', '2026-09-12 20:05:03', '2026-09-12 20:05:03'),
 (234, 9300000.00, '9/100', '2026-09-12 21:35:22', '2026-09-12 21:35:22'),
@@ -1314,7 +1328,7 @@ INSERT INTO `golds` (`id`, `amount`, `description`, `created_at`, `updated_at`) 
 (245, 1000000.00, 'mm fee', '2026-09-14 19:25:02', '2026-09-14 19:25:02'),
 (246, 9000000.00, '9/100 (new)', '2026-09-15 00:19:29', '2026-09-15 00:19:29'),
 (247, 0.00, '9/100 gcash', '2026-09-15 07:48:24', '2026-09-26 19:24:25'),
-(248, 472000000.00, 'Sold: Leblanc 624 Melee', '2026-09-15 16:46:14', '2026-09-23 01:04:25'),
+(248, 45000000.00, 'Sold: Leblanc 624 Melee', '2026-09-15 16:46:14', '2026-09-28 00:47:40'),
 (249, 2000000.00, '9/23 159', '2026-09-15 22:41:58', '2026-09-15 22:41:58'),
 (250, 2000000.00, 'gold mm fee', '2026-09-16 19:23:27', '2026-09-16 19:23:27'),
 (251, 2000000.00, '9/24 600', '2026-09-16 22:34:24', '2026-09-16 22:34:24'),
@@ -1338,12 +1352,18 @@ INSERT INTO `golds` (`id`, `amount`, `description`, `created_at`, `updated_at`) 
 (269, 85500000.00, '9.5/100 gcash', '2026-09-20 03:04:43', '2026-09-20 03:04:43'),
 (270, 72000000.00, '9/100 gcash', '2026-09-21 01:19:19', '2026-09-21 01:19:19'),
 (271, 1000000.00, 'gold mm fee', '2026-09-21 14:29:09', '2026-09-21 14:29:09'),
-(272, 500000000.00, 'Leblanc 637 Dist (2nd Payment)', '2026-09-21 14:29:37', '2026-09-21 14:29:37'),
+(272, 350000000.00, 'Leblanc 637 Dist (2nd Payment)', '2026-09-21 14:29:37', '2026-09-28 01:14:42'),
 (273, 2000000.00, 'gold mm fee', '2026-09-21 19:02:37', '2026-09-21 19:02:37'),
 (274, 38000000.00, '9.5/100 gcash', '2026-09-22 21:30:10', '2026-09-22 21:30:10'),
 (275, 9500000.00, '9.5/100 gcash', '2026-09-22 22:34:40', '2026-09-22 22:34:40'),
 (276, 118500000.00, '9.5/100 gcash', '2026-09-22 23:12:42', '2026-09-22 23:12:42'),
-(277, 52000000.00, 'Sold: Leblanc 561 Mage', '2026-09-24 08:41:12', '2026-09-26 19:24:25');
+(277, 52000000.00, 'Sold: Leblanc 561 Mage', '2026-09-24 08:41:12', '2026-09-26 19:24:25'),
+(278, 1000000.00, '10/3 51', '2026-09-28 00:49:06', '2026-09-28 00:49:06'),
+(279, 2000000.00, 'Gold mm fee', '2026-09-28 00:51:45', '2026-09-28 00:51:45'),
+(280, 218500000.00, 'test', '2026-09-28 00:56:16', '2026-09-28 00:56:16'),
+(281, 19000000.00, '9.5/100 gcash', '2026-09-28 00:59:42', '2026-09-28 00:59:42'),
+(282, 4.00, 'add', '2026-09-28 01:13:49', '2026-09-28 01:13:49'),
+(283, 3000000.00, 'bakat', '2026-09-28 01:22:44', '2026-09-28 01:22:44');
 
 -- --------------------------------------------------------
 
@@ -1353,9 +1373,9 @@ INSERT INTO `golds` (`id`, `amount`, `description`, `created_at`, `updated_at`) 
 
 CREATE TABLE `gold_logs` (
   `id` bigint UNSIGNED NOT NULL,
-  `type` enum('add','sell','fee') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `type` enum('add','sell','fee') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `amount` decimal(15,2) NOT NULL,
-  `description` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `cancelled_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
@@ -1714,7 +1734,17 @@ INSERT INTO `gold_logs` (`id`, `type`, `amount`, `description`, `cancelled_at`, 
 (374, 'add', 118500000.00, '9.5/100 gcash', NULL, '2026-09-22 23:12:42', '2026-09-22 23:12:42'),
 (375, 'sell', 550000000.00, '.22$ Paypal', NULL, '2026-09-23 01:04:25', '2026-09-23 01:04:25'),
 (376, 'add', 600000000.00, 'Sold: Leblanc 561 Mage', NULL, '2026-09-24 08:41:12', '2026-09-24 08:41:12'),
-(377, 'sell', 2000000000.00, '.18€ paypal', NULL, '2026-09-26 19:24:25', '2026-09-26 19:24:25');
+(377, 'sell', 2000000000.00, '.18€ paypal', NULL, '2026-09-26 19:24:25', '2026-09-26 19:24:25'),
+(378, 'sell', 57000000.00, '.21$ binance', NULL, '2026-09-28 00:45:32', '2026-09-28 00:45:32'),
+(379, 'sell', 900000000.00, 'Leblanc 609 Dist', NULL, '2026-09-28 00:47:40', '2026-09-28 00:47:40'),
+(380, 'fee', 1000000.00, '10/3 51', NULL, '2026-09-28 00:49:06', '2026-09-28 00:49:06'),
+(381, 'fee', 2000000.00, 'Gold mm fee', NULL, '2026-09-28 00:51:45', '2026-09-28 00:51:45'),
+(382, 'add', 218500000.00, 'test', NULL, '2026-09-28 00:56:16', '2026-09-28 00:56:16'),
+(383, 'add', 19000000.00, '9.5/100 gcash', NULL, '2026-09-28 00:59:42', '2026-09-28 00:59:42'),
+(384, 'add', 4.00, 'add', NULL, '2026-09-28 01:13:49', '2026-09-28 01:13:49'),
+(385, 'sell', 93000000.00, 'dismantled', NULL, '2026-09-28 01:14:42', '2026-09-28 01:14:42'),
+(386, 'fee', 3000000.00, 'bakat', NULL, '2026-09-28 01:22:44', '2026-09-28 01:22:44'),
+(387, 'sell', 3000000.00, 'pantay', NULL, '2026-09-28 01:22:57', '2026-09-28 01:22:57');
 
 -- --------------------------------------------------------
 
@@ -1724,8 +1754,8 @@ INSERT INTO `gold_logs` (`id`, `type`, `amount`, `description`, `cancelled_at`, 
 
 CREATE TABLE `jobs` (
   `id` bigint UNSIGNED NOT NULL,
-  `queue` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `payload` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `queue` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `payload` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `attempts` tinyint UNSIGNED NOT NULL,
   `reserved_at` int UNSIGNED DEFAULT NULL,
   `available_at` int UNSIGNED NOT NULL,
@@ -1739,13 +1769,13 @@ CREATE TABLE `jobs` (
 --
 
 CREATE TABLE `job_batches` (
-  `id` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `total_jobs` int NOT NULL,
   `pending_jobs` int NOT NULL,
   `failed_jobs` int NOT NULL,
-  `failed_job_ids` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
-  `options` mediumtext COLLATE utf8mb4_unicode_ci,
+  `failed_job_ids` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `options` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `cancelled_at` int DEFAULT NULL,
   `created_at` int NOT NULL,
   `finished_at` int DEFAULT NULL
@@ -1760,7 +1790,7 @@ CREATE TABLE `job_batches` (
 CREATE TABLE `middleman_fees` (
   `id` bigint UNSIGNED NOT NULL,
   `amount` decimal(15,2) NOT NULL,
-  `description` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -1857,7 +1887,10 @@ INSERT INTO `middleman_fees` (`id`, `amount`, `description`, `created_at`, `upda
 (85, 2000000.00, 'mm fee 127', '2026-09-19 19:42:52', '2026-09-19 19:42:52'),
 (86, 1000000.00, '9/27 45', '2026-09-19 20:47:09', '2026-09-19 20:47:09'),
 (87, 1000000.00, 'gold mm fee', '2026-09-21 14:29:09', '2026-09-21 14:29:09'),
-(88, 2000000.00, 'gold mm fee', '2026-09-21 19:02:37', '2026-09-21 19:02:37');
+(88, 2000000.00, 'gold mm fee', '2026-09-21 19:02:37', '2026-09-21 19:02:37'),
+(89, 1000000.00, '10/3 51', '2026-09-28 00:49:06', '2026-09-28 00:49:06'),
+(90, 2000000.00, 'Gold mm fee', '2026-09-28 00:51:45', '2026-09-28 00:51:45'),
+(91, 3000000.00, 'bakat', '2026-09-28 01:22:44', '2026-09-28 01:22:44');
 
 -- --------------------------------------------------------
 
@@ -1867,7 +1900,7 @@ INSERT INTO `middleman_fees` (`id`, `amount`, `description`, `created_at`, `upda
 
 CREATE TABLE `migrations` (
   `id` int UNSIGNED NOT NULL,
-  `migration` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `migration` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `batch` int NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -1911,8 +1944,8 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 --
 
 CREATE TABLE `password_reset_tokens` (
-  `email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `token` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `token` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -1924,11 +1957,11 @@ CREATE TABLE `password_reset_tokens` (
 
 CREATE TABLE `personal_access_tokens` (
   `id` bigint UNSIGNED NOT NULL,
-  `tokenable_type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tokenable_type` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `tokenable_id` bigint UNSIGNED NOT NULL,
-  `name` text COLLATE utf8mb4_unicode_ci NOT NULL,
-  `token` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `abilities` text COLLATE utf8mb4_unicode_ci,
+  `name` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `token` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `abilities` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `last_used_at` timestamp NULL DEFAULT NULL,
   `expires_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
@@ -1974,7 +2007,8 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (57, 'App\\Models\\User', 1, 'api-token', '48922e6194489a3a2bf8e3093c375028a0ecb1cb1719d5d325ada2a9c1d74cee', '[\"*\"]', '2026-09-20 03:57:03', NULL, '2026-09-19 07:32:52', '2026-09-20 03:57:03'),
 (58, 'App\\Models\\User', 1, 'api-token', 'b64c01a7bab66ff4aa34e098fc1579248e8b816f34b0075d62c675fc7ba197b4', '[\"*\"]', '2026-09-22 17:34:48', NULL, '2026-09-22 17:34:35', '2026-09-22 17:34:48'),
 (59, 'App\\Models\\User', 1, 'api-token', '12fb6ab6291b9b8a29d72c9be875a341b4fafad508ec4b6489bdf5ceb13b1189', '[\"*\"]', '2026-09-27 17:34:13', NULL, '2026-09-22 22:33:56', '2026-09-27 17:34:13'),
-(60, 'App\\Models\\User', 1, 'api-token', 'fd73fb1de72ce0cbfb58ec78878c32024c31c6f9b19a46ae29d0ef70a9e9ba1b', '[\"*\"]', '2026-09-28 00:10:27', NULL, '2026-09-28 00:10:26', '2026-09-28 00:10:27');
+(60, 'App\\Models\\User', 1, 'api-token', 'fd73fb1de72ce0cbfb58ec78878c32024c31c6f9b19a46ae29d0ef70a9e9ba1b', '[\"*\"]', '2026-09-28 00:10:27', NULL, '2026-09-28 00:10:26', '2026-09-28 00:10:27'),
+(61, 'App\\Models\\User', 1, 'api-token', 'ceb647f05eb2a1dc7eb57b5a18129286bd9762fdbb29ac32088dbbf6d6cf6c2a', '[\"*\"]', '2026-09-28 01:49:43', NULL, '2026-09-28 00:38:35', '2026-09-28 01:49:43');
 
 -- --------------------------------------------------------
 
@@ -1984,12 +2018,12 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 
 CREATE TABLE `rucoy_accounts` (
   `id` bigint UNSIGNED NOT NULL,
-  `description` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `avatar` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `avatar` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `price` decimal(12,2) DEFAULT NULL,
   `cost` decimal(12,2) DEFAULT NULL,
-  `payment_status` enum('not_paid','partially_paid','fully_paid') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'not_paid',
+  `payment_status` enum('not_paid','partially_paid','fully_paid') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'not_paid',
   `payment_date` date DEFAULT NULL,
   `archived_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
@@ -2049,10 +2083,10 @@ INSERT INTO `rucoy_accounts` (`id`, `description`, `email`, `avatar`, `price`, `
 
 CREATE TABLE `savings` (
   `id` bigint UNSIGNED NOT NULL,
-  `mode_of_payment` enum('CIMB','MARIBANK','GCASH') COLLATE utf8mb4_unicode_ci NOT NULL,
-  `type` enum('deposit','withdraw') COLLATE utf8mb4_unicode_ci NOT NULL,
-  `transfer` enum('daily_expenses','business') COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `description` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `mode_of_payment` enum('CIMB','MARIBANK','GCASH') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `type` enum('deposit','withdraw') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `transfer` enum('daily_expenses','business') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `amount` decimal(15,2) NOT NULL,
   `date` date NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
@@ -2083,11 +2117,11 @@ INSERT INTO `savings` (`id`, `mode_of_payment`, `type`, `transfer`, `description
 --
 
 CREATE TABLE `sessions` (
-  `id` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `user_id` bigint UNSIGNED DEFAULT NULL,
-  `ip_address` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `user_agent` text COLLATE utf8mb4_unicode_ci,
-  `payload` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ip_address` varchar(45) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `user_agent` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `payload` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `last_activity` int NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -2113,11 +2147,11 @@ INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, 
 CREATE TABLE `trades` (
   `id` bigint UNSIGNED NOT NULL,
   `gold_id` bigint UNSIGNED DEFAULT NULL,
-  `description` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `status` enum('kks','cash') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `status` enum('kks','cash') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `amount` decimal(15,2) NOT NULL,
-  `currency` varchar(3) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `payment_method` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `currency` varchar(3) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `payment_method` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `middleman_fee` decimal(15,2) DEFAULT NULL,
   `completion_date` date DEFAULT NULL,
   `archived_at` timestamp NULL DEFAULT NULL,
@@ -2237,7 +2271,8 @@ INSERT INTO `trades` (`id`, `gold_id`, `description`, `status`, `amount`, `curre
 (109, NULL, '9/26 3700', 'kks', 3700000000.00, NULL, NULL, NULL, '2026-09-26', '2026-09-27 17:31:40', '2026-09-18 15:53:40', '2026-09-27 17:31:40'),
 (110, NULL, '9/26', 'kks', 2500000000.00, NULL, NULL, NULL, '2026-09-26', '2026-09-26 19:23:12', '2026-09-19 07:33:12', '2026-09-26 19:23:12'),
 (111, NULL, '9/27 518', 'kks', 518000000.00, NULL, NULL, NULL, '2026-09-27', '2026-09-27 17:33:48', '2026-09-19 18:29:21', '2026-09-27 17:33:48'),
-(112, NULL, '9/27 45', 'kks', 45000000.00, NULL, NULL, NULL, '2026-09-27', '2026-09-27 00:19:51', '2026-09-19 20:47:09', '2026-09-27 00:19:51');
+(112, NULL, '9/27 45', 'kks', 45000000.00, NULL, NULL, NULL, '2026-09-27', '2026-09-27 00:19:51', '2026-09-19 20:47:09', '2026-09-27 00:19:51'),
+(113, NULL, '10/3 51', 'kks', 51000000.00, NULL, NULL, NULL, '2026-10-03', NULL, '2026-09-28 00:49:06', '2026-09-28 00:49:06');
 
 -- --------------------------------------------------------
 
@@ -2249,11 +2284,11 @@ CREATE TABLE `transactions` (
   `id` bigint UNSIGNED NOT NULL,
   `user_id` bigint UNSIGNED DEFAULT NULL,
   `category_id` bigint UNSIGNED NOT NULL,
-  `type` enum('income','expense') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `type` enum('income','expense') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `amount` decimal(15,2) NOT NULL,
-  `description` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `date` date NOT NULL,
-  `notes` text COLLATE utf8mb4_unicode_ci,
+  `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -2498,12 +2533,12 @@ INSERT INTO `transactions` (`id`, `user_id`, `category_id`, `type`, `amount`, `d
 
 CREATE TABLE `users` (
   `id` bigint UNSIGNED NOT NULL,
-  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `role` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'admin',
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `role` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'admin',
   `email_verified_at` timestamp NULL DEFAULT NULL,
-  `password` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `remember_token` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `remember_token` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -2694,7 +2729,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `activity_logs`
 --
 ALTER TABLE `activity_logs`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=680;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=693;
 
 --
 -- AUTO_INCREMENT for table `balance_entries`
@@ -2724,7 +2759,7 @@ ALTER TABLE `business_categories`
 -- AUTO_INCREMENT for table `business_transactions`
 --
 ALTER TABLE `business_transactions`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=120;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=121;
 
 --
 -- AUTO_INCREMENT for table `categories`
@@ -2742,13 +2777,13 @@ ALTER TABLE `failed_jobs`
 -- AUTO_INCREMENT for table `golds`
 --
 ALTER TABLE `golds`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=278;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=284;
 
 --
 -- AUTO_INCREMENT for table `gold_logs`
 --
 ALTER TABLE `gold_logs`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=378;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=388;
 
 --
 -- AUTO_INCREMENT for table `jobs`
@@ -2760,7 +2795,7 @@ ALTER TABLE `jobs`
 -- AUTO_INCREMENT for table `middleman_fees`
 --
 ALTER TABLE `middleman_fees`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=89;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=92;
 
 --
 -- AUTO_INCREMENT for table `migrations`
@@ -2772,7 +2807,7 @@ ALTER TABLE `migrations`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=61;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=62;
 
 --
 -- AUTO_INCREMENT for table `rucoy_accounts`
@@ -2790,7 +2825,7 @@ ALTER TABLE `savings`
 -- AUTO_INCREMENT for table `trades`
 --
 ALTER TABLE `trades`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=113;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=114;
 
 --
 -- AUTO_INCREMENT for table `transactions`

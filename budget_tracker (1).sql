@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.2.1
+-- version 6.0.0-dev+20260705.62fe883628
 -- https://www.phpmyadmin.net/
 --
--- Host: localhost
--- Generation Time: Sep 20, 2026 at 06:01 PM
--- Server version: 10.4.28-MariaDB
--- PHP Version: 8.2.4
+-- Host: localhost:3306
+-- Generation Time: Sep 28, 2026 at 08:33 AM
+-- Server version: 8.4.3
+-- PHP Version: 8.3.30
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -28,16 +28,16 @@ SET time_zone = "+00:00";
 --
 
 CREATE TABLE `activity_logs` (
-  `id` bigint(20) UNSIGNED NOT NULL,
-  `user_id` bigint(20) UNSIGNED DEFAULT NULL,
-  `loggable_type` varchar(255) NOT NULL,
-  `loggable_id` bigint(20) UNSIGNED NOT NULL,
-  `module` varchar(30) NOT NULL,
-  `type` varchar(50) NOT NULL,
-  `description` varchar(255) DEFAULT NULL,
-  `amount` varchar(50) DEFAULT NULL,
-  `ip_address` varchar(45) DEFAULT NULL,
-  `user_agent` text DEFAULT NULL,
+  `id` bigint UNSIGNED NOT NULL,
+  `user_id` bigint UNSIGNED DEFAULT NULL,
+  `loggable_type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `loggable_id` bigint UNSIGNED NOT NULL,
+  `module` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `type` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `amount` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `ip_address` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `user_agent` text COLLATE utf8mb4_unicode_ci,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -681,7 +681,54 @@ INSERT INTO `activity_logs` (`id`, `user_id`, `loggable_type`, `loggable_id`, `m
 (629, 1, 'App\\Models\\Trade', 112, 'trade', 'kks', '9/27 45', '45000000.00', '127.0.0.1', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36', '2026-09-19 20:47:09', '2026-09-19 20:47:09'),
 (630, 1, 'App\\Models\\GoldLog', 366, 'gold', 'fee', '9/27 45', '1000000.00', '127.0.0.1', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36', '2026-09-19 20:47:09', '2026-09-19 20:47:09'),
 (631, 1, 'App\\Models\\GoldLog', 367, 'gold', 'add', '9.5/100 gcash', '85500000.00', '127.0.0.1', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36', '2026-09-20 03:04:43', '2026-09-20 03:04:43'),
-(632, 1, 'App\\Models\\BusinessTransaction', 115, 'business', 'gold', '9.5/100 gcash', '0.01', '127.0.0.1', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36', '2026-09-20 03:05:19', '2026-09-20 03:05:19');
+(632, 1, 'App\\Models\\BusinessTransaction', 115, 'business', 'gold', '9.5/100 gcash', '0.01', '127.0.0.1', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36', '2026-09-20 03:05:19', '2026-09-20 03:05:19'),
+(633, 1, 'App\\Models\\GoldLog', 368, 'gold', 'add', '9/100 gcash', '72000000.00', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36', '2026-09-21 01:19:19', '2026-09-21 01:19:19'),
+(634, 1, 'App\\Models\\Transaction', 234, 'daily', 'expense', 'Coffee', '100.00', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36', '2026-09-21 01:20:57', '2026-09-21 01:20:57'),
+(635, 1, 'App\\Models\\Transaction', 235, 'daily', 'expense', 'Medical', '600.00', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36', '2026-09-21 01:21:50', '2026-09-21 01:21:50'),
+(636, 1, 'App\\Models\\Transaction', 236, 'daily', 'expense', 'Pocari Sweat', '88.00', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36', '2026-09-21 01:22:16', '2026-09-21 01:22:16'),
+(637, 1, 'App\\Models\\Transaction', 237, 'daily', 'expense', 'Coffee sa lucky chinatown', '130.00', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36', '2026-09-21 01:22:52', '2026-09-21 01:22:52'),
+(638, 1, 'App\\Models\\Transaction', 238, 'daily', 'expense', 'Lisensya', '660.00', '100.105.230.63', 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_5_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/153.0.8010.24 Mobile/15E148 Safari/604.1', '2026-09-21 08:35:27', '2026-09-21 08:35:27'),
+(639, 1, 'App\\Models\\GoldLog', 369, 'gold', 'fee', 'gold mm fee', '1000000.00', '100.105.230.63', 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_5_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/153.0.8010.24 Mobile/15E148 Safari/604.1', '2026-09-21 14:29:09', '2026-09-21 14:29:09'),
+(640, 1, 'App\\Models\\GoldLog', 370, 'gold', 'add', 'Leblanc 637 Dist (2nd Payment)', '500000000.00', '100.105.230.63', 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_5_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/153.0.8010.24 Mobile/15E148 Safari/604.1', '2026-09-21 14:29:37', '2026-09-21 14:29:37'),
+(641, 1, 'App\\Models\\Transaction', 239, 'daily', 'expense', 'Pants (Sports Fest)', '275.00', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36', '2026-09-21 17:24:46', '2026-09-21 17:24:46'),
+(642, 1, 'App\\Models\\GoldLog', 371, 'gold', 'fee', 'gold mm fee', '2000000.00', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36', '2026-09-21 19:02:37', '2026-09-21 19:02:37'),
+(643, 1, 'App\\Models\\Transaction', 240, 'daily', 'expense', 'Gas', '200.00', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36', '2026-09-22 16:57:23', '2026-09-22 16:57:23'),
+(644, 1, 'App\\Models\\Transaction', 241, 'daily', 'expense', 'baby', '50.00', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36', '2026-09-22 19:36:29', '2026-09-22 19:36:29'),
+(645, 1, 'App\\Models\\GoldLog', 372, 'gold', 'add', '9.5/100 gcash', '38000000.00', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36', '2026-09-22 21:30:10', '2026-09-22 21:30:10'),
+(646, 1, 'App\\Models\\GoldLog', 373, 'gold', 'add', '9.5/100 gcash', '9500000.00', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36', '2026-09-22 22:34:40', '2026-09-22 22:34:40'),
+(647, 1, 'App\\Models\\GoldLog', 374, 'gold', 'add', '9.5/100 gcash', '118500000.00', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36', '2026-09-22 23:12:42', '2026-09-22 23:12:42'),
+(648, 1, 'App\\Models\\GoldLog', 375, 'gold', 'sell', '.22$ Paypal', '550000000.00', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36', '2026-09-23 01:04:25', '2026-09-23 01:04:25'),
+(649, 1, 'App\\Models\\Trade', 103, 'trade', 'archived', '9/23 159', '159000000.00', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36', '2026-09-23 01:06:52', '2026-09-23 01:06:52'),
+(650, 1, 'App\\Models\\BusinessTransaction', 115, 'business', 'archived', '9.5/100 gcash', '697.42', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36', '2026-09-23 01:33:03', '2026-09-23 01:33:03'),
+(651, 1, 'App\\Models\\BusinessTransaction', 114, 'business', 'archived', '.17$ binance (62.98)', '207.02', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36', '2026-09-23 01:33:06', '2026-09-23 01:33:06'),
+(652, 1, 'App\\Models\\BusinessTransaction', 110, 'business', 'archived', '9/100 gcash', '353.47', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36', '2026-09-23 01:33:12', '2026-09-23 01:33:12'),
+(653, 1, 'App\\Models\\BusinessTransaction', 116, 'business', 'gold', NULL, '0.01', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36', '2026-09-23 01:34:16', '2026-09-23 01:34:16'),
+(654, 1, 'App\\Models\\BusinessTransaction', 116, 'business', 'archived', '.17$ (62.66 pesos)', '150.60', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36', '2026-09-23 01:35:06', '2026-09-23 01:35:06'),
+(655, 1, 'App\\Models\\Transaction', 242, 'daily', 'expense', 'Engine Cover', '784.00', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36', '2026-09-23 16:52:40', '2026-09-23 16:52:40'),
+(656, 1, 'App\\Models\\BusinessTransaction', 117, 'business', 'account', 'Leblanc 644 Melee', '18634.00', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36', '2026-09-23 17:39:12', '2026-09-23 17:39:12'),
+(657, 1, 'App\\Models\\Transaction', 243, 'daily', 'expense', 'baby', '200.00', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36', '2026-09-23 17:41:28', '2026-09-23 17:41:28'),
+(658, 1, 'App\\Models\\Trade', 104, 'trade', 'archived', '9/24 600', '600000000.00', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36', '2026-09-23 22:56:54', '2026-09-23 22:56:54'),
+(659, 1, 'App\\Models\\Trade', 105, 'trade', 'archived', '9/24 123', '123000000.00', '100.105.230.63', 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_5_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/153.0.8010.24 Mobile/15E148 Safari/604.1', '2026-09-24 05:16:15', '2026-09-24 05:16:15'),
+(660, 1, 'App\\Models\\Trade', 106, 'trade', 'archived', '9/24 385', '385000000.00', '100.105.230.63', 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_5_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/153.0.8010.24 Mobile/15E148 Safari/604.1', '2026-09-24 05:18:02', '2026-09-24 05:18:02'),
+(661, 1, 'App\\Models\\GoldLog', 376, 'gold', 'add', 'Sold: Leblanc 561 Mage', '600000000.00', '100.105.230.63', 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_5_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/153.0.8010.24 Mobile/15E148 Safari/604.1', '2026-09-24 08:41:12', '2026-09-24 08:41:12'),
+(662, 1, 'App\\Models\\Transaction', 244, 'daily', 'expense', 'jalibi dinner', '460.11', '100.105.230.63', 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_5_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/154.0.8037.55 Mobile/15E148 Safari/604.1', '2026-09-26 19:09:37', '2026-09-26 19:09:37'),
+(663, 1, 'App\\Models\\Transaction', 245, 'daily', 'expense', 'Gas', '594.19', '100.105.230.63', 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_5_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/154.0.8037.55 Mobile/15E148 Safari/604.1', '2026-09-26 19:10:01', '2026-09-26 19:10:01'),
+(664, 1, 'App\\Models\\Transaction', 246, 'daily', 'expense', 'cake', '655.00', '100.105.230.63', 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_5_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/154.0.8037.55 Mobile/15E148 Safari/604.1', '2026-09-26 19:11:03', '2026-09-26 19:11:03'),
+(665, 1, 'App\\Models\\Transaction', 247, 'daily', 'expense', 'royal', '30.00', '100.105.230.63', 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_5_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/154.0.8037.55 Mobile/15E148 Safari/604.1', '2026-09-26 19:11:25', '2026-09-26 19:11:25'),
+(666, 1, 'App\\Models\\Transaction', 248, 'daily', 'expense', 'baby', '3000.00', '100.105.230.63', 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_5_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/154.0.8037.55 Mobile/15E148 Safari/604.1', '2026-09-26 19:11:44', '2026-09-26 19:11:44'),
+(667, 1, 'App\\Models\\Trade', 110, 'trade', 'archived', '9/26', '2500000000.00', '100.105.230.63', 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_5_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/154.0.8037.55 Mobile/15E148 Safari/604.1', '2026-09-26 19:23:12', '2026-09-26 19:23:12'),
+(668, 1, 'App\\Models\\GoldLog', 377, 'gold', 'sell', '.18€ paypal', '2000000000.00', '100.105.230.63', 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_5_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/154.0.8037.55 Mobile/15E148 Safari/604.1', '2026-09-26 19:24:25', '2026-09-26 19:24:25'),
+(669, 1, 'App\\Models\\Trade', 112, 'trade', 'archived', '9/27 45', '45000000.00', '100.105.230.63', 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_5_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/154.0.8037.55 Mobile/15E148 Safari/604.1', '2026-09-27 00:19:51', '2026-09-27 00:19:51'),
+(670, 1, 'App\\Models\\Transaction', 249, 'daily', 'expense', 'jalibi midnight snack', '228.00', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', '2026-09-27 17:12:07', '2026-09-27 17:12:07'),
+(671, 1, 'App\\Models\\Transaction', 250, 'daily', 'expense', 'lunch', '228.00', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', '2026-09-27 17:12:58', '2026-09-27 17:12:58'),
+(672, 1, 'App\\Models\\Transaction', 251, 'daily', 'expense', 'meryenda', '50.00', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', '2026-09-27 17:13:36', '2026-09-27 17:13:36'),
+(673, 1, 'App\\Models\\Transaction', 252, 'daily', 'expense', 'baby', '430.00', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', '2026-09-27 17:13:47', '2026-09-27 17:13:47'),
+(674, 1, 'App\\Models\\BusinessTransaction', 111, 'business', 'archived', '.17$ (62.66 pesos)', '1342.45', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', '2026-09-27 17:27:25', '2026-09-27 17:27:25'),
+(675, 1, 'App\\Models\\BusinessTransaction', 118, 'business', 'gold', '9.5 / 100 Gcash', '0.01', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', '2026-09-27 17:28:27', '2026-09-27 17:28:27'),
+(676, 1, 'App\\Models\\BusinessTransaction', 118, 'business', 'archived', '9.5 / 100 Gcash', '476.59', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', '2026-09-27 17:30:24', '2026-09-27 17:30:24'),
+(677, 1, 'App\\Models\\BusinessTransaction', 119, 'business', 'gold', '(balance - no cost yet)', '0.01', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', '2026-09-27 17:31:30', '2026-09-27 17:31:30'),
+(678, 1, 'App\\Models\\Trade', 109, 'trade', 'archived', '9/26 3700', '3700000000.00', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', '2026-09-27 17:31:40', '2026-09-27 17:31:40'),
+(679, 1, 'App\\Models\\Trade', 111, 'trade', 'archived', '9/27 518', '518000000.00', '100.108.33.18', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36', '2026-09-27 17:33:48', '2026-09-27 17:33:48');
 
 -- --------------------------------------------------------
 
@@ -690,11 +737,11 @@ INSERT INTO `activity_logs` (`id`, `user_id`, `loggable_type`, `loggable_id`, `m
 --
 
 CREATE TABLE `balance_entries` (
-  `id` bigint(20) UNSIGNED NOT NULL,
-  `account` enum('PAYPAL','BINANCE','MEXC','MARIBANK','MAYA','BANKO') NOT NULL,
-  `type` enum('add','sell') NOT NULL,
+  `id` bigint UNSIGNED NOT NULL,
+  `account` enum('PAYPAL','BINANCE','MEXC','MARIBANK','MAYA','BANKO') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `type` enum('add','sell') COLLATE utf8mb4_unicode_ci NOT NULL,
   `amount` decimal(15,2) NOT NULL,
-  `description` varchar(255) DEFAULT NULL,
+  `description` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `date` date NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
@@ -760,12 +807,12 @@ INSERT INTO `balance_entries` (`id`, `account`, `type`, `amount`, `description`,
 --
 
 CREATE TABLE `budgets` (
-  `id` bigint(20) UNSIGNED NOT NULL,
-  `user_id` bigint(20) UNSIGNED DEFAULT NULL,
-  `category_id` bigint(20) UNSIGNED NOT NULL,
+  `id` bigint UNSIGNED NOT NULL,
+  `user_id` bigint UNSIGNED DEFAULT NULL,
+  `category_id` bigint UNSIGNED NOT NULL,
   `amount` decimal(15,2) NOT NULL,
-  `month` tinyint(3) UNSIGNED NOT NULL,
-  `year` smallint(5) UNSIGNED NOT NULL,
+  `month` tinyint UNSIGNED NOT NULL,
+  `year` smallint UNSIGNED NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -798,11 +845,11 @@ INSERT INTO `budgets` (`id`, `user_id`, `category_id`, `amount`, `month`, `year`
 --
 
 CREATE TABLE `business_budgets` (
-  `id` bigint(20) UNSIGNED NOT NULL,
-  `category_id` bigint(20) UNSIGNED NOT NULL,
+  `id` bigint UNSIGNED NOT NULL,
+  `category_id` bigint UNSIGNED NOT NULL,
   `amount` decimal(15,2) NOT NULL,
-  `month` tinyint(3) UNSIGNED NOT NULL,
-  `year` smallint(5) UNSIGNED NOT NULL,
+  `month` tinyint UNSIGNED NOT NULL,
+  `year` smallint UNSIGNED NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -814,11 +861,11 @@ CREATE TABLE `business_budgets` (
 --
 
 CREATE TABLE `business_categories` (
-  `id` bigint(20) UNSIGNED NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `type` enum('account','gold','expense') NOT NULL,
-  `color` varchar(7) NOT NULL DEFAULT '#6366f1',
-  `icon` varchar(255) NOT NULL DEFAULT 'tag',
+  `id` bigint UNSIGNED NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `type` enum('account','gold','expense') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `color` varchar(7) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '#6366f1',
+  `icon` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'tag',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -840,10 +887,10 @@ INSERT INTO `business_categories` (`id`, `name`, `type`, `color`, `icon`, `creat
 --
 
 CREATE TABLE `business_transactions` (
-  `id` bigint(20) UNSIGNED NOT NULL,
-  `account_id` bigint(20) UNSIGNED DEFAULT NULL,
-  `type` enum('account','gold','expense') NOT NULL,
-  `action` enum('buy','sell') DEFAULT NULL,
+  `id` bigint UNSIGNED NOT NULL,
+  `account_id` bigint UNSIGNED DEFAULT NULL,
+  `type` enum('account','gold','expense') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `action` enum('buy','sell') COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `price_rate` decimal(20,6) DEFAULT NULL,
   `cost_rate` decimal(20,6) DEFAULT NULL,
   `price_gold` decimal(20,0) DEFAULT NULL,
@@ -854,9 +901,9 @@ CREATE TABLE `business_transactions` (
   `cost_php` decimal(15,2) DEFAULT NULL,
   `profit_php` decimal(15,2) DEFAULT NULL,
   `amount` decimal(15,2) NOT NULL,
-  `description` varchar(255) DEFAULT NULL,
+  `description` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `date` date NOT NULL,
-  `notes` text DEFAULT NULL,
+  `notes` text COLLATE utf8mb4_unicode_ci,
   `archived_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
@@ -908,7 +955,7 @@ INSERT INTO `business_transactions` (`id`, `account_id`, `type`, `action`, `pric
 (80, NULL, 'gold', NULL, 0.204450, 0.165000, 342000000, 333333333, 59.8000, NULL, 4181.33, 3289.00, 892.33, 892.33, '.21$ paypal', '2026-08-29', NULL, '2026-08-28 16:18:47', '2026-08-28 16:15:59', '2026-08-28 16:18:47'),
 (81, NULL, 'gold', NULL, 0.210000, 0.165000, 366666667, 366666667, 61.0000, NULL, 4697.00, 3690.50, 1006.50, 1006.50, '.165$', '2026-08-29', NULL, '2026-08-31 17:15:35', '2026-08-28 16:20:52', '2026-08-31 17:15:35'),
 (83, NULL, 'gold', NULL, 0.210000, 0.170000, 617333333, 617333333, 60.2000, NULL, 7804.33, 6317.79, 1486.54, 1486.54, '.21$ paypal', '2026-09-01', NULL, '2026-08-31 17:17:53', '2026-08-31 17:17:09', '2026-08-31 17:17:53'),
-(84, 34, 'account', NULL, 0.200000, 0.170000, NULL, NULL, 61.5000, NULL, 7380.00, 5227.50, 2152.50, 2152.50, 'Leblanc 561 Mage', '2026-09-01', NULL, NULL, '2026-08-31 17:18:29', '2026-08-31 17:18:29'),
+(84, 34, 'account', NULL, 0.200000, 0.170000, NULL, NULL, 60.5000, 61.5000, 7260.00, 5227.50, 2032.50, 2032.50, 'Leblanc 561 Mage', '2026-09-01', NULL, '2026-09-24 08:41:12', '2026-08-31 17:18:29', '2026-09-24 08:41:12'),
 (86, NULL, 'gold', NULL, 0.200000, 0.200000, 110000000, 1, 61.5000, NULL, 1353.00, 0.00, 1353.00, 1353.00, 'MM Fee', '2026-09-01', NULL, '2026-08-31 18:10:41', '2026-08-31 18:09:49', '2026-08-31 18:10:41'),
 (87, NULL, 'gold', NULL, 0.210000, 0.170000, 138000000, 138000000, 61.0000, NULL, 1767.78, 1431.06, 336.72, 336.72, '.21$ paypal', '2026-09-02', NULL, '2026-09-01 17:26:17', '2026-09-01 17:21:45', '2026-09-01 17:26:17'),
 (88, NULL, 'gold', NULL, 0.220000, 0.170000, 242000000, 242000000, 61.0000, NULL, 3247.64, 2509.54, 738.10, 738.10, '.22$', '2026-09-02', NULL, '2026-09-01 17:26:12', '2026-09-01 17:23:17', '2026-09-01 17:26:12'),
@@ -930,12 +977,16 @@ INSERT INTO `business_transactions` (`id`, `account_id`, `type`, `action`, `pric
 (106, NULL, 'gold', NULL, 0.220000, 0.175000, 746300000, 746300000, 60.7400, NULL, 9972.66, 7932.80, 2039.86, 2039.86, '.175$', '2026-09-15', NULL, '2026-09-14 17:45:22', '2026-09-14 17:44:04', '2026-09-14 17:45:22'),
 (108, NULL, 'gold', NULL, 0.220000, 0.177500, 500000000, 500000000, 60.6978, NULL, 6676.76, 5458.13, 1218.63, 1218.63, '.22$', '2026-09-18', NULL, '2026-09-17 18:17:43', '2026-09-17 18:11:33', '2026-09-17 18:17:43'),
 (109, NULL, 'gold', NULL, 0.220000, 0.210000, 500000000, 500000000, 60.0000, NULL, 6600.00, 4576.95, 2023.05, 2023.05, 'First payment of Leblanc 637 Dist', '2026-09-18', NULL, '2026-09-17 18:48:24', '2026-09-17 18:45:24', '2026-09-17 18:48:24'),
-(110, NULL, 'gold', NULL, NULL, NULL, 90000000, 90000000, NULL, NULL, NULL, NULL, NULL, 0.01, '9/100 gcash', '2026-09-18', NULL, NULL, '2026-09-17 18:52:17', '2026-09-19 18:29:56'),
-(111, NULL, 'gold', NULL, 0.220000, 0.170000, 709000000, 709000000, 62.7300, NULL, 10102.04, 7528.62, 2573.42, 0.01, '.17$ (62.66 pesos)', '2026-09-18', NULL, NULL, '2026-09-17 21:55:35', '2026-09-20 03:10:45'),
+(110, NULL, 'gold', NULL, 0.220000, 0.177800, 162000000, 162000000, 60.4292, 62.5000, 2153.70, 1800.23, 353.47, 353.47, '9/100 gcash', '2026-09-18', NULL, '2026-09-23 01:33:12', '2026-09-17 18:52:17', '2026-09-23 01:33:12'),
+(111, NULL, 'gold', NULL, 0.209300, 0.170000, 652000000, 652000000, 60.7318, 62.6600, 8287.68, 6945.23, 1342.45, 1342.45, '.17$ (62.66 pesos)', '2026-09-18', NULL, '2026-09-27 17:27:25', '2026-09-17 21:55:35', '2026-09-27 17:27:25'),
 (112, NULL, 'gold', NULL, 0.230000, 0.170000, 200000000, 200000000, 60.6978, NULL, 2792.10, 2132.48, 659.62, 659.62, '.17$', '2026-09-18', NULL, '2026-09-18 00:45:26', '2026-09-18 00:43:06', '2026-09-18 00:45:26'),
 (113, 40, 'account', NULL, 0.220000, 0.170000, NULL, NULL, 60.0000, 62.0000, 15840.00, 9486.00, 6354.00, 6354.00, 'Leblanc 609 Dist', '2026-09-19', NULL, NULL, '2026-09-18 17:14:49', '2026-09-18 17:14:49'),
-(114, NULL, 'gold', NULL, NULL, NULL, 80000000, 80000000, NULL, NULL, NULL, NULL, NULL, 0.01, '.17$ binance (62.98)', '2026-09-20', NULL, NULL, '2026-09-19 18:45:14', '2026-09-19 18:45:14'),
-(115, NULL, 'gold', NULL, NULL, NULL, 85000000, 85000000, NULL, NULL, NULL, NULL, NULL, 0.01, '9.5/100 gcash', '2026-09-20', NULL, NULL, '2026-09-20 03:05:19', '2026-09-20 03:05:19');
+(114, NULL, 'gold', NULL, 0.220000, 0.170000, 80000000, 80000000, 60.4292, 62.9800, 1063.55, 856.53, 207.02, 207.03, '.17$ binance (62.98)', '2026-09-20', NULL, '2026-09-23 01:33:06', '2026-09-19 18:45:14', '2026-09-23 01:33:06'),
+(115, NULL, 'gold', NULL, 0.220000, 0.169700, 251500000, 251500000, 60.4292, 62.0000, 3343.55, 2646.13, 697.42, 697.42, '9.5/100 gcash', '2026-09-20', NULL, '2026-09-23 01:33:03', '2026-09-20 03:05:19', '2026-09-23 01:33:03'),
+(116, NULL, 'gold', NULL, 0.220000, 0.170000, 57000000, 57000000, 60.4292, 62.6600, 757.78, 607.18, 150.60, 150.61, '.17$ (62.66 pesos)', '2026-09-23', NULL, '2026-09-23 01:35:05', '2026-09-23 01:34:16', '2026-09-23 01:35:05'),
+(117, 41, 'account', NULL, 0.220000, 0.170000, NULL, NULL, 60.5000, 62.0000, 18634.00, 12121.00, 6513.00, 6513.00, 'Leblanc 644 Melee', '2026-09-24', NULL, NULL, '2026-09-23 17:39:12', '2026-09-23 17:39:12'),
+(118, NULL, 'gold', NULL, 0.209300, 0.175500, 218500000, 218500000, 60.7318, 60.0000, 2777.39, 2300.80, 476.59, 476.58, '9.5 / 100 Gcash', '2026-09-28', NULL, '2026-09-27 17:30:24', '2026-09-27 17:28:27', '2026-09-27 17:30:24'),
+(119, NULL, 'gold', NULL, NULL, NULL, 1129500000, 1129500000, NULL, NULL, NULL, NULL, NULL, 0.01, '(balance - no cost yet)', '2026-09-28', NULL, NULL, '2026-09-27 17:31:30', '2026-09-27 17:31:30');
 
 -- --------------------------------------------------------
 
@@ -944,9 +995,9 @@ INSERT INTO `business_transactions` (`id`, `account_id`, `type`, `action`, `pric
 --
 
 CREATE TABLE `cache` (
-  `key` varchar(255) NOT NULL,
-  `value` mediumtext NOT NULL,
-  `expiration` int(11) NOT NULL
+  `key` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `value` mediumtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `expiration` int NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -956,9 +1007,9 @@ CREATE TABLE `cache` (
 --
 
 CREATE TABLE `cache_locks` (
-  `key` varchar(255) NOT NULL,
-  `owner` varchar(255) NOT NULL,
-  `expiration` int(11) NOT NULL
+  `key` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `owner` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `expiration` int NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -968,12 +1019,12 @@ CREATE TABLE `cache_locks` (
 --
 
 CREATE TABLE `categories` (
-  `id` bigint(20) UNSIGNED NOT NULL,
-  `user_id` bigint(20) UNSIGNED DEFAULT NULL,
-  `name` varchar(255) NOT NULL,
-  `type` enum('income','expense') NOT NULL,
-  `color` varchar(7) NOT NULL DEFAULT '#6366f1',
-  `icon` varchar(255) NOT NULL DEFAULT 'tag',
+  `id` bigint UNSIGNED NOT NULL,
+  `user_id` bigint UNSIGNED DEFAULT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `type` enum('income','expense') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `color` varchar(7) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '#6366f1',
+  `icon` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'tag',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -1006,13 +1057,13 @@ INSERT INTO `categories` (`id`, `user_id`, `name`, `type`, `color`, `icon`, `cre
 --
 
 CREATE TABLE `failed_jobs` (
-  `id` bigint(20) UNSIGNED NOT NULL,
-  `uuid` varchar(255) NOT NULL,
-  `connection` text NOT NULL,
-  `queue` text NOT NULL,
-  `payload` longtext NOT NULL,
-  `exception` longtext NOT NULL,
-  `failed_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `id` bigint UNSIGNED NOT NULL,
+  `uuid` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `connection` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `queue` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `payload` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `exception` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `failed_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -1022,9 +1073,9 @@ CREATE TABLE `failed_jobs` (
 --
 
 CREATE TABLE `golds` (
-  `id` bigint(20) UNSIGNED NOT NULL,
+  `id` bigint UNSIGNED NOT NULL,
   `amount` decimal(20,2) NOT NULL,
-  `description` varchar(255) DEFAULT NULL,
+  `description` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -1262,15 +1313,15 @@ INSERT INTO `golds` (`id`, `amount`, `description`, `created_at`, `updated_at`) 
 (244, 0.00, '.17$', '2026-09-14 17:40:56', '2026-09-14 17:41:48'),
 (245, 1000000.00, 'mm fee', '2026-09-14 19:25:02', '2026-09-14 19:25:02'),
 (246, 9000000.00, '9/100 (new)', '2026-09-15 00:19:29', '2026-09-15 00:19:29'),
-(247, 720000000.00, '9/100 gcash', '2026-09-15 07:48:24', '2026-09-15 07:48:24'),
-(248, 1022000000.00, 'Sold: Leblanc 624 Melee', '2026-09-15 16:46:14', '2026-09-18 15:54:06'),
+(247, 0.00, '9/100 gcash', '2026-09-15 07:48:24', '2026-09-26 19:24:25'),
+(248, 472000000.00, 'Sold: Leblanc 624 Melee', '2026-09-15 16:46:14', '2026-09-23 01:04:25'),
 (249, 2000000.00, '9/23 159', '2026-09-15 22:41:58', '2026-09-15 22:41:58'),
 (250, 2000000.00, 'gold mm fee', '2026-09-16 19:23:27', '2026-09-16 19:23:27'),
 (251, 2000000.00, '9/24 600', '2026-09-16 22:34:24', '2026-09-16 22:34:24'),
 (252, 2000000.00, '9/24 123', '2026-09-17 00:02:01', '2026-09-17 00:02:01'),
 (253, 2000000.00, '9/24 385', '2026-09-17 18:04:34', '2026-09-17 18:04:34'),
 (254, 9000000.00, '9/100 gcash', '2026-09-17 18:51:59', '2026-09-17 18:51:59'),
-(255, 732000000.00, '.17$ binance (62.73 peso)', '2026-09-17 21:59:42', '2026-09-17 21:59:42'),
+(255, 0.00, '.17$ binance (62.73 peso)', '2026-09-17 21:59:42', '2026-09-26 19:24:25'),
 (256, 250000000.00, 'Sold: Leblanc 510 Dist', '2026-09-18 00:23:28', '2026-09-18 00:23:28'),
 (257, 250000000.00, 'cash back', '2026-09-18 00:42:16', '2026-09-18 00:42:16'),
 (258, 177000000.00, '.17$ binance (62.66 peso)', '2026-09-18 15:25:10', '2026-09-18 15:25:10'),
@@ -1284,7 +1335,15 @@ INSERT INTO `golds` (`id`, `amount`, `description`, `created_at`, `updated_at`) 
 (266, 80000000.00, '.17$ binance (62.98 peso)', '2026-09-19 19:42:29', '2026-09-19 19:42:29'),
 (267, 2000000.00, 'mm fee 127', '2026-09-19 19:42:52', '2026-09-19 19:42:52'),
 (268, 1000000.00, '9/27 45', '2026-09-19 20:47:09', '2026-09-19 20:47:09'),
-(269, 85500000.00, '9.5/100 gcash', '2026-09-20 03:04:43', '2026-09-20 03:04:43');
+(269, 85500000.00, '9.5/100 gcash', '2026-09-20 03:04:43', '2026-09-20 03:04:43'),
+(270, 72000000.00, '9/100 gcash', '2026-09-21 01:19:19', '2026-09-21 01:19:19'),
+(271, 1000000.00, 'gold mm fee', '2026-09-21 14:29:09', '2026-09-21 14:29:09'),
+(272, 500000000.00, 'Leblanc 637 Dist (2nd Payment)', '2026-09-21 14:29:37', '2026-09-21 14:29:37'),
+(273, 2000000.00, 'gold mm fee', '2026-09-21 19:02:37', '2026-09-21 19:02:37'),
+(274, 38000000.00, '9.5/100 gcash', '2026-09-22 21:30:10', '2026-09-22 21:30:10'),
+(275, 9500000.00, '9.5/100 gcash', '2026-09-22 22:34:40', '2026-09-22 22:34:40'),
+(276, 118500000.00, '9.5/100 gcash', '2026-09-22 23:12:42', '2026-09-22 23:12:42'),
+(277, 52000000.00, 'Sold: Leblanc 561 Mage', '2026-09-24 08:41:12', '2026-09-26 19:24:25');
 
 -- --------------------------------------------------------
 
@@ -1293,10 +1352,10 @@ INSERT INTO `golds` (`id`, `amount`, `description`, `created_at`, `updated_at`) 
 --
 
 CREATE TABLE `gold_logs` (
-  `id` bigint(20) UNSIGNED NOT NULL,
-  `type` enum('add','sell','fee') NOT NULL,
+  `id` bigint UNSIGNED NOT NULL,
+  `type` enum('add','sell','fee') COLLATE utf8mb4_unicode_ci NOT NULL,
   `amount` decimal(15,2) NOT NULL,
-  `description` varchar(255) DEFAULT NULL,
+  `description` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `cancelled_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
@@ -1645,7 +1704,17 @@ INSERT INTO `gold_logs` (`id`, `type`, `amount`, `description`, `cancelled_at`, 
 (364, 'add', 80000000.00, '.17$ binance (62.98 peso)', NULL, '2026-09-19 19:42:29', '2026-09-19 19:42:29'),
 (365, 'fee', 2000000.00, 'mm fee 127', NULL, '2026-09-19 19:42:52', '2026-09-19 19:42:52'),
 (366, 'fee', 1000000.00, '9/27 45', NULL, '2026-09-19 20:47:09', '2026-09-19 20:47:09'),
-(367, 'add', 85500000.00, '9.5/100 gcash', NULL, '2026-09-20 03:04:43', '2026-09-20 03:04:43');
+(367, 'add', 85500000.00, '9.5/100 gcash', NULL, '2026-09-20 03:04:43', '2026-09-20 03:04:43'),
+(368, 'add', 72000000.00, '9/100 gcash', NULL, '2026-09-21 01:19:19', '2026-09-21 01:19:19'),
+(369, 'fee', 1000000.00, 'gold mm fee', NULL, '2026-09-21 14:29:09', '2026-09-21 14:29:09'),
+(370, 'add', 500000000.00, 'Leblanc 637 Dist (2nd Payment)', NULL, '2026-09-21 14:29:37', '2026-09-21 14:29:37'),
+(371, 'fee', 2000000.00, 'gold mm fee', NULL, '2026-09-21 19:02:37', '2026-09-21 19:02:37'),
+(372, 'add', 38000000.00, '9.5/100 gcash', NULL, '2026-09-22 21:30:10', '2026-09-22 21:30:10'),
+(373, 'add', 9500000.00, '9.5/100 gcash', NULL, '2026-09-22 22:34:40', '2026-09-22 22:34:40'),
+(374, 'add', 118500000.00, '9.5/100 gcash', NULL, '2026-09-22 23:12:42', '2026-09-22 23:12:42'),
+(375, 'sell', 550000000.00, '.22$ Paypal', NULL, '2026-09-23 01:04:25', '2026-09-23 01:04:25'),
+(376, 'add', 600000000.00, 'Sold: Leblanc 561 Mage', NULL, '2026-09-24 08:41:12', '2026-09-24 08:41:12'),
+(377, 'sell', 2000000000.00, '.18€ paypal', NULL, '2026-09-26 19:24:25', '2026-09-26 19:24:25');
 
 -- --------------------------------------------------------
 
@@ -1654,13 +1723,13 @@ INSERT INTO `gold_logs` (`id`, `type`, `amount`, `description`, `cancelled_at`, 
 --
 
 CREATE TABLE `jobs` (
-  `id` bigint(20) UNSIGNED NOT NULL,
-  `queue` varchar(255) NOT NULL,
-  `payload` longtext NOT NULL,
-  `attempts` tinyint(3) UNSIGNED NOT NULL,
-  `reserved_at` int(10) UNSIGNED DEFAULT NULL,
-  `available_at` int(10) UNSIGNED NOT NULL,
-  `created_at` int(10) UNSIGNED NOT NULL
+  `id` bigint UNSIGNED NOT NULL,
+  `queue` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `payload` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `attempts` tinyint UNSIGNED NOT NULL,
+  `reserved_at` int UNSIGNED DEFAULT NULL,
+  `available_at` int UNSIGNED NOT NULL,
+  `created_at` int UNSIGNED NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -1670,16 +1739,16 @@ CREATE TABLE `jobs` (
 --
 
 CREATE TABLE `job_batches` (
-  `id` varchar(255) NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `total_jobs` int(11) NOT NULL,
-  `pending_jobs` int(11) NOT NULL,
-  `failed_jobs` int(11) NOT NULL,
-  `failed_job_ids` longtext NOT NULL,
-  `options` mediumtext DEFAULT NULL,
-  `cancelled_at` int(11) DEFAULT NULL,
-  `created_at` int(11) NOT NULL,
-  `finished_at` int(11) DEFAULT NULL
+  `id` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `total_jobs` int NOT NULL,
+  `pending_jobs` int NOT NULL,
+  `failed_jobs` int NOT NULL,
+  `failed_job_ids` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `options` mediumtext COLLATE utf8mb4_unicode_ci,
+  `cancelled_at` int DEFAULT NULL,
+  `created_at` int NOT NULL,
+  `finished_at` int DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -1689,9 +1758,9 @@ CREATE TABLE `job_batches` (
 --
 
 CREATE TABLE `middleman_fees` (
-  `id` bigint(20) UNSIGNED NOT NULL,
+  `id` bigint UNSIGNED NOT NULL,
   `amount` decimal(15,2) NOT NULL,
-  `description` varchar(255) DEFAULT NULL,
+  `description` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -1786,7 +1855,9 @@ INSERT INTO `middleman_fees` (`id`, `amount`, `description`, `created_at`, `upda
 (83, 2000000.00, '9/26', '2026-09-19 07:33:12', '2026-09-19 07:33:12'),
 (84, 2000000.00, '9/27 518', '2026-09-19 18:29:21', '2026-09-19 18:29:21'),
 (85, 2000000.00, 'mm fee 127', '2026-09-19 19:42:52', '2026-09-19 19:42:52'),
-(86, 1000000.00, '9/27 45', '2026-09-19 20:47:09', '2026-09-19 20:47:09');
+(86, 1000000.00, '9/27 45', '2026-09-19 20:47:09', '2026-09-19 20:47:09'),
+(87, 1000000.00, 'gold mm fee', '2026-09-21 14:29:09', '2026-09-21 14:29:09'),
+(88, 2000000.00, 'gold mm fee', '2026-09-21 19:02:37', '2026-09-21 19:02:37');
 
 -- --------------------------------------------------------
 
@@ -1795,9 +1866,9 @@ INSERT INTO `middleman_fees` (`id`, `amount`, `description`, `created_at`, `upda
 --
 
 CREATE TABLE `migrations` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `migration` varchar(255) NOT NULL,
-  `batch` int(11) NOT NULL
+  `id` int UNSIGNED NOT NULL,
+  `migration` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `batch` int NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -1830,7 +1901,8 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (36, '2026_08_19_000002_add_gold_amount_columns_to_business_transactions_table', 10),
 (37, '2026_08_24_000001_expand_balance_entries_account_enum', 11),
 (38, '2026_09_15_000001_add_cost_php_rate_to_business_transactions_table', 12),
-(39, '2026_09_18_091900_add_user_id_to_activity_logs_table', 12);
+(39, '2026_09_18_091900_add_user_id_to_activity_logs_table', 12),
+(40, '2026_09_22_034500_add_middleman_fee_to_trades_table', 13);
 
 -- --------------------------------------------------------
 
@@ -1839,8 +1911,8 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 --
 
 CREATE TABLE `password_reset_tokens` (
-  `email` varchar(255) NOT NULL,
-  `token` varchar(255) NOT NULL,
+  `email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `token` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -1851,12 +1923,12 @@ CREATE TABLE `password_reset_tokens` (
 --
 
 CREATE TABLE `personal_access_tokens` (
-  `id` bigint(20) UNSIGNED NOT NULL,
-  `tokenable_type` varchar(255) NOT NULL,
-  `tokenable_id` bigint(20) UNSIGNED NOT NULL,
-  `name` text NOT NULL,
-  `token` varchar(64) NOT NULL,
-  `abilities` text DEFAULT NULL,
+  `id` bigint UNSIGNED NOT NULL,
+  `tokenable_type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tokenable_id` bigint UNSIGNED NOT NULL,
+  `name` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `token` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `abilities` text COLLATE utf8mb4_unicode_ci,
   `last_used_at` timestamp NULL DEFAULT NULL,
   `expires_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
@@ -1889,17 +1961,20 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (34, 'App\\Models\\User', 1, 'api-token', '5cc3b23da931d997bf81e2b45a3add4358518267d0d5e50f8fc25ed60f67ede3', '[\"*\"]', '2026-08-26 00:45:19', NULL, '2026-08-24 23:40:14', '2026-08-26 00:45:19'),
 (36, 'App\\Models\\User', 1, 'api-token', 'abbc8fe14827a4ba8fee289697eb097f5f3f7d105729621d4e9dd5fb26851e6e', '[\"*\"]', '2026-08-26 14:57:25', NULL, '2026-08-26 01:48:45', '2026-08-26 14:57:25'),
 (38, 'App\\Models\\User', 1, 'api-token', 'c79cd677b9fad3da71c5f256cfc9c44c70ea8c52d375865eeb467b13b694fc2e', '[\"*\"]', '2026-08-26 19:09:54', NULL, '2026-08-26 02:24:06', '2026-08-26 19:09:54'),
-(42, 'App\\Models\\User', 1, 'api-token', '979157eb9857cef7775589dad49cd145002a45989d310764e04261f9ea25af3d', '[\"*\"]', '2026-09-17 17:44:26', NULL, '2026-08-28 20:50:29', '2026-09-17 17:44:26'),
+(42, 'App\\Models\\User', 1, 'api-token', '979157eb9857cef7775589dad49cd145002a45989d310764e04261f9ea25af3d', '[\"*\"]', '2026-09-27 14:36:56', NULL, '2026-08-28 20:50:29', '2026-09-27 14:36:56'),
 (47, 'App\\Models\\User', 1, 'api-token', '84fca769dac6498e949453a6c3712f06920a656ba78fd9cfed6ce424283187f5', '[\"*\"]', '2026-09-06 21:32:35', NULL, '2026-08-31 17:59:47', '2026-09-06 21:32:35'),
 (48, 'App\\Models\\User', 1, 'api-token', 'caf54d9eaed53471be82ca4f69ee12d86f91b741529c16272dc89d78a0ecb089', '[\"*\"]', '2026-09-14 19:51:38', NULL, '2026-08-31 18:03:51', '2026-09-14 19:51:38'),
 (49, 'App\\Models\\User', 1, 'api-token', '4f47de4b929a95be669fa91e1fdccfce1e58fa6fcbafcd9b19ddfb92833370d5', '[\"*\"]', '2026-09-10 19:31:02', NULL, '2026-09-06 21:36:42', '2026-09-10 19:31:02'),
 (51, 'App\\Models\\User', 1, 'api-token', 'ba3ca0818ed14b09ba3015618c34a3ce30ee595e7204cc4be0047b21ef734fe6', '[\"*\"]', '2026-09-14 19:47:36', NULL, '2026-09-14 18:14:22', '2026-09-14 19:47:36'),
 (52, 'App\\Models\\User', 1, 'api-token', '12c9364915d758c1beacefb24b72c84136c394e734827704ec60277d522ffe7e', '[\"*\"]', '2026-09-14 18:41:43', NULL, '2026-09-14 18:26:06', '2026-09-14 18:41:43'),
-(53, 'App\\Models\\User', 1, 'api-token', '4c0884a6372832a24132deffb517109287843079899d47e6ccaed8ab266de685', '[\"*\"]', '2026-09-18 00:48:20', NULL, '2026-09-14 19:53:18', '2026-09-18 00:48:20'),
+(53, 'App\\Models\\User', 1, 'api-token', '4c0884a6372832a24132deffb517109287843079899d47e6ccaed8ab266de685', '[\"*\"]', '2026-09-22 22:33:40', NULL, '2026-09-14 19:53:18', '2026-09-22 22:33:40'),
 (54, 'App\\Models\\User', 5, 'api-token', '23f734861afd441629fb719fc3825ed96efd59ee2dc4ffe0e819953db4705fb5', '[\"*\"]', '2026-09-17 15:51:40', NULL, '2026-09-17 04:10:49', '2026-09-17 15:51:40'),
 (55, 'App\\Models\\User', 1, 'api-token', '2744f2e743a674b73e7e30d8948b51295b9b246c48f2e0546882cd33c0c10d9f', '[\"*\"]', '2026-09-17 23:34:00', NULL, '2026-09-17 16:44:17', '2026-09-17 23:34:00'),
 (56, 'App\\Models\\User', 1, 'api-token', '0a0e46aea9298b0268ed50701360405e70c65fbbb695487b31112976a7b859fc', '[\"*\"]', '2026-09-18 17:35:51', NULL, '2026-09-18 15:24:02', '2026-09-18 17:35:51'),
-(57, 'App\\Models\\User', 1, 'api-token', '48922e6194489a3a2bf8e3093c375028a0ecb1cb1719d5d325ada2a9c1d74cee', '[\"*\"]', '2026-09-20 03:57:03', NULL, '2026-09-19 07:32:52', '2026-09-20 03:57:03');
+(57, 'App\\Models\\User', 1, 'api-token', '48922e6194489a3a2bf8e3093c375028a0ecb1cb1719d5d325ada2a9c1d74cee', '[\"*\"]', '2026-09-20 03:57:03', NULL, '2026-09-19 07:32:52', '2026-09-20 03:57:03'),
+(58, 'App\\Models\\User', 1, 'api-token', 'b64c01a7bab66ff4aa34e098fc1579248e8b816f34b0075d62c675fc7ba197b4', '[\"*\"]', '2026-09-22 17:34:48', NULL, '2026-09-22 17:34:35', '2026-09-22 17:34:48'),
+(59, 'App\\Models\\User', 1, 'api-token', '12fb6ab6291b9b8a29d72c9be875a341b4fafad508ec4b6489bdf5ceb13b1189', '[\"*\"]', '2026-09-27 17:34:13', NULL, '2026-09-22 22:33:56', '2026-09-27 17:34:13'),
+(60, 'App\\Models\\User', 1, 'api-token', 'fd73fb1de72ce0cbfb58ec78878c32024c31c6f9b19a46ae29d0ef70a9e9ba1b', '[\"*\"]', '2026-09-28 00:10:27', NULL, '2026-09-28 00:10:26', '2026-09-28 00:10:27');
 
 -- --------------------------------------------------------
 
@@ -1908,13 +1983,13 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 --
 
 CREATE TABLE `rucoy_accounts` (
-  `id` bigint(20) UNSIGNED NOT NULL,
-  `description` varchar(255) NOT NULL,
-  `email` varchar(255) NOT NULL,
-  `avatar` varchar(255) DEFAULT NULL,
+  `id` bigint UNSIGNED NOT NULL,
+  `description` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `avatar` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `price` decimal(12,2) DEFAULT NULL,
   `cost` decimal(12,2) DEFAULT NULL,
-  `payment_status` enum('not_paid','partially_paid','fully_paid') NOT NULL DEFAULT 'not_paid',
+  `payment_status` enum('not_paid','partially_paid','fully_paid') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'not_paid',
   `payment_date` date DEFAULT NULL,
   `archived_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
@@ -1957,13 +2032,14 @@ INSERT INTO `rucoy_accounts` (`id`, `description`, `email`, `avatar`, `price`, `
 (31, '950kk (.21$ paypal)', 'leblancrucoys@gmail.com', NULL, 950000000.00, 950000000.00, 'not_paid', NULL, '2026-08-18 17:55:35', '2026-08-18 17:53:55', '2026-08-18 17:55:35'),
 (32, 'Leblanc 637 Dist', 'rafa12galmeida@gmail.com', NULL, 2500000000.00, 1925000000.00, 'partially_paid', '2027-01-10', NULL, '2026-08-18 22:08:16', '2026-09-10 18:54:18'),
 (33, 'Leblanc 621 Dist', 'ptraindist02@gmail.com', NULL, 1300000000.00, 1000000000.00, 'fully_paid', NULL, NULL, '2026-08-24 23:04:46', '2026-08-24 23:04:46'),
-(34, 'Leblanc 561 Mage', 'muhammadse53@gmail.com', NULL, 600000000.00, 500000000.00, 'fully_paid', NULL, NULL, '2026-08-28 17:50:07', '2026-08-28 17:50:07'),
+(34, 'Leblanc 561 Mage', 'muhammadse53@gmail.com', NULL, 600000000.00, 500000000.00, 'fully_paid', NULL, '2026-09-24 08:41:12', '2026-08-28 17:50:07', '2026-09-24 08:41:12'),
 (35, 'Leblanc 632 Melee', 'anotheraltomg@gmail.com', NULL, 2000000000.00, 1600000000.00, 'fully_paid', NULL, NULL, '2026-09-01 17:52:00', '2026-09-10 17:07:47'),
 (36, 'Leblanc 586 Magic', 'dechavezmike68@gmail.com', NULL, 800000000.00, 570000000.00, 'fully_paid', NULL, NULL, '2026-09-01 19:13:47', '2026-09-10 17:07:41'),
 (37, 'Leblanc 514 Dist', 'vegenabob484@gmail.com', NULL, 250000000.00, 190000000.00, 'fully_paid', NULL, NULL, '2026-09-01 19:15:06', '2026-09-10 17:07:37'),
 (38, 'Leblanc 583 Dist', 'rucoybuyandsell@gmail.com', NULL, 800000000.00, 540000000.00, 'fully_paid', NULL, NULL, '2026-09-01 19:30:31', '2026-09-10 17:07:29'),
 (39, 'Leblanc 510 Dist', 'stink3003mc@gmail.com', NULL, 250000000.00, 118000000.00, 'not_paid', '2026-09-18', '2026-09-18 00:23:28', '2026-09-10 17:20:50', '2026-09-18 00:23:28'),
-(40, 'Leblanc 609 Dist', 'peytenbiyikliffako@gmail.com', NULL, 1200000000.00, 900000000.00, 'not_paid', '2026-09-26', NULL, '2026-09-18 17:14:22', '2026-09-18 17:14:22');
+(40, 'Leblanc 609 Dist', 'peytenbiyikliffako@gmail.com', NULL, 1200000000.00, 900000000.00, 'fully_paid', NULL, NULL, '2026-09-18 17:14:22', '2026-09-27 17:34:08'),
+(41, 'Leblanc 644 Melee', 'topmelee2026@gmail.com', NULL, 1400000000.00, 1150000000.00, 'not_paid', '2026-10-01', NULL, '2026-09-23 17:38:33', '2026-09-23 17:38:33');
 
 -- --------------------------------------------------------
 
@@ -1972,11 +2048,11 @@ INSERT INTO `rucoy_accounts` (`id`, `description`, `email`, `avatar`, `price`, `
 --
 
 CREATE TABLE `savings` (
-  `id` bigint(20) UNSIGNED NOT NULL,
-  `mode_of_payment` enum('CIMB','MARIBANK','GCASH') NOT NULL,
-  `type` enum('deposit','withdraw') NOT NULL,
-  `transfer` enum('daily_expenses','business') DEFAULT NULL,
-  `description` varchar(255) DEFAULT NULL,
+  `id` bigint UNSIGNED NOT NULL,
+  `mode_of_payment` enum('CIMB','MARIBANK','GCASH') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `type` enum('deposit','withdraw') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `transfer` enum('daily_expenses','business') COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `amount` decimal(15,2) NOT NULL,
   `date` date NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
@@ -2007,12 +2083,12 @@ INSERT INTO `savings` (`id`, `mode_of_payment`, `type`, `transfer`, `description
 --
 
 CREATE TABLE `sessions` (
-  `id` varchar(255) NOT NULL,
-  `user_id` bigint(20) UNSIGNED DEFAULT NULL,
-  `ip_address` varchar(45) DEFAULT NULL,
-  `user_agent` text DEFAULT NULL,
-  `payload` longtext NOT NULL,
-  `last_activity` int(11) NOT NULL
+  `id` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `user_id` bigint UNSIGNED DEFAULT NULL,
+  `ip_address` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `user_agent` text COLLATE utf8mb4_unicode_ci,
+  `payload` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `last_activity` int NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -2035,13 +2111,14 @@ INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, 
 --
 
 CREATE TABLE `trades` (
-  `id` bigint(20) UNSIGNED NOT NULL,
-  `gold_id` bigint(20) UNSIGNED DEFAULT NULL,
-  `description` varchar(255) DEFAULT NULL,
-  `status` enum('kks','cash') NOT NULL,
+  `id` bigint UNSIGNED NOT NULL,
+  `gold_id` bigint UNSIGNED DEFAULT NULL,
+  `description` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `status` enum('kks','cash') COLLATE utf8mb4_unicode_ci NOT NULL,
   `amount` decimal(15,2) NOT NULL,
-  `currency` varchar(3) DEFAULT NULL,
-  `payment_method` varchar(255) DEFAULT NULL,
+  `currency` varchar(3) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `payment_method` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `middleman_fee` decimal(15,2) DEFAULT NULL,
   `completion_date` date DEFAULT NULL,
   `archived_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
@@ -2052,115 +2129,115 @@ CREATE TABLE `trades` (
 -- Dumping data for table `trades`
 --
 
-INSERT INTO `trades` (`id`, `gold_id`, `description`, `status`, `amount`, `currency`, `payment_method`, `completion_date`, `archived_at`, `created_at`, `updated_at`) VALUES
-(1, NULL, '7/6 330', 'kks', 330000000.00, NULL, NULL, '2026-07-06', '2026-07-06 20:01:36', '2026-06-30 23:20:25', '2026-07-06 20:01:36'),
-(2, NULL, '7/25 €2351 + 781 Melee x TOP 3 Melee', 'cash', 2351.00, 'EUR', 'paypal', '2026-07-24', '2026-08-11 17:26:46', '2026-07-01 00:22:27', '2026-08-11 17:26:46'),
-(3, NULL, '7/4 69', 'kks', 69000000.00, NULL, NULL, '2026-07-04', '2026-07-05 17:00:11', '2026-07-01 00:23:34', '2026-07-05 17:00:11'),
-(4, NULL, '7/1 600', 'kks', 600000000.00, NULL, NULL, '2026-07-01', '2026-07-01 17:43:14', '2026-07-01 00:27:15', '2026-07-01 17:43:14'),
-(5, NULL, '7/7 120', 'kks', 120000000.00, NULL, NULL, '2026-07-07', '2026-07-08 06:08:23', '2026-07-01 00:28:48', '2026-07-08 06:08:23'),
-(6, NULL, '7/3 188', 'kks', 188000000.00, NULL, NULL, '2026-07-03', '2026-07-02 21:19:41', '2026-07-01 00:29:17', '2026-07-02 21:19:41'),
-(7, NULL, '7/5 1080', 'kks', 1080000000.00, NULL, NULL, '2026-07-05', '2026-07-05 17:33:38', '2026-07-01 00:29:53', '2026-07-05 17:33:38'),
-(8, NULL, '7/2 300', 'kks', 300000000.00, NULL, NULL, '2026-07-02', '2026-07-05 17:03:48', '2026-07-01 00:30:27', '2026-07-05 17:03:48'),
-(9, NULL, '7/6 800', 'kks', 800000000.00, NULL, NULL, '2026-07-06', '2026-07-08 05:53:57', '2026-07-01 00:30:52', '2026-07-08 05:53:57'),
-(10, NULL, '7/27 328', 'kks', 328000000.00, NULL, NULL, '2026-07-27', '2026-07-28 17:35:51', '2026-07-01 00:31:08', '2026-07-28 17:35:51'),
-(11, NULL, '7/7 15', 'kks', 15000000.00, NULL, NULL, '2026-07-07', '2026-07-08 09:02:47', '2026-07-01 00:31:27', '2026-07-08 09:02:47'),
-(12, NULL, '7/3 2398', 'kks', 2398000000.00, NULL, NULL, '2026-07-03', '2026-07-05 17:04:06', '2026-07-01 00:31:49', '2026-07-05 17:04:06'),
-(13, NULL, '7/7 430', 'kks', 430000000.00, NULL, NULL, '2026-07-07', '2026-07-08 05:57:00', '2026-07-01 00:32:06', '2026-07-08 05:57:00'),
-(14, NULL, '6/28 22', 'kks', 22000000.00, NULL, NULL, '2026-06-22', '2026-07-14 18:48:45', '2026-07-01 00:46:25', '2026-07-14 18:48:45'),
-(17, NULL, '7/8 440', 'kks', 440000000.00, NULL, NULL, '2026-07-08', '2026-07-09 00:36:07', '2026-07-01 16:56:15', '2026-07-09 00:36:07'),
-(18, NULL, '7/8 29', 'kks', 29000000.00, NULL, NULL, '2026-07-08', '2026-07-09 00:36:45', '2026-07-01 16:57:03', '2026-07-09 00:36:45'),
-(19, NULL, '7/9 55', 'kks', 55000000.00, NULL, NULL, '2026-07-09', '2026-07-10 00:54:04', '2026-07-02 17:59:58', '2026-07-10 00:54:04'),
-(20, NULL, '7/10 265', 'kks', 265000000.00, NULL, NULL, '2026-07-10', '2026-07-09 21:59:04', '2026-07-02 21:22:03', '2026-07-09 21:59:04'),
-(21, NULL, '7/14 344', 'kks', 344000000.00, NULL, NULL, '2026-07-14', '2026-07-11 23:06:25', '2026-07-05 17:28:36', '2026-07-11 23:06:25'),
-(22, NULL, '7/13 598', 'kks', 598000000.00, NULL, NULL, '2026-07-13', '2026-07-14 18:53:01', '2026-07-05 18:32:20', '2026-07-14 18:53:01'),
-(23, NULL, '7/13 140 + Swift', 'kks', 140000000.00, NULL, NULL, '2026-07-13', '2026-07-13 01:34:39', '2026-07-05 23:57:47', '2026-07-13 01:34:39'),
-(24, NULL, '7/14 335', 'kks', 335000000.00, NULL, NULL, '2026-07-14', '2026-07-14 18:53:54', '2026-07-06 18:39:57', '2026-07-14 18:53:54'),
-(25, NULL, '1080', 'kks', 1080000000.00, NULL, NULL, '2026-07-08', '2026-07-09 00:40:57', '2026-07-08 06:01:16', '2026-07-09 00:40:57'),
-(26, NULL, '7/14 220', 'kks', 220000000.00, NULL, NULL, '2026-07-14', '2026-07-14 19:00:14', '2026-07-08 06:14:15', '2026-07-14 19:00:14'),
-(27, NULL, '7/16 3800', 'kks', 3800000000.00, NULL, NULL, '2026-07-16', '2026-07-15 17:31:16', '2026-07-09 00:38:24', '2026-07-15 17:31:16'),
-(28, NULL, '7/16 130', 'kks', 130000000.00, NULL, NULL, NULL, '2026-07-09 21:20:09', '2026-07-09 06:30:37', '2026-07-09 21:20:09'),
-(29, NULL, '7/18 360', 'kks', 360000000.00, NULL, NULL, '2026-07-18', '2026-07-17 22:38:46', '2026-07-11 23:08:37', '2026-07-17 22:38:46'),
-(30, NULL, '7/20 129', 'kks', 129000000.00, NULL, NULL, '2026-07-20', '2026-07-13 01:40:04', '2026-07-11 23:09:13', '2026-07-13 01:40:04'),
-(31, NULL, '7/19 83', 'kks', 83000000.00, NULL, NULL, '2026-07-19', '2026-07-12 17:48:30', '2026-07-12 06:37:46', '2026-07-12 17:48:30'),
-(32, NULL, '7/24 54', 'kks', 54000000.00, NULL, NULL, '2026-07-24', '2026-07-22 17:31:20', '2026-07-14 18:50:31', '2026-07-22 17:31:20'),
-(33, NULL, '7/20 1050', 'kks', 1050000000.00, NULL, NULL, '2026-07-20', '2026-07-20 17:59:48', '2026-07-14 18:51:09', '2026-07-20 17:59:48'),
-(34, NULL, '7/21 450', 'kks', 450000000.00, NULL, NULL, '2026-07-21', '2026-07-20 17:50:16', '2026-07-14 18:52:49', '2026-07-20 17:50:16'),
-(35, NULL, '7/26 12.4', 'kks', 12400000.00, NULL, NULL, '2026-07-26', '2026-07-21 00:56:02', '2026-07-20 17:17:17', '2026-07-21 00:56:02'),
-(36, NULL, '7/27 3397', 'kks', 3397000000.00, NULL, NULL, '2026-07-27', '2026-07-27 16:57:09', '2026-07-20 17:18:23', '2026-07-27 16:57:09'),
-(37, NULL, '7/27 49 + Recovery Set', 'kks', 49000000.00, NULL, NULL, '2026-07-27', '2026-07-27 19:08:17', '2026-07-20 17:19:17', '2026-07-27 19:08:17'),
-(38, NULL, '7/27 44', 'kks', 44000000.00, NULL, NULL, '2026-07-27', '2026-07-28 02:12:04', '2026-07-20 17:21:27', '2026-07-28 02:12:04'),
-(39, NULL, '7/29 11', 'kks', 11000000.00, NULL, NULL, '2026-07-29', '2026-07-30 16:45:11', '2026-07-22 17:32:30', '2026-07-30 16:45:11'),
-(40, NULL, '7/30 350', 'kks', 350000000.00, NULL, NULL, '2026-07-30', '2026-07-30 16:45:17', '2026-07-23 06:08:22', '2026-07-30 16:45:17'),
-(41, NULL, '7/30 350', 'kks', 350000000.00, NULL, NULL, '2026-07-30', '2026-07-30 16:45:15', '2026-07-23 06:09:02', '2026-07-30 16:45:15'),
-(42, NULL, '7/30 230', 'kks', 230000000.00, NULL, NULL, '2026-07-30', '2026-08-03 17:13:44', '2026-07-23 06:11:32', '2026-08-03 17:13:44'),
-(43, NULL, '7/31 3547', 'kks', 3547000000.00, NULL, NULL, '2026-07-31', '2026-07-31 18:06:28', '2026-07-23 17:17:29', '2026-07-31 18:06:28'),
-(44, NULL, '8/2 200', 'kks', 200000000.00, NULL, NULL, '2026-08-02', '2026-08-03 17:13:30', '2026-07-27 16:52:04', '2026-08-03 17:13:30'),
-(45, NULL, '9/9 70', 'kks', 70000000.00, NULL, NULL, '2026-09-09', '2026-08-23 22:52:06', '2026-07-27 16:54:45', '2026-08-23 22:52:06'),
-(46, NULL, '8/3 250', 'kks', 250000000.00, NULL, NULL, '2026-08-03', '2026-08-03 17:15:31', '2026-07-27 16:55:08', '2026-08-03 17:15:31'),
-(47, NULL, '8/3 39', 'kks', 39000000.00, NULL, NULL, '2026-08-03', '2026-08-04 17:23:58', '2026-07-27 16:55:39', '2026-08-04 17:23:58'),
-(48, NULL, '9/4 65', 'kks', 65000000.00, NULL, NULL, '2026-09-04', '2026-09-02 19:49:48', '2026-07-28 00:28:13', '2026-09-02 19:49:48'),
-(49, NULL, '8/6 45', 'kks', 45000000.00, NULL, NULL, '2026-08-06', '2026-08-06 16:57:28', '2026-07-30 16:54:09', '2026-08-06 16:57:28'),
-(50, NULL, '8/9 397', 'kks', 397000000.00, NULL, NULL, '2026-08-09', '2026-08-11 17:28:10', '2026-08-03 17:16:22', '2026-08-11 17:28:10'),
-(51, NULL, '8/9 160', 'kks', 160000000.00, NULL, NULL, '2026-08-09', '2026-08-11 17:27:19', '2026-08-03 17:16:49', '2026-08-11 17:27:19'),
-(52, NULL, '8/4 25', 'kks', 25000000.00, NULL, NULL, '2026-08-04', '2026-08-03 22:47:11', '2026-08-03 17:17:44', '2026-08-03 22:47:11'),
-(53, NULL, '9/9 84', 'kks', 84000000.00, NULL, NULL, '2026-09-09', '2026-08-24 17:02:10', '2026-08-03 17:21:19', '2026-08-24 17:02:10'),
-(54, NULL, '8/11 360', 'kks', 360000000.00, NULL, NULL, '2026-08-11', '2026-08-11 17:27:03', '2026-08-04 17:35:35', '2026-08-11 17:27:03'),
-(55, NULL, '8/19 200', 'kks', 200000000.00, NULL, NULL, '2026-08-19', '2026-08-18 23:59:36', '2026-08-04 23:36:12', '2026-08-18 23:59:36'),
-(56, NULL, '8/12 730', 'kks', 730000000.00, NULL, NULL, '2026-08-12', '2026-08-12 19:43:45', '2026-08-05 06:14:15', '2026-08-12 19:43:45'),
-(57, NULL, '8/14 168', 'kks', 168000000.00, NULL, NULL, '2026-08-14', '2026-08-14 17:25:11', '2026-08-11 17:30:24', '2026-08-14 17:25:11'),
-(58, NULL, '8/16 8', 'kks', 8000000.00, NULL, NULL, '2026-08-16', '2026-08-16 17:15:32', '2026-08-11 17:31:29', '2026-08-16 17:15:32'),
-(59, NULL, '8/18 180', 'kks', 180000000.00, NULL, NULL, '2026-08-18', '2026-08-18 16:49:23', '2026-08-11 17:32:30', '2026-08-18 16:49:23'),
-(60, NULL, '8/18 220', 'kks', 220000000.00, NULL, NULL, '2026-08-18', '2026-08-18 19:30:31', '2026-08-11 17:32:56', '2026-08-18 19:30:31'),
-(61, NULL, '8/18 128', 'kks', 128000000.00, NULL, NULL, '2026-08-18', '2026-08-23 17:17:41', '2026-08-11 17:33:56', '2026-08-23 17:17:41'),
-(62, NULL, '8/26 2000', 'kks', 2000000000.00, NULL, NULL, '2026-08-26', '2026-08-26 04:28:02', '2026-08-11 17:35:40', '2026-08-26 04:28:02'),
-(63, NULL, '8/21 85', 'kks', 85000000.00, NULL, NULL, '2026-08-21', '2026-08-25 17:06:52', '2026-08-11 18:18:07', '2026-08-25 17:06:52'),
-(64, NULL, '8/19 160', 'kks', 160000000.00, NULL, NULL, '2026-08-19', '2026-08-19 17:04:20', '2026-08-12 16:53:35', '2026-08-19 17:04:20'),
-(65, NULL, '8/20 210', 'kks', 210000000.00, NULL, NULL, '2026-08-20', '2026-08-23 17:18:18', '2026-08-12 23:10:42', '2026-08-23 17:18:18'),
-(66, NULL, '8/20 184', 'kks', 184000000.00, NULL, NULL, '2026-08-20', '2026-08-23 17:17:57', '2026-08-13 02:01:15', '2026-08-23 17:17:57'),
-(67, NULL, '8/21 85', 'kks', 85000002.00, NULL, NULL, '2026-08-21', '2026-08-18 19:03:47', '2026-08-13 17:12:16', '2026-08-18 19:03:47'),
-(68, NULL, '8/21 89', 'kks', 89000000.00, NULL, NULL, '2026-08-21', '2026-08-18 17:02:37', '2026-08-13 17:54:42', '2026-08-18 17:02:37'),
-(69, NULL, '8/21 288', 'kks', 288000000.00, NULL, NULL, '2026-08-21', '2026-08-16 17:06:50', '2026-08-13 23:27:39', '2026-08-16 17:06:50'),
-(70, NULL, '8/22 450', 'kks', 450000000.00, NULL, NULL, '2026-08-22', '2026-08-23 17:19:09', '2026-08-14 23:14:43', '2026-08-23 17:19:09'),
-(71, NULL, '8/28 100', 'kks', 100000000.00, NULL, NULL, '2026-08-28', '2026-08-29 21:48:00', '2026-08-16 17:10:41', '2026-08-29 21:48:00'),
-(72, NULL, '8/26 580', 'kks', 580000000.00, NULL, NULL, '2026-08-26', '2026-08-25 23:05:57', '2026-08-18 22:16:23', '2026-08-25 23:05:57'),
-(75, NULL, '8/26 155', 'kks', 155000000.00, NULL, NULL, '2026-08-26', '2026-08-26 00:45:19', '2026-08-18 23:04:34', '2026-08-26 00:45:19'),
-(76, NULL, '8/25 133', 'kks', 133000000.00, NULL, NULL, '2026-08-25', '2026-08-24 18:00:12', '2026-08-19 00:03:42', '2026-08-24 18:00:12'),
-(77, NULL, '8/27 749', 'kks', 749000000.00, NULL, NULL, '2026-08-27', '2026-08-26 22:28:52', '2026-08-19 17:03:41', '2026-08-26 22:28:52'),
-(78, NULL, '8/27 100', 'kks', 100000000.00, NULL, NULL, '2026-08-27', '2026-08-27 17:44:29', '2026-08-19 17:04:02', '2026-08-27 17:44:29'),
-(79, NULL, '8/27 500', 'kks', 500000000.00, NULL, NULL, '2026-08-27', '2026-08-27 03:36:06', '2026-08-19 21:04:20', '2026-08-27 03:36:06'),
-(80, NULL, '8/31 119', 'kks', 119000000.00, NULL, NULL, '2026-08-31', '2026-09-01 02:10:56', '2026-08-23 17:22:11', '2026-09-01 02:10:56'),
-(81, NULL, '8/30 205', 'kks', 205000000.00, NULL, NULL, '2026-08-30', '2026-08-30 07:07:47', '2026-08-23 17:22:48', '2026-08-30 07:07:47'),
-(82, NULL, '8/28 485', 'kks', 485000000.00, NULL, NULL, '2026-08-28', '2026-08-28 16:06:10', '2026-08-23 17:23:15', '2026-08-28 16:06:10'),
-(83, NULL, '8/29 1.5', 'kks', 1500000.00, NULL, NULL, '2026-08-29', '2026-08-29 21:48:02', '2026-08-23 17:25:33', '2026-08-29 21:48:02'),
-(84, NULL, '8/27 1100', 'kks', 1100000000.00, NULL, NULL, '2026-08-27', '2026-08-27 17:44:11', '2026-08-23 17:47:21', '2026-08-27 17:44:11'),
-(85, NULL, '8/28 130', 'kks', 130000000.00, NULL, NULL, '2026-08-28', '2026-08-27 18:42:34', '2026-08-23 17:48:21', '2026-08-27 18:42:34'),
-(86, NULL, '9/1 30', 'kks', 30000000.00, NULL, NULL, '2026-09-01', '2026-09-01 16:55:15', '2026-08-24 23:11:27', '2026-09-01 16:55:15'),
-(87, NULL, '9/1 160', 'kks', 160000000.00, NULL, NULL, '2026-09-01', '2026-09-01 17:18:41', '2026-08-24 23:15:37', '2026-09-01 17:18:41'),
-(88, NULL, '9/2 176.5', 'kks', 176500000.00, NULL, NULL, '2026-09-02', '2026-09-03 17:42:33', '2026-08-26 05:26:24', '2026-09-03 17:42:33'),
-(89, NULL, '9/4 175', 'kks', 175000000.00, NULL, NULL, '2026-09-04', '2026-09-03 19:20:13', '2026-08-27 18:49:14', '2026-09-03 19:20:13'),
-(90, NULL, '9/4 450', 'kks', 450000000.00, NULL, NULL, '2026-09-04', '2026-09-04 01:38:14', '2026-08-28 00:44:04', '2026-09-04 01:38:14'),
-(91, NULL, '9/4 245', 'kks', 245000000.00, NULL, NULL, '2026-09-04', '2026-09-01 07:54:26', '2026-08-28 01:18:09', '2026-09-01 07:54:26'),
-(92, NULL, '9/4 720', 'kks', 720000000.00, NULL, NULL, '2026-09-04', '2026-09-05 19:07:29', '2026-08-28 05:20:48', '2026-09-05 19:07:29'),
-(93, NULL, '9/9 1600', 'kks', 1600000000.00, NULL, NULL, '2026-09-09', '2026-09-09 14:00:31', '2026-09-01 17:59:58', '2026-09-09 14:00:31'),
-(94, NULL, '9/10 3300', 'kks', 3300000000.00, NULL, NULL, '2026-09-10', '2026-09-10 13:56:10', '2026-09-02 20:50:21', '2026-09-10 13:56:10'),
-(95, NULL, '9/10 395', 'kks', 395000000.00, NULL, NULL, '2026-09-10', '2026-09-10 22:28:11', '2026-09-03 04:51:16', '2026-09-10 22:28:11'),
-(96, NULL, '9/11 133', 'kks', 133000000.00, NULL, NULL, '2026-09-11', '2026-09-14 01:22:07', '2026-09-04 00:05:49', '2026-09-14 01:22:07'),
-(97, NULL, '9/14 155', 'kks', 155000000.00, NULL, NULL, '2026-09-14', '2026-09-14 04:56:27', '2026-09-07 02:30:09', '2026-09-14 04:56:27'),
-(98, NULL, '9/15 930', 'kks', 930000000.00, NULL, NULL, '2026-09-15', '2026-09-14 21:54:42', '2026-09-07 18:58:04', '2026-09-14 21:54:42'),
-(99, NULL, '9/16 228', 'kks', 228000000.00, NULL, NULL, '2026-09-16', '2026-09-15 21:38:04', '2026-09-08 15:44:31', '2026-09-15 21:38:04'),
-(100, NULL, '9/17 810', 'kks', 810000000.00, NULL, NULL, '2026-09-17', '2026-09-19 18:27:47', '2026-09-09 21:47:27', '2026-09-19 18:27:47'),
-(101, NULL, '9/18 55', 'kks', 55000000.00, NULL, NULL, '2026-09-18', '2026-09-17 01:00:44', '2026-09-10 19:12:32', '2026-09-17 01:00:44'),
-(102, NULL, '9/19 75', 'kks', 75000000.00, NULL, NULL, '2026-09-19', '2026-09-19 18:26:01', '2026-09-12 00:55:30', '2026-09-19 18:26:01'),
-(103, NULL, '9/23 159', 'kks', 159000000.00, NULL, NULL, '2026-09-23', NULL, '2026-09-15 22:41:58', '2026-09-15 22:41:58'),
-(104, NULL, '9/24 600', 'kks', 600000000.00, NULL, NULL, '2026-09-24', NULL, '2026-09-16 22:34:24', '2026-09-16 22:34:24'),
-(105, NULL, '9/24 123', 'kks', 123000000.00, NULL, NULL, '2026-09-24', NULL, '2026-09-17 00:02:00', '2026-09-17 00:02:00'),
-(106, NULL, '9/24 385', 'kks', 385000000.00, NULL, NULL, '2026-09-24', NULL, '2026-09-17 18:04:34', '2026-09-17 18:04:34'),
-(107, NULL, '141 (not yet confirmed)', 'kks', 141000000.00, NULL, NULL, '2026-09-25', NULL, '2026-09-17 18:05:18', '2026-09-17 18:05:18'),
-(108, NULL, 'not yet confirmed 127', 'kks', 127000000.00, NULL, NULL, '2026-09-25', '2026-09-19 19:41:00', '2026-09-17 18:06:01', '2026-09-19 19:41:00'),
-(109, NULL, '9/26 3700', 'kks', 3700000000.00, NULL, NULL, '2026-09-26', NULL, '2026-09-18 15:53:40', '2026-09-18 15:53:40'),
-(110, NULL, '9/26', 'kks', 2500000000.00, NULL, NULL, '2026-09-26', NULL, '2026-09-19 07:33:12', '2026-09-19 07:33:12'),
-(111, NULL, '9/27 518', 'kks', 518000000.00, NULL, NULL, '2026-09-27', NULL, '2026-09-19 18:29:21', '2026-09-19 18:29:21'),
-(112, NULL, '9/27 45', 'kks', 45000000.00, NULL, NULL, '2026-09-27', NULL, '2026-09-19 20:47:09', '2026-09-19 20:47:09');
+INSERT INTO `trades` (`id`, `gold_id`, `description`, `status`, `amount`, `currency`, `payment_method`, `middleman_fee`, `completion_date`, `archived_at`, `created_at`, `updated_at`) VALUES
+(1, NULL, '7/6 330', 'kks', 330000000.00, NULL, NULL, NULL, '2026-07-06', '2026-07-06 20:01:36', '2026-06-30 23:20:25', '2026-07-06 20:01:36'),
+(2, NULL, '7/25 €2351 + 781 Melee x TOP 3 Melee', 'cash', 2351.00, 'EUR', 'paypal', NULL, '2026-07-24', '2026-08-11 17:26:46', '2026-07-01 00:22:27', '2026-08-11 17:26:46'),
+(3, NULL, '7/4 69', 'kks', 69000000.00, NULL, NULL, NULL, '2026-07-04', '2026-07-05 17:00:11', '2026-07-01 00:23:34', '2026-07-05 17:00:11'),
+(4, NULL, '7/1 600', 'kks', 600000000.00, NULL, NULL, NULL, '2026-07-01', '2026-07-01 17:43:14', '2026-07-01 00:27:15', '2026-07-01 17:43:14'),
+(5, NULL, '7/7 120', 'kks', 120000000.00, NULL, NULL, NULL, '2026-07-07', '2026-07-08 06:08:23', '2026-07-01 00:28:48', '2026-07-08 06:08:23'),
+(6, NULL, '7/3 188', 'kks', 188000000.00, NULL, NULL, NULL, '2026-07-03', '2026-07-02 21:19:41', '2026-07-01 00:29:17', '2026-07-02 21:19:41'),
+(7, NULL, '7/5 1080', 'kks', 1080000000.00, NULL, NULL, NULL, '2026-07-05', '2026-07-05 17:33:38', '2026-07-01 00:29:53', '2026-07-05 17:33:38'),
+(8, NULL, '7/2 300', 'kks', 300000000.00, NULL, NULL, NULL, '2026-07-02', '2026-07-05 17:03:48', '2026-07-01 00:30:27', '2026-07-05 17:03:48'),
+(9, NULL, '7/6 800', 'kks', 800000000.00, NULL, NULL, NULL, '2026-07-06', '2026-07-08 05:53:57', '2026-07-01 00:30:52', '2026-07-08 05:53:57'),
+(10, NULL, '7/27 328', 'kks', 328000000.00, NULL, NULL, NULL, '2026-07-27', '2026-07-28 17:35:51', '2026-07-01 00:31:08', '2026-07-28 17:35:51'),
+(11, NULL, '7/7 15', 'kks', 15000000.00, NULL, NULL, NULL, '2026-07-07', '2026-07-08 09:02:47', '2026-07-01 00:31:27', '2026-07-08 09:02:47'),
+(12, NULL, '7/3 2398', 'kks', 2398000000.00, NULL, NULL, NULL, '2026-07-03', '2026-07-05 17:04:06', '2026-07-01 00:31:49', '2026-07-05 17:04:06'),
+(13, NULL, '7/7 430', 'kks', 430000000.00, NULL, NULL, NULL, '2026-07-07', '2026-07-08 05:57:00', '2026-07-01 00:32:06', '2026-07-08 05:57:00'),
+(14, NULL, '6/28 22', 'kks', 22000000.00, NULL, NULL, NULL, '2026-06-22', '2026-07-14 18:48:45', '2026-07-01 00:46:25', '2026-07-14 18:48:45'),
+(17, NULL, '7/8 440', 'kks', 440000000.00, NULL, NULL, NULL, '2026-07-08', '2026-07-09 00:36:07', '2026-07-01 16:56:15', '2026-07-09 00:36:07'),
+(18, NULL, '7/8 29', 'kks', 29000000.00, NULL, NULL, NULL, '2026-07-08', '2026-07-09 00:36:45', '2026-07-01 16:57:03', '2026-07-09 00:36:45'),
+(19, NULL, '7/9 55', 'kks', 55000000.00, NULL, NULL, NULL, '2026-07-09', '2026-07-10 00:54:04', '2026-07-02 17:59:58', '2026-07-10 00:54:04'),
+(20, NULL, '7/10 265', 'kks', 265000000.00, NULL, NULL, NULL, '2026-07-10', '2026-07-09 21:59:04', '2026-07-02 21:22:03', '2026-07-09 21:59:04'),
+(21, NULL, '7/14 344', 'kks', 344000000.00, NULL, NULL, NULL, '2026-07-14', '2026-07-11 23:06:25', '2026-07-05 17:28:36', '2026-07-11 23:06:25'),
+(22, NULL, '7/13 598', 'kks', 598000000.00, NULL, NULL, NULL, '2026-07-13', '2026-07-14 18:53:01', '2026-07-05 18:32:20', '2026-07-14 18:53:01'),
+(23, NULL, '7/13 140 + Swift', 'kks', 140000000.00, NULL, NULL, NULL, '2026-07-13', '2026-07-13 01:34:39', '2026-07-05 23:57:47', '2026-07-13 01:34:39'),
+(24, NULL, '7/14 335', 'kks', 335000000.00, NULL, NULL, NULL, '2026-07-14', '2026-07-14 18:53:54', '2026-07-06 18:39:57', '2026-07-14 18:53:54'),
+(25, NULL, '1080', 'kks', 1080000000.00, NULL, NULL, NULL, '2026-07-08', '2026-07-09 00:40:57', '2026-07-08 06:01:16', '2026-07-09 00:40:57'),
+(26, NULL, '7/14 220', 'kks', 220000000.00, NULL, NULL, NULL, '2026-07-14', '2026-07-14 19:00:14', '2026-07-08 06:14:15', '2026-07-14 19:00:14'),
+(27, NULL, '7/16 3800', 'kks', 3800000000.00, NULL, NULL, NULL, '2026-07-16', '2026-07-15 17:31:16', '2026-07-09 00:38:24', '2026-07-15 17:31:16'),
+(28, NULL, '7/16 130', 'kks', 130000000.00, NULL, NULL, NULL, NULL, '2026-07-09 21:20:09', '2026-07-09 06:30:37', '2026-07-09 21:20:09'),
+(29, NULL, '7/18 360', 'kks', 360000000.00, NULL, NULL, NULL, '2026-07-18', '2026-07-17 22:38:46', '2026-07-11 23:08:37', '2026-07-17 22:38:46'),
+(30, NULL, '7/20 129', 'kks', 129000000.00, NULL, NULL, NULL, '2026-07-20', '2026-07-13 01:40:04', '2026-07-11 23:09:13', '2026-07-13 01:40:04'),
+(31, NULL, '7/19 83', 'kks', 83000000.00, NULL, NULL, NULL, '2026-07-19', '2026-07-12 17:48:30', '2026-07-12 06:37:46', '2026-07-12 17:48:30'),
+(32, NULL, '7/24 54', 'kks', 54000000.00, NULL, NULL, NULL, '2026-07-24', '2026-07-22 17:31:20', '2026-07-14 18:50:31', '2026-07-22 17:31:20'),
+(33, NULL, '7/20 1050', 'kks', 1050000000.00, NULL, NULL, NULL, '2026-07-20', '2026-07-20 17:59:48', '2026-07-14 18:51:09', '2026-07-20 17:59:48'),
+(34, NULL, '7/21 450', 'kks', 450000000.00, NULL, NULL, NULL, '2026-07-21', '2026-07-20 17:50:16', '2026-07-14 18:52:49', '2026-07-20 17:50:16'),
+(35, NULL, '7/26 12.4', 'kks', 12400000.00, NULL, NULL, NULL, '2026-07-26', '2026-07-21 00:56:02', '2026-07-20 17:17:17', '2026-07-21 00:56:02'),
+(36, NULL, '7/27 3397', 'kks', 3397000000.00, NULL, NULL, NULL, '2026-07-27', '2026-07-27 16:57:09', '2026-07-20 17:18:23', '2026-07-27 16:57:09'),
+(37, NULL, '7/27 49 + Recovery Set', 'kks', 49000000.00, NULL, NULL, NULL, '2026-07-27', '2026-07-27 19:08:17', '2026-07-20 17:19:17', '2026-07-27 19:08:17'),
+(38, NULL, '7/27 44', 'kks', 44000000.00, NULL, NULL, NULL, '2026-07-27', '2026-07-28 02:12:04', '2026-07-20 17:21:27', '2026-07-28 02:12:04'),
+(39, NULL, '7/29 11', 'kks', 11000000.00, NULL, NULL, NULL, '2026-07-29', '2026-07-30 16:45:11', '2026-07-22 17:32:30', '2026-07-30 16:45:11'),
+(40, NULL, '7/30 350', 'kks', 350000000.00, NULL, NULL, NULL, '2026-07-30', '2026-07-30 16:45:17', '2026-07-23 06:08:22', '2026-07-30 16:45:17'),
+(41, NULL, '7/30 350', 'kks', 350000000.00, NULL, NULL, NULL, '2026-07-30', '2026-07-30 16:45:15', '2026-07-23 06:09:02', '2026-07-30 16:45:15'),
+(42, NULL, '7/30 230', 'kks', 230000000.00, NULL, NULL, NULL, '2026-07-30', '2026-08-03 17:13:44', '2026-07-23 06:11:32', '2026-08-03 17:13:44'),
+(43, NULL, '7/31 3547', 'kks', 3547000000.00, NULL, NULL, NULL, '2026-07-31', '2026-07-31 18:06:28', '2026-07-23 17:17:29', '2026-07-31 18:06:28'),
+(44, NULL, '8/2 200', 'kks', 200000000.00, NULL, NULL, NULL, '2026-08-02', '2026-08-03 17:13:30', '2026-07-27 16:52:04', '2026-08-03 17:13:30'),
+(45, NULL, '9/9 70', 'kks', 70000000.00, NULL, NULL, NULL, '2026-09-09', '2026-08-23 22:52:06', '2026-07-27 16:54:45', '2026-08-23 22:52:06'),
+(46, NULL, '8/3 250', 'kks', 250000000.00, NULL, NULL, NULL, '2026-08-03', '2026-08-03 17:15:31', '2026-07-27 16:55:08', '2026-08-03 17:15:31'),
+(47, NULL, '8/3 39', 'kks', 39000000.00, NULL, NULL, NULL, '2026-08-03', '2026-08-04 17:23:58', '2026-07-27 16:55:39', '2026-08-04 17:23:58'),
+(48, NULL, '9/4 65', 'kks', 65000000.00, NULL, NULL, NULL, '2026-09-04', '2026-09-02 19:49:48', '2026-07-28 00:28:13', '2026-09-02 19:49:48'),
+(49, NULL, '8/6 45', 'kks', 45000000.00, NULL, NULL, NULL, '2026-08-06', '2026-08-06 16:57:28', '2026-07-30 16:54:09', '2026-08-06 16:57:28'),
+(50, NULL, '8/9 397', 'kks', 397000000.00, NULL, NULL, NULL, '2026-08-09', '2026-08-11 17:28:10', '2026-08-03 17:16:22', '2026-08-11 17:28:10'),
+(51, NULL, '8/9 160', 'kks', 160000000.00, NULL, NULL, NULL, '2026-08-09', '2026-08-11 17:27:19', '2026-08-03 17:16:49', '2026-08-11 17:27:19'),
+(52, NULL, '8/4 25', 'kks', 25000000.00, NULL, NULL, NULL, '2026-08-04', '2026-08-03 22:47:11', '2026-08-03 17:17:44', '2026-08-03 22:47:11'),
+(53, NULL, '9/9 84', 'kks', 84000000.00, NULL, NULL, NULL, '2026-09-09', '2026-08-24 17:02:10', '2026-08-03 17:21:19', '2026-08-24 17:02:10'),
+(54, NULL, '8/11 360', 'kks', 360000000.00, NULL, NULL, NULL, '2026-08-11', '2026-08-11 17:27:03', '2026-08-04 17:35:35', '2026-08-11 17:27:03'),
+(55, NULL, '8/19 200', 'kks', 200000000.00, NULL, NULL, NULL, '2026-08-19', '2026-08-18 23:59:36', '2026-08-04 23:36:12', '2026-08-18 23:59:36'),
+(56, NULL, '8/12 730', 'kks', 730000000.00, NULL, NULL, NULL, '2026-08-12', '2026-08-12 19:43:45', '2026-08-05 06:14:15', '2026-08-12 19:43:45'),
+(57, NULL, '8/14 168', 'kks', 168000000.00, NULL, NULL, NULL, '2026-08-14', '2026-08-14 17:25:11', '2026-08-11 17:30:24', '2026-08-14 17:25:11'),
+(58, NULL, '8/16 8', 'kks', 8000000.00, NULL, NULL, NULL, '2026-08-16', '2026-08-16 17:15:32', '2026-08-11 17:31:29', '2026-08-16 17:15:32'),
+(59, NULL, '8/18 180', 'kks', 180000000.00, NULL, NULL, NULL, '2026-08-18', '2026-08-18 16:49:23', '2026-08-11 17:32:30', '2026-08-18 16:49:23'),
+(60, NULL, '8/18 220', 'kks', 220000000.00, NULL, NULL, NULL, '2026-08-18', '2026-08-18 19:30:31', '2026-08-11 17:32:56', '2026-08-18 19:30:31'),
+(61, NULL, '8/18 128', 'kks', 128000000.00, NULL, NULL, NULL, '2026-08-18', '2026-08-23 17:17:41', '2026-08-11 17:33:56', '2026-08-23 17:17:41'),
+(62, NULL, '8/26 2000', 'kks', 2000000000.00, NULL, NULL, NULL, '2026-08-26', '2026-08-26 04:28:02', '2026-08-11 17:35:40', '2026-08-26 04:28:02'),
+(63, NULL, '8/21 85', 'kks', 85000000.00, NULL, NULL, NULL, '2026-08-21', '2026-08-25 17:06:52', '2026-08-11 18:18:07', '2026-08-25 17:06:52'),
+(64, NULL, '8/19 160', 'kks', 160000000.00, NULL, NULL, NULL, '2026-08-19', '2026-08-19 17:04:20', '2026-08-12 16:53:35', '2026-08-19 17:04:20'),
+(65, NULL, '8/20 210', 'kks', 210000000.00, NULL, NULL, NULL, '2026-08-20', '2026-08-23 17:18:18', '2026-08-12 23:10:42', '2026-08-23 17:18:18'),
+(66, NULL, '8/20 184', 'kks', 184000000.00, NULL, NULL, NULL, '2026-08-20', '2026-08-23 17:17:57', '2026-08-13 02:01:15', '2026-08-23 17:17:57'),
+(67, NULL, '8/21 85', 'kks', 85000002.00, NULL, NULL, NULL, '2026-08-21', '2026-08-18 19:03:47', '2026-08-13 17:12:16', '2026-08-18 19:03:47'),
+(68, NULL, '8/21 89', 'kks', 89000000.00, NULL, NULL, NULL, '2026-08-21', '2026-08-18 17:02:37', '2026-08-13 17:54:42', '2026-08-18 17:02:37'),
+(69, NULL, '8/21 288', 'kks', 288000000.00, NULL, NULL, NULL, '2026-08-21', '2026-08-16 17:06:50', '2026-08-13 23:27:39', '2026-08-16 17:06:50'),
+(70, NULL, '8/22 450', 'kks', 450000000.00, NULL, NULL, NULL, '2026-08-22', '2026-08-23 17:19:09', '2026-08-14 23:14:43', '2026-08-23 17:19:09'),
+(71, NULL, '8/28 100', 'kks', 100000000.00, NULL, NULL, NULL, '2026-08-28', '2026-08-29 21:48:00', '2026-08-16 17:10:41', '2026-08-29 21:48:00'),
+(72, NULL, '8/26 580', 'kks', 580000000.00, NULL, NULL, NULL, '2026-08-26', '2026-08-25 23:05:57', '2026-08-18 22:16:23', '2026-08-25 23:05:57'),
+(75, NULL, '8/26 155', 'kks', 155000000.00, NULL, NULL, NULL, '2026-08-26', '2026-08-26 00:45:19', '2026-08-18 23:04:34', '2026-08-26 00:45:19'),
+(76, NULL, '8/25 133', 'kks', 133000000.00, NULL, NULL, NULL, '2026-08-25', '2026-08-24 18:00:12', '2026-08-19 00:03:42', '2026-08-24 18:00:12'),
+(77, NULL, '8/27 749', 'kks', 749000000.00, NULL, NULL, NULL, '2026-08-27', '2026-08-26 22:28:52', '2026-08-19 17:03:41', '2026-08-26 22:28:52'),
+(78, NULL, '8/27 100', 'kks', 100000000.00, NULL, NULL, NULL, '2026-08-27', '2026-08-27 17:44:29', '2026-08-19 17:04:02', '2026-08-27 17:44:29'),
+(79, NULL, '8/27 500', 'kks', 500000000.00, NULL, NULL, NULL, '2026-08-27', '2026-08-27 03:36:06', '2026-08-19 21:04:20', '2026-08-27 03:36:06'),
+(80, NULL, '8/31 119', 'kks', 119000000.00, NULL, NULL, NULL, '2026-08-31', '2026-09-01 02:10:56', '2026-08-23 17:22:11', '2026-09-01 02:10:56'),
+(81, NULL, '8/30 205', 'kks', 205000000.00, NULL, NULL, NULL, '2026-08-30', '2026-08-30 07:07:47', '2026-08-23 17:22:48', '2026-08-30 07:07:47'),
+(82, NULL, '8/28 485', 'kks', 485000000.00, NULL, NULL, NULL, '2026-08-28', '2026-08-28 16:06:10', '2026-08-23 17:23:15', '2026-08-28 16:06:10'),
+(83, NULL, '8/29 1.5', 'kks', 1500000.00, NULL, NULL, NULL, '2026-08-29', '2026-08-29 21:48:02', '2026-08-23 17:25:33', '2026-08-29 21:48:02'),
+(84, NULL, '8/27 1100', 'kks', 1100000000.00, NULL, NULL, NULL, '2026-08-27', '2026-08-27 17:44:11', '2026-08-23 17:47:21', '2026-08-27 17:44:11'),
+(85, NULL, '8/28 130', 'kks', 130000000.00, NULL, NULL, NULL, '2026-08-28', '2026-08-27 18:42:34', '2026-08-23 17:48:21', '2026-08-27 18:42:34'),
+(86, NULL, '9/1 30', 'kks', 30000000.00, NULL, NULL, NULL, '2026-09-01', '2026-09-01 16:55:15', '2026-08-24 23:11:27', '2026-09-01 16:55:15'),
+(87, NULL, '9/1 160', 'kks', 160000000.00, NULL, NULL, NULL, '2026-09-01', '2026-09-01 17:18:41', '2026-08-24 23:15:37', '2026-09-01 17:18:41'),
+(88, NULL, '9/2 176.5', 'kks', 176500000.00, NULL, NULL, NULL, '2026-09-02', '2026-09-03 17:42:33', '2026-08-26 05:26:24', '2026-09-03 17:42:33'),
+(89, NULL, '9/4 175', 'kks', 175000000.00, NULL, NULL, NULL, '2026-09-04', '2026-09-03 19:20:13', '2026-08-27 18:49:14', '2026-09-03 19:20:13'),
+(90, NULL, '9/4 450', 'kks', 450000000.00, NULL, NULL, NULL, '2026-09-04', '2026-09-04 01:38:14', '2026-08-28 00:44:04', '2026-09-04 01:38:14'),
+(91, NULL, '9/4 245', 'kks', 245000000.00, NULL, NULL, NULL, '2026-09-04', '2026-09-01 07:54:26', '2026-08-28 01:18:09', '2026-09-01 07:54:26'),
+(92, NULL, '9/4 720', 'kks', 720000000.00, NULL, NULL, NULL, '2026-09-04', '2026-09-05 19:07:29', '2026-08-28 05:20:48', '2026-09-05 19:07:29'),
+(93, NULL, '9/9 1600', 'kks', 1600000000.00, NULL, NULL, NULL, '2026-09-09', '2026-09-09 14:00:31', '2026-09-01 17:59:58', '2026-09-09 14:00:31'),
+(94, NULL, '9/10 3300', 'kks', 3300000000.00, NULL, NULL, NULL, '2026-09-10', '2026-09-10 13:56:10', '2026-09-02 20:50:21', '2026-09-10 13:56:10'),
+(95, NULL, '9/10 395', 'kks', 395000000.00, NULL, NULL, NULL, '2026-09-10', '2026-09-10 22:28:11', '2026-09-03 04:51:16', '2026-09-10 22:28:11'),
+(96, NULL, '9/11 133', 'kks', 133000000.00, NULL, NULL, NULL, '2026-09-11', '2026-09-14 01:22:07', '2026-09-04 00:05:49', '2026-09-14 01:22:07'),
+(97, NULL, '9/14 155', 'kks', 155000000.00, NULL, NULL, NULL, '2026-09-14', '2026-09-14 04:56:27', '2026-09-07 02:30:09', '2026-09-14 04:56:27'),
+(98, NULL, '9/15 930', 'kks', 930000000.00, NULL, NULL, NULL, '2026-09-15', '2026-09-14 21:54:42', '2026-09-07 18:58:04', '2026-09-14 21:54:42'),
+(99, NULL, '9/16 228', 'kks', 228000000.00, NULL, NULL, NULL, '2026-09-16', '2026-09-15 21:38:04', '2026-09-08 15:44:31', '2026-09-15 21:38:04'),
+(100, NULL, '9/17 810', 'kks', 810000000.00, NULL, NULL, NULL, '2026-09-17', '2026-09-19 18:27:47', '2026-09-09 21:47:27', '2026-09-19 18:27:47'),
+(101, NULL, '9/18 55', 'kks', 55000000.00, NULL, NULL, NULL, '2026-09-18', '2026-09-17 01:00:44', '2026-09-10 19:12:32', '2026-09-17 01:00:44'),
+(102, NULL, '9/19 75', 'kks', 75000000.00, NULL, NULL, NULL, '2026-09-19', '2026-09-19 18:26:01', '2026-09-12 00:55:30', '2026-09-19 18:26:01'),
+(103, NULL, '9/23 159', 'kks', 159000000.00, NULL, NULL, NULL, '2026-09-23', '2026-09-23 01:06:52', '2026-09-15 22:41:58', '2026-09-23 01:06:52'),
+(104, NULL, '9/24 600', 'kks', 600000000.00, NULL, NULL, NULL, '2026-09-24', '2026-09-23 22:56:54', '2026-09-16 22:34:24', '2026-09-23 22:56:54'),
+(105, NULL, '9/24 123', 'kks', 123000000.00, NULL, NULL, NULL, '2026-09-24', '2026-09-24 05:16:15', '2026-09-17 00:02:00', '2026-09-24 05:16:15'),
+(106, NULL, '9/24 385', 'kks', 385000000.00, NULL, NULL, NULL, '2026-09-24', '2026-09-24 05:18:02', '2026-09-17 18:04:34', '2026-09-24 05:18:02'),
+(107, NULL, '141 (not yet confirmed)', 'kks', 141000000.00, NULL, NULL, NULL, '2026-10-25', NULL, '2026-09-17 18:05:18', '2026-09-26 19:23:00'),
+(108, NULL, 'not yet confirmed 127', 'kks', 127000000.00, NULL, NULL, NULL, '2026-09-25', '2026-09-19 19:41:00', '2026-09-17 18:06:01', '2026-09-19 19:41:00'),
+(109, NULL, '9/26 3700', 'kks', 3700000000.00, NULL, NULL, NULL, '2026-09-26', '2026-09-27 17:31:40', '2026-09-18 15:53:40', '2026-09-27 17:31:40'),
+(110, NULL, '9/26', 'kks', 2500000000.00, NULL, NULL, NULL, '2026-09-26', '2026-09-26 19:23:12', '2026-09-19 07:33:12', '2026-09-26 19:23:12'),
+(111, NULL, '9/27 518', 'kks', 518000000.00, NULL, NULL, NULL, '2026-09-27', '2026-09-27 17:33:48', '2026-09-19 18:29:21', '2026-09-27 17:33:48'),
+(112, NULL, '9/27 45', 'kks', 45000000.00, NULL, NULL, NULL, '2026-09-27', '2026-09-27 00:19:51', '2026-09-19 20:47:09', '2026-09-27 00:19:51');
 
 -- --------------------------------------------------------
 
@@ -2169,14 +2246,14 @@ INSERT INTO `trades` (`id`, `gold_id`, `description`, `status`, `amount`, `curre
 --
 
 CREATE TABLE `transactions` (
-  `id` bigint(20) UNSIGNED NOT NULL,
-  `user_id` bigint(20) UNSIGNED DEFAULT NULL,
-  `category_id` bigint(20) UNSIGNED NOT NULL,
-  `type` enum('income','expense') NOT NULL,
+  `id` bigint UNSIGNED NOT NULL,
+  `user_id` bigint UNSIGNED DEFAULT NULL,
+  `category_id` bigint UNSIGNED NOT NULL,
+  `type` enum('income','expense') COLLATE utf8mb4_unicode_ci NOT NULL,
   `amount` decimal(15,2) NOT NULL,
-  `description` varchar(255) DEFAULT NULL,
+  `description` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `date` date NOT NULL,
-  `notes` text DEFAULT NULL,
+  `notes` text COLLATE utf8mb4_unicode_ci,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -2392,7 +2469,26 @@ INSERT INTO `transactions` (`id`, `user_id`, `category_id`, `type`, `amount`, `d
 (230, 5, 27, 'expense', 129.00, 'Powdered Milk for Devotion', '2026-09-18', NULL, '2026-09-17 15:48:07', '2026-09-17 15:48:07'),
 (231, 5, 27, 'expense', 50.00, 'baon ni Edward', '2026-09-18', NULL, '2026-09-17 15:48:57', '2026-09-17 15:48:57'),
 (232, 5, 28, 'expense', 200.00, 'JDF', '2026-09-18', NULL, '2026-09-17 15:51:39', '2026-09-17 15:51:39'),
-(233, 1, 1, 'expense', 86.00, 'dokito burger', '2026-09-19', NULL, '2026-09-19 18:49:47', '2026-09-19 18:49:47');
+(233, 1, 1, 'expense', 86.00, 'dokito burger', '2026-09-19', NULL, '2026-09-19 18:49:47', '2026-09-19 18:49:47'),
+(234, 1, 1, 'expense', 100.00, 'Coffee', '2026-09-20', NULL, '2026-09-21 01:20:57', '2026-09-21 01:20:57'),
+(235, 1, 7, 'expense', 600.00, 'Medical', '2026-09-21', NULL, '2026-09-21 01:21:50', '2026-09-21 01:21:50'),
+(236, 1, 1, 'expense', 88.00, 'Pocari Sweat', '2026-09-21', NULL, '2026-09-21 01:22:16', '2026-09-21 01:22:16'),
+(237, 1, 1, 'expense', 130.00, 'Coffee sa lucky chinatown', '2026-09-21', NULL, '2026-09-21 01:22:52', '2026-09-21 01:22:52'),
+(238, 1, 7, 'expense', 660.00, 'Lisensya', '2026-09-21', NULL, '2026-09-21 08:35:27', '2026-09-21 08:35:27'),
+(239, 1, 7, 'expense', 275.00, 'Pants (Sports Fest)', '2026-09-22', NULL, '2026-09-21 17:24:46', '2026-09-21 17:24:46'),
+(240, 1, 2, 'expense', 200.00, 'Gas', '2026-09-23', NULL, '2026-09-22 16:57:23', '2026-09-22 16:57:23'),
+(241, 1, 20, 'expense', 50.00, 'baby', '2026-09-23', NULL, '2026-09-22 19:36:29', '2026-09-22 19:36:29'),
+(242, 1, 7, 'expense', 784.00, 'Engine Cover', '2026-09-23', NULL, '2026-09-23 16:52:40', '2026-09-23 16:52:40'),
+(243, 1, 20, 'expense', 200.00, 'baby', '2026-09-24', NULL, '2026-09-23 17:41:28', '2026-09-23 17:41:28'),
+(244, 1, 1, 'expense', 460.11, 'jalibi dinner', '2026-09-26', NULL, '2026-09-26 19:09:37', '2026-09-26 19:09:37'),
+(245, 1, 2, 'expense', 594.19, 'Gas', '2026-09-26', NULL, '2026-09-26 19:10:01', '2026-09-26 19:10:01'),
+(246, 1, 1, 'expense', 655.00, 'cake', '2026-09-26', NULL, '2026-09-26 19:11:03', '2026-09-26 19:11:03'),
+(247, 1, 1, 'expense', 30.00, 'royal', '2026-09-26', NULL, '2026-09-26 19:11:25', '2026-09-26 19:11:25'),
+(248, 1, 20, 'expense', 3000.00, 'baby', '2026-09-26', NULL, '2026-09-26 19:11:44', '2026-09-27 17:10:23'),
+(249, 1, 1, 'expense', 208.00, 'jalibi midnight snack', '2026-09-27', NULL, '2026-09-27 17:12:07', '2026-09-27 17:12:40'),
+(250, 1, 1, 'expense', 228.00, 'lunch', '2026-09-27', NULL, '2026-09-27 17:12:58', '2026-09-27 17:13:03'),
+(251, 1, 1, 'expense', 50.00, 'meryenda', '2026-09-27', NULL, '2026-09-27 17:13:36', '2026-09-27 17:13:54'),
+(252, 1, 20, 'expense', 430.00, 'baby vape', '2026-09-27', NULL, '2026-09-27 17:13:47', '2026-09-27 17:14:01');
 
 -- --------------------------------------------------------
 
@@ -2401,13 +2497,13 @@ INSERT INTO `transactions` (`id`, `user_id`, `category_id`, `type`, `amount`, `d
 --
 
 CREATE TABLE `users` (
-  `id` bigint(20) UNSIGNED NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `email` varchar(255) NOT NULL,
-  `role` varchar(20) NOT NULL DEFAULT 'admin',
+  `id` bigint UNSIGNED NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `role` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'admin',
   `email_verified_at` timestamp NULL DEFAULT NULL,
-  `password` varchar(255) NOT NULL,
-  `remember_token` varchar(100) DEFAULT NULL,
+  `password` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `remember_token` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -2598,115 +2694,115 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `activity_logs`
 --
 ALTER TABLE `activity_logs`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=633;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=680;
 
 --
 -- AUTO_INCREMENT for table `balance_entries`
 --
 ALTER TABLE `balance_entries`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=48;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=48;
 
 --
 -- AUTO_INCREMENT for table `budgets`
 --
 ALTER TABLE `budgets`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
 
 --
 -- AUTO_INCREMENT for table `business_budgets`
 --
 ALTER TABLE `business_budgets`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `business_categories`
 --
 ALTER TABLE `business_categories`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `business_transactions`
 --
 ALTER TABLE `business_transactions`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=116;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=120;
 
 --
 -- AUTO_INCREMENT for table `categories`
 --
 ALTER TABLE `categories`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
 
 --
 -- AUTO_INCREMENT for table `failed_jobs`
 --
 ALTER TABLE `failed_jobs`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `golds`
 --
 ALTER TABLE `golds`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=270;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=278;
 
 --
 -- AUTO_INCREMENT for table `gold_logs`
 --
 ALTER TABLE `gold_logs`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=368;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=378;
 
 --
 -- AUTO_INCREMENT for table `jobs`
 --
 ALTER TABLE `jobs`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `middleman_fees`
 --
 ALTER TABLE `middleman_fees`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=87;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=89;
 
 --
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=41;
 
 --
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=58;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=61;
 
 --
 -- AUTO_INCREMENT for table `rucoy_accounts`
 --
 ALTER TABLE `rucoy_accounts`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=41;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
 
 --
 -- AUTO_INCREMENT for table `savings`
 --
 ALTER TABLE `savings`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT for table `trades`
 --
 ALTER TABLE `trades`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=113;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=113;
 
 --
 -- AUTO_INCREMENT for table `transactions`
 --
 ALTER TABLE `transactions`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=234;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=253;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- Constraints for dumped tables

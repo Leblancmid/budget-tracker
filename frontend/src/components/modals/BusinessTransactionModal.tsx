@@ -340,61 +340,70 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, onGoldConfir
 
         {/* Selector: Account dropdown OR Gold trade dropdown */}
         {category === 'account' ? (
-          <div className="relative" ref={dropdownRef}>
-            <p className="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Account</p>
-            <button
-              type="button"
-              onClick={() => setDropdownOpen((v) => !v)}
-              className="flex w-full items-center justify-between rounded-lg border border-gray-300 hover:border-gray-400 bg-white px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:hover:border-gray-500"
-            >
-              <span className={selectedAccount ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}>
-                {selectedAccount ? (selectedAccount.description || selectedAccount.email) : 'Select an account…'}
-              </span>
-              <div className="flex items-center gap-1 shrink-0">
-                {selectedAccount && (
-                  <span
-                    role="button"
-                    onClick={(e) => { e.stopPropagation(); setSelectedAccount(null); setAccountSearch('') }}
-                    className="rounded p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                  >
-                    <X size={13} />
-                  </span>
-                )}
-                <ChevronDown size={15} className="text-gray-400" />
+          transaction ? (
+            <div>
+              <p className="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Account</p>
+              <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 dark:bg-gray-800/60 dark:border-gray-700 dark:text-gray-300">
+                {selectedAccount ? (selectedAccount.description || selectedAccount.email) : '—'}
               </div>
-            </button>
-
-            {dropdownOpen && (
-              <div className="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
-                <div className="flex items-center gap-2 border-b border-gray-100 px-3 py-2 dark:border-gray-700">
-                  <Search size={13} className="shrink-0 text-gray-400" />
-                  <input
-                    autoFocus
-                    type="text"
-                    value={accountSearch}
-                    onChange={(e) => setAccountSearch(e.target.value)}
-                    placeholder="Search…"
-                    className="flex-1 bg-transparent text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none dark:text-gray-200 dark:placeholder:text-gray-500"
-                  />
-                </div>
-                <div className="max-h-48 overflow-y-auto">
-                  {filteredAccounts.length === 0 ? (
-                    <p className="px-3 py-4 text-center text-xs text-gray-400 dark:text-gray-500">No accounts found.</p>
-                  ) : filteredAccounts.map((a) => (
-                    <button
-                      key={a.id}
-                      type="button"
-                      onClick={() => selectAccount(a)}
-                      className="flex w-full flex-col px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            </div>
+          ) : (
+            <div className="relative" ref={dropdownRef}>
+              <p className="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Account</p>
+              <button
+                type="button"
+                onClick={() => setDropdownOpen((v) => !v)}
+                className="flex w-full items-center justify-between rounded-lg border border-gray-300 hover:border-gray-400 bg-white px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:hover:border-gray-500"
+              >
+                <span className={selectedAccount ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}>
+                  {selectedAccount ? (selectedAccount.description || selectedAccount.email) : 'Select an account…'}
+                </span>
+                <div className="flex items-center gap-1 shrink-0">
+                  {selectedAccount && (
+                    <span
+                      role="button"
+                      onClick={(e) => { e.stopPropagation(); setSelectedAccount(null); setAccountSearch('') }}
+                      className="rounded p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
                     >
-                      <span className="text-sm font-medium text-gray-800 dark:text-gray-100">{a.description || a.email}</span>
-                      {a.description && <span className="text-xs text-gray-400 dark:text-gray-500">{a.email}</span>}
-                    </button>
-                  ))}
+                      <X size={13} />
+                    </span>
+                  )}
+                  <ChevronDown size={15} className="text-gray-400" />
                 </div>
-              </div>
-            )}
-          </div>
+              </button>
+
+              {dropdownOpen && (
+                <div className="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
+                  <div className="flex items-center gap-2 border-b border-gray-100 px-3 py-2 dark:border-gray-700">
+                    <Search size={13} className="shrink-0 text-gray-400" />
+                    <input
+                      autoFocus
+                      type="text"
+                      value={accountSearch}
+                      onChange={(e) => setAccountSearch(e.target.value)}
+                      placeholder="Search…"
+                      className="flex-1 bg-transparent text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none dark:text-gray-200 dark:placeholder:text-gray-500"
+                    />
+                  </div>
+                  <div className="max-h-48 overflow-y-auto">
+                    {filteredAccounts.length === 0 ? (
+                      <p className="px-3 py-4 text-center text-xs text-gray-400 dark:text-gray-500">No accounts found.</p>
+                    ) : filteredAccounts.map((a) => (
+                      <button
+                        key={a.id}
+                        type="button"
+                        onClick={() => selectAccount(a)}
+                        className="flex w-full flex-col px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        <span className="text-sm font-medium text-gray-800 dark:text-gray-100">{a.description || a.email}</span>
+                        {a.description && <span className="text-xs text-gray-400 dark:text-gray-500">{a.email}</span>}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )
         ) : transaction ? (
           <div>
             <p className="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Gold</p>

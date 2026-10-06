@@ -203,7 +203,6 @@ export default function BusinessTransactions() {
 
   const openEdit       = (tx: BusinessTransaction) => { setDefaultType(tx.type === 'account' ? 'account' : null); setEditTarget(tx); setModalOpen(true) }
   const openAddAccount = () => { setDefaultType('account'); setEditTarget(null); setModalOpen(true) }
-  const openAddGold = () => { setDefaultType(null); setEditTarget(null); setModalOpen(true) }
 
   const handleGoldConfirm = async (trade: BusinessTransaction, data: BusinessTransactionPayload) => {
     await update(trade.id, data)

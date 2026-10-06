@@ -460,7 +460,7 @@ export function BusinessTransactionModal({ open, onClose, onSubmit, onGoldConfir
           <div key={row.goldLabel} className="flex items-end gap-1.5 sm:gap-2">
             <div className="flex-1 min-w-0">
               <p className="mb-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 truncate">{row.goldLabel}</p>
-              {category === 'account' || selectedGoldTrade ? (
+              {category === 'account' || selectedGoldTrade || (transaction && category === 'gold-item') ? (
                 <div className="rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-2 text-xs sm:text-sm text-gray-700 dark:bg-gray-800/60 dark:border-gray-700 dark:text-gray-300 truncate">
                   {row.goldValue != null ? row.goldValue.toLocaleString() : '—'}
                 </div>

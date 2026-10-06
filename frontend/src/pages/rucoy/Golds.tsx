@@ -431,13 +431,22 @@ export default function Golds() {
                         <td className="px-5 py-3.5 text-gray-600 dark:text-gray-400 max-w-xs truncate">
                           {log.description || <span className="text-gray-300 dark:text-gray-600">—</span>}
                         </td>
-                        <td className={[
-                          'px-5 py-3.5 text-right font-bold whitespace-nowrap',
-                          cancelled
-                            ? 'text-gray-400 dark:text-gray-600'
-                            : log.type === 'sell' ? 'text-red-500 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400',
-                        ].join(' ')}>
-                          {cancelled ? '0' : (log.type === 'sell' ? '−' : '+') + Number(log.amount).toLocaleString()} G
+                        <td className="px-5 py-3.5 text-right font-bold whitespace-nowrap">
+                          {(() => {
+                            if (cancelled) return <span className="text-gray-400 dark:text-gray-600">0 G</span>
+                            
+                            // Check if this is an adjustment (description contains "adjusted" or "removed")
+                            const isAdjustment = log.description?.toLowerCase().includes('adjusted') || log.description?.toLowerCase().includes('removed')
+                            const amount = Number(log.amount)
+                            const isNegative = amount < 0
+                            const absAmount = Math.abs(amount)
+                            
+                            // Determine color and prefix based on amount sign
+                            const prefix = isNegative ? '−' : '+'
+                            const colorClass = isNegative ? 'text-red-500 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'
+                            
+                            return <span className={colorClass}>{prefix} {absAmount.toLocaleString()} G</span>
+                          })()}
                         </td>
                         <td className="px-5 py-3.5 whitespace-nowrap">
                           <span className="text-xs text-gray-400 dark:text-gray-500">{formatDateLong(log.created_at)}</span>

@@ -16,6 +16,7 @@ class UpdateTradeRequest extends FormRequest
             'amount'          => ['sometimes', 'required', 'numeric', 'min:0'],
             'currency'        => ['nullable', 'in:USD,EUR,PHP'],
             'payment_method'  => ['nullable', 'in:binance,paypal'],
+            'middleman_fee'   => ['nullable', 'numeric', 'min:0'],
             'completion_date' => ['nullable', 'date'],
         ];
     }

@@ -429,9 +429,6 @@ export default function BusinessTransactions() {
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Add an account to start tracking profit.</p>
               )}
             </div>
-            {!accSearch && (
-              <Button size="sm" icon={<Plus className="h-4 w-4" />} onClick={openAddAccount}>Add Account</Button>
-            )}
           </div>
         ) : (
           <div className="p-4">
@@ -607,7 +604,6 @@ export default function BusinessTransactions() {
                 className="rounded-lg border border-gray-200 bg-white pl-8 pr-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 w-36"
               />
             </div>
-            <Button size="sm" icon={<Plus className="h-3.5 w-3.5" />} onClick={openAddGold}>Add Gold</Button>
           </div>
         </div>
 
@@ -625,9 +621,6 @@ export default function BusinessTransactions() {
                   <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Add a gold trade to start tracking.</p>
                 )}
               </div>
-              {!goldSearch && (
-                <Button size="sm" icon={<Plus className="h-4 w-4" />} onClick={openAddGold}>Add Gold</Button>
-              )}
             </div>
           ) : (
             <GoldTradesList

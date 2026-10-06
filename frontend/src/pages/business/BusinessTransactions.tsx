@@ -25,6 +25,93 @@ const TYPE_LABELS: Record<BusinessTransactionType, string> = {
 
 const PER_PAGE = 9
 
+function GoldTradesList({ trades, onEdit, onDelete }: { trades: BusinessTransaction[]; onEdit: (tx: BusinessTransaction) => void; onDelete: (tx: BusinessTransaction) => void }) {
+  return (
+    <div className="flex flex-col divide-y divide-gray-100 dark:divide-gray-700/40">
+      {trades.map((tx) => {
+        const isPending = tx.price_php == null
+        const priceGold = tx.price_gold ? parseFloat(tx.price_gold) : 0
+        const costGold = tx.cost_gold ? parseFloat(tx.cost_gold) : 0
+        const pricePhp = tx.price_php ? parseFloat(tx.price_php) : null
+        const costPhp = tx.cost_php ? parseFloat(tx.cost_php) : null
+        const profitPhp = pricePhp != null && costPhp != null ? pricePhp - costPhp : null
+
+        return (
+          <div key={tx.id} className="group flex items-center gap-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+            <div className={[
+              'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
+              isPending ? 'bg-orange-100 dark:bg-orange-900/30' : 'bg-emerald-100 dark:bg-emerald-900/30',
+            ].join(' ')}>
+              <Coins size={16} className={isPending ? 'text-orange-600 dark:text-orange-400' : 'text-emerald-600 dark:text-emerald-400'} />
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-gray-800 dark:text-gray-100 truncate text-sm leading-snug">
+                {tx.description || 'Gold Trade'}
+              </p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{formatDate(tx.date)}</p>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0">
+              <div className="text-right">
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wide">Price</p>
+                <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  {priceGold > 0 ? `${priceGold.toLocaleString('en')} G` : '—'}
+                </p>
+              </div>
+
+              <div className="text-right">
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wide">Cost</p>
+                <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  {costGold > 0 ? `${costGold.toLocaleString('en')} G` : '—'}
+                </p>
+              </div>
+
+              <div className="w-24">
+                {isPending ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 dark:bg-orange-900/30 px-2.5 py-1 text-[10px] font-semibold text-orange-700 dark:text-orange-400">
+                    Awaiting pricing
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 px-2.5 py-1 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">
+                    Confirmed
+                  </span>
+                )}
+              </div>
+
+              {profitPhp != null && (
+                <div className="text-right min-w-[80px]">
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wide">Profit</p>
+                  <p className={['text-sm font-bold', profitPhp >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'].join(' ')}>
+                    <Amt value={formatCurrency(profitPhp)} />
+                  </p>
+                </div>
+              )}
+
+              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={() => onEdit(tx)}
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400 transition-colors"
+                >
+                  <Pencil size={13} />
+                </button>
+                <button
+                  onClick={() => onDelete(tx)}
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 dark:hover:text-red-400 transition-colors"
+                >
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+
+
 export default function BusinessTransactions() {
   const { transactions, loading, create, update, remove } = useBusinessTransactions()
 
@@ -42,12 +129,15 @@ export default function BusinessTransactions() {
   const [accPage,     setAccPage]     = useState(1)
   const [profitSort,  setProfitSort]  = useState<'asc' | 'desc' | null>(null)
 
+  const [goldSearch, setGoldSearch] = useState('')
+  const [goldPage, setGoldPage] = useState(1)
+
+  // Account transactions only (excludes all gold)
   const accountTxs = useMemo(() => {
     const q = accSearch.toLowerCase()
     let result = transactions.filter(tx => {
       if (tx.archived_at != null) return false
-      // Pending gold (no PHP values yet) stays hidden until confirmed via dropdown
-      if (tx.type === 'gold' && tx.price_php == null) return false
+      if (tx.type === 'gold') return false // exclude all gold
       return !q || (tx.description ?? '').toLowerCase().includes(q)
     })
     if (profitSort) {
@@ -60,7 +150,21 @@ export default function BusinessTransactions() {
     return result
   }, [transactions, accSearch, profitSort])
 
+  // Gold transactions (pending = no PHP, confirmed = has PHP)
+  const goldTxs = useMemo(() => {
+    const q = goldSearch.toLowerCase()
+    return transactions.filter(tx => {
+      if (tx.archived_at != null) return false
+      if (tx.type !== 'gold') return false
+      return !q || (tx.description ?? '').toLowerCase().includes(q)
+    })
+  }, [transactions, goldSearch])
+
+  const pendingGold = useMemo(() => goldTxs.filter(tx => tx.price_php == null), [goldTxs])
+  const confirmedGold = useMemo(() => goldTxs.filter(tx => tx.price_php != null), [goldTxs])
+
   const { paginated: accPaginated, meta: accMeta } = paginateLocally(accountTxs, accPage, PER_PAGE)
+  const { paginated: goldPaginated, meta: goldMeta } = paginateLocally(goldTxs, goldPage, 6)
 
   const handleSubmit = async (data: BusinessTransactionPayload) => {
     if (editTarget) {
@@ -101,6 +205,7 @@ export default function BusinessTransactions() {
 
   const openEdit       = (tx: BusinessTransaction) => { setDefaultType(tx.type === 'account' ? 'account' : null); setEditTarget(tx); setModalOpen(true) }
   const openAddAccount = () => { setDefaultType('account'); setEditTarget(null); setModalOpen(true) }
+  const openAddGold = () => { setDefaultType(null); setEditTarget(null); setModalOpen(true) }
 
   const handleGoldConfirm = async (trade: BusinessTransaction, data: BusinessTransactionPayload) => {
     await update(trade.id, data)
@@ -229,7 +334,7 @@ export default function BusinessTransactions() {
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-100 dark:bg-teal-900/40">
               <Briefcase className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
             </div>
-            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Transactions</h2>
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Account Transactions</h2>
             {accountTxs.length > 0 && (
               <span className="text-[11px] font-semibold bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300 px-2 py-0.5 rounded-full">
                 {accountTxs.length}
@@ -479,6 +584,70 @@ export default function BusinessTransactions() {
           </div>
         )}
       </Card>
+
+      {/* Pending Gold Trades */}
+      <Card className="flex flex-col">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/40">
+              <Coins className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+            </div>
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wide">Pending Gold Trades</h2>
+            <span className="text-[11px] font-semibold bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 px-2 py-0.5 rounded-full">
+              {pendingGold.length} awaiting · {confirmedGold.length} confirmed
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
+              <input
+                type="text"
+                value={goldSearch}
+                onChange={(e) => { setGoldSearch(e.target.value); setGoldPage(1) }}
+                placeholder="Search…"
+                className="rounded-lg border border-gray-200 bg-white pl-8 pr-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 w-36"
+              />
+            </div>
+            <Button size="sm" icon={<Plus className="h-3.5 w-3.5" />} onClick={openAddGold}>Add Gold</Button>
+          </div>
+        </div>
+
+        <div className="p-4">
+          {goldPaginated.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 dark:bg-amber-900/40">
+                <Coins className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {goldSearch ? 'No results found.' : 'No gold trades yet.'}
+                </p>
+                {!goldSearch && (
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Add a gold trade to start tracking.</p>
+                )}
+              </div>
+              {!goldSearch && (
+                <Button size="sm" icon={<Plus className="h-4 w-4" />} onClick={openAddGold}>Add Gold</Button>
+              )}
+            </div>
+          ) : (
+            <GoldTradesList
+              trades={goldPaginated}
+              onEdit={openEdit}
+              onDelete={setDeleteTarget}
+            />
+          )}
+
+          {goldMeta.last_page > 1 && (
+            <div className="mt-4">
+              <Pagination meta={goldMeta} onPageChange={setGoldPage} />
+            </div>
+          )}
+        </div>
+      </Card>
+
+
 
       {/* All Transactions modal */}
       <Modal open={showTxModal} onClose={() => setShowTxModal(false)} title="All Transactions" size="xl">

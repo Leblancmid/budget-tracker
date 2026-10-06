@@ -478,10 +478,6 @@ export default function Trades() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         onSubmit={handleSubmit}
-        onMmFee={async (amount, description) => {
-          await middlemanFeesApi.create(amount, description || undefined)
-          toast.success(`MM Fee of ${amount.toLocaleString()} G logged.`)
-        }}
         trade={editing}
       />
 

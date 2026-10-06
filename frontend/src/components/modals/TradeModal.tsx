@@ -99,10 +99,6 @@ export function TradeModal({ open, onClose, onSubmit, onMmFee, trade }: TradeMod
         middleman_fee:   form.status === 'kks' ? mmFee : null,
         completion_date: form.completion_date || null,
       })
-      // Save MM fee to gold records when there's a fee set (both create and edit)
-      if (mmFee && onMmFee) {
-        await onMmFee(mmFee, form.description || '')
-      }
       onClose()
     } catch (err: unknown) {
       const flat = flattenApiErrors(err)

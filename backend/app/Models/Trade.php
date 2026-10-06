@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Trade extends Model
 {
@@ -31,5 +32,10 @@ class Trade extends Model
     public function gold(): BelongsTo
     {
         return $this->belongsTo(Gold::class);
+    }
+
+    public function middlemanFeeRecord(): HasOne
+    {
+        return $this->hasOne(MiddlemanFee::class);
     }
 }

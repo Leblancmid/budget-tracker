@@ -79,14 +79,12 @@ function GoldTradesList({ trades, onEdit, onDelete }: { trades: BusinessTransact
                 )}
               </div>
 
-              {profitPhp != null && (
-                <div className="text-right min-w-[80px]">
-                  <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wide">Profit</p>
-                  <p className={['text-sm font-bold', profitPhp >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'].join(' ')}>
-                    <Amt value={formatCurrency(profitPhp)} />
-                  </p>
-                </div>
-              )}
+              <div className="text-right min-w-[80px]">
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wide">Profit</p>
+                <p className={['text-sm font-bold', profitPhp != null && profitPhp >= 0 ? 'text-emerald-600 dark:text-emerald-400' : profitPhp != null && profitPhp < 0 ? 'text-red-500 dark:text-red-400' : 'text-gray-400 dark:text-gray-500'].join(' ')}>
+                  {profitPhp != null ? <Amt value={formatCurrency(profitPhp)} /> : '—'}
+                </p>
+              </div>
 
               <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button

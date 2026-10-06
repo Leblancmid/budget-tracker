@@ -436,7 +436,6 @@ export default function Golds() {
                             if (cancelled) return <span className="text-gray-400 dark:text-gray-600">0 G</span>
                             
                             // Check if this is an adjustment (description contains "adjusted" or "removed")
-                            const isAdjustment = log.description?.toLowerCase().includes('adjusted') || log.description?.toLowerCase().includes('removed')
                             const amount = Number(log.amount)
                             const isNegative = amount < 0
                             const absAmount = Math.abs(amount)

@@ -48,7 +48,7 @@ const EMPTY: TradeForm = {
 
 
 
-export function TradeModal({ open, onClose, onSubmit, onMmFee, trade }: TradeModalProps) {
+export function TradeModal({ open, onClose, onSubmit, trade }: TradeModalProps) {
   const [form, setForm] = useState<TradeForm>(EMPTY)
   const [errors, setErrors] = useState<Partial<Record<keyof TradeForm, string>>>({})
   const [loading, setLoading] = useState(false)

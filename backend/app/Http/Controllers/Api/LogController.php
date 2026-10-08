@@ -19,11 +19,11 @@ class LogController extends Controller
         $allActivityLogs = ActivityLog::with('user:id,name,email')->get();
 
         // created events → keyed for IP/device merge into original table rows
-        $activityMap = $allActivityLogs->where('type', '!=', 'archived')
+        $activityMap = $allActivityLogs->whereIn('type', ['income', 'expense', 'gold', 'fee', 'add', 'sell', 'buy', 'kks', 'pending', 'completed', 'cancelled'])
             ->keyBy(fn($l) => $l->loggable_type . '|' . $l->loggable_id);
 
-        // archived events → standalone log entries
-        $archivedEvents = $allActivityLogs->where('type', 'archived');
+        // archived and edited events → standalone log entries
+        $standaloneEvents = $allActivityLogs->whereIn('type', ['archived', 'edited']);
 
         $logs = collect();
 
@@ -74,11 +74,11 @@ class LogController extends Controller
                 $logs->push($this->entry('trade', $t->status, $description, $t->amount, null, $t->created_at, $log));
             });
 
-        // Append archived events as standalone entries
-        $archivedEvents->each(function ($log) use (&$logs) {
+        // Append archived and edited events as standalone entries
+        $standaloneEvents->each(function ($log) use (&$logs) {
             $logs->push([
                 'module'      => $log->module,
-                'type'        => 'archived',
+                'type'        => $log->type,
                 'description' => $log->description,
                 'amount'      => $log->amount,
                 'date'        => null,

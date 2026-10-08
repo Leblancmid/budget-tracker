@@ -30,6 +30,7 @@ class TradeObserver
 
     public function updated(Trade $model): void
     {
+        // Log archive events
         if ($model->isDirty('archived_at') && $model->archived_at !== null) {
             ActivityLog::create([
                 'user_id'       => auth()->id(),
@@ -43,11 +44,33 @@ class TradeObserver
                 'user_agent'    => request()->userAgent(),
             ]);
         }
+        // Log regular edit events (excluding archive, middleman_fee-only, and timestamp-only changes)
+        elseif ($model->isDirty() && !$this->onlyTimestampsOrFeeChanged($model)) {
+            ActivityLog::create([
+                'user_id'       => auth()->id(),
+                'loggable_type' => Trade::class,
+                'loggable_id'   => $model->id,
+                'module'        => 'trade',
+                'type'          => 'edited',
+                'description'   => $this->buildDescription($model),
+                'amount'        => $model->amount,
+                'ip_address'    => request()->ip(),
+                'user_agent'    => request()->userAgent(),
+            ]);
+        }
 
         // Handle middleman fee updates
         if ($model->isDirty('middleman_fee')) {
             $this->handleMiddlemanFee($model);
         }
+    }
+
+    private function onlyTimestampsOrFeeChanged(Trade $model): bool
+    {
+        $dirty = array_keys($model->getDirty());
+        $excludedFields = ['updated_at', 'created_at', 'archived_at', 'middleman_fee'];
+        
+        return count($dirty) === count(array_intersect($dirty, $excludedFields));
     }
 
     private function handleMiddlemanFee(Trade $model): void

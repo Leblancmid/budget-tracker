@@ -19,7 +19,7 @@ import { formatWithCommas, formatDateLong, formatTime, paginateLocally } from '@
 import { exportCsv } from '@/utils/csv'
 
 type UnifiedEntry =
-  | { kind: 'log';   log: GoldLog; date: string }
+  | { kind: 'log'; log: GoldLog; date: string }
   | { kind: 'trade'; trade: Trade; date: string }
 
 export default function Golds() {
@@ -31,18 +31,18 @@ export default function Golds() {
   const accountCost = Number(stats?.account_total_cost ?? 0)
   const accountsToPay = Number(stats?.accounts_to_pay ?? 0)
 
-  const [search, setSearch]         = useState('')
+  const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<'all' | 'add' | 'sell' | 'fee' | 'kks' | 'cash'>('all')
-  const [page, setPage]             = useState(1)
-  const [addOpen, setAddOpen]       = useState(false)
-  const [sellOpen, setSellOpen]     = useState(false)
+  const [page, setPage] = useState(1)
+  const [addOpen, setAddOpen] = useState(false)
+  const [sellOpen, setSellOpen] = useState(false)
   const [sellAmount, setSellAmount] = useState('')
-  const [sellDesc, setSellDesc]     = useState('')
-  const [sellError, setSellError]   = useState('')
-  const [selling, setSelling]       = useState(false)
+  const [sellDesc, setSellDesc] = useState('')
+  const [sellError, setSellError] = useState('')
+  const [selling, setSelling] = useState(false)
 
   type MmFeePeriod = 'today' | 'last_month' | 'monthly' | 'yearly' | 'total'
-  const [mmFeePeriod,   setMmFeePeriod]   = useState<MmFeePeriod>('monthly')
+  const [mmFeePeriod, setMmFeePeriod] = useState<MmFeePeriod>('monthly')
   const [mmFeeDropOpen, setMmFeeDropOpen] = useState(false)
   const mmFeeRef = useRef<HTMLDivElement>(null)
 
@@ -60,33 +60,33 @@ export default function Golds() {
       .filter((l) => l.type === 'fee' && !l.cancelled_at)
       .filter((l) => {
         const d = new Date(l.created_at)
-        if (mmFeePeriod === 'today')   return d.toDateString() === now.toDateString()
+        if (mmFeePeriod === 'today') return d.toDateString() === now.toDateString()
         if (mmFeePeriod === 'last_month') {
           const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
           return d.getMonth() === lastMonth.getMonth() && d.getFullYear() === lastMonth.getFullYear()
         }
         if (mmFeePeriod === 'monthly') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
-        if (mmFeePeriod === 'yearly')  return d.getFullYear() === now.getFullYear()
+        if (mmFeePeriod === 'yearly') return d.getFullYear() === now.getFullYear()
         return true
       })
       .reduce((sum, l) => sum + parseFloat(l.amount), 0)
   }, [logs, mmFeePeriod])
 
   const mmFeePeriodLabel: Record<MmFeePeriod, string> = {
-    today:   new Date().toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' }),
+    today: new Date().toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' }),
     last_month: new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1).toLocaleDateString('en', { month: 'short', year: 'numeric' }),
     monthly: new Date().toLocaleDateString('en', { month: 'short', year: 'numeric' }),
-    yearly:  String(new Date().getFullYear()),
-    total:   'All Time',
+    yearly: String(new Date().getFullYear()),
+    total: 'All Time',
   }
 
-  const [mmFeeOpen,   setMmFeeOpen]   = useState(false)
+  const [mmFeeOpen, setMmFeeOpen] = useState(false)
   const [mmFeeAmount, setMmFeeAmount] = useState('')
-  const [mmFeeDesc,   setMmFeeDesc]   = useState('')
-  const [mmFeeError,  setMmFeeError]  = useState('')
+  const [mmFeeDesc, setMmFeeDesc] = useState('')
+  const [mmFeeError, setMmFeeError] = useState('')
   const [mmFeeSaving, setMmFeeSaving] = useState(false)
 
-  const openMmFee  = () => { setMmFeeOpen(true); setMmFeeAmount(''); setMmFeeDesc(''); setMmFeeError('') }
+  const openMmFee = () => { setMmFeeOpen(true); setMmFeeAmount(''); setMmFeeDesc(''); setMmFeeError('') }
   const closeMmFee = () => { setMmFeeOpen(false); setMmFeeAmount(''); setMmFeeDesc(''); setMmFeeError('') }
 
   const handleMmFee = async () => {
@@ -127,7 +127,7 @@ export default function Golds() {
 
 
   const [cancelTarget, setCancelTarget] = useState<number | null>(null)
-  const [cancelling, setCancelling]     = useState(false)
+  const [cancelling, setCancelling] = useState(false)
 
   const handleCancelLog = async () => {
     if (!cancelTarget) return
@@ -144,7 +144,7 @@ export default function Golds() {
     }
   }
 
-  const openSell  = () => { setSellOpen(true); setSellAmount(''); setSellDesc(''); setSellError('') }
+  const openSell = () => { setSellOpen(true); setSellAmount(''); setSellDesc(''); setSellError('') }
   const closeSell = () => { setSellOpen(false); setSellAmount(''); setSellDesc(''); setSellError('') }
 
   const handleExport = () => exportCsv('golds', logs.map((l) => ({
@@ -284,17 +284,17 @@ export default function Golds() {
 
             {/* Sub-stat: Accounts to Pay */}
             {accountsToPay > 0 && (
-            <div className="pt-3 border-t border-white/10">
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-400/20">
-                  <AlertCircle className="h-3.5 w-3.5 text-red-300" />
-                </div>
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Accounts to Pay</p>
-                  <p className="text-sm font-bold text-red-300">{accountsToPay.toLocaleString()} G</p>
+              <div className="pt-3 border-t border-white/10">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-400/20">
+                    <AlertCircle className="h-3.5 w-3.5 text-red-300" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Accounts to Pay</p>
+                    <p className="text-sm font-bold text-red-300">{accountsToPay.toLocaleString()} G</p>
+                  </div>
                 </div>
               </div>
-            </div>
             )}
           </div>
         </div>
@@ -434,17 +434,13 @@ export default function Golds() {
                         <td className="px-5 py-3.5 text-right font-bold whitespace-nowrap">
                           {(() => {
                             if (cancelled) return <span className="text-gray-400 dark:text-gray-600">0 G</span>
-                            
-                            // Check if this is an adjustment (description contains "adjusted" or "removed")
+
                             const amount = Number(log.amount)
-                            const isNegative = amount < 0
-                            const absAmount = Math.abs(amount)
-                            
-                            // Determine color and prefix based on amount sign
-                            const prefix = isNegative ? '−' : '+'
-                            const colorClass = isNegative ? 'text-red-500 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'
-                            
-                            return <span className={colorClass}>{prefix} {absAmount.toLocaleString()} G</span>
+                            const isOutflow = (log.type !== 'add' && log.type !== 'fee') || amount < 0
+                            const prefix = isOutflow ? '−' : '+'
+                            const colorClass = isOutflow ? 'text-red-500 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'
+
+                            return <span className={colorClass}>{prefix} {Math.abs(amount).toLocaleString()} G</span>
                           })()}
                         </td>
                         <td className="px-5 py-3.5 whitespace-nowrap">
@@ -519,9 +515,9 @@ export default function Golds() {
       <Modal open={sellOpen} onClose={closeSell} title="Sell Gold" size="sm">
         <div className="flex flex-col gap-4">
           {(() => {
-            const parsed    = parseFloat(sellAmount)
+            const parsed = parseFloat(sellAmount)
             const remaining = sellAmount && !isNaN(parsed) ? totalGold - parsed : totalGold
-            const neg       = remaining < 0
+            const neg = remaining < 0
             return (
               <div className={['flex items-center justify-between rounded-xl px-4 py-3', neg ? 'bg-red-50 dark:bg-red-900/20' : 'bg-slate-50 dark:bg-slate-800/40'].join(' ')}>
                 <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Remaining after sale</span>

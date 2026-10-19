@@ -280,11 +280,12 @@ function GoldAmountLine({ label, total, done, doneLabel, color }: {
   )
 }
 
-function GoldTradeRow({ tx, archived = false, onEdit, onSell, onDelete, onUnarchive }: {
+function GoldTradeRow({ tx, archived = false, onEdit, onSell, onAddGold, onDelete, onUnarchive }: {
   tx: BusinessTransaction
   archived?: boolean
   onEdit?: () => void
   onSell?: () => void
+  onAddGold?: () => void
   onDelete?: () => void
   onUnarchive?: () => void
 }) {
@@ -343,6 +344,18 @@ function GoldTradeRow({ tx, archived = false, onEdit, onSell, onDelete, onUnarch
             </span>
           )}
         </div>
+
+        {/* Add gold to the totals */}
+        {!archived && (
+          <button
+            onClick={onAddGold}
+            title="Add gold to the price / cost"
+            className="flex items-center gap-1 rounded-lg border border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-900/20 px-2.5 py-1 text-[11px] font-semibold text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
+          >
+            <Plus size={12} />
+            Add
+          </button>
+        )}
 
         {/* Sell — confirmed trades only */}
         {!archived && (
@@ -646,6 +659,63 @@ export default function Accounts() {
     } finally {
       setConverting(false)
       setConvertTarget(null)
+    }
+  }
+
+  // Top up a pending gold trade: added G goes onto its total price / cost,
+  // and the ₱ values are recalculated from the trade's own rates
+  const [addGoldTarget, setAddGoldTarget] = useState<BusinessTransaction | null>(null)
+  const [addPrice, setAddPrice]           = useState('')
+  const [addCost, setAddCost]             = useState('')
+  const [addGoldError, setAddGoldError]   = useState<string | null>(null)
+  const [addingGold, setAddingGold]       = useState(false)
+
+  const openAddGold = (tx: BusinessTransaction) => {
+    setAddGoldTarget(tx); setAddPrice(''); setAddCost(''); setAddGoldError(null)
+  }
+
+  /** ₱ value of `gold` at the trade's rates; falls back to scaling the old ₱ value when rates are missing. */
+  const goldToPhp = (gold: number, oldGold: number, usdRate: string | null, phpRate: string | null | undefined, oldPhp: string | null) => {
+    if (usdRate != null && phpRate != null && Number(usdRate) && Number(phpRate)) {
+      return Math.round((gold / 1_000_000) * Number(usdRate) * Number(phpRate) * 100) / 100
+    }
+    if (oldPhp != null && oldGold > 0) return Math.round(Number(oldPhp) * (gold / oldGold) * 100) / 100
+    return null
+  }
+
+  const addGoldPreview = addGoldTarget && (() => {
+    const tx        = addGoldTarget
+    const oldPrice  = Number(tx.price_gold ?? 0)
+    const oldCost   = Number(tx.cost_gold ?? 0)
+    const newPrice  = oldPrice + (parseFloat(addPrice) || 0)
+    const newCost   = oldCost  + (parseFloat(addCost)  || 0)
+    const pricePhp  = goldToPhp(newPrice, oldPrice, tx.price_rate, tx.php_rate, tx.price_php)
+    const costPhp   = goldToPhp(newCost,  oldCost,  tx.cost_rate,  tx.cost_php_rate ?? tx.php_rate, tx.cost_php)
+    const profitPhp = pricePhp != null && costPhp != null ? pricePhp - costPhp : null
+    return { oldPrice, oldCost, newPrice, newCost, pricePhp, costPhp, profitPhp }
+  })()
+
+  const handleAddGold = async () => {
+    if (!addGoldTarget || !addGoldPreview) return
+    const p = addGoldPreview
+    if (p.newPrice === p.oldPrice && p.newCost === p.oldCost) { setAddGoldError('Enter gold to add to the price or cost.'); return }
+    setAddingGold(true)
+    try {
+      await updateBizTx(addGoldTarget.id, {
+        type:       'gold',
+        date:       addGoldTarget.date,
+        amount:     p.profitPhp != null && p.profitPhp > 0 ? Math.round(p.profitPhp * 100) / 100 : 0.01,
+        price_gold: p.newPrice,
+        cost_gold:  p.newCost,
+        price_php:  p.pricePhp,
+        cost_php:   p.costPhp,
+      })
+      toast.success(`Gold added — now ${p.newPrice.toLocaleString()} G price · ${p.newCost.toLocaleString()} G cost.`)
+      setAddGoldTarget(null)
+    } catch (err: unknown) {
+      setAddGoldError((err as { message?: string }).message ?? 'Failed to add gold.')
+    } finally {
+      setAddingGold(false)
     }
   }
 
@@ -999,6 +1069,7 @@ export default function Accounts() {
                 tx={tx}
                 onEdit={() => openEditGold(tx)}
                 onSell={() => openSell(tx)}
+                onAddGold={() => openAddGold(tx)}
                 onDelete={() => setDeletePendingTarget(tx)}
               />
             ))}
@@ -1279,6 +1350,76 @@ export default function Accounts() {
 
       <ConfirmDialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} loading={deleting}
         title="Delete Account" message={`Delete "${deleteTarget?.description || deleteTarget?.email}" and its pricing transaction? This cannot be undone.`} confirmLabel="Delete" />
+
+      {/* Add gold (top up price / cost) modal */}
+      <Modal open={!!addGoldTarget} onClose={() => setAddGoldTarget(null)} title="Add Gold" size="md">
+        {addGoldTarget && addGoldPreview && (
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-3 rounded-xl border border-amber-100 dark:border-amber-900/40 bg-amber-50/60 dark:bg-amber-900/10 px-4 py-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/40">
+                <Coins size={15} className="text-amber-600 dark:text-amber-400" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">{addGoldTarget.description || 'Gold Trade'}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Added gold goes onto the totals at this trade's rates</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                { key: 'price', label: 'Add to Price (G)', current: addGoldPreview.oldPrice, next: addGoldPreview.newPrice, value: addPrice, onChange: setAddPrice, textCls: 'text-emerald-600 dark:text-emerald-400' },
+                { key: 'cost',  label: 'Add to Cost (G)',  current: addGoldPreview.oldCost,  next: addGoldPreview.newCost,  value: addCost,  onChange: setAddCost,  textCls: 'text-red-500 dark:text-red-400' },
+              ].map((f) => (
+                <div key={f.key}>
+                  <p className="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">{f.label}</p>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">+</span>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      autoFocus={f.key === 'price'}
+                      value={formatWithCommas(f.value)}
+                      onChange={(e) => { handleAmountInput(e.target.value, f.onChange); setAddGoldError(null) }}
+                      placeholder="0"
+                      className="block w-full rounded-lg border border-gray-300 hover:border-gray-400 bg-white pl-7 pr-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 dark:hover:border-gray-500 transition-colors"
+                    />
+                  </div>
+                  <p className="mt-1.5 text-[11px] text-gray-400 dark:text-gray-500">
+                    {f.current.toLocaleString()} G
+                    {f.next !== f.current && <> → <span className={['font-semibold', f.textCls].join(' ')}>{f.next.toLocaleString()} G</span></>}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {/* New totals preview */}
+            <div className="grid grid-cols-3 divide-x divide-gray-100 dark:divide-gray-700 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 overflow-hidden">
+              {[
+                { label: 'Price (₱)',  value: addGoldPreview.pricePhp,  cls: 'text-emerald-600 dark:text-emerald-400' },
+                { label: 'Cost (₱)',   value: addGoldPreview.costPhp,   cls: 'text-red-500 dark:text-red-400' },
+                { label: 'Profit (₱)', value: addGoldPreview.profitPhp, cls: (addGoldPreview.profitPhp ?? 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400' },
+              ].map(({ label, value, cls }) => (
+                <div key={label} className="flex flex-col items-center py-2.5 px-1">
+                  <span className="text-[10px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{label}</span>
+                  <span className={['text-sm font-bold mt-0.5', value != null ? cls : 'text-gray-300 dark:text-gray-600'].join(' ')}>
+                    {value != null ? <Amt value={formatCurrency(value)} /> : '—'}
+                  </span>
+                </div>
+              ))}
+            </div>
+            {addGoldPreview.pricePhp == null && (
+              <p className="-mt-2 text-xs text-amber-600 dark:text-amber-400">No rates set yet — only the G totals change until you set rates in Edit.</p>
+            )}
+
+            {addGoldError && <p className="-mt-1 text-xs text-red-500">{addGoldError}</p>}
+
+            <div className="flex justify-end gap-3 pt-1">
+              <Button variant="secondary" onClick={() => setAddGoldTarget(null)} disabled={addingGold}>Cancel</Button>
+              <Button onClick={handleAddGold} loading={addingGold} icon={<Plus className="h-4 w-4" />}>Add Gold</Button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* Sell gold modal */}
       <Modal open={!!sellTarget} onClose={() => setSellTarget(null)} title="Sell Gold" size="md">

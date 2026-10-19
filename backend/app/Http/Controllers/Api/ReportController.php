@@ -58,7 +58,7 @@ class ReportController extends Controller
 
     private function dailyWeekly(int $year, int $month, int $userId): array
     {
-        $txns        = Transaction::where('user_id', $userId)->whereYear('date', $year)->whereMonth('date', $month)->get();
+        $txns        = Transaction::personal()->where('user_id', $userId)->whereYear('date', $year)->whereMonth('date', $month)->get();
         $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
         $monthName   = Carbon::createFromDate($year, $month, 1)->format('M');
         $rows        = [];
@@ -82,7 +82,7 @@ class ReportController extends Controller
 
     private function dailyMonthly(int $year, int $userId): array
     {
-        $txns = Transaction::where('user_id', $userId)->whereYear('date', $year)->get();
+        $txns = Transaction::personal()->where('user_id', $userId)->whereYear('date', $year)->get();
         $rows = [];
 
         for ($m = 1; $m <= 12; $m++) {
@@ -102,7 +102,7 @@ class ReportController extends Controller
 
     private function dailyYearly(int $userId): array
     {
-        $txns  = Transaction::where('user_id', $userId)->orderBy('date')->get();
+        $txns  = Transaction::personal()->where('user_id', $userId)->orderBy('date')->get();
         $years = $txns->map(fn($t) => Carbon::parse($t->date)->year)->unique()->sort()->values();
         $rows  = [];
 

@@ -1,5 +1,8 @@
 export type TransactionType = 'income' | 'expense'
 
+/** personal = counts in Daily Expenses; business = tracked, but left out of Daily Expenses totals */
+export type TransactionScope = 'personal' | 'business'
+
 export interface Category {
   id: number
   name: string
@@ -16,10 +19,13 @@ export interface Transaction {
   category_id: number
   category: Category
   type: TransactionType
+  scope: TransactionScope
   amount: string
   description: string | null
   date: string
   notes: string | null
+  /** Balance entry this transaction adds to / deducts from */
+  balance_entry?: { id: number; transaction_id: number; account: string } | null
   created_at: string
   updated_at: string
 }
@@ -63,6 +69,10 @@ export interface Paginated<T> {
 export interface DashboardStats {
   total_income: number
   total_expense: number
+  /** Business-tagged daily transactions this month (not in the totals above) */
+  business_income?: number
+  business_expense?: number
+  business_count?: number
   recent_transactions: Transaction[]
   expense_by_category: Array<{
     category_id: number
@@ -79,6 +89,9 @@ export interface DashboardStats {
 
 export interface TransactionFilters {
   type?: TransactionType | ''
+  scope?: TransactionScope | ''
+  /** account code, or 'none' for unlinked transactions */
+  balance_account?: string
   category_id?: number | ''
   date_from?: string
   date_to?: string
@@ -130,6 +143,8 @@ export type BalanceEntryType = 'add' | 'sell'
 
 export interface BalanceEntry {
   id: number
+  /** Set when the entry was created by a daily transaction (edit it there) */
+  transaction_id?: number | null
   account: BalanceAccount
   type: BalanceEntryType
   amount: string

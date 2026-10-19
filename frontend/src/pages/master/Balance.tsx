@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { ArrowLeftRight, Eye, EyeOff, Minus, Pencil, Plus, Search, Settings2, Trash2, Wallet } from 'lucide-react'
+import { ArrowLeftRight, ExternalLink, Eye, EyeOff, Minus, Pencil, Plus, Receipt, Search, Settings2, Trash2, Wallet } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 import { useBalanceEntries } from '@/hooks/useBalanceEntries'
 import { useBalanceAccounts } from '@/hooks/useBalanceAccounts'
@@ -467,18 +468,33 @@ export default function Balance() {
                           {e.description || <span className="text-gray-400 dark:text-gray-500">{isAdd ? 'Added' : 'Sold'}</span>}
                         </p>
                       </div>
-                      <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">{formatDate(e.date)} · {isAdd ? 'Add' : 'Sell'}</p>
+                      <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5 flex items-center gap-1.5">
+                        {formatDate(e.date)} · {isAdd ? 'Add' : 'Sell'}
+                        {e.transaction_id && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-600 dark:text-indigo-300">
+                            <Receipt size={9} /> From Transactions
+                          </span>
+                        )}
+                      </p>
                     </div>
-                    <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => openEdit(e)} title="Edit"
-                        className="rounded-lg p-1.5 text-gray-400 hover:bg-indigo-50 hover:text-indigo-600 transition-colors dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400">
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
-                      <button onClick={() => setDeleteTarget(e)} title="Delete"
-                        className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors dark:hover:bg-red-900/20 dark:hover:text-red-400">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
+                    {e.transaction_id ? (
+                      // Owned by a daily transaction — changing it here would make the two drift apart
+                      <Link to="/transactions" title="Edit this in Transactions"
+                        className="md:opacity-0 md:group-hover:opacity-100 transition-opacity flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/20">
+                        Edit in Transactions <ExternalLink size={11} />
+                      </Link>
+                    ) : (
+                      <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => openEdit(e)} title="Edit"
+                          className="rounded-lg p-1.5 text-gray-400 hover:bg-indigo-50 hover:text-indigo-600 transition-colors dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400">
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button onClick={() => setDeleteTarget(e)} title="Delete"
+                          className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors dark:hover:bg-red-900/20 dark:hover:text-red-400">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    )}
                     <div className="flex flex-col items-end shrink-0">
                       <span className={['text-sm font-bold whitespace-nowrap', isAdd ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'].join(' ')}>
                         {isAdd ? '+' : '−'}<Amt value={fmtIn(a, parseFloat(e.amount))} />

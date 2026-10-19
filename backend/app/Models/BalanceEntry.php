@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class BalanceEntry extends Model
 {
     protected $fillable = [
+        'transaction_id',
         'account',
         'type',
         'description',

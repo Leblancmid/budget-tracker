@@ -24,7 +24,7 @@ class BudgetController extends Controller
             ->where('year', $year)
             ->get()
             ->map(function (Budget $budget) use ($userId, $month, $year) {
-                $spent = Transaction::where('user_id', $userId)
+                $spent = Transaction::personal()->where('user_id', $userId)
                     ->where('category_id', $budget->category_id)
                     ->where('type', 'expense')
                     ->whereMonth('date', $month)

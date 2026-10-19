@@ -21,6 +21,9 @@ class StoreTransactionRequest extends FormRequest
             'description' => ['nullable', 'string', 'max:255'],
             'date'        => ['required', 'date'],
             'notes'       => ['nullable', 'string', 'max:1000'],
+            'scope'           => ['sometimes', 'in:personal,business'],
+            // Daily amounts are in ₱, so only PHP balance accounts can be linked
+            'balance_account' => ['nullable', 'string', Rule::exists('balance_accounts', 'code')->where('currency', 'PHP')],
         ];
     }
 }

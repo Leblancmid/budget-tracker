@@ -4,6 +4,9 @@ import type { Paginated, Transaction, TransactionFilters } from '@/types'
 export interface TransactionPayload {
   category_id: number
   type: string
+  scope?: 'personal' | 'business'
+  /** PHP balance account code to add to / deduct from; null to unlink */
+  balance_account?: string | null
   amount: number
   description?: string
   date: string

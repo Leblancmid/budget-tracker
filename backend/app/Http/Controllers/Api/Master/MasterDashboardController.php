@@ -24,8 +24,8 @@ class MasterDashboardController extends Controller
         $businessExpense     = (float) $allArchived->whereNotIn('type', ['expense'])->sum('cost_php')
                              + (float) $allArchived->where('type', 'expense')->sum('amount');
         $businessProfit      = $businessIncome - $businessExpense;
-        $dailyIncome         = (float) Transaction::where('type', 'income')->sum('amount');
-        $dailyExpense        = (float) Transaction::where('type', 'expense')->sum('amount');
+        $dailyIncome         = (float) Transaction::personal()->where('type', 'income')->sum('amount');
+        $dailyExpense        = (float) Transaction::personal()->where('type', 'expense')->sum('amount');
         $overallProfit       = $businessProfit + ($dailyIncome - $dailyExpense);
 
         // Monthly Profit (current month only)
@@ -35,9 +35,9 @@ class MasterDashboardController extends Controller
         $monthlyBusinessExpense  = (float) $monthlyArchived->whereNotIn('type', ['expense'])->sum('cost_php')
                                  + (float) $monthlyArchived->where('type', 'expense')->sum('amount');
         $monthlyBusinessProfit   = $monthlyBusinessIncome - $monthlyBusinessExpense;
-        $monthlyDailyIncome  = (float) Transaction::where('type', 'income')
+        $monthlyDailyIncome  = (float) Transaction::personal()->where('type', 'income')
             ->whereYear('date', $now->year)->whereMonth('date', $now->month)->sum('amount');
-        $monthlyDailyExpense = (float) Transaction::where('type', 'expense')
+        $monthlyDailyExpense = (float) Transaction::personal()->where('type', 'expense')
             ->whereYear('date', $now->year)->whereMonth('date', $now->month)->sum('amount');
         $monthlyProfit = $monthlyBusinessProfit + ($monthlyDailyIncome - $monthlyDailyExpense);
 

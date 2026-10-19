@@ -1,24 +1,60 @@
-import { useState } from 'react'
-import { Plus, Search, Filter, Pencil, Trash2, Download, TrendingUp } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { ArrowDownLeft, ArrowUpRight, Briefcase, Download, Filter, Pencil, Plus, Search, Trash2, TrendingUp, Wallet } from 'lucide-react'
 import { useTransactions } from '@/hooks/useTransactions'
 import { useCategories } from '@/hooks/useCategories'
+import { useDashboard } from '@/hooks/useDashboard'
+import { useBalanceAccounts } from '@/hooks/useBalanceAccounts'
+import { useAuth } from '@/context/AuthContext'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
-import { Badge } from '@/components/ui/Badge'
 import { Pagination } from '@/components/ui/Pagination'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Card } from '@/components/ui/Card'
 import { TransactionModal, type TransactionFormData } from '@/components/modals/TransactionModal'
 import { toast } from '@/components/ui/Toast'
-import { formatCurrency, formatDate, formatTime } from '@/utils/format'
+import { formatCurrency, formatDate, formatTime, MONTHS } from '@/utils/format'
+import { colorOf, iconOf } from '@/utils/balanceAccounts'
 import { Amt } from '@/context/AmountVisibilityContext'
 import { exportCsv } from '@/utils/csv'
-import type { Transaction } from '@/types'
+import type { Transaction, TransactionScope, TransactionType } from '@/types'
+
+const NOW_LABEL = `${MONTHS[new Date().getMonth()]} ${new Date().getFullYear()}`
+
+function Segmented<T extends string>({ value, options, onChange }: {
+  value: T
+  options: { value: T; label: string }[]
+  onChange: (v: T) => void
+}) {
+  return (
+    <div className="flex items-center gap-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-1">
+      {options.map((o) => (
+        <button
+          key={o.value}
+          onClick={() => onChange(o.value)}
+          className={[
+            'rounded-md px-2.5 py-1 text-xs font-semibold transition-colors',
+            value === o.value ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200',
+          ].join(' ')}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  )
+}
 
 export function Transactions() {
   const { transactions, meta, filters, loading, applyFilters, setPage, create, update, remove } = useTransactions()
   const { categories } = useCategories()
+  const { stats, refetch: refetchStats } = useDashboard()
+  const { user } = useAuth()
+  const isAdmin = user?.role !== 'daily_only'
+  const { accounts } = useBalanceAccounts()
+
+  // Daily amounts are in ₱, so only visible PHP accounts can be linked
+  const phpAccounts   = useMemo(() => (isAdmin ? accounts.filter((a) => a.currency === 'PHP' && !a.hidden_at) : []), [accounts, isAdmin])
+  const accountByCode = useMemo(() => new Map(accounts.map((a) => [a.code, a])), [accounts])
 
   const [modalOpen, setModalOpen]       = useState(false)
   const [editTarget, setEditTarget]     = useState<Transaction | null>(null)
@@ -26,13 +62,15 @@ export function Transactions() {
   const [deleteLoading, setDeleteLoading] = useState(false)
 
   const handleSubmit = async (data: TransactionFormData) => {
+    const payload = { ...data, balance_account: isAdmin ? data.balance_account : undefined }
     if (editTarget) {
-      await update(editTarget.id, data)
+      await update(editTarget.id, payload)
       toast.success('Transaction updated.')
     } else {
-      await create(data)
-      toast.success('Transaction added.')
+      await create(payload)
+      toast.success(data.scope === 'business' ? 'Business transaction added — not counted in Daily Expenses.' : 'Transaction added.')
     }
+    refetchStats()
   }
 
   const handleDelete = async () => {
@@ -40,8 +78,9 @@ export function Transactions() {
     setDeleteLoading(true)
     try {
       await remove(deleteTarget.id)
-      toast.success('Transaction deleted.')
+      toast.success(deleteTarget.balance_entry ? 'Transaction deleted and its Balance entry reversed.' : 'Transaction deleted.')
       setDeleteTarget(null)
+      refetchStats()
     } catch {
       toast.error('Failed to delete transaction.')
     } finally {
@@ -53,19 +92,106 @@ export function Transactions() {
   const openAdd  = () => { setEditTarget(null); setModalOpen(true) }
 
   const handleExport = () => exportCsv('transactions', transactions.map((tx) => ({
-    date: tx.date, category: tx.category.name, type: tx.type, description: tx.description ?? '', amount: tx.amount,
+    date: tx.date, category: tx.category.name, type: tx.type, scope: tx.scope, account: tx.balance_entry ? (accountByCode.get(tx.balance_entry.account)?.name ?? tx.balance_entry.account) : '',
+    description: tx.description ?? '', amount: tx.amount,
   })))
 
-  const hasFilters   = !!(filters.search || filters.type || filters.category_id || filters.date_from || filters.date_to)
+  const hasFilters = !!(filters.search || filters.type || filters.scope || filters.balance_account || filters.category_id || filters.date_from || filters.date_to)
+
+  // Group the current page by day
+  const groups = useMemo(() => {
+    const out: { date: string; items: Transaction[]; net: number }[] = []
+    for (const tx of transactions) {
+      let g = out[out.length - 1]
+      if (!g || g.date !== tx.date) { g = { date: tx.date, items: [], net: 0 }; out.push(g) }
+      g.items.push(tx)
+      if (tx.scope !== 'business') g.net += (tx.type === 'income' ? 1 : -1) * parseFloat(tx.amount)
+    }
+    return out
+  }, [transactions])
+
+  const income   = stats?.total_income ?? 0
+  const expense  = stats?.total_expense ?? 0
+  const net      = income - expense
+  const bizIn    = stats?.business_income ?? 0
+  const bizOut   = stats?.business_expense ?? 0
+  const bizCount = stats?.business_count ?? 0
 
   return (
     <div className="flex flex-col gap-5">
 
-      {/* Toolbar */}
+      {/* ── This month ─────────────────────────────────────────────── */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-700 to-slate-900 p-6 shadow-lg shadow-slate-900/30 dark:shadow-black/40">
+        <div className="absolute -top-8 -right-8 h-40 w-40 rounded-full bg-white/5" />
+        <div className="absolute -bottom-10 -left-6 h-32 w-32 rounded-full bg-white/[0.03]" />
+
+        <div className="relative grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-5 lg:gap-8">
+          {/* Personal (Daily Expenses) */}
+          <div className="flex flex-col gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-400/20">
+                  <Wallet className="h-3.5 w-3.5 text-indigo-300" />
+                </div>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Daily Net</span>
+                <span className="text-[10px] font-semibold text-slate-400 bg-white/10 px-2 py-0.5 rounded-full">{NOW_LABEL}</span>
+              </div>
+              <p className={['text-3xl font-bold', net >= 0 ? 'text-emerald-300' : 'text-red-300'].join(' ')}>
+                {net >= 0 ? '+' : '−'}<Amt value={formatCurrency(Math.abs(net))} />
+              </p>
+              <p className="text-xs text-slate-500 mt-1">Personal transactions only</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3 pt-3 border-t border-white/10">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10"><ArrowDownLeft className="h-3.5 w-3.5 text-emerald-300" /></div>
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Income</p>
+                  <p className="text-base font-bold text-emerald-400"><Amt value={formatCurrency(income)} /></p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10"><ArrowUpRight className="h-3.5 w-3.5 text-red-300" /></div>
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Expense</p>
+                  <p className="text-base font-bold text-red-400"><Amt value={formatCurrency(expense)} /></p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Business (excluded) */}
+          <button
+            onClick={() => applyFilters({ scope: filters.scope === 'business' ? '' : 'business' })}
+            title="Show only Business transactions"
+            className={[
+              'flex flex-col justify-between gap-3 rounded-xl px-4 py-3.5 text-left transition-colors lg:min-w-[15rem]',
+              filters.scope === 'business' ? 'bg-teal-400/20 ring-1 ring-teal-300/40' : 'bg-white/5 hover:bg-white/10',
+            ].join(' ')}
+          >
+            <div className="flex items-center gap-2">
+              <Briefcase className="h-3.5 w-3.5 text-teal-300" />
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Business</span>
+              <span className="ml-auto text-[10px] font-semibold text-teal-200 bg-teal-400/20 px-2 py-0.5 rounded-full">{bizCount} this month</span>
+            </div>
+            <div className="flex gap-5">
+              <div>
+                <p className="text-[10px] text-slate-500">In</p>
+                <p className="text-sm font-bold text-emerald-300"><Amt value={formatCurrency(bizIn)} /></p>
+              </div>
+              <div>
+                <p className="text-[10px] text-slate-500">Out</p>
+                <p className="text-sm font-bold text-red-300"><Amt value={formatCurrency(bizOut)} /></p>
+              </div>
+            </div>
+            <p className="text-[11px] text-slate-500">Not counted in Daily Expenses</p>
+          </button>
+        </div>
+      </div>
+
+      {/* ── Toolbar ────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-3">
-        {/* Top row: search + actions */}
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex-1">
+          <div className="flex-1 min-w-[12rem]">
             <Input
               placeholder="Search description…"
               value={filters.search ?? ''}
@@ -74,23 +200,21 @@ export function Transactions() {
             />
           </div>
           <div className="hidden md:block">
-            <Button variant="secondary" icon={<Download className="h-4 w-4" />} onClick={handleExport}>
-              Export
-            </Button>
+            <Button variant="secondary" icon={<Download className="h-4 w-4" />} onClick={handleExport}>Export</Button>
           </div>
-          <Button icon={<Plus className="h-4 w-4" />} onClick={openAdd}>
-            Add
-          </Button>
+          <Button icon={<Plus className="h-4 w-4" />} onClick={openAdd}>Add</Button>
         </div>
 
-        {/* Filter row */}
         <div className="flex flex-wrap items-center gap-2">
-          <Select
-            placeholder="All types"
+          <Segmented<TransactionScope | ''>
+            value={filters.scope ?? ''}
+            onChange={(v) => applyFilters({ scope: v })}
+            options={[{ value: '', label: 'All' }, { value: 'personal', label: 'Personal' }, { value: 'business', label: 'Business' }]}
+          />
+          <Segmented<TransactionType | ''>
             value={filters.type ?? ''}
-            onChange={(e) => applyFilters({ type: e.target.value as 'income' | 'expense' | '' })}
-            options={[{ value: 'income', label: 'Income' }, { value: 'expense', label: 'Expense' }]}
-            className="w-32 hidden md:block"
+            onChange={(v) => applyFilters({ type: v })}
+            options={[{ value: '', label: 'All' }, { value: 'income', label: 'Income' }, { value: 'expense', label: 'Expense' }]}
           />
           <Select
             placeholder="All categories"
@@ -99,20 +223,22 @@ export function Transactions() {
             options={categories.map((c) => ({ value: c.id, label: c.name }))}
             className="w-40 hidden md:block"
           />
+          {isAdmin && accounts.some((a) => a.currency === 'PHP') && (
+            <Select
+              placeholder="All accounts"
+              value={filters.balance_account ?? ''}
+              onChange={(e) => applyFilters({ balance_account: e.target.value })}
+              options={[
+                { value: 'none', label: 'No account' },
+                ...accounts.filter((a) => a.currency === 'PHP').map((a) => ({ value: a.code, label: a.name })),
+              ]}
+              className="w-40 hidden md:block"
+            />
+          )}
           <div className="hidden md:flex items-center gap-1.5">
-            <Input
-              type="date"
-              value={filters.date_from ?? ''}
-              onChange={(e) => applyFilters({ date_from: e.target.value })}
-              className="w-36"
-            />
+            <Input type="date" value={filters.date_from ?? ''} onChange={(e) => applyFilters({ date_from: e.target.value })} className="w-36" />
             <span className="text-gray-300 dark:text-gray-600 text-sm">→</span>
-            <Input
-              type="date"
-              value={filters.date_to ?? ''}
-              onChange={(e) => applyFilters({ date_to: e.target.value })}
-              className="w-36"
-            />
+            <Input type="date" value={filters.date_to ?? ''} onChange={(e) => applyFilters({ date_to: e.target.value })} className="w-36" />
           </div>
           <Select
             value={filters.per_page ?? 10}
@@ -122,7 +248,7 @@ export function Transactions() {
           />
           {hasFilters && (
             <button
-              onClick={() => applyFilters({ type: '', category_id: '', date_from: '', date_to: '', search: '' })}
+              onClick={() => applyFilters({ type: '', scope: '', balance_account: '', category_id: '', date_from: '', date_to: '', search: '' })}
               className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400 transition-colors font-medium"
             >
               <Filter className="h-3.5 w-3.5" />
@@ -132,7 +258,7 @@ export function Transactions() {
         </div>
       </div>
 
-      {/* Table */}
+      {/* ── List, grouped by day ───────────────────────────────────── */}
       <Card className="overflow-hidden">
         {loading ? (
           <div className="flex flex-col divide-y divide-gray-50 dark:divide-gray-700/40">
@@ -159,92 +285,76 @@ export function Transactions() {
               </p>
             </div>
             {!hasFilters && (
-              <Button onClick={openAdd} icon={<Plus className="h-4 w-4" />} className="mt-1">
-                Add Transaction
-              </Button>
+              <Button onClick={openAdd} icon={<Plus className="h-4 w-4" />} className="mt-1">Add Transaction</Button>
             )}
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto scrollbar-thin">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-700/60">
-                    <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400 whitespace-nowrap">Date</th>
-                    <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Category</th>
-                    <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Description</th>
-                    <th className="px-5 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400 whitespace-nowrap">Amount</th>
-                    <th className="px-5 py-3" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50 dark:divide-gray-700/40">
-                  {transactions.map((tx) => (
-                    <tr
-                      key={tx.id}
-                      className="group hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors"
-                    >
-                      {/* Date */}
-                      <td className="px-5 py-3.5 whitespace-nowrap">
-                        <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                          {formatDate(tx.date)}
+            {groups.map((g) => (
+              <div key={g.date}>
+                <div className="flex items-center justify-between gap-3 bg-gray-50/80 dark:bg-gray-800/40 px-5 py-2 border-y border-gray-100 dark:border-gray-700/60 first:border-t-0">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{formatDate(g.date)}</span>
+                  {g.items.some((t) => t.scope !== 'business') && (
+                    <span className={['text-[11px] font-semibold', g.net >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'].join(' ')}>
+                      {g.net >= 0 ? '+' : '−'}<Amt value={formatCurrency(Math.abs(g.net))} />
+                    </span>
+                  )}
+                </div>
+                <div className="divide-y divide-gray-50 dark:divide-gray-700/40">
+                  {g.items.map((tx) => {
+                    const isIncome = tx.type === 'income'
+                    const isBiz    = tx.scope === 'business'
+                    const acct     = tx.balance_entry ? accountByCode.get(tx.balance_entry.account) : undefined
+                    const AcctIcon = iconOf(acct?.icon ?? 'wallet')
+                    return (
+                      <div key={tx.id} className="group flex items-center gap-3 px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+                        <span
+                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white text-xs font-bold shadow-sm"
+                          style={{ backgroundColor: tx.category.color }}
+                        >
+                          {tx.category.name.charAt(0).toUpperCase()}
                         </span>
-                        <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">{formatTime(tx.created_at)}</p>
-                      </td>
-
-                      {/* Category */}
-                      <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-white text-[10px] font-bold"
-                            style={{ backgroundColor: tx.category.color }}
-                          >
-                            {tx.category.name.charAt(0).toUpperCase()}
-                          </span>
-                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                            {tx.category.name}
-                          </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{tx.description || tx.category.name}</p>
+                          <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] text-gray-400 dark:text-gray-500">
+                            <span>{tx.category.name}</span>
+                            <span>·</span>
+                            <span>{formatTime(tx.created_at)}</span>
+                            {isBiz && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 dark:bg-teal-900/30 px-1.5 py-0.5 text-[10px] font-semibold text-teal-700 dark:text-teal-300">
+                                <Briefcase size={9} /> Business
+                              </span>
+                            )}
+                            {tx.balance_entry && (
+                              <span className={['inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold', colorOf(acct?.color ?? 'slate').badge].join(' ')}>
+                                <AcctIcon size={9} /> {acct?.name ?? tx.balance_entry.account}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </td>
-
-                      {/* Description */}
-                      <td className="px-5 py-3.5 max-w-xs">
-                        <span className="text-sm text-gray-600 dark:text-gray-400 truncate block">
-                          {tx.description || <span className="text-gray-300 dark:text-gray-600">—</span>}
-                        </span>
-                      </td>
-
-                      {/* Amount */}
-                      <td className="px-5 py-3.5 text-right whitespace-nowrap">
-                        <div className="flex flex-col items-end gap-0.5">
-                          <span className={['text-sm font-bold', tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'].join(' ')}>
-                            {tx.type === 'income' ? '+' : '−'}<Amt value={formatCurrency(tx.amount)} />
-                          </span>
-                          <Badge variant={tx.type} className="text-[10px]">{tx.type}</Badge>
-                        </div>
-                      </td>
-
-                      {/* Actions */}
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-center justify-end gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => openEdit(tx)}
-                            className="rounded-lg p-1.5 text-gray-400 hover:bg-indigo-50 hover:text-indigo-600 transition-colors dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400"
-                          >
+                        <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => openEdit(tx)} title="Edit"
+                            className="rounded-lg p-1.5 text-gray-400 hover:bg-indigo-50 hover:text-indigo-600 transition-colors dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400">
                             <Pencil className="h-3.5 w-3.5" />
                           </button>
-                          <button
-                            onClick={() => setDeleteTarget(tx)}
-                            className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors dark:hover:bg-red-900/20 dark:hover:text-red-400"
-                          >
+                          <button onClick={() => setDeleteTarget(tx)} title="Delete"
+                            className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors dark:hover:bg-red-900/20 dark:hover:text-red-400">
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                        <span className={[
+                          'shrink-0 text-sm font-bold whitespace-nowrap',
+                          isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400',
+                          isBiz ? 'opacity-80' : '',
+                        ].join(' ')}>
+                          {isIncome ? '+' : '−'}<Amt value={formatCurrency(tx.amount)} />
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
 
             <div className="px-5 py-3 border-t border-gray-50 dark:border-gray-700/40">
               <Pagination meta={meta} onPageChange={setPage} />
@@ -259,6 +369,7 @@ export function Transactions() {
         onSubmit={handleSubmit}
         categories={categories}
         transaction={editTarget}
+        balanceAccounts={phpAccounts}
       />
 
       <ConfirmDialog
@@ -267,7 +378,9 @@ export function Transactions() {
         onConfirm={handleDelete}
         loading={deleteLoading}
         title="Delete Transaction"
-        message={`Are you sure you want to delete this transaction of ${formatCurrency(deleteTarget?.amount ?? 0)}? This action cannot be undone.`}
+        message={`Delete this ${deleteTarget?.type} of ${formatCurrency(deleteTarget?.amount ?? 0)}?${
+          deleteTarget?.balance_entry ? ` Its ${accountByCode.get(deleteTarget.balance_entry.account)?.name ?? 'Balance'} entry will be reversed too.` : ''
+        } This cannot be undone.`}
       />
     </div>
   )

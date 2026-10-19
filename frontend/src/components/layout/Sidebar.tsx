@@ -89,7 +89,6 @@ const SECTIONS = [
     basePath: '/rucoy',
     items: [
       { to: '/rucoy', label: 'Summary', end: true },
-      { to: '/rucoy/golds', label: 'Golds', end: false },
       { to: '/rucoy/trades', label: 'Trades', end: false },
       { to: '/rucoy/calculator', label: 'Gold Calculator', end: false },
     ],

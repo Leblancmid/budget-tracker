@@ -22,7 +22,6 @@ const Login               = lazy(() => import('@/pages/Login'))
 const MasterDashboard     = lazy(() => import('@/pages/master/MasterDashboard'))
 const Balance             = lazy(() => import('@/pages/master/Balance'))
 
-const RucoyDashboard      = lazy(() => import('@/pages/rucoy/RucoyDashboard'))
 const Golds               = lazy(() => import('@/pages/rucoy/Golds'))
 const Trades              = lazy(() => import('@/pages/rucoy/Trades'))
 const Accounts            = lazy(() => import('@/pages/rucoy/Accounts'))
@@ -64,8 +63,8 @@ export default function App() {
                     <Route path="/master"          element={<Suspense fallback={<Loading />}><MasterDashboard /></Suspense>} />
                     <Route path="/master/balance" element={<Suspense fallback={<Loading />}><Balance /></Suspense>} />
 
-                    <Route path="/rucoy"              element={<Suspense fallback={<Loading />}><RucoyDashboard /></Suspense>} />
-                    <Route path="/rucoy/golds"        element={<Suspense fallback={<Loading />}><Golds /></Suspense>} />
+                    <Route path="/rucoy"              element={<Suspense fallback={<Loading />}><Golds /></Suspense>} />
+                    <Route path="/rucoy/golds"        element={<Navigate to="/rucoy" replace />} />
                     <Route path="/rucoy/trades"       element={<Suspense fallback={<Loading />}><Trades /></Suspense>} />
                     <Route path="/rucoy/accounts"     element={<Navigate to="/business/transactions" replace />} />
                     <Route path="/rucoy/calculator"   element={<Suspense fallback={<Loading />}><GoldCalculator /></Suspense>} />

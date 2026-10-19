@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Coins, TrendingUp, TrendingDown, AlertCircle, Search, Download, HandCoins } from 'lucide-react'
+import { Coins, TrendingUp, TrendingDown, AlertCircle, Search, Download, HandCoins, ArrowLeftRight } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -110,7 +110,12 @@ export default function Golds() {
     date: l.created_at, type: l.type, amount: l.amount, description: l.description ?? '',
   })))
 
-  const isNegative = !loading && totalGold < 0
+  // Total Gold = stash (live) + gold sitting in active KKS trades
+  const tradesGold  = Number(stats?.kks_gold ?? 0)
+  const tradeCount  = stats?.trade_count ?? 0
+  const overallGold = totalGold + tradesGold
+
+  const isNegative = !loading && overallGold < 0
 
   return (
     <div className="flex flex-col gap-5">
@@ -137,18 +142,39 @@ export default function Golds() {
                   <div className={['flex h-6 w-6 items-center justify-center rounded-lg', isNegative ? 'bg-red-400/20' : 'bg-amber-400/20'].join(' ')}>
                     <Coins className={['h-3.5 w-3.5', isNegative ? 'text-red-300' : 'text-amber-400'].join(' ')} />
                   </div>
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Gold Stash</span>
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Total Gold</span>
                 </div>
                 <p className={['text-3xl font-bold', isNegative ? 'text-red-300' : 'text-amber-400'].join(' ')}>
-                  {totalGold.toLocaleString()} <span className="text-xl font-semibold opacity-60">G</span>
+                  {overallGold.toLocaleString()} <span className="text-xl font-semibold opacity-60">G</span>
                 </p>
-                <p className="text-xs text-slate-500 mt-1">{logs.length} log{logs.length !== 1 ? 's' : ''} recorded</p>
+                <p className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
+                  <ArrowLeftRight className="h-3 w-3" />
+                  {tradeCount} trade{tradeCount !== 1 ? 's' : ''} total · {logs.length} log{logs.length !== 1 ? 's' : ''} recorded
+                </p>
               </div>
 
             </div>
 
-            {/* Sub-stats: Account Cost + Middleman Fee */}
-            <div className="pt-3 border-t border-white/10 grid grid-cols-2 gap-3">
+            {/* Sub-stats: Gold Stash + Trades Gold + Account Cost + Middleman Fee */}
+            <div className="pt-3 border-t border-white/10 grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10">
+                  <Coins className="h-3.5 w-3.5 text-slate-300" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Gold Stash</p>
+                  <p className={['text-sm font-bold', totalGold < 0 ? 'text-red-300' : 'text-slate-200'].join(' ')}>{totalGold.toLocaleString()} G</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10">
+                  <TrendingUp className="h-3.5 w-3.5 text-slate-300" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Trades Gold</p>
+                  <p className="text-sm font-bold text-slate-200">{tradesGold.toLocaleString()} G</p>
+                </div>
+              </div>
               <div className="flex items-center gap-2.5">
                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10">
                   <TrendingDown className="h-3.5 w-3.5 text-slate-300" />

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { CalendarClock, Coins, User } from 'lucide-react'
+import { CalendarClock } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -38,9 +38,8 @@ const fmtPHP = (v: number | null) =>
 const inputCls = 'block w-full rounded-lg border border-gray-300 hover:border-gray-400 bg-white px-2.5 py-2 text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 dark:border-gray-600 dark:hover:border-gray-500 transition-colors'
 const readonlyCls = 'rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-2 text-xs sm:text-sm font-semibold dark:border-gray-700 dark:bg-gray-800/60 truncate'
 
-export function RucoyTransactionModal({ open, onClose, kind: initialKind, account, accountTx, goldTx, onSubmitAccount, onSubmitGold }: RucoyTransactionModalProps) {
-  const [kind, setKind] = useState<RucoyTxKind>(initialKind)
-  const isEdit = initialKind === 'account' ? !!account : !!goldTx
+export function RucoyTransactionModal({ open, onClose, kind, account, accountTx, goldTx, onSubmitAccount, onSubmitGold }: RucoyTransactionModalProps) {
+  const isEdit = kind === 'account' ? !!account : !!goldTx
 
   // Account-only fields
   const [email, setEmail]                 = useState('')
@@ -62,17 +61,16 @@ export function RucoyTransactionModal({ open, onClose, kind: initialKind, accoun
 
   useEffect(() => {
     if (!open) return
-    setKind(initialKind)
     setErrors({})
-    const tx = initialKind === 'account' ? accountTx : goldTx
+    const tx = kind === 'account' ? accountTx : goldTx
     setEmail(account?.email ?? '')
     setPaymentStatus(account?.payment_status ?? 'not_paid')
     setPaymentDate(account?.payment_date ?? '')
-    setDescription(initialKind === 'account' ? (account?.description ?? '') : (goldTx?.description ?? ''))
-    setPriceGold(initialKind === 'account'
+    setDescription(kind === 'account' ? (account?.description ?? '') : (goldTx?.description ?? ''))
+    setPriceGold(kind === 'account'
       ? (account?.price != null ? String(account.price) : '')
       : num(goldTx?.price_gold))
-    setCostGold(initialKind === 'account'
+    setCostGold(kind === 'account'
       ? (account?.cost != null ? String(account.cost) : '')
       : num(goldTx?.cost_gold))
     setPriceRate(num(tx?.price_rate))
@@ -80,7 +78,7 @@ export function RucoyTransactionModal({ open, onClose, kind: initialKind, accoun
     setPricePhpRate(num(tx?.php_rate))
     setCostPhpRate(num(tx?.cost_php_rate) || num(tx?.php_rate))
     setDate(tx?.date ?? todayISO())
-  }, [open, initialKind, account, accountTx, goldTx])
+  }, [open, kind, account, accountTx, goldTx])
 
   // Formula: G / 1M × rate = $  →  $ × PHP rate = ₱
   const priceGoldNum = parseFloat(priceGold) || null
@@ -190,40 +188,11 @@ export function RucoyTransactionModal({ open, onClose, kind: initialKind, accoun
     )
   })()
 
-  const title = isEdit
-    ? (kind === 'account' ? 'Edit Account' : 'Edit Gold')
-    : 'Add Transaction'
+  const title = `${isEdit ? 'Edit' : 'Add'} ${kind === 'account' ? 'Account' : 'Gold'}`
 
   return (
     <Modal open={open} onClose={onClose} title={title} size="2xl">
       <div className="flex flex-col gap-4">
-
-        {/* Type tabs — only when adding */}
-        {!isEdit && (
-          <div className="flex gap-2">
-            {([
-              { value: 'account', label: 'Account', Icon: User },
-              { value: 'gold',    label: 'Gold',    Icon: Coins },
-            ] as const).map(({ value, label, Icon }) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => { setKind(value); setErrors({}) }}
-                className={[
-                  'flex flex-1 items-center justify-center gap-2 rounded-lg border py-2 text-sm font-medium transition-colors',
-                  kind === value
-                    ? value === 'account'
-                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:border-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400'
-                      : 'border-amber-500 bg-amber-50 text-amber-700 dark:border-amber-600 dark:bg-amber-900/20 dark:text-amber-400'
-                    : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
-                ].join(' ')}
-              >
-                <Icon size={14} />
-                {label}
-              </button>
-            ))}
-          </div>
-        )}
 
         <Input
           label="Description"

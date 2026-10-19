@@ -93,7 +93,7 @@ function AccountCard({ a, tx, onEdit, onArchive, onDelete, onConvertToGold, arch
     ].join(' ')}>
 
       {/* Header */}
-      <div className="flex items-start gap-3 p-4 pb-3">
+      <div className="flex flex-wrap items-start gap-x-3 gap-y-2 p-4 pb-3">
         {a.avatar ? (
           <img
             src={a.avatar}
@@ -111,7 +111,7 @@ function AccountCard({ a, tx, onEdit, onArchive, onDelete, onConvertToGold, arch
           </div>
         )}
 
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 basis-32 min-w-0">
           {a.description && (
             <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 line-clamp-1 leading-snug">
               {a.description}
@@ -123,7 +123,7 @@ function AccountCard({ a, tx, onEdit, onArchive, onDelete, onConvertToGold, arch
         </div>
 
         {/* Actions */}
-        <div className={['flex items-center gap-0.5 shrink-0', archived ? '' : 'opacity-0 group-hover:opacity-100 transition-opacity'].join(' ')}>
+        <div className={['ml-auto flex items-center gap-1 shrink-0', archived ? '' : 'md:opacity-0 md:group-hover:opacity-100 transition-opacity'].join(' ')}>
           {archived ? (
             <button
               onClick={onUnarchive}
@@ -136,17 +136,19 @@ function AccountCard({ a, tx, onEdit, onArchive, onDelete, onConvertToGold, arch
             <>
               <button
                 onClick={onArchive}
-                className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
                 title="Mark as sold"
+                className="flex items-center gap-1 rounded-lg border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-900/20 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
               >
-                <Check size={13} />
+                <HandCoins size={12} />
+                Sell
               </button>
               <button
                 onClick={onConvertToGold}
-                className="p-1.5 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
                 title="Convert to gold trade"
+                className="mr-1 flex items-center gap-1 rounded-lg border border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-900/20 px-2.5 py-1 text-[11px] font-semibold text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
               >
-                <Coins size={13} />
+                <Coins size={12} />
+                To Gold
               </button>
               <button
                 onClick={onEdit}
@@ -300,7 +302,7 @@ function GoldTradeRow({ tx, archived = false, onEdit, onSell, onDelete, onUnarch
       </div>
       <div className="flex items-center gap-3 shrink-0">
         {/* Buttons — hover only */}
-        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+        <div className="md:opacity-0 md:group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
           {archived ? (
             <button onClick={onUnarchive} title="Restore"
               className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
@@ -1022,7 +1024,7 @@ export default function Accounts() {
                   <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{tx.description || 'Account'}</p>
                   <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{formatDate(tx.date)}</p>
                 </div>
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+                <div className="md:opacity-0 md:group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
                   <button onClick={() => setArchivePendingTarget(tx)} title="Mark as sold"
                     className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors">
                     <Check size={13} />
@@ -1231,7 +1233,7 @@ export default function Accounts() {
                             <button
                               onClick={() => setReclassifyTarget(tx)}
                               title="Mark as Gold"
-                              className="opacity-0 group-hover:opacity-100 flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] font-semibold text-amber-700 hover:bg-amber-100 transition-all dark:border-amber-700/40 dark:bg-amber-900/20 dark:text-amber-400 dark:hover:bg-amber-900/40"
+                              className="md:opacity-0 md:group-hover:opacity-100 flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] font-semibold text-amber-700 hover:bg-amber-100 transition-all dark:border-amber-700/40 dark:bg-amber-900/20 dark:text-amber-400 dark:hover:bg-amber-900/40"
                             >
                               <Coins size={11} />
                               Gold

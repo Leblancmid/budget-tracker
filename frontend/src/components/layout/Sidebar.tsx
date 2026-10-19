@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
-import { ChevronDown, ChevronRight, Wallet, Gamepad2, Briefcase, FolderOpen, PanelLeftClose, PanelLeftOpen, BarChart2, ScrollText } from 'lucide-react'
+import { ChevronDown, ChevronRight, Wallet, Gamepad2, Briefcase, FolderOpen, PanelLeftClose, PanelLeftOpen, BarChart2 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 
 type SectionVariant = 'master' | 'default' | 'business' | 'rucoy' | 'reports' | 'logs'
@@ -68,6 +68,7 @@ const SECTIONS = [
       { to: '/transactions', label: 'Transactions', end: false },
       { to: '/categories', label: 'Categories', end: false },
       { to: '/budgets', label: 'Budgets', end: false },
+      { to: '/master/balance', label: 'Balance', end: false, adminOnly: true },
     ],
   },
   {
@@ -112,24 +113,21 @@ const SECTIONS = [
     basePath: '/master',
     items: [
       { to: '/master', label: 'Overview', end: true },
-      { to: '/master/balance', label: 'Balance', end: false },
-    ],
-  },
-  {
-    id: 'logs',
-    label: 'Logs',
-    icon: ScrollText,
-    variant: 'logs' as SectionVariant,
-    basePath: '/logs',
-    items: [
-      { to: '/logs', label: 'Activity', end: true },
+      { to: '/logs', label: 'Logs', end: true },
     ],
   },
 ]
 
-function isUnderBasePath(pathname: string, basePath: string) {
-  if (basePath === '/') return !pathname.startsWith('/rucoy') && !pathname.startsWith('/business') && !pathname.startsWith('/master') && !pathname.startsWith('/reports') && !pathname.startsWith('/logs')
-  return pathname === basePath || pathname.startsWith(basePath + '/')
+const startsWithPath = (pathname: string, prefix: string) => pathname === prefix || pathname.startsWith(prefix + '/')
+
+/** Which sidebar section a URL belongs to (some pages live outside their section's URL prefix). */
+function sectionIdFor(pathname: string): string {
+  if (startsWithPath(pathname, '/master/balance')) return 'daily'
+  if (startsWithPath(pathname, '/logs'))           return 'master'
+  for (const s of SECTIONS) {
+    if (s.basePath !== '/' && startsWithPath(pathname, s.basePath)) return s.id
+  }
+  return 'daily'
 }
 
 const COLLAPSED_KEY = 'sidebar_collapsed'
@@ -149,7 +147,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
         .map((s) =>
           s.id === 'reports'
             ? { ...s, items: s.items.filter((i) => i.to === '/reports/daily-expenses') }
-            : s
+            : { ...s, items: s.items.filter((i) => !('adminOnly' in i && i.adminOnly)) }
         )
     : SECTIONS
 
@@ -157,7 +155,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
 
   const [open, setOpen] = useState<Record<string, boolean>>(() => {
     const state: Record<string, boolean> = {}
-    SECTIONS.forEach((s) => { state[s.id] = isUnderBasePath(pathname, s.basePath) })
+    SECTIONS.forEach((s) => { state[s.id] = sectionIdFor(pathname) === s.id })
     return state
   })
 
@@ -202,7 +200,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
           const Icon = section.icon
           const c = SECTION_COLORS[section.variant]
           const isOpen = open[section.id]
-          const isActive = isUnderBasePath(pathname, section.basePath)
+          const isActive = sectionIdFor(pathname) === section.id
 
           if (collapsed && !mobileOpen) {
             return (

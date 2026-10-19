@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Plus, Pencil, Trash2, ArrowLeftRight, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Coins, Search, Check, Archive, RotateCcw, Download } from 'lucide-react'
+import { Plus, Pencil, Trash2, ArrowLeftRight, ArrowUp, ArrowDown, ArrowUpDown, Banknote, CalendarClock, ChevronLeft, ChevronRight, Coins, HandCoins, Search, Check, Archive, RotateCcw, Download } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -32,6 +32,17 @@ function StatusPill({ status }: { status: TradeStatus }) {
       KKS
     </span>
   )
+}
+
+/** Countdown pill for a trade's completion date. */
+function dueLabel(date: string | null): { text: string; cls: string } {
+  if (!date) return { text: 'No date', cls: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400' }
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const diff = Math.round((new Date(date.slice(0, 10) + 'T00:00:00').getTime() - today.getTime()) / 86400000)
+  if (diff < 0)   return { text: `${-diff}d overdue`, cls: 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400' }
+  if (diff === 0) return { text: 'Due today', cls: 'bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400' }
+  if (diff <= 7)  return { text: `in ${diff}d`, cls: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' }
+  return { text: `in ${diff}d`, cls: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' }
 }
 
 export default function Trades() {
@@ -256,271 +267,220 @@ export default function Trades() {
         </div>
       )}
 
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="relative max-w-xs">
-            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => changeSearch(e.target.value)}
-              placeholder="Search trades…"
-              className="w-full rounded-lg border border-gray-200 bg-white pl-8 pr-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-400/40 focus:border-indigo-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
-            />
-          </div>
-        </div>
-
-        {/* Type filter pills */}
-        <div className="hidden md:flex items-center gap-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-1">
-          {(['all', 'kks', 'cash'] as const).map((f) => (
+      {/* ── Tabs + toolbar ──────────────────────────────────────────── */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-1 rounded-xl bg-gray-100 dark:bg-gray-800 p-1">
+          {([
+            { key: false, label: 'Active',  Icon: ArrowLeftRight, count: trades.length },
+            { key: true,  label: 'Archive', Icon: Archive,        count: showArchive ? archivedTrades.length : null },
+          ] as const).map(({ key, label, Icon, count }) => (
             <button
-              key={f}
-              onClick={() => changeFilter(f)}
+              key={label}
+              onClick={() => setShowArchive(key)}
               className={[
-                'rounded-md px-3 py-1 text-xs font-semibold transition-colors',
-                typeFilter === f
-                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200',
+                'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-all',
+                showArchive === key ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-900 dark:text-gray-100' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200',
               ].join(' ')}
             >
-              {f === 'all' ? 'All' : f.toUpperCase()}
+              <Icon size={14} />
+              {label}
+              {count != null && <span className="rounded-full bg-gray-200/70 dark:bg-gray-700 px-1.5 text-[10px] font-bold text-gray-500 dark:text-gray-300">{count}</span>}
             </button>
           ))}
         </div>
 
-        <button
-          onClick={() => setShowArchive((v) => !v)}
-          className={[
-            'hidden md:flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors',
-            showArchive
-              ? 'border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-600 dark:bg-amber-900/20 dark:text-amber-400'
-              : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
-          ].join(' ')}
-        >
-          <Archive size={13} />
-          Archive
-          {archivedTrades.length > 0 && showArchive && (
-            <span className="ml-0.5 rounded-full bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200 text-[10px] font-bold px-1.5">
-              {archivedTrades.length}
-            </span>
-          )}
-        </button>
+        {!showArchive && (
+          <>
+            <div className="relative min-w-0 flex-1 max-w-xs">
+              <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => changeSearch(e.target.value)}
+                placeholder="Search trades…"
+                className="w-full rounded-lg border border-gray-200 bg-white pl-8 pr-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-400/40 focus:border-indigo-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+              />
+            </div>
 
-        <div className="hidden md:block">
-          <Button variant="secondary" size="sm" icon={<Download className="h-3.5 w-3.5" />} onClick={handleExport}>Export</Button>
+            <div className="flex items-center gap-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-1">
+              {(['all', 'kks', 'cash'] as const).map((f) => (
+                <button key={f} onClick={() => changeFilter(f)}
+                  className={['rounded-md px-3 py-1 text-xs font-semibold transition-colors', typeFilter === f ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'].join(' ')}>
+                  {f === 'all' ? 'All' : f.toUpperCase()}
+                  <span className="ml-1 opacity-60">{f === 'all' ? trades.length : f === 'kks' ? kksCount : cashCount}</span>
+                </button>
+              ))}
+            </div>
+
+            <button onClick={cycleSort} title="Sort by completion date"
+              className={['hidden sm:flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors', dateSort ? 'border-indigo-300 bg-indigo-50 text-indigo-700 dark:border-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400' : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'].join(' ')}>
+              {dateSort === 'asc' ? <ArrowUp size={13} /> : dateSort === 'desc' ? <ArrowDown size={13} /> : <ArrowUpDown size={13} />}
+              Date
+            </button>
+          </>
+        )}
+
+        <div className="ml-auto flex items-center gap-2">
+          <div className="hidden md:block">
+            <Button variant="secondary" size="sm" icon={<Download className="h-3.5 w-3.5" />} onClick={handleExport}>Export</Button>
+          </div>
+          <Button size="sm" icon={<Plus className="h-3.5 w-3.5" />} onClick={openCreate}>New Trade</Button>
         </div>
-        <Button size="sm" icon={<Plus className="h-3.5 w-3.5" />} onClick={openCreate}>New Trade</Button>
       </div>
 
-      {/* Main table */}
-      <Card className="flex flex-col">
-        {loading ? (
-          <div className="flex flex-col divide-y divide-gray-50 dark:divide-gray-700/40">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4 px-5 py-3.5 animate-pulse">
-                <div className="h-3 w-6 rounded bg-gray-100 dark:bg-gray-800" />
-                <div className="flex-1 h-3 w-40 rounded bg-gray-100 dark:bg-gray-800" />
-                <div className="h-5 w-12 rounded-full bg-gray-100 dark:bg-gray-800" />
-                <div className="h-3 w-20 rounded bg-gray-100 dark:bg-gray-800" />
-                <div className="h-4 w-24 rounded bg-gray-100 dark:bg-gray-800 ml-auto" />
-              </div>
-            ))}
+      {/* ── Active trades ───────────────────────────────────────────── */}
+      {!showArchive && (
+        loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-40 rounded-xl animate-pulse bg-gray-100 dark:bg-gray-800" />)}
           </div>
         ) : trades.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3">
+          <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 py-16 gap-3">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-100 dark:bg-gray-800">
               <ArrowLeftRight className="h-6 w-6 text-gray-400 dark:text-gray-500" />
             </div>
             <div className="text-center">
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">No trades yet</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Add your first trade to get started.</p>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">No active trades</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Add a KKS or cash trade to start tracking.</p>
             </div>
             <Button size="sm" icon={<Plus className="h-4 w-4" />} onClick={openCreate}>New Trade</Button>
           </div>
         ) : sortedTrades.length === 0 ? (
           <div className="py-12 text-center text-sm text-gray-400 dark:text-gray-500">No trades match your filters.</div>
         ) : (
-          <>
-            <div className="overflow-x-auto scrollbar-thin">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-700/60">
-                    <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide w-10">#</th>
-                    <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Description</th>
-                    <th className="px-5 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Type</th>
-                    <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Payment</th>
-                    <th className="px-5 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Amount</th>
-                    <th className="px-5 py-3 text-left text-xs font-semibold dark:text-gray-400">
-                      <button
-                        onClick={cycleSort}
-                        className="flex items-center gap-1 text-gray-500 uppercase tracking-wide hover:text-gray-700 dark:hover:text-gray-200 transition-colors text-xs font-semibold"
-                      >
-                        Date
-                        {dateSort === 'asc'  && <ChevronUp size={12} />}
-                        {dateSort === 'desc' && <ChevronDown size={12} />}
-                        {dateSort === null   && <ChevronUp size={12} className="opacity-25" />}
-                      </button>
-                    </th>
-                    <th className="px-4 py-3 w-24" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50 dark:divide-gray-700/40">
-                  {paginatedTrades.map((t, i) => (
-                    <tr key={t.id} className="group hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
-                      <td className="px-5 py-3.5 text-xs text-gray-400 dark:text-gray-500 font-mono">
-                        {(page - 1) * PER_PAGE + i + 1}
-                      </td>
-                      <td className="px-5 py-3.5 text-gray-700 dark:text-gray-300 max-w-[200px] truncate">
-                        {t.description || <span className="text-gray-300 dark:text-gray-600">—</span>}
-                      </td>
-                      <td className="px-5 py-3.5 text-center">
-                        <StatusPill status={t.status} />
-                      </td>
-                      <td className="px-5 py-3.5 text-gray-500 dark:text-gray-400 capitalize text-xs">
-                        {t.payment_method || <span className="text-gray-300 dark:text-gray-600">—</span>}
-                      </td>
-                      <td className="px-5 py-3.5 text-right font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">
+          <div className="flex flex-col gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {paginatedTrades.map((t) => {
+                const isKks = t.status === 'kks'
+                const due   = dueLabel(t.completion_date)
+                return (
+                  <div key={t.id} className="group flex flex-col overflow-hidden rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-gray-200 dark:hover:border-gray-700 hover:shadow-sm transition-all">
+                    <div className={['h-1 w-full', isKks ? 'bg-amber-400' : 'bg-emerald-500'].join(' ')} />
+                    <div className="flex items-start gap-3 px-4 pt-3.5">
+                      <span className={['flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', isKks ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400' : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400'].join(' ')}>
+                        {isKks ? <Coins size={18} /> : <Banknote size={18} />}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">{t.description || (isKks ? 'KKS trade' : 'Cash trade')}</p>
+                        <p className="text-[11px] text-gray-400 dark:text-gray-500">Added {formatDateLong(t.created_at)} · {formatTime(t.created_at)}</p>
+                      </div>
+                      <StatusPill status={t.status} />
+                    </div>
+
+                    <div className="flex flex-1 flex-col gap-3 px-4 py-3.5">
+                      <p className={['text-2xl font-bold', isKks ? 'text-amber-600 dark:text-amber-400' : 'text-gray-900 dark:text-gray-100'].join(' ')}>
                         {formatAmount(t)}
-                      </td>
-                      <td className="px-5 py-3.5 whitespace-nowrap">
-                        <span className="text-xs text-gray-400 dark:text-gray-500">{formatDateLong(t.completion_date)}</span>
-                        <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">{formatTime(t.created_at)}</p>
-                      </td>
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => setArchiveTarget(t)}
-                            disabled={archiving}
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 disabled:opacity-40 transition-colors"
-                            title="Mark as done"
-                          >
-                            <Check size={14} />
-                          </button>
-                          <button
-                            onClick={() => openEdit(t)}
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
-                          >
-                            <Pencil size={14} />
-                          </button>
-                          <button
-                            onClick={() => setDeleteTarget(t)}
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </p>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {t.payment_method && (
+                          <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-[11px] font-semibold capitalize text-gray-600 dark:text-gray-300">{t.payment_method}</span>
+                        )}
+                        {isKks && t.middleman_fee != null && Number(t.middleman_fee) > 0 && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 dark:bg-violet-900/30 px-2 py-0.5 text-[11px] font-semibold text-violet-700 dark:text-violet-300">
+                            <HandCoins size={10} /> MM fee {Number(t.middleman_fee).toLocaleString()} G
+                          </span>
+                        )}
+                        <span className={['inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold', due.cls].join(' ')}>
+                          <CalendarClock size={10} /> {due.text}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 border-t border-gray-100 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-800/30 px-4 py-2.5">
+                      <span className="flex-1 truncate text-[11px] text-gray-400 dark:text-gray-500">
+                        {t.completion_date ? `Completes ${formatDateLong(t.completion_date)}` : 'No completion date'}
+                      </span>
+                      <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => setArchiveTarget(t)} disabled={archiving} title="Mark as done"
+                          className="flex items-center gap-1 rounded-lg border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-900/20 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 disabled:opacity-40 transition-colors">
+                          <Check size={12} /> Done
+                        </button>
+                        <button onClick={() => openEdit(t)} title="Edit"
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
+                          <Pencil size={13} />
+                        </button>
+                        <button onClick={() => setDeleteTarget(t)} title="Delete"
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+
+              <button onClick={openCreate}
+                className="flex min-h-[10rem] flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500 hover:border-indigo-300 hover:text-indigo-500 dark:hover:border-indigo-700 dark:hover:text-indigo-400 transition-colors">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800"><Plus size={18} /></div>
+                <span className="text-sm font-semibold">New trade</span>
+              </button>
             </div>
 
             {totalPages > 1 && (
-              <div className="flex items-center justify-between px-5 py-3 border-t border-gray-50 dark:border-gray-700/40">
-                <p className="text-xs text-gray-400 dark:text-gray-500">
-                  {from}–{to} of {sortedTrades.length} trades
-                </p>
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-gray-400 dark:text-gray-500">{from}–{to} of {sortedTrades.length} trades</p>
                 <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => setPage((p) => p - 1)}
-                    disabled={page === 1}
-                    className="flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <ChevronLeft size={13} />
+                  <button onClick={() => setPage((p) => p - 1)} disabled={page === 1}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                    <ChevronLeft size={14} />
                   </button>
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                    <button
-                      key={p}
-                      onClick={() => setPage(p)}
-                      className={[
-                        'flex h-7 w-7 items-center justify-center rounded-lg text-xs font-medium transition-colors',
-                        p === page
-                          ? 'bg-indigo-600 text-white'
-                          : 'border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800',
-                      ].join(' ')}
-                    >
+                    <button key={p} onClick={() => setPage(p)}
+                      className={['flex h-8 w-8 items-center justify-center rounded-lg text-xs font-medium transition-colors', p === page ? 'bg-indigo-600 text-white' : 'border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'].join(' ')}>
                       {p}
                     </button>
                   ))}
-                  <button
-                    onClick={() => setPage((p) => p + 1)}
-                    disabled={page === totalPages}
-                    className="flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <ChevronRight size={13} />
+                  <button onClick={() => setPage((p) => p + 1)} disabled={page === totalPages}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                    <ChevronRight size={14} />
                   </button>
                 </div>
               </div>
             )}
-          </>
-        )}
-      </Card>
+          </div>
+        )
+      )}
 
-      {/* Archive section */}
+      {/* ── Archive ─────────────────────────────────────────────────── */}
       {showArchive && (
         <Card className="flex flex-col">
-          <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-gray-100 dark:border-gray-700/60 bg-amber-50/40 dark:bg-amber-900/10">
-            <Archive size={13} className="text-amber-500 dark:text-amber-400" />
-            <h2 className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">Archived Trades</h2>
-            {archivedTrades.length > 0 && (
-              <span className="ml-auto text-[11px] font-semibold text-amber-600 dark:text-amber-500">
-                {archivedTrades.length} total
-              </span>
-            )}
-          </div>
-
           {archiveLoading ? (
             <div className="flex flex-col divide-y divide-gray-50 dark:divide-gray-700/40">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-4 px-5 py-3.5 animate-pulse">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3 px-5 py-3.5 animate-pulse">
+                  <div className="h-9 w-9 rounded-xl bg-gray-100 dark:bg-gray-800" />
                   <div className="flex-1 h-3 rounded bg-gray-100 dark:bg-gray-800" />
-                  <div className="h-5 w-12 rounded-full bg-gray-100 dark:bg-gray-800" />
                   <div className="h-4 w-20 rounded bg-gray-100 dark:bg-gray-800" />
                 </div>
               ))}
             </div>
           ) : archivedTrades.length === 0 ? (
-            <p className="py-10 text-center text-sm text-gray-400 dark:text-gray-500">No archived trades.</p>
+            <p className="py-14 text-center text-sm text-gray-400 dark:text-gray-500">No archived trades.</p>
           ) : (
-            <div className="overflow-x-auto scrollbar-thin opacity-80">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-700/60">
-                    <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide w-10">#</th>
-                    <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Description</th>
-                    <th className="px-5 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Type</th>
-                    <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Payment</th>
-                    <th className="px-5 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Amount</th>
-                    <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">Done</th>
-                    <th className="px-4 py-3 w-12" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50 dark:divide-gray-700/40">
-                  {archivedTrades.map((t, i) => (
-                    <tr key={t.id} className="text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
-                      <td className="px-5 py-3 font-mono text-xs">{i + 1}</td>
-                      <td className="px-5 py-3 max-w-[200px] truncate">
-                        {t.description || <span className="text-gray-300 dark:text-gray-600">—</span>}
-                      </td>
-                      <td className="px-5 py-3 text-center"><StatusPill status={t.status} /></td>
-                      <td className="px-5 py-3 capitalize text-xs">{t.payment_method || '—'}</td>
-                      <td className="px-5 py-3 text-right font-semibold whitespace-nowrap">{formatAmount(t)}</td>
-                      <td className="px-5 py-3 text-xs whitespace-nowrap">{formatDateLong(t.completion_date)}</td>
-                      <td className="px-4 py-3">
-                        <button
-                          onClick={() => setUnarchiveTarget(t)}
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
-                          title="Restore"
-                        >
-                          <RotateCcw size={13} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="divide-y divide-gray-50 dark:divide-gray-700/40">
+              {archivedTrades.map((t) => {
+                const isKks = t.status === 'kks'
+                return (
+                  <div key={t.id} className="group flex items-center gap-3 px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+                    <span className={['flex h-9 w-9 shrink-0 items-center justify-center rounded-xl opacity-70', isKks ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400' : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400'].join(' ')}>
+                      {isKks ? <Coins size={15} /> : <Banknote size={15} />}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-300 truncate">{t.description || (isKks ? 'KKS trade' : 'Cash trade')}</p>
+                      <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-gray-400 dark:text-gray-500">
+                        <StatusPill status={t.status} />
+                        {t.payment_method && <span className="capitalize">{t.payment_method}</span>}
+                        <span>· done {formatDateLong(t.archived_at ?? t.completion_date)}</span>
+                      </p>
+                    </div>
+                    <span className="shrink-0 text-sm font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap">{formatAmount(t)}</span>
+                    <button onClick={() => setUnarchiveTarget(t)} title="Restore"
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 md:opacity-0 md:group-hover:opacity-100 transition-all">
+                      <RotateCcw size={14} />
+                    </button>
+                  </div>
+                )
+              })}
             </div>
           )}
         </Card>

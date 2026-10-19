@@ -29,7 +29,6 @@ const Accounts            = lazy(() => import('@/pages/rucoy/Accounts'))
 const GoldCalculator      = lazy(() => import('@/pages/rucoy/GoldCalculator'))
 
 const BusinessDashboard   = lazy(() => import('@/pages/business/BusinessDashboard'))
-const BusinessTransactions = lazy(() => import('@/pages/business/BusinessTransactions'))
 
 const DailyExpensesReport = lazy(() => import('@/pages/reports/DailyExpensesReport'))
 const BusinessReport      = lazy(() => import('@/pages/reports/BusinessReport'))
@@ -72,7 +71,7 @@ export default function App() {
                     <Route path="/rucoy/calculator"   element={<Suspense fallback={<Loading />}><GoldCalculator /></Suspense>} />
 
                     <Route path="/business"              element={<Suspense fallback={<Loading />}><BusinessDashboard /></Suspense>} />
-                    <Route path="/business/transactions" element={<Suspense fallback={<Loading />}><BusinessTransactions /></Suspense>} />
+                    <Route path="/business/transactions" element={<Navigate to="/rucoy/accounts" replace />} />
 
                     <Route path="/reports/business" element={<Suspense fallback={<Loading />}><BusinessReport /></Suspense>} />
 

@@ -78,7 +78,7 @@ const SECTIONS = [
     basePath: '/business',
     items: [
       { to: '/business', label: 'Stats', end: true },
-      { to: '/business/transactions', label: 'Transactions', end: false },
+      { to: '/business/transactions', label: 'Sales', end: false },
     ],
   },
   {

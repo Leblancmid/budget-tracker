@@ -12,7 +12,7 @@ const PAGE_META: Record<string, { title: string; section: string }> = {
   '/business':                { title: 'Stats',       section: 'Business'       },
   '/rucoy':                   { title: 'Summary',         section: 'Rucoy'          },
   '/rucoy/trades':            { title: 'Trades',          section: 'Rucoy'          },
-  '/business/transactions':   { title: 'Transactions',        section: 'Business'       },
+  '/business/transactions':   { title: 'Sales',               section: 'Business'       },
   '/rucoy/calculator':        { title: 'Gold Calculator', section: 'Rucoy'          },
   '/master':                  { title: 'Overview',        section: 'Master File'    },
   '/master/savings':          { title: 'Savings',         section: 'Master File'    },

@@ -7,6 +7,7 @@ use App\Http\Requests\StoreGoldRequest;
 use App\Http\Requests\UpdateGoldRequest;
 use App\Models\Gold;
 use App\Models\GoldLog;
+use App\Services\GoldInventory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -37,26 +38,7 @@ class GoldController extends Controller
             'description' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $sellAmount = (float) $validated['amount'];
-
-        $remaining = $sellAmount;
-        foreach (Gold::orderByDesc('amount')->get() as $gold) {
-            if ($remaining <= 0) break;
-            $current = (float) $gold->amount;
-            $deduct  = min($current, $remaining);
-            $gold->update(['amount' => $current - $deduct]);
-            $remaining -= $deduct;
-        }
-
-        if ($remaining > 0) {
-            Gold::create(['amount' => -$remaining, 'description' => null]);
-        }
-
-        GoldLog::create([
-            'type'        => 'sell',
-            'amount'      => $sellAmount,
-            'description' => $validated['description'] ?? null,
-        ]);
+        GoldInventory::deduct((float) $validated['amount'], $validated['description'] ?? null);
 
         return response()->json(Gold::latest()->get());
     }

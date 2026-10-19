@@ -7,8 +7,10 @@ use App\Http\Requests\Business\StoreBusinessTransactionRequest;
 use App\Http\Requests\Business\UpdateBusinessTransactionRequest;
 use App\Models\BusinessTransaction;
 use App\Models\RucoyAccount;
+use App\Services\GoldInventory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class BusinessTransactionController extends Controller
@@ -68,10 +70,7 @@ class BusinessTransactionController extends Controller
 
     public function store(StoreBusinessTransactionRequest $request): JsonResponse
     {
-        $data = $request->validated();
-        if (!Schema::hasColumn('business_transactions', 'cost_php_rate')) {
-            unset($data['cost_php_rate']);
-        }
+        $data = $this->withoutMissingColumns($request->validated());
 
         $tx = BusinessTransaction::create($data);
         $this->computePhpValues($tx);
@@ -81,10 +80,7 @@ class BusinessTransactionController extends Controller
 
     public function update(UpdateBusinessTransactionRequest $request, BusinessTransaction $businessTransaction): JsonResponse
     {
-        $data = $request->validated();
-        if (!Schema::hasColumn('business_transactions', 'cost_php_rate')) {
-            unset($data['cost_php_rate']);
-        }
+        $data = $this->withoutMissingColumns($request->validated());
 
         $businessTransaction->update($data);
         $this->computePhpValues($businessTransaction);
@@ -97,6 +93,98 @@ class BusinessTransactionController extends Controller
         $businessTransaction->delete();
 
         return response()->json(['message' => 'Transaction deleted.']);
+    }
+
+    /**
+     * Sell all or part of a confirmed gold trade. The sold portion is archived
+     * (so it counts toward the month's sold profit) with values pro-rated by the
+     * gold sold; the rest stays pending. Optionally deducts the gold from inventory.
+     */
+    public function sell(Request $request, BusinessTransaction $businessTransaction): JsonResponse
+    {
+        $validated = $request->validate([
+            'amount'           => ['required', 'numeric', 'min:1'],
+            'deduct_inventory' => ['sometimes', 'boolean'],
+        ]);
+
+        $tx    = $businessTransaction;
+        $total = (float) $tx->price_gold;
+        $sell  = (float) $validated['amount'];
+
+        if ($tx->type !== 'gold' || $tx->archived_at !== null) {
+            return response()->json(['message' => 'Only pending gold trades can be sold.'], 422);
+        }
+        if ($tx->price_php === null || $total <= 0) {
+            return response()->json(['message' => 'Set the rates for this trade before selling it.'], 422);
+        }
+        if ($sell > $total) {
+            return response()->json(['errors' => ['amount' => ['Cannot sell more than ' . number_format($total) . ' G.']]], 422);
+        }
+
+        $hasProgress = Schema::hasColumn('business_transactions', 'price_gold_received');
+
+        [$sold, $remaining] = DB::transaction(function () use ($tx, $total, $sell, $hasProgress, $validated) {
+            if ($sell >= $total) {
+                $tx->archived_at = now();
+                $tx->save();
+                $sold = $tx;
+                $remaining = null;
+            } else {
+                $f     = $sell / $total;
+                $part  = fn ($v, int $dp = 2) => $v === null ? null : round((float) $v * $f, $dp);
+                $minus = fn ($v, $p) => $v === null ? null : (float) $v - (float) $p;
+
+                $sold = $tx->replicate();
+                $sold->price_gold  = $sell;
+                $sold->cost_gold   = $part($tx->cost_gold, 0);
+                $sold->price_php   = $part($tx->price_php);
+                $sold->cost_php    = $part($tx->cost_php);
+                $sold->profit_php  = $sold->cost_php !== null ? round($sold->price_php - $sold->cost_php, 2) : null;
+                $sold->amount      = max($part($tx->amount), 0.01);
+                $sold->notes       = trim(($tx->notes ? $tx->notes . "\n" : '') . 'Partial sale of ' . number_format($sell) . ' / ' . number_format($total) . ' G');
+                $sold->archived_at = now();
+                if ($hasProgress) {
+                    $sold->price_gold_received = $tx->price_gold_received !== null ? min((float) $tx->price_gold_received, $sell) : null;
+                    $sold->cost_gold_paid      = $tx->cost_gold_paid !== null && $sold->cost_gold !== null ? min((float) $tx->cost_gold_paid, $sold->cost_gold) : null;
+                }
+                $sold->save();
+
+                $tx->price_gold = $total - $sell;
+                $tx->cost_gold  = $minus($tx->cost_gold, $sold->cost_gold);
+                $tx->price_php  = round($minus($tx->price_php, $sold->price_php), 2);
+                $tx->cost_php   = $tx->cost_php !== null ? round($minus($tx->cost_php, $sold->cost_php), 2) : null;
+                $tx->profit_php = $tx->cost_php !== null ? round($tx->price_php - $tx->cost_php, 2) : null;
+                $tx->amount     = max(round((float) $tx->amount - (float) $sold->amount, 2), 0.01);
+                if ($hasProgress) {
+                    $tx->price_gold_received = $minus($tx->price_gold_received, $sold->price_gold_received);
+                    $tx->cost_gold_paid      = $minus($tx->cost_gold_paid, $sold->cost_gold_paid);
+                }
+                $tx->save();
+                $remaining = $tx;
+            }
+
+            if ($validated['deduct_inventory'] ?? false) {
+                GoldInventory::deduct($sell, 'Sold: ' . ($tx->description ?: 'Gold trade'));
+            }
+
+            return [$sold, $remaining];
+        });
+
+        return response()->json([
+            'sold'      => $sold->fresh(),
+            'remaining' => $remaining?->fresh(),
+        ]);
+    }
+
+    /** Drop optional columns that older databases may not have yet. */
+    private function withoutMissingColumns(array $data): array
+    {
+        foreach (['cost_php_rate', 'price_gold_received', 'cost_gold_paid'] as $column) {
+            if (array_key_exists($column, $data) && !Schema::hasColumn('business_transactions', $column)) {
+                unset($data[$column]);
+            }
+        }
+        return $data;
     }
 
     private function computePhpValues(BusinessTransaction $tx): void

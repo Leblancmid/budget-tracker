@@ -23,6 +23,8 @@ class StoreBusinessTransactionRequest extends FormRequest
             'cost_php_rate' => 'nullable|numeric|min:0',
             'price_gold'  => 'nullable|numeric|min:0',
             'cost_gold'   => 'nullable|numeric|min:0',
+            'price_gold_received' => 'nullable|numeric|min:0',
+            'cost_gold_paid'      => 'nullable|numeric|min:0',
             'price_php'   => 'nullable|numeric',
             'cost_php'    => 'nullable|numeric',
             'amount'      => 'required|numeric|min:0.01',

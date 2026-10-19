@@ -12,7 +12,7 @@ import { Modal } from '@/components/ui/Modal'
 import { rucoyAccountsApi, type AccountPayload } from '@/api/rucoy'
 import { businessTransactionsApi, type BusinessSummary, type BusinessTransactionPayload } from '@/api/business'
 import { toast } from '@/components/ui/Toast'
-import { paginateLocally, formatCurrency, formatDate, MONTHS } from '@/utils/format'
+import { paginateLocally, formatCurrency, formatDate, todayISO, MONTHS } from '@/utils/format'
 import { exportCsv } from '@/utils/csv'
 import { isBusinessIncome } from '@/utils/business'
 import { Amt } from '@/context/AmountVisibilityContext'
@@ -70,12 +70,13 @@ function ProfitPhpBar({ tx, dimmed = false, onSetPricing }: { tx: BusinessTransa
   )
 }
 
-function AccountCard({ a, tx, onEdit, onArchive, onDelete, archived = false, onUnarchive }: {
+function AccountCard({ a, tx, onEdit, onArchive, onDelete, onConvertToGold, archived = false, onUnarchive }: {
   a: RucoyAccount
   tx?: BusinessTransaction | null
   onEdit?: () => void
   onArchive?: () => void
   onDelete?: () => void
+  onConvertToGold?: () => void
   archived?: boolean
   onUnarchive?: () => void
 }) {
@@ -137,6 +138,13 @@ function AccountCard({ a, tx, onEdit, onArchive, onDelete, archived = false, onU
                 title="Mark as sold"
               >
                 <Check size={13} />
+              </button>
+              <button
+                onClick={onConvertToGold}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
+                title="Convert to gold trade"
+              >
+                <Coins size={13} />
               </button>
               <button
                 onClick={onEdit}
@@ -330,6 +338,8 @@ export default function Accounts() {
   const [page, setPage]         = useState(1)
   const [deleteTarget, setDeleteTarget] = useState<RucoyAccount | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [convertTarget, setConvertTarget] = useState<RucoyAccount | null>(null)
+  const [converting, setConverting]       = useState(false)
 
   const { showArchive, setShowArchive, archivedItems: archivedAccounts, archiveLoading, fetchArchived, removeFromArchived } = useArchive(rucoyAccountsApi.getArchived)
   const { transactions: bizTxs, loading: bizTxLoading, refetch: refetchBizTxs, create: createBizTx, update: updateBizTx, archive: archiveBizTx, unarchive: unarchiveBizTx, remove: removeBizTx } = useBusinessTransactions()
@@ -555,6 +565,50 @@ export default function Accounts() {
     } finally {
       setDeleting(false)
       setDeleteTarget(null)
+    }
+  }
+
+  // Move an account's transaction into Pending Gold Trades and remove the account card
+  const handleConvertToGold = async () => {
+    if (!convertTarget) return
+    const a  = convertTarget
+    const tx = txByAccount.get(a.id)
+    const toNum = (v: string | null | undefined) => (v != null ? Number(v) : null)
+    const payload: BusinessTransactionPayload = {
+      type:          'gold',
+      action:        null,
+      account_id:    null,
+      amount:        tx ? Number(tx.amount) : 0.01,
+      description:   a.description || a.email,
+      date:          tx?.date ?? todayISO(),
+      notes:         `Converted from account: ${a.email}`,
+      price_gold:    a.price,
+      cost_gold:     a.cost,
+      price_rate:    toNum(tx?.price_rate),
+      cost_rate:     toNum(tx?.cost_rate),
+      php_rate:      toNum(tx?.php_rate),
+      cost_php_rate: toNum(tx?.cost_php_rate),
+      price_php:     toNum(tx?.price_php),
+      cost_php:      toNum(tx?.cost_php),
+    }
+    setConverting(true)
+    try {
+      if (tx) await updateBizTx(tx.id, payload)
+      else await createBizTx(payload)
+    } catch {
+      toast.error('Failed to convert to gold trade.')
+      setConverting(false)
+      setConvertTarget(null)
+      return
+    }
+    try {
+      await remove(a.id)
+      toast.success(`"${a.description || a.email}" moved to Pending Gold Trades.`)
+    } catch {
+      toast.error('Gold trade created, but the account could not be removed. Delete it manually.')
+    } finally {
+      setConverting(false)
+      setConvertTarget(null)
     }
   }
 
@@ -837,6 +891,7 @@ export default function Accounts() {
                   onEdit={() => openEditAccount(a)}
                   onArchive={() => setArchiveTarget(a)}
                   onDelete={() => setDeleteTarget(a)}
+                  onConvertToGold={() => setConvertTarget(a)}
                 />
               ))}
             </div>
@@ -1142,6 +1197,10 @@ export default function Accounts() {
 
       <ConfirmDialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} loading={deleting}
         title="Delete Account" message={`Delete "${deleteTarget?.description || deleteTarget?.email}" and its pricing transaction? This cannot be undone.`} confirmLabel="Delete" />
+
+      <ConfirmDialog open={!!convertTarget} onClose={() => setConvertTarget(null)} onConfirm={handleConvertToGold} loading={converting}
+        title="Convert to Gold Trade" confirmLabel="Convert"
+        message={`Move "${convertTarget?.description || convertTarget?.email}" to Pending Gold Trades? Its gold price, cost, rates and date carry over, and the account card is removed (the email is kept in the trade's notes).`} />
     </div>
   )
 }

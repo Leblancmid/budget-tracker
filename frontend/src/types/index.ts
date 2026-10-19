@@ -136,6 +136,8 @@ export interface BalanceAccountConfig {
   sort_order: number
   hidden_at: string | null
   entry_count: number
+  /** Current balance (adds − sells) in the account's currency */
+  balance?: number
   created_at: string
   updated_at: string
 }

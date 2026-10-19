@@ -50,7 +50,7 @@ export function Transactions() {
   const { stats, refetch: refetchStats } = useDashboard()
   const { user } = useAuth()
   const isAdmin = user?.role !== 'daily_only'
-  const { accounts } = useBalanceAccounts()
+  const { accounts, refetch: refetchAccounts } = useBalanceAccounts()
 
   // Daily amounts are in ₱, so only visible PHP accounts can be linked
   const phpAccounts   = useMemo(() => (isAdmin ? accounts.filter((a) => a.currency === 'PHP' && !a.hidden_at) : []), [accounts, isAdmin])
@@ -71,6 +71,7 @@ export function Transactions() {
       toast.success(data.scope === 'business' ? 'Business transaction added — not counted in Daily Expenses.' : 'Transaction added.')
     }
     refetchStats()
+    refetchAccounts()
   }
 
   const handleDelete = async () => {
@@ -81,6 +82,7 @@ export function Transactions() {
       toast.success(deleteTarget.balance_entry ? 'Transaction deleted and its Balance entry reversed.' : 'Transaction deleted.')
       setDeleteTarget(null)
       refetchStats()
+      refetchAccounts()
     } catch {
       toast.error('Failed to delete transaction.')
     } finally {

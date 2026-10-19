@@ -14,11 +14,16 @@ class BalanceAccountController extends Controller
 {
     public function index(): JsonResponse
     {
-        $counts = BalanceEntry::selectRaw('account, count(*) as c')->groupBy('account')->pluck('c', 'account');
+        $totals = BalanceEntry::selectRaw("account, count(*) as c, SUM(CASE WHEN type = 'add' THEN amount ELSE -amount END) as balance")
+            ->groupBy('account')->get()->keyBy('account');
 
         return response()->json(
             BalanceAccount::orderBy('sort_order')->orderBy('id')->get()
-                ->map(fn ($a) => [...$a->toArray(), 'entry_count' => (int) ($counts[$a->code] ?? 0)])
+                ->map(fn ($a) => [
+                    ...$a->toArray(),
+                    'entry_count' => (int) ($totals[$a->code]->c ?? 0),
+                    'balance'     => round((float) ($totals[$a->code]->balance ?? 0), 2),
+                ])
         );
     }
 

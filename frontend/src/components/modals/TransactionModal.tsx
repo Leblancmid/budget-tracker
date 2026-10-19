@@ -7,6 +7,7 @@ import type { BalanceAccountConfig, Category, Transaction, TransactionScope } fr
 import { formatWithCommas, handleAmountInput, todayISO } from '@/utils/format'
 import { colorOf, fmtPhp, iconOf } from '@/utils/balanceAccounts'
 import { flattenApiErrors } from '@/utils/api'
+import { Amt } from '@/context/AmountVisibilityContext'
 
 interface TransactionModalProps {
   open: boolean
@@ -79,6 +80,19 @@ export function TransactionModal({ open, onClose, onSubmit, categories, transact
   const filteredCategories = categories.filter((c) => c.type === form.type)
   const isIncome = form.type === 'income'
   const linked   = balanceAccounts.find((a) => a.code === form.balance_account)
+
+  /**
+   * An account's balance *without* this transaction. When editing, the saved
+   * transaction is already included in its original account's balance.
+   */
+  const balanceWithout = (a: BalanceAccountConfig) => {
+    const current = a.balance ?? 0
+    if (!transaction?.balance_entry || transaction.balance_entry.account !== a.code) return current
+    const saved = parseFloat(transaction.amount)
+    return current - (transaction.type === 'income' ? saved : -saved)
+  }
+  const balanceBefore = linked ? balanceWithout(linked) : 0
+  const balanceAfter  = balanceBefore + (isIncome ? form.amount : -form.amount)
 
   const validate = () => {
     const errs: typeof errors = {}
@@ -250,11 +264,43 @@ export function TransactionModal({ open, onClose, onSubmit, categories, transact
                     ].join(' ')}
                   >
                     <span className={['flex h-5 w-5 items-center justify-center rounded-md', c.iconTile].join(' ')}><Icon size={11} /></span>
-                    {a.name}
+                    <span className="flex flex-col items-start leading-tight">
+                      <span>{a.name}</span>
+                      <span className={['text-[10px] font-medium', balanceWithout(a) < 0 ? 'text-red-500' : 'opacity-70'].join(' ')}>
+                        <Amt value={fmtPhp(balanceWithout(a))} />
+                      </span>
+                    </span>
                   </button>
                 )
               })}
             </div>
+
+            {/* Selected account: balance before → after */}
+            {linked && (() => {
+              const c = colorOf(linked.color)
+              const short = !isIncome && balanceAfter < 0
+              return (
+                <div className={['mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg px-3 py-2 text-xs', c.soft].join(' ')}>
+                  <span className="font-semibold text-gray-700 dark:text-gray-200">{linked.name}</span>
+                  <span className="text-gray-500 dark:text-gray-400">
+                    <Amt value={fmtPhp(balanceBefore)} />
+                    {form.amount > 0 && (
+                      <>
+                        {' → '}
+                        <b className={short ? 'text-red-600 dark:text-red-400' : isIncome ? 'text-emerald-600 dark:text-emerald-400' : c.text}>
+                          <Amt value={fmtPhp(balanceAfter)} />
+                        </b>
+                      </>
+                    )}
+                  </span>
+                  {short && (
+                    <span className="ml-auto font-semibold text-red-600 dark:text-red-400">
+                      Not enough — short by <Amt value={fmtPhp(-balanceAfter)} />
+                    </span>
+                  )}
+                </div>
+              )
+            })()}
           </div>
         )}
 

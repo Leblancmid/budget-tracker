@@ -9,6 +9,7 @@ import { RucoyTransactionModal, type AccountPricingPayload, type RucoyTxKind } f
 import { useRucoyAccounts } from '@/hooks/useRucoyAccounts'
 import { useArchive } from '@/hooks/useArchive'
 import { useBusinessTransactions } from '@/hooks/useBusinessTransactions'
+import { useMiddlemanFees } from '@/hooks/useMiddlemanFees'
 import { Modal } from '@/components/ui/Modal'
 import { rucoyAccountsApi, type AccountPayload } from '@/api/rucoy'
 import { businessTransactionsApi, type BusinessSummary, type BusinessTransactionPayload } from '@/api/business'
@@ -281,7 +282,7 @@ function GoldAmountLine({ label, total, done, doneLabel, color }: {
   )
 }
 
-function GoldTradeRow({ tx, archived = false, onEdit, onSell, onAddGold, onDelete, onUnarchive }: {
+function GoldTradeRow({ tx, archived = false, onEdit, onSell, onAddGold, onDelete, onUnarchive, totalReceived }: {
   tx: BusinessTransaction
   archived?: boolean
   onEdit?: () => void
@@ -289,6 +290,8 @@ function GoldTradeRow({ tx, archived = false, onEdit, onSell, onAddGold, onDelet
   onAddGold?: () => void
   onDelete?: () => void
   onUnarchive?: () => void
+  /** Middleman Fee trade: fees received this month (doesn't drop when gold is sold) */
+  totalReceived?: number | null
 }) {
   const isPending = tx.price_php == null
   const isSystem  = !!tx.system_key
@@ -309,6 +312,12 @@ function GoldTradeRow({ tx, archived = false, onEdit, onSell, onAddGold, onDelet
           )}
         </div>
         <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{formatDate(tx.date)}</p>
+        {totalReceived != null && (
+          <p className="mt-1 inline-flex items-center gap-1 rounded-md bg-violet-50 dark:bg-violet-900/20 px-1.5 py-0.5 text-[11px] text-violet-700 dark:text-violet-300">
+            <HandCoins size={11} />
+            Total received ({CUR_LABEL}): <span className="font-semibold">{totalReceived.toLocaleString()} G</span>
+          </p>
+        )}
       </div>
       <div className="flex items-center gap-3 shrink-0">
         {/* Buttons — hover only */}
@@ -772,6 +781,12 @@ export default function Accounts() {
 
   const { paginated, meta } = paginateLocally(filteredAccounts, page, 9)
 
+  // Middleman fees received this month — shown on the permanent Middleman Fee trade
+  const { fees: mmFees } = useMiddlemanFees()
+  const mmFeesThisMonth = useMemo(() => mmFees
+    .filter((fee) => { const d = new Date(fee.created_at); return d.getMonth() === CUR_M && d.getFullYear() === CUR_Y })
+    .reduce((sum, fee) => sum + Number(fee.amount), 0), [mmFees])
+
   // Permanent (system) trades — e.g. Middleman Fee — always first
   const pendingGoldTrades = useMemo(() =>
     bizTxs
@@ -1047,6 +1062,46 @@ export default function Accounts() {
               {pendingGoldTrades.filter(tx => tx.price_php == null).length} awaiting · {pendingGoldTrades.filter(tx => tx.price_php != null).length} confirmed
             </span>
           </div>
+
+          {/* Totals across all pending gold trades */}
+          {(() => {
+            const sum = (pick: (tx: BusinessTransaction) => string | null | undefined) =>
+              pendingGoldTrades.reduce((s, tx) => s + Number(pick(tx) ?? 0), 0)
+            const price    = sum((tx) => tx.price_gold)
+            const received = sum((tx) => tx.price_gold_received)
+            const cost     = sum((tx) => tx.cost_gold)
+            const paid     = sum((tx) => tx.cost_gold_paid)
+            const profit   = pendingGoldTrades.reduce((s, tx) => s + (txProfitPhp(tx) ?? 0), 0)
+            const pct = (part: number, whole: number) => (whole > 0 ? (part / whole) * 100 : 0)
+            return (
+              <div className="grid grid-cols-2 lg:grid-cols-5 gap-px bg-gray-100 dark:bg-gray-700/40 border-b border-gray-100 dark:border-gray-700/60">
+                {[
+                  { label: 'Total Price',    value: `${price.toLocaleString()} G`,    cls: 'text-emerald-600 dark:text-emerald-400' },
+                  { label: 'Total Received', value: `${received.toLocaleString()} G`, cls: 'text-emerald-600 dark:text-emerald-400', progress: pct(received, price), left: price - received, leftLabel: 'to receive' },
+                  { label: 'Total Cost',     value: `${cost.toLocaleString()} G`,     cls: 'text-red-500 dark:text-red-400' },
+                  { label: 'Total Paid',     value: `${paid.toLocaleString()} G`,     cls: 'text-red-500 dark:text-red-400', progress: pct(paid, cost), left: cost - paid, leftLabel: 'to pay' },
+                  { label: 'Total Profit (₱)', value: <Amt value={formatCurrency(profit)} />, cls: profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400' },
+                ].map(({ label, value, cls, progress, left, leftLabel }) => (
+                  <div key={label} className={['flex flex-col gap-1 bg-white dark:bg-gray-900 px-5 py-3', label.startsWith('Total Profit') ? 'col-span-2 lg:col-span-1' : ''].join(' ')}>
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">{label}</span>
+                    <span className={['text-sm font-bold', cls].join(' ')}>{value}</span>
+                    {progress != null && (
+                      <div className="flex items-center gap-2">
+                        <ProgressBar percent={progress} color="bg-amber-500" className="flex-1" />
+                        <span className={['text-[10px] font-semibold', progress >= 100 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'].join(' ')}>
+                          {Math.round(progress)}%
+                        </span>
+                      </div>
+                    )}
+                    {left != null && left > 0 && (
+                      <span className="text-[10px] text-gray-400 dark:text-gray-500">{left.toLocaleString()} G {leftLabel}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )
+          })()}
+
           <div className="divide-y divide-gray-50 dark:divide-gray-700/40">
             {pendingGoldTrades.map((tx) => (
               <GoldTradeRow
@@ -1055,6 +1110,7 @@ export default function Accounts() {
                 onEdit={() => openEditGold(tx)}
                 onSell={() => openSell(tx)}
                 onAddGold={() => openAddGold(tx)}
+                totalReceived={tx.system_key === 'middleman_fee' ? mmFeesThisMonth : null}
                 onDelete={() => setDeletePendingTarget(tx)}
               />
             ))}

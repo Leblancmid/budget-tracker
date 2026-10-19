@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\LogController;
 use App\Http\Controllers\Api\BudgetController;
 use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\Master\BalanceAccountController;
 use App\Http\Controllers\Api\Master\BalanceEntryController;
 use App\Http\Controllers\Api\Master\MasterDashboardController;
 use App\Http\Controllers\Api\Master\SavingController;
@@ -47,6 +48,8 @@ Route::prefix('v1')->group(function () {
         Route::prefix('master')->group(function () {
             Route::get('dashboard', [MasterDashboardController::class, 'index']);
             Route::apiResource('balance-entries', BalanceEntryController::class)->except(['show', 'create', 'edit']);
+            Route::post('balance-accounts/reorder', [BalanceAccountController::class, 'reorder']);
+            Route::apiResource('balance-accounts', BalanceAccountController::class)->except(['show', 'create', 'edit']);
         });
 
         // Business

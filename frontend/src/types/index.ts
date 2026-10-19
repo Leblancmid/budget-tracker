@@ -108,7 +108,24 @@ export interface Saving {
   updated_at: string
 }
 
-export type BalanceAccount = 'PAYPAL' | 'BINANCE' | 'MEXC' | 'MARIBANK' | 'MAYA' | 'BANKO'
+/** Code of a user-managed balance account (see BalanceAccountConfig) */
+export type BalanceAccount = string
+
+export type BalanceCurrency = 'USD' | 'PHP'
+
+export interface BalanceAccountConfig {
+  id: number
+  code: string
+  name: string
+  currency: BalanceCurrency
+  color: string
+  icon: string
+  sort_order: number
+  hidden_at: string | null
+  entry_count: number
+  created_at: string
+  updated_at: string
+}
 export type BalanceEntryType = 'add' | 'sell'
 
 export interface BalanceEntry {

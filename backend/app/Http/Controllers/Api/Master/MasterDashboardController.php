@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Master;
 
 use App\Http\Controllers\Controller;
 use App\Models\BusinessTransaction;
+use App\Models\BalanceAccount;
 use App\Models\BalanceEntry;
 use App\Models\Gold;
 use App\Models\RucoyAccount;
@@ -50,8 +51,8 @@ class MasterDashboardController extends Controller
         $savingsBalance  = $savingsDeposit - $savingsWithdraw;
 
         // Balance — split USD vs PHP accounts
-        $usdAccounts = ['PAYPAL', 'BINANCE', 'MEXC'];
-        $phpAccounts = ['MARIBANK', 'MAYA', 'BANKO'];
+        $usdAccounts = BalanceAccount::codesFor('USD');
+        $phpAccounts = BalanceAccount::codesFor('PHP');
 
         $balanceUsdTotal = (float) BalanceEntry::whereIn('account', $usdAccounts)->where('type', 'add')->sum('amount')
                          - (float) BalanceEntry::whereIn('account', $usdAccounts)->where('type', 'sell')->sum('amount');

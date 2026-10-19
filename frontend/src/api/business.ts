@@ -44,9 +44,13 @@ export const businessTransactionsApi = {
   delete:    (id: number) =>
     api.delete<{ message: string }>(`/business/transactions/${id}`).then((r) => r.data),
   /** Sell all or part of a confirmed gold trade (amount in G). */
-  sell:      (id: number, amount: number, deductInventory: boolean) =>
+  sell:      (id: number, amount: number, deductInventory: boolean, description?: string) =>
     api.post<{ sold: BusinessTransaction; remaining: BusinessTransaction | null }>(
-      `/business/transactions/${id}/sell`, { amount, deduct_inventory: deductInventory },
+      `/business/transactions/${id}/sell`, { amount, deduct_inventory: deductInventory, description: description || null },
     ).then((r) => r.data),
+  /** Add gold onto a gold trade's price/cost; price gold also goes into the Golds inventory. */
+  addGold:   (id: number, data: { price_gold: number; cost_gold: number; description?: string }) =>
+    api.post<BusinessTransaction>(`/business/transactions/${id}/add-gold`, { ...data, description: data.description || null })
+      .then((r) => r.data),
 }
 

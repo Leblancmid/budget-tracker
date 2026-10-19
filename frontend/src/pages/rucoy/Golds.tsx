@@ -1,24 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Plus, Minus, Coins, TrendingUp, TrendingDown, AlertCircle, Search, Download, HandCoins, Pin } from 'lucide-react'
+import { Coins, TrendingUp, TrendingDown, AlertCircle, Search, Download, HandCoins } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import { Modal } from '@/components/ui/Modal'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
-import { Input } from '@/components/ui/Input'
 import { Pagination } from '@/components/ui/Pagination'
-import { GoldModal } from '@/components/modals/GoldModal'
 import { useGolds } from '@/hooks/useGolds'
 import { useGoldLogs } from '@/hooks/useGoldLogs'
 import { useRucoyDashboard } from '@/hooks/useRucoyDashboard'
-import { useMiddlemanFees } from '@/hooks/useMiddlemanFees'
 import { useTrades } from '@/hooks/useTrades'
-import { useBusinessTransactions } from '@/hooks/useBusinessTransactions'
-import { GoldTradeTarget, type GoldTradeTargetValue } from '@/components/ui/GoldTradeTarget'
-import { goldTopUp } from '@/utils/goldTrade'
-import { goldsApi } from '@/api/rucoy'
 import type { GoldLog, Trade } from '@/types'
 import { toast } from '@/components/ui/Toast'
-import { formatWithCommas, formatDateLong, formatTime, paginateLocally } from '@/utils/format'
+import { formatDateLong, formatTime, paginateLocally } from '@/utils/format'
 import { exportCsv } from '@/utils/csv'
 
 type UnifiedEntry =
@@ -26,46 +18,16 @@ type UnifiedEntry =
   | { kind: 'trade'; trade: Trade; date: string }
 
 export default function Golds() {
-  const { totalGold, loading, error, refetch: refetchGolds, create } = useGolds()
-  const { logs, loading: logsLoading, refetch: refetchLogs, cancel: cancelLog } = useGoldLogs()
+  const { totalGold, loading, error, refetch: refetchGolds } = useGolds()
+  const { logs, loading: logsLoading, cancel: cancelLog } = useGoldLogs()
   const { trades, loading: tradesLoading } = useTrades()
   const { stats } = useRucoyDashboard()
-  const { create: createFee } = useMiddlemanFees()
-  const { transactions: bizTxs, update: updateBizTx, refetch: refetchBizTxs } = useBusinessTransactions()
-  const pendingGoldTrades = useMemo(() => bizTxs.filter((tx) => tx.type === 'gold' && tx.archived_at == null), [bizTxs])
-  // Permanent trade that every middleman fee feeds into (handled by the API)
-  const mmFeeTrade = pendingGoldTrades.find((tx) => tx.system_key === 'middleman_fee') ?? null
-
-  // "Apply to gold trade" target per dialog (default side: add → cost, sell → price)
-  const [addTarget, setAddTarget]   = useState<GoldTradeTargetValue>({ tradeId: null, side: 'cost' })
-  const [sellTarget, setSellTarget] = useState<GoldTradeTargetValue>({ tradeId: null, side: 'price' })
-
-  /** Adds `amount` G onto the chosen trade's price or cost. Returns a toast suffix. */
-  const applyToTrade = async (target: GoldTradeTargetValue, amount: number): Promise<string> => {
-    const trade = pendingGoldTrades.find((t) => t.id === target.tradeId)
-    if (!trade) return ''
-    const { payload } = goldTopUp(trade, target.side === 'price' ? amount : 0, target.side === 'cost' ? amount : 0)
-    try {
-      await updateBizTx(trade.id, payload)
-      return ` Added to ${trade.description || 'gold trade'}'s ${target.side}.`
-    } catch {
-      toast.error(`Gold recorded, but "${trade.description || 'the gold trade'}" could not be updated — add it from Transactions.`)
-      return ''
-    }
-  }
-
   const accountCost = Number(stats?.account_total_cost ?? 0)
   const accountsToPay = Number(stats?.accounts_to_pay ?? 0)
 
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<'all' | 'add' | 'sell' | 'fee' | 'kks' | 'cash'>('all')
   const [page, setPage] = useState(1)
-  const [addOpen, setAddOpen] = useState(false)
-  const [sellOpen, setSellOpen] = useState(false)
-  const [sellAmount, setSellAmount] = useState('')
-  const [sellDesc, setSellDesc] = useState('')
-  const [sellError, setSellError] = useState('')
-  const [selling, setSelling] = useState(false)
 
   type MmFeePeriod = 'today' | 'last_month' | 'monthly' | 'yearly' | 'total'
   const [mmFeePeriod, setMmFeePeriod] = useState<MmFeePeriod>('monthly')
@@ -106,32 +68,6 @@ export default function Golds() {
     total: 'All Time',
   }
 
-  const [mmFeeOpen, setMmFeeOpen] = useState(false)
-  const [mmFeeAmount, setMmFeeAmount] = useState('')
-  const [mmFeeDesc, setMmFeeDesc] = useState('')
-  const [mmFeeError, setMmFeeError] = useState('')
-  const [mmFeeSaving, setMmFeeSaving] = useState(false)
-
-  const openMmFee = () => { setMmFeeOpen(true); setMmFeeAmount(''); setMmFeeDesc(''); setMmFeeError('') }
-  const closeMmFee = () => { setMmFeeOpen(false); setMmFeeAmount(''); setMmFeeDesc(''); setMmFeeError('') }
-
-  const handleMmFee = async () => {
-    const parsed = parseFloat(mmFeeAmount)
-    if (!mmFeeAmount || isNaN(parsed) || parsed <= 0) { setMmFeeError('Enter a valid amount.'); return }
-    setMmFeeSaving(true)
-    try {
-      await createFee(parsed, mmFeeDesc || undefined)
-      // The API also adds the fee onto the permanent Middleman Fee trade
-      await Promise.all([refetchGolds(), refetchLogs(), refetchBizTxs()])
-      toast.success(`MM Fee of ${parsed.toLocaleString()} G recorded${mmFeeTrade ? ' and added to the Middleman Fee trade' : ''}.`)
-      closeMmFee()
-    } catch (err: unknown) {
-      setMmFeeError((err as { message: string }).message)
-    } finally {
-      setMmFeeSaving(false)
-    }
-  }
-
   const allEntries = useMemo((): UnifiedEntry[] => {
     const logEntries: UnifiedEntry[] = logs.map((l) => ({ kind: 'log', log: l, date: l.created_at }))
     const tradeEntries: UnifiedEntry[] = trades.map((t) => ({ kind: 'trade', trade: t, date: t.created_at }))
@@ -152,7 +88,6 @@ export default function Golds() {
 
   const { paginated: paginatedEntries, meta } = paginateLocally(filteredEntries, page, 10)
 
-
   const [cancelTarget, setCancelTarget] = useState<number | null>(null)
   const [cancelling, setCancelling] = useState(false)
 
@@ -171,36 +106,9 @@ export default function Golds() {
     }
   }
 
-  const openSell = () => { setSellOpen(true); setSellAmount(''); setSellDesc(''); setSellError(''); setSellTarget({ tradeId: null, side: 'price' }) }
-  const closeSell = () => { setSellOpen(false); setSellAmount(''); setSellDesc(''); setSellError('') }
-
   const handleExport = () => exportCsv('golds', logs.map((l) => ({
     date: l.created_at, type: l.type, amount: l.amount, description: l.description ?? '',
   })))
-
-  const handleAdd = async (data: { amount: number; description?: string }) => {
-    await create(data)
-    const applied = await applyToTrade(addTarget, data.amount)
-    toast.success(`Gold added.${applied}`)
-    await refetchLogs()
-  }
-
-  const handleSell = async () => {
-    const parsed = parseFloat(sellAmount)
-    if (!sellAmount || isNaN(parsed) || parsed <= 0) { setSellError('Enter a valid amount.'); return }
-    setSelling(true)
-    try {
-      await goldsApi.sell(parsed, sellDesc || undefined)
-      const applied = await applyToTrade(sellTarget, parsed)
-      await Promise.all([refetchGolds(), refetchLogs()])
-      toast.success(`Sold ${parsed.toLocaleString()} G.${applied}`)
-      closeSell()
-    } catch (err: unknown) {
-      setSellError((err as { message: string }).message)
-    } finally {
-      setSelling(false)
-    }
-  }
 
   const isNegative = !loading && totalGold < 0
 
@@ -237,28 +145,6 @@ export default function Golds() {
                 <p className="text-xs text-slate-500 mt-1">{logs.length} log{logs.length !== 1 ? 's' : ''} recorded</p>
               </div>
 
-              {/* Actions */}
-              <div className="flex flex-col gap-2 shrink-0">
-                <button
-                  onClick={() => { setAddTarget({ tradeId: null, side: 'cost' }); setAddOpen(true) }}
-                  className="flex items-center gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white px-4 py-2.5 text-sm font-semibold transition-colors shadow-sm"
-                >
-                  <Plus size={15} /> Add Gold
-                </button>
-                <button
-                  onClick={openSell}
-                  disabled={loading}
-                  className="flex items-center gap-2 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white/80 hover:text-white px-4 py-2.5 text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  <Minus size={15} /> Sell Gold
-                </button>
-                <button
-                  onClick={openMmFee}
-                  className="flex items-center gap-2 rounded-xl bg-violet-500/20 hover:bg-violet-500/30 active:bg-violet-500/40 text-violet-300 hover:text-violet-200 px-4 py-2.5 text-sm font-semibold transition-colors"
-                >
-                  <HandCoins size={15} /> MM Fee
-                </button>
-              </div>
             </div>
 
             {/* Sub-stats: Account Cost + Middleman Fee */}
@@ -328,7 +214,6 @@ export default function Golds() {
           </div>
         </div>
       )}
-
 
       {/* History */}
       <Card className="flex flex-col">
@@ -499,121 +384,6 @@ export default function Golds() {
           </>
         )}
       </Card>
-
-      <GoldModal
-        open={addOpen}
-        onClose={() => setAddOpen(false)}
-        onSubmit={handleAdd}
-        gold={null}
-        renderExtra={(amount) => pendingGoldTrades.length > 0 && (
-          <GoldTradeTarget trades={pendingGoldTrades} value={addTarget} onChange={setAddTarget} amount={amount} />
-        )}
-      />
-
-      {/* MM Fee modal */}
-      <Modal open={mmFeeOpen} onClose={closeMmFee} title="Middleman Fee" size="sm">
-        <div className="flex flex-col gap-4">
-          <div>
-            <p className="mb-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Amount (G)</p>
-            <input
-              type="text"
-              inputMode="decimal"
-              value={formatWithCommas(mmFeeAmount)}
-              onChange={(e) => {
-                const stripped = e.target.value.replace(/,/g, '')
-                if (stripped === '' || /^\d*\.?\d*$/.test(stripped)) { setMmFeeAmount(stripped); setMmFeeError('') }
-              }}
-              placeholder="e.g. 10,000"
-              className={[
-                'block w-full rounded-xl border bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400',
-                'focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-400 transition-colors',
-                'dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500',
-                mmFeeError ? 'border-red-400 dark:border-red-500' : 'border-gray-200 dark:border-gray-600',
-              ].join(' ')}
-            />
-            {mmFeeError && <p className="mt-1.5 text-xs text-red-600 dark:text-red-400">{mmFeeError}</p>}
-          </div>
-
-          <Input
-            label="Description (optional)"
-            value={mmFeeDesc}
-            onChange={(e) => setMmFeeDesc(e.target.value)}
-            placeholder="e.g. Fee for trade #123"
-          />
-
-          {mmFeeTrade && (
-            <div className="flex items-start gap-2 rounded-xl border border-violet-100 dark:border-violet-900/40 bg-violet-50/60 dark:bg-violet-900/10 px-3 py-2.5 text-xs text-violet-700 dark:text-violet-300">
-              <Pin className="h-3.5 w-3.5 mt-px shrink-0" />
-              <span>
-                Also added to the permanent <b>Middleman Fee</b> gold trade:{' '}
-                {Number(mmFeeTrade.price_gold ?? 0).toLocaleString()} G
-                {(parseFloat(mmFeeAmount) || 0) > 0 && <> → <b>{(Number(mmFeeTrade.price_gold ?? 0) + (parseFloat(mmFeeAmount) || 0)).toLocaleString()} G</b></>}
-              </span>
-            </div>
-          )}
-
-          <div className="flex justify-end gap-3 pt-1">
-            <Button variant="secondary" onClick={closeMmFee} disabled={mmFeeSaving}>Cancel</Button>
-            <Button onClick={handleMmFee} loading={mmFeeSaving}>Add Fee</Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Sell modal */}
-      <Modal open={sellOpen} onClose={closeSell} title="Sell Gold" size="sm">
-        <div className="flex flex-col gap-4">
-          {(() => {
-            const parsed = parseFloat(sellAmount)
-            const remaining = sellAmount && !isNaN(parsed) ? totalGold - parsed : totalGold
-            const neg = remaining < 0
-            return (
-              <div className={['flex items-center justify-between rounded-xl px-4 py-3', neg ? 'bg-red-50 dark:bg-red-900/20' : 'bg-slate-50 dark:bg-slate-800/40'].join(' ')}>
-                <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Remaining after sale</span>
-                <span className={['text-sm font-bold', neg ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400'].join(' ')}>
-                  {remaining.toLocaleString()} G
-                </span>
-              </div>
-            )
-          })()}
-
-          <div>
-            <p className="mb-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Amount to sell</p>
-            <input
-              type="text"
-              inputMode="decimal"
-              value={formatWithCommas(sellAmount)}
-              onChange={(e) => {
-                const stripped = e.target.value.replace(/,/g, '')
-                if (stripped === '' || /^\d*\.?\d*$/.test(stripped)) { setSellAmount(stripped); setSellError('') }
-              }}
-              placeholder="e.g. 500,000"
-              className={[
-                'block w-full rounded-xl border bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400',
-                'focus:outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400 transition-colors',
-                'dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500',
-                sellError ? 'border-red-400 dark:border-red-500' : 'border-gray-200 dark:border-gray-600',
-              ].join(' ')}
-            />
-            {sellError && <p className="mt-1.5 text-xs text-red-600 dark:text-red-400">{sellError}</p>}
-          </div>
-
-          <Input
-            label="Description (optional)"
-            value={sellDesc}
-            onChange={(e) => setSellDesc(e.target.value)}
-            placeholder="e.g. Sold to buyer"
-          />
-
-          {pendingGoldTrades.length > 0 && (
-            <GoldTradeTarget trades={pendingGoldTrades} value={sellTarget} onChange={setSellTarget} amount={parseFloat(sellAmount) || 0} />
-          )}
-
-          <div className="flex justify-end gap-3 pt-1">
-            <Button variant="secondary" onClick={closeSell} disabled={selling}>Cancel</Button>
-            <Button onClick={handleSell} loading={selling}>Sell Gold</Button>
-          </div>
-        </div>
-      </Modal>
 
       <ConfirmDialog
         open={!!cancelTarget}

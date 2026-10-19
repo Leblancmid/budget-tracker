@@ -60,6 +60,7 @@ Route::prefix('v1')->group(function () {
             Route::post('transactions/{businessTransaction}/archive', [BusinessTransactionController::class, 'archive']);
             Route::post('transactions/{businessTransaction}/unarchive', [BusinessTransactionController::class, 'unarchive']);
             Route::post('transactions/{businessTransaction}/sell', [BusinessTransactionController::class, 'sell']);
+            Route::post('transactions/{businessTransaction}/add-gold', [BusinessTransactionController::class, 'addGold']);
         });
 
         // Rucoy

@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Business\StoreBusinessTransactionRequest;
 use App\Http\Requests\Business\UpdateBusinessTransactionRequest;
 use App\Models\BusinessTransaction;
+use App\Models\Gold;
+use App\Models\GoldLog;
+use App\Models\MiddlemanFee;
 use App\Models\RucoyAccount;
 use App\Services\GoldInventory;
 use App\Services\MiddlemanFeeTrade;
@@ -116,11 +119,14 @@ class BusinessTransactionController extends Controller
         $validated = $request->validate([
             'amount'           => ['required', 'numeric', 'min:1'],
             'deduct_inventory' => ['sometimes', 'boolean'],
+            'description'      => ['nullable', 'string', 'max:255'],
         ]);
 
         $tx    = $businessTransaction;
         $total = (float) $tx->price_gold;
         $sell  = (float) $validated['amount'];
+        $note  = trim((string) ($validated['description'] ?? ''));
+        $withNote = fn (?string $notes, string $line) => trim(($notes ? $notes . "\n" : '') . $line);
 
         if ($tx->type !== 'gold' || $tx->archived_at !== null) {
             return response()->json(['message' => 'Only pending gold trades can be sold.'], 422);
@@ -134,9 +140,10 @@ class BusinessTransactionController extends Controller
 
         $hasProgress = Schema::hasColumn('business_transactions', 'price_gold_received');
 
-        [$sold, $remaining] = DB::transaction(function () use ($tx, $total, $sell, $hasProgress, $validated) {
+        [$sold, $remaining] = DB::transaction(function () use ($tx, $total, $sell, $hasProgress, $validated, $note, $withNote) {
             // A permanent trade is never archived: even a full sale splits off and leaves it at 0 G
             if ($sell >= $total && !$tx->isSystem()) {
+                if ($note !== '') $tx->notes = $withNote($tx->notes, 'Sold: ' . $note);
                 $tx->archived_at = now();
                 $tx->save();
                 $sold = $tx;
@@ -154,7 +161,7 @@ class BusinessTransactionController extends Controller
                 $sold->cost_php    = $part($tx->cost_php);
                 $sold->profit_php  = $sold->cost_php !== null ? round($sold->price_php - $sold->cost_php, 2) : null;
                 $sold->amount      = max($part($tx->amount), 0.01);
-                $sold->notes       = trim(($tx->notes ? $tx->notes . "\n" : '') . 'Partial sale of ' . number_format($sell) . ' / ' . number_format($total) . ' G');
+                $sold->notes       = $withNote($tx->notes, 'Partial sale of ' . number_format($sell) . ' / ' . number_format($total) . ' G' . ($note !== '' ? ' — ' . $note : ''));
                 $sold->archived_at = now();
                 if ($hasProgress) {
                     $sold->price_gold_received = $tx->price_gold_received !== null ? min((float) $tx->price_gold_received, $sell) : null;
@@ -177,7 +184,7 @@ class BusinessTransactionController extends Controller
             }
 
             if ($validated['deduct_inventory'] ?? false) {
-                GoldInventory::deduct($sell, 'Sold: ' . ($tx->description ?: 'Gold trade'));
+                GoldInventory::deduct($sell, $note !== '' ? $note : 'Sold: ' . ($tx->description ?: 'Gold trade'));
             }
 
             return [$sold, $remaining];
@@ -187,6 +194,75 @@ class BusinessTransactionController extends Controller
             'sold'      => $sold->fresh(),
             'remaining' => $remaining?->fresh(),
         ]);
+    }
+
+    /**
+     * Add gold onto a pending gold trade's price and/or cost (₱ recalculated from
+     * its rates). Price gold also goes into the Golds inventory; on the permanent
+     * Middleman Fee trade it is recorded as a middleman fee instead.
+     */
+    public function addGold(Request $request, BusinessTransaction $businessTransaction): JsonResponse
+    {
+        $validated = $request->validate([
+            'price_gold'  => ['nullable', 'numeric', 'min:0'],
+            'cost_gold'   => ['nullable', 'numeric', 'min:0'],
+            'description' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $tx        = $businessTransaction;
+        $addPrice  = (float) ($validated['price_gold'] ?? 0);
+        $addCost   = (float) ($validated['cost_gold'] ?? 0);
+        $note      = trim((string) ($validated['description'] ?? ''));
+
+        if ($tx->type !== 'gold' || $tx->archived_at !== null) {
+            return response()->json(['message' => 'Gold can only be added to pending gold trades.'], 422);
+        }
+        if ($addPrice <= 0 && $addCost <= 0) {
+            return response()->json(['errors' => ['price_gold' => ['Enter gold to add to the price or cost.']]], 422);
+        }
+
+        DB::transaction(function () use ($tx, $addPrice, $addCost, $note) {
+            $label = $note !== '' ? $note : ($tx->description ?: 'Gold trade');
+
+            if ($tx->isSystem() && $addPrice > 0) {
+                // Same as recording a middleman fee: inventory + history + fee record.
+                // The MiddlemanFee observer adds it onto this trade's price.
+                Gold::create(['amount' => $addPrice, 'description' => $label]);
+                GoldLog::create(['type' => 'fee', 'amount' => $addPrice, 'description' => $label]);
+                MiddlemanFee::create(['amount' => $addPrice, 'description' => $label]);
+                $tx->refresh();
+                $addPrice = 0;
+            } elseif ($addPrice > 0) {
+                Gold::create(['amount' => $addPrice, 'description' => $label]);
+                GoldLog::create(['type' => 'add', 'amount' => $addPrice, 'description' => $label]);
+            }
+
+            if ($addPrice > 0 || $addCost > 0) {
+                $oldPrice = (float) $tx->price_gold;
+                $oldCost  = (float) $tx->cost_gold;
+                $oldPricePhp = $tx->price_php;
+                $oldCostPhp  = $tx->cost_php;
+
+                $tx->price_gold = $oldPrice + $addPrice;
+                $tx->cost_gold  = $oldCost + $addCost;
+                $tx->recomputeGoldPhp();
+
+                // No rates yet but a ₱ value exists: scale it with the gold instead of dropping it
+                if ($tx->price_php === null && $oldPricePhp !== null && $oldPrice > 0) {
+                    $tx->price_php = round((float) $oldPricePhp * ($tx->price_gold / $oldPrice), 2);
+                }
+                if ($tx->cost_php === null && $oldCostPhp !== null && $oldCost > 0) {
+                    $tx->cost_php = round((float) $oldCostPhp * ($tx->cost_gold / $oldCost), 2);
+                }
+                if ($tx->price_php !== null && $tx->cost_php !== null) {
+                    $tx->profit_php = round((float) $tx->price_php - (float) $tx->cost_php, 2);
+                    $tx->amount     = $tx->profit_php > 0 ? $tx->profit_php : 0.01;
+                }
+                $tx->save();
+            }
+        });
+
+        return response()->json($tx->fresh());
     }
 
     /** Drop optional columns that older databases may not have yet. */

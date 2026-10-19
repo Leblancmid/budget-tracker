@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import { Plus, Pencil, Trash2, Users, User, TrendingUp, TrendingDown, DollarSign, Search, Check, Archive, RotateCcw, Download, CalendarClock, Calendar, ArrowUp, ArrowDown, ArrowUpDown, Receipt, Coins, BarChart3, Link2Off, HandCoins, Pin, type LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { Input } from '@/components/ui/Input'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Pagination } from '@/components/ui/Pagination'
 import { ProgressBar } from '@/components/ui/ProgressBar'
@@ -685,11 +686,12 @@ export default function Accounts() {
   const [addGoldTarget, setAddGoldTarget] = useState<BusinessTransaction | null>(null)
   const [addPrice, setAddPrice]           = useState('')
   const [addCost, setAddCost]             = useState('')
+  const [addDesc, setAddDesc]             = useState('')
   const [addGoldError, setAddGoldError]   = useState<string | null>(null)
   const [addingGold, setAddingGold]       = useState(false)
 
   const openAddGold = (tx: BusinessTransaction) => {
-    setAddGoldTarget(tx); setAddPrice(''); setAddCost(''); setAddGoldError(null)
+    setAddGoldTarget(tx); setAddPrice(''); setAddCost(''); setAddDesc(''); setAddGoldError(null)
   }
 
   const addGoldPreview = addGoldTarget && goldTopUp(addGoldTarget, parseFloat(addPrice) || 0, parseFloat(addCost) || 0)
@@ -700,7 +702,14 @@ export default function Accounts() {
     if (p.newPrice === p.oldPrice && p.newCost === p.oldCost) { setAddGoldError('Enter gold to add to the price or cost.'); return }
     setAddingGold(true)
     try {
-      await updateBizTx(addGoldTarget.id, p.payload)
+      // The API adds the price gold to the Golds inventory (as a middleman fee on the Middleman Fee trade)
+      await businessTransactionsApi.addGold(addGoldTarget.id, {
+        price_gold:  p.newPrice - p.oldPrice,
+        cost_gold:   p.newCost - p.oldCost,
+        description: addDesc.trim(),
+      })
+      refetchBizTxs()
+      if (addGoldTarget.system_key === 'middleman_fee') refetchMmFees()
       toast.success(`Gold added — now ${p.newPrice.toLocaleString()} G price · ${p.newCost.toLocaleString()} G cost.`)
       setAddGoldTarget(null)
     } catch (err: unknown) {
@@ -714,6 +723,7 @@ export default function Accounts() {
   const [sellTarget, setSellTarget]   = useState<BusinessTransaction | null>(null)
   const [sellAmount, setSellAmount]   = useState('')
   const [sellDeduct, setSellDeduct]   = useState(true)
+  const [sellDesc, setSellDesc]       = useState('')
   const [sellError, setSellError]     = useState<string | null>(null)
   const [selling, setSelling]         = useState(false)
 
@@ -721,6 +731,7 @@ export default function Accounts() {
     setSellTarget(tx)
     setSellAmount(tx.price_gold != null ? String(Number(tx.price_gold)) : '')
     setSellDeduct(true)
+    setSellDesc('')
     setSellError(null)
   }
 
@@ -740,7 +751,7 @@ export default function Accounts() {
     if (sellNum > sellTotal) { setSellError(`You can sell at most ${sellTotal.toLocaleString()} G.`); return }
     setSelling(true)
     try {
-      const { remaining } = await businessTransactionsApi.sell(sellTarget.id, sellNum, sellDeduct)
+      const { remaining } = await businessTransactionsApi.sell(sellTarget.id, sellNum, sellDeduct, sellDesc.trim())
       refetchBizTxs()
       afterSoldChange()
       toast.success(remaining
@@ -782,7 +793,7 @@ export default function Accounts() {
   const { paginated, meta } = paginateLocally(filteredAccounts, page, 9)
 
   // Middleman fees received this month — shown on the permanent Middleman Fee trade
-  const { fees: mmFees } = useMiddlemanFees()
+  const { fees: mmFees, refetch: refetchMmFees } = useMiddlemanFees()
   const mmFeesThisMonth = useMemo(() => mmFees
     .filter((fee) => { const d = new Date(fee.created_at); return d.getMonth() === CUR_M && d.getFullYear() === CUR_Y })
     .reduce((sum, fee) => sum + Number(fee.amount), 0), [mmFees])
@@ -1433,6 +1444,21 @@ export default function Accounts() {
               ))}
             </div>
 
+            <Input
+              label="Description"
+              value={addDesc}
+              onChange={(e) => setAddDesc(e.target.value)}
+              placeholder={addGoldTarget.system_key === 'middleman_fee' ? 'e.g. Fee from trade with buyer' : 'e.g. Buyer paid the rest'}
+            />
+            {(parseFloat(addPrice) || 0) > 0 && (
+              <p className="-mt-2 flex items-start gap-1.5 text-[11px] text-gray-500 dark:text-gray-400">
+                <Coins size={11} className="mt-px shrink-0 text-amber-500" />
+                {addGoldTarget.system_key === 'middleman_fee'
+                  ? <>+{(parseFloat(addPrice) || 0).toLocaleString()} G is recorded as a middleman fee and added to your Golds inventory.</>
+                  : <>+{(parseFloat(addPrice) || 0).toLocaleString()} G is also added to your Golds inventory and history.</>}
+              </p>
+            )}
+
             {/* New totals preview */}
             <div className="grid grid-cols-3 divide-x divide-gray-100 dark:divide-gray-700 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 overflow-hidden">
               {[
@@ -1503,6 +1529,13 @@ export default function Accounts() {
               </div>
               {sellError && <p className="mt-1 text-xs text-red-500">{sellError}</p>}
             </div>
+
+            <Input
+              label="Description"
+              value={sellDesc}
+              onChange={(e) => setSellDesc(e.target.value)}
+              placeholder="e.g. Sold to buyer"
+            />
 
             {/* Preview of the split */}
             <div className="grid grid-cols-2 gap-3">

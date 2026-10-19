@@ -47,8 +47,8 @@ export default function MasterDashboard() {
   const now            = new Date()
   const curLabel       = `${MONTHS[now.getMonth()]} ${now.getFullYear()}`
   const monthlyProfit   = stats?.monthly_profit    ?? 0
-  const balanceTotalUsd = stats?.balance_usd_total ?? 0  // PayPal + Binance + MEXC
-  const balanceTotalPhp = stats?.balance_php_total ?? 0  // Maribank + Maya + BanKo (already PHP)
+  const balanceTotalUsd = stats?.balance_usd_total ?? 0  // all USD balance accounts
+  const balanceTotalPhp = stats?.balance_php_total ?? 0  // all PHP balance accounts
 
   // overall = gold(PHP) + account cost(PHP) + USD accounts→PHP + PHP accounts
   const overallAmountPhp = goldPhp + phpAmount + (balanceTotalUsd * phpRate) + balanceTotalPhp

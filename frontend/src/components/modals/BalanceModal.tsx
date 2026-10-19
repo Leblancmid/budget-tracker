@@ -1,17 +1,21 @@
 import { useEffect, useState } from 'react'
+import { Minus, Plus } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { formatWithCommas, handleAmountInput, todayISO } from '@/utils/format'
 import { flattenApiErrors } from '@/utils/api'
+import { colorOf, iconOf } from '@/utils/balanceAccounts'
 import { toast } from '@/components/ui/Toast'
-import type { BalanceAccount, BalanceEntry, BalanceEntryType } from '@/types'
+import type { BalanceAccount, BalanceAccountConfig, BalanceEntry, BalanceEntryType } from '@/types'
 import type { BalanceEntryPayload } from '@/api/master'
 
 interface BalanceModalProps {
   open:            boolean
   onClose:         () => void
   onSubmit:        (data: BalanceEntryPayload) => Promise<void>
+  /** Accounts the entry can belong to (visible ones, plus the entry's own if hidden) */
+  accounts:        BalanceAccountConfig[]
   entry?:          BalanceEntry | null
   defaultAccount?: BalanceAccount
   defaultType?:    BalanceEntryType
@@ -25,23 +29,9 @@ const EMPTY = (account: BalanceAccount, type: BalanceEntryType): BalanceEntryPay
   date:        todayISO(),
 })
 
-const PHP_ACCOUNTS: BalanceAccount[] = ['MARIBANK', 'MAYA', 'BANKO']
-
-const ACCOUNT_LABELS: Record<BalanceAccount, string> = {
-  PAYPAL: 'PayPal', BINANCE: 'Binance', MEXC: 'MEXC', MARIBANK: 'Maribank', MAYA: 'Maya', BANKO: 'BanKo',
-}
-
-const ACCOUNT_STYLES: Record<BalanceAccount, string> = {
-  PAYPAL:   'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-700',
-  BINANCE:  'border-yellow-500 bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-700',
-  MEXC:     'border-cyan-500 bg-cyan-50 text-cyan-700 dark:bg-cyan-900/20 dark:text-cyan-400 dark:border-cyan-700',
-  MARIBANK: 'border-green-500 bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 dark:border-green-700',
-  MAYA:     'border-violet-500 bg-violet-50 text-violet-700 dark:bg-violet-900/20 dark:text-violet-400 dark:border-violet-700',
-  BANKO:    'border-orange-500 bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-700',
-}
-
-export function BalanceModal({ open, onClose, onSubmit, entry, defaultAccount = 'PAYPAL', defaultType = 'add' }: BalanceModalProps) {
-  const [form, setForm]           = useState<BalanceEntryPayload>(EMPTY(defaultAccount, defaultType))
+export function BalanceModal({ open, onClose, onSubmit, accounts, entry, defaultAccount, defaultType = 'add' }: BalanceModalProps) {
+  const fallbackAccount = defaultAccount ?? accounts[0]?.code ?? ''
+  const [form, setForm]           = useState<BalanceEntryPayload>(EMPTY(fallbackAccount, defaultType))
   const [amountStr, setAmountStr] = useState('')
   const [errors, setErrors]       = useState<Partial<Record<string, string>>>({})
   const [loading, setLoading]     = useState(false)
@@ -55,16 +45,17 @@ export function BalanceModal({ open, onClose, onSubmit, entry, defaultAccount = 
         setForm({ account: entry.account, type: entry.type, amount: amt, description: entry.description ?? '', date: entry.date })
       } else {
         setAmountStr('')
-        setForm(EMPTY(defaultAccount, defaultType))
+        setForm(EMPTY(fallbackAccount, defaultType))
       }
     }
-  }, [open, entry, defaultAccount, defaultType])
+  }, [open, entry, fallbackAccount, defaultType])
 
   const set = <K extends keyof BalanceEntryPayload>(key: K, value: BalanceEntryPayload[K]) =>
     setForm((p) => ({ ...p, [key]: value }))
 
   const validate = () => {
     const errs: typeof errors = {}
+    if (!form.account) errs.account = 'Choose an account.'
     if (!form.amount || form.amount <= 0) errs.amount = 'Amount must be greater than 0.'
     if (!form.date) errs.date = 'Date is required.'
     setErrors(errs)
@@ -86,50 +77,63 @@ export function BalanceModal({ open, onClose, onSubmit, entry, defaultAccount = 
     }
   }
 
-  const isPhp = PHP_ACCOUNTS.includes(form.account)
-  const accountLabel = ACCOUNT_LABELS[form.account]
+  const account = accounts.find((a) => a.code === form.account)
+  const isPhp   = account?.currency === 'PHP'
+  const name    = account?.name ?? form.account
 
-  // Title: dynamic for new entries, generic for edits
   const title = entry
     ? 'Edit Entry'
-    : form.type === 'add'
-      ? `Add to ${accountLabel}`
-      : `Sell from ${accountLabel}`
-
-  const accountBtn = (acc: BalanceAccount) => (
-    <button
-      key={acc}
-      type="button"
-      onClick={() => set('account', acc)}
-      className={[
-        'flex-1 rounded-lg border py-2 text-sm font-medium transition-colors',
-        form.account === acc
-          ? ACCOUNT_STYLES[acc]
-          : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
-      ].join(' ')}
-    >
-      {ACCOUNT_LABELS[acc]}
-    </button>
-  )
+    : form.type === 'add' ? `Add to ${name}` : `Sell from ${name}`
 
   return (
     <Modal open={open} onClose={onClose} title={title}>
       <div className="flex flex-col gap-4">
 
-        {/* Account picker — only shown when editing (new entries are locked to the clicked card) */}
+        {/* Account + type pickers — only when editing (new entries are locked to the clicked card) */}
         {entry && (
-          <div className="flex flex-col gap-2">
-            <div className="flex gap-2">
-              {accountBtn('PAYPAL')}
-              {accountBtn('BINANCE')}
-              {accountBtn('MEXC')}
+          <>
+            <div>
+              <p className="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Account</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {accounts.map((a) => {
+                  const c = colorOf(a.color)
+                  const Icon = iconOf(a.icon)
+                  const selected = form.account === a.code
+                  return (
+                    <button key={a.code} type="button" onClick={() => set('account', a.code)}
+                      className={[
+                        'flex items-center gap-2 rounded-lg border px-2.5 py-2 text-left text-sm font-medium transition-colors',
+                        selected
+                          ? ['border-transparent ring-2', c.ring, c.soft, c.text].join(' ')
+                          : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700',
+                      ].join(' ')}>
+                      <span className={['flex h-6 w-6 shrink-0 items-center justify-center rounded-md', c.iconTile].join(' ')}><Icon size={12} /></span>
+                      <span className="truncate">{a.name}</span>
+                      <span className="ml-auto text-[10px] font-semibold text-gray-400">{a.currency}</span>
+                    </button>
+                  )
+                })}
+              </div>
+              {errors.account && <p className="mt-1 text-xs text-red-500">{errors.account}</p>}
             </div>
+
             <div className="flex gap-2">
-              {accountBtn('MARIBANK')}
-              {accountBtn('MAYA')}
-              {accountBtn('BANKO')}
+              {(['add', 'sell'] as BalanceEntryType[]).map((t) => (
+                <button key={t} type="button" onClick={() => set('type', t)}
+                  className={[
+                    'flex flex-1 items-center justify-center gap-1.5 rounded-lg border py-2 text-sm font-semibold transition-colors',
+                    form.type === t
+                      ? t === 'add'
+                        ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:border-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400'
+                        : 'border-red-400 bg-red-50 text-red-600 dark:border-red-600 dark:bg-red-900/20 dark:text-red-400'
+                      : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
+                  ].join(' ')}>
+                  {t === 'add' ? <Plus size={14} /> : <Minus size={14} />}
+                  {t === 'add' ? 'Add' : 'Sell'}
+                </button>
+              ))}
             </div>
-          </div>
+          </>
         )}
 
         <Input
@@ -140,6 +144,7 @@ export function BalanceModal({ open, onClose, onSubmit, entry, defaultAccount = 
           onChange={(e) => handleAmountInput(e.target.value, (s) => { setAmountStr(s); set('amount', parseFloat(s) || 0) })}
           error={errors.amount}
           placeholder="0.00"
+          autoFocus={!entry}
         />
 
         <Input
@@ -159,7 +164,7 @@ export function BalanceModal({ open, onClose, onSubmit, entry, defaultAccount = 
 
         <div className="flex justify-end gap-3 pt-1">
           <Button variant="secondary" onClick={onClose} disabled={loading}>Cancel</Button>
-          <Button onClick={handleSubmit} loading={loading}>
+          <Button onClick={handleSubmit} loading={loading} variant={!entry && form.type === 'sell' ? 'danger' : 'primary'}>
             {entry ? 'Save Changes' : form.type === 'add' ? 'Add' : 'Sell'}
           </Button>
         </div>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Plus, Pencil, Trash2, Users, User, TrendingUp, TrendingDown, DollarSign, Search, Check, Archive, RotateCcw, Download, CalendarClock, Calendar, ArrowUp, ArrowDown, ArrowUpDown, Receipt, Coins, BarChart3, Link2Off, HandCoins, type LucideIcon } from 'lucide-react'
+import { Plus, Pencil, Trash2, Users, User, TrendingUp, TrendingDown, DollarSign, Search, Check, Archive, RotateCcw, Download, CalendarClock, Calendar, ArrowUp, ArrowDown, ArrowUpDown, Receipt, Coins, BarChart3, Link2Off, HandCoins, Pin, type LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -291,6 +291,7 @@ function GoldTradeRow({ tx, archived = false, onEdit, onSell, onAddGold, onDelet
   onUnarchive?: () => void
 }) {
   const isPending = tx.price_php == null
+  const isSystem  = !!tx.system_key
   const profit    = txProfitPhp(tx)
 
   return (
@@ -299,7 +300,14 @@ function GoldTradeRow({ tx, archived = false, onEdit, onSell, onAddGold, onDelet
         <Coins size={15} className="text-amber-600 dark:text-amber-400" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{tx.description || 'Gold Trade'}</p>
+        <div className="flex items-center gap-1.5 min-w-0">
+          <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{tx.description || 'Gold Trade'}</p>
+          {isSystem && (
+            <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-violet-100 dark:bg-violet-900/30 px-1.5 py-0.5 text-[10px] font-semibold text-violet-700 dark:text-violet-300" title="Permanent — fed by every middleman fee. Can be edited, topped up and sold, but not deleted.">
+              <Pin size={9} /> Permanent
+            </span>
+          )}
+        </div>
         <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{formatDate(tx.date)}</p>
       </div>
       <div className="flex items-center gap-3 shrink-0">
@@ -316,10 +324,10 @@ function GoldTradeRow({ tx, archived = false, onEdit, onSell, onAddGold, onDelet
                 className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
                 <Pencil size={13} />
               </button>
-              <button onClick={onDelete} title="Remove"
+              {!isSystem && <button onClick={onDelete} title="Remove"
                 className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
                 <Trash2 size={13} />
-              </button>
+              </button>}
             </>
           )}
         </div>
@@ -362,8 +370,8 @@ function GoldTradeRow({ tx, archived = false, onEdit, onSell, onAddGold, onDelet
         {!archived && (
           <button
             onClick={onSell}
-            disabled={isPending}
-            title={isPending ? 'Set the rates before selling' : 'Sell all or part of this gold'}
+            disabled={isPending || Number(tx.price_gold ?? 0) <= 0}
+            title={isPending ? 'Set the rates before selling' : Number(tx.price_gold ?? 0) <= 0 ? 'No gold to sell yet' : 'Sell all or part of this gold'}
             className="flex items-center gap-1 rounded-lg border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-900/20 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             <HandCoins size={12} />
@@ -764,8 +772,11 @@ export default function Accounts() {
 
   const { paginated, meta } = paginateLocally(filteredAccounts, page, 9)
 
+  // Permanent (system) trades — e.g. Middleman Fee — always first
   const pendingGoldTrades = useMemo(() =>
-    bizTxs.filter(tx => tx.type === 'gold' && tx.archived_at == null),
+    bizTxs
+      .filter(tx => tx.type === 'gold' && tx.archived_at == null)
+      .sort((a, b) => Number(!!b.system_key) - Number(!!a.system_key)),
     [bizTxs]
   )
   const archivedGoldTrades = useMemo(() => archivedTxs.filter(tx => tx.type === 'gold'), [archivedTxs])

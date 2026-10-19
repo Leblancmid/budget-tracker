@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Plus, Minus, Coins, TrendingUp, TrendingDown, AlertCircle, Search, Download, HandCoins } from 'lucide-react'
+import { Plus, Minus, Coins, TrendingUp, TrendingDown, AlertCircle, Search, Download, HandCoins, Pin } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
@@ -31,13 +31,14 @@ export default function Golds() {
   const { trades, loading: tradesLoading } = useTrades()
   const { stats } = useRucoyDashboard()
   const { create: createFee } = useMiddlemanFees()
-  const { transactions: bizTxs, update: updateBizTx } = useBusinessTransactions()
+  const { transactions: bizTxs, update: updateBizTx, refetch: refetchBizTxs } = useBusinessTransactions()
   const pendingGoldTrades = useMemo(() => bizTxs.filter((tx) => tx.type === 'gold' && tx.archived_at == null), [bizTxs])
+  // Permanent trade that every middleman fee feeds into (handled by the API)
+  const mmFeeTrade = pendingGoldTrades.find((tx) => tx.system_key === 'middleman_fee') ?? null
 
-  // "Apply to gold trade" target per dialog (default side: add → cost, sell → price, fee → cost)
+  // "Apply to gold trade" target per dialog (default side: add → cost, sell → price)
   const [addTarget, setAddTarget]   = useState<GoldTradeTargetValue>({ tradeId: null, side: 'cost' })
   const [sellTarget, setSellTarget] = useState<GoldTradeTargetValue>({ tradeId: null, side: 'price' })
-  const [feeTarget, setFeeTarget]   = useState<GoldTradeTargetValue>({ tradeId: null, side: 'cost' })
 
   /** Adds `amount` G onto the chosen trade's price or cost. Returns a toast suffix. */
   const applyToTrade = async (target: GoldTradeTargetValue, amount: number): Promise<string> => {
@@ -111,7 +112,7 @@ export default function Golds() {
   const [mmFeeError, setMmFeeError] = useState('')
   const [mmFeeSaving, setMmFeeSaving] = useState(false)
 
-  const openMmFee = () => { setMmFeeOpen(true); setMmFeeAmount(''); setMmFeeDesc(''); setMmFeeError(''); setFeeTarget({ tradeId: null, side: 'cost' }) }
+  const openMmFee = () => { setMmFeeOpen(true); setMmFeeAmount(''); setMmFeeDesc(''); setMmFeeError('') }
   const closeMmFee = () => { setMmFeeOpen(false); setMmFeeAmount(''); setMmFeeDesc(''); setMmFeeError('') }
 
   const handleMmFee = async () => {
@@ -120,9 +121,9 @@ export default function Golds() {
     setMmFeeSaving(true)
     try {
       await createFee(parsed, mmFeeDesc || undefined)
-      const applied = await applyToTrade(feeTarget, parsed)
-      await Promise.all([refetchGolds(), refetchLogs()])
-      toast.success(`MM Fee of ${parsed.toLocaleString()} G recorded.${applied}`)
+      // The API also adds the fee onto the permanent Middleman Fee trade
+      await Promise.all([refetchGolds(), refetchLogs(), refetchBizTxs()])
+      toast.success(`MM Fee of ${parsed.toLocaleString()} G recorded${mmFeeTrade ? ' and added to the Middleman Fee trade' : ''}.`)
       closeMmFee()
     } catch (err: unknown) {
       setMmFeeError((err as { message: string }).message)
@@ -540,8 +541,15 @@ export default function Golds() {
             placeholder="e.g. Fee for trade #123"
           />
 
-          {pendingGoldTrades.length > 0 && (
-            <GoldTradeTarget trades={pendingGoldTrades} value={feeTarget} onChange={setFeeTarget} amount={parseFloat(mmFeeAmount) || 0} />
+          {mmFeeTrade && (
+            <div className="flex items-start gap-2 rounded-xl border border-violet-100 dark:border-violet-900/40 bg-violet-50/60 dark:bg-violet-900/10 px-3 py-2.5 text-xs text-violet-700 dark:text-violet-300">
+              <Pin className="h-3.5 w-3.5 mt-px shrink-0" />
+              <span>
+                Also added to the permanent <b>Middleman Fee</b> gold trade:{' '}
+                {Number(mmFeeTrade.price_gold ?? 0).toLocaleString()} G
+                {(parseFloat(mmFeeAmount) || 0) > 0 && <> → <b>{(Number(mmFeeTrade.price_gold ?? 0) + (parseFloat(mmFeeAmount) || 0)).toLocaleString()} G</b></>}
+              </span>
+            </div>
           )}
 
           <div className="flex justify-end gap-3 pt-1">

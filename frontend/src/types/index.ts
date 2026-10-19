@@ -139,6 +139,8 @@ export type BusinessTransactionAction = 'buy' | 'sell'
 export interface BusinessTransaction {
   id: number
   type: BusinessTransactionType
+  /** Set on app-managed rows that can't be deleted, e.g. 'middleman_fee' */
+  system_key?: string | null
   action: BusinessTransactionAction | null
   account_id: number | null
   price_rate: string | null

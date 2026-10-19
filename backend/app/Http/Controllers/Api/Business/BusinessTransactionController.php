@@ -8,6 +8,7 @@ use App\Http\Requests\Business\UpdateBusinessTransactionRequest;
 use App\Models\BusinessTransaction;
 use App\Models\RucoyAccount;
 use App\Services\GoldInventory;
+use App\Services\MiddlemanFeeTrade;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -40,6 +41,8 @@ class BusinessTransactionController extends Controller
 
     public function index(): JsonResponse
     {
+        MiddlemanFeeTrade::get(); // make sure the pinned Middleman Fee trade exists
+
         return response()->json(
             BusinessTransaction::whereNull('archived_at')->latest('date')->latest('id')->get()
         );
@@ -54,6 +57,10 @@ class BusinessTransactionController extends Controller
 
     public function archive(BusinessTransaction $businessTransaction): JsonResponse
     {
+        if ($businessTransaction->isSystem()) {
+            return response()->json(['message' => 'This trade is permanent — sell its gold instead.'], 422);
+        }
+
         $businessTransaction->archived_at = now();
         $businessTransaction->save();
 
@@ -90,6 +97,10 @@ class BusinessTransactionController extends Controller
 
     public function destroy(BusinessTransaction $businessTransaction): JsonResponse
     {
+        if ($businessTransaction->isSystem()) {
+            return response()->json(['message' => 'The Middleman Fee trade cannot be deleted.'], 422);
+        }
+
         $businessTransaction->delete();
 
         return response()->json(['message' => 'Transaction deleted.']);
@@ -124,7 +135,8 @@ class BusinessTransactionController extends Controller
         $hasProgress = Schema::hasColumn('business_transactions', 'price_gold_received');
 
         [$sold, $remaining] = DB::transaction(function () use ($tx, $total, $sell, $hasProgress, $validated) {
-            if ($sell >= $total) {
+            // A permanent trade is never archived: even a full sale splits off and leaves it at 0 G
+            if ($sell >= $total && !$tx->isSystem()) {
                 $tx->archived_at = now();
                 $tx->save();
                 $sold = $tx;
@@ -135,6 +147,7 @@ class BusinessTransactionController extends Controller
                 $minus = fn ($v, $p) => $v === null ? null : (float) $v - (float) $p;
 
                 $sold = $tx->replicate();
+                $sold->system_key  = null;
                 $sold->price_gold  = $sell;
                 $sold->cost_gold   = $part($tx->cost_gold, 0);
                 $sold->price_php   = $part($tx->price_php);

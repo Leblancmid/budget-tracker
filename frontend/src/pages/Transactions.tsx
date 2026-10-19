@@ -15,6 +15,7 @@ import { TransactionModal, type TransactionFormData } from '@/components/modals/
 import { toast } from '@/components/ui/Toast'
 import { formatCurrency, formatDate, formatTime, MONTHS } from '@/utils/format'
 import { colorOf, iconOf } from '@/utils/balanceAccounts'
+import { CategoryIcon } from '@/utils/categoryIcons'
 import { Amt } from '@/context/AmountVisibilityContext'
 import { exportCsv } from '@/utils/csv'
 import type { Transaction, TransactionScope, TransactionType } from '@/types'
@@ -310,12 +311,7 @@ export function Transactions() {
                     const AcctIcon = iconOf(acct?.icon ?? 'wallet')
                     return (
                       <div key={tx.id} className="group flex items-center gap-3 px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
-                        <span
-                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white text-xs font-bold shadow-sm"
-                          style={{ backgroundColor: tx.category.color }}
-                        >
-                          {tx.category.name.charAt(0).toUpperCase()}
-                        </span>
+                        <CategoryIcon category={tx.category} />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{tx.description || tx.category.name}</p>
                           <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] text-gray-400 dark:text-gray-500">

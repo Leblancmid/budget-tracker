@@ -2,7 +2,8 @@ import api from './axios'
 import type { Category } from '@/types'
 
 export const categoriesApi = {
-  getAll: () => api.get<Category[]>('/categories').then((r) => r.data),
+  /** month/year select which month month_total covers (default: current month) */
+  getAll: (params?: { month?: number; year?: number }) => api.get<Category[]>('/categories', { params }).then((r) => r.data),
 
   create: (data: Pick<Category, 'name' | 'type' | 'color' | 'icon'>) =>
     api.post<Category>('/categories', data).then((r) => r.data),

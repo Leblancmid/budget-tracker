@@ -10,6 +10,10 @@ export interface Category {
   color: string
   icon: string
   transactions_count?: number
+  /** Personal total for the requested month (defaults to the current month) */
+  month_total?: number
+  /** Personal all-time total */
+  all_time_total?: number
   created_at: string
   updated_at: string
 }

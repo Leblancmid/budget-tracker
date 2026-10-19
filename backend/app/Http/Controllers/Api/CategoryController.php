@@ -7,16 +7,27 @@ use App\Http\Requests\StoreCategoryRequest;
 use App\Http\Requests\UpdateCategoryRequest;
 use App\Models\Category;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class CategoryController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
+        $month = (int) $request->get('month', now()->month);
+        $year  = (int) $request->get('year', now()->year);
+
+        // Totals count Personal transactions only, matching the Daily Expenses dashboard
         $categories = Category::withCount('transactions')
+            ->withSum(['transactions as month_total' => fn ($q) => $q->personal()->whereMonth('date', $month)->whereYear('date', $year)], 'amount')
+            ->withSum(['transactions as all_time_total' => fn ($q) => $q->personal()], 'amount')
             ->where('user_id', auth()->id())
             ->orderBy('type')
             ->orderBy('name')
-            ->get();
+            ->get()
+            ->each(function ($c) {
+                $c->month_total    = (float) ($c->month_total ?? 0);
+                $c->all_time_total = (float) ($c->all_time_total ?? 0);
+            });
 
         return response()->json($categories);
     }

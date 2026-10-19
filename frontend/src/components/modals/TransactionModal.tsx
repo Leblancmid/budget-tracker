@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/Input'
 import type { BalanceAccountConfig, Category, Transaction, TransactionScope } from '@/types'
 import { formatWithCommas, handleAmountInput, todayISO } from '@/utils/format'
 import { colorOf, fmtPhp, iconOf } from '@/utils/balanceAccounts'
+import { categoryIcon } from '@/utils/categoryIcons'
 import { flattenApiErrors } from '@/utils/api'
 import { Amt } from '@/context/AmountVisibilityContext'
 
@@ -219,7 +220,7 @@ export function TransactionModal({ open, onClose, onSubmit, categories, transact
                     ].join(' ')}
                     style={selected ? { backgroundColor: c.color } : undefined}
                   >
-                    {!selected && <span className="h-2 w-2 rounded-full" style={{ backgroundColor: c.color }} />}
+                    {(() => { const Icon = categoryIcon(c.icon); return <Icon size={12} style={selected ? undefined : { color: c.color }} /> })()}
                     {c.name}
                   </button>
                 )

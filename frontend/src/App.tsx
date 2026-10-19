@@ -67,11 +67,11 @@ export default function App() {
                     <Route path="/rucoy"              element={<Suspense fallback={<Loading />}><RucoyDashboard /></Suspense>} />
                     <Route path="/rucoy/golds"        element={<Suspense fallback={<Loading />}><Golds /></Suspense>} />
                     <Route path="/rucoy/trades"       element={<Suspense fallback={<Loading />}><Trades /></Suspense>} />
-                    <Route path="/rucoy/accounts"     element={<Suspense fallback={<Loading />}><Accounts /></Suspense>} />
+                    <Route path="/rucoy/accounts"     element={<Navigate to="/business/transactions" replace />} />
                     <Route path="/rucoy/calculator"   element={<Suspense fallback={<Loading />}><GoldCalculator /></Suspense>} />
 
                     <Route path="/business"              element={<Suspense fallback={<Loading />}><BusinessDashboard /></Suspense>} />
-                    <Route path="/business/transactions" element={<Navigate to="/rucoy/accounts" replace />} />
+                    <Route path="/business/transactions" element={<Suspense fallback={<Loading />}><Accounts /></Suspense>} />
 
                     <Route path="/reports/business" element={<Suspense fallback={<Loading />}><BusinessReport /></Suspense>} />
 

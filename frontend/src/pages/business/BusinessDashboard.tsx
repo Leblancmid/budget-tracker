@@ -101,7 +101,7 @@ export default function BusinessDashboard() {
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 dark:border-gray-700/60">
             <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Recent Transactions</h2>
             <Link
-              to="/rucoy/accounts"
+              to="/business/transactions"
               className="flex items-center gap-1 text-xs text-teal-600 hover:text-teal-800 font-medium dark:text-teal-400 dark:hover:text-teal-300 transition-colors"
             >
               View all <ArrowRight className="h-3.5 w-3.5" />

@@ -81,6 +81,7 @@ class LogController extends Controller
                 'type'        => $log->type,
                 'description' => $log->description,
                 'amount'      => $log->amount,
+                'changes'     => $log->getAttribute('changes'),
                 'date'        => null,
                 'created_at'  => $log->created_at->toISOString(),
                 'ip_address'  => $log->ip_address,

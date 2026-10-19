@@ -44,7 +44,88 @@ const TYPE_LABEL: Record<string, string> = {
   add: 'Add', sell: 'Sell', fee: 'Fee',
   account: 'Account', gold: 'Gold',
   kks: 'KKS', cash: 'Cash',
-  archived: 'Archived',
+  archived: 'Archived', edited: 'Edited',
+}
+
+type ValueKind = 'gold' | 'php' | 'usd' | 'rate' | 'date' | 'text'
+
+const FIELD_META: Record<string, { label: string; kind: ValueKind }> = {
+  description:         { label: 'Description',      kind: 'text' },
+  notes:               { label: 'Notes',            kind: 'text' },
+  type:                { label: 'Type',             kind: 'text' },
+  action:              { label: 'Action',           kind: 'text' },
+  status:              { label: 'Status',           kind: 'text' },
+  currency:            { label: 'Currency',         kind: 'text' },
+  payment_method:      { label: 'Payment Method',   kind: 'text' },
+  account_id:          { label: 'Account',          kind: 'text' },
+  category_id:         { label: 'Category',         kind: 'text' },
+  date:                { label: 'Date',             kind: 'date' },
+  completion_date:     { label: 'Completion Date',  kind: 'date' },
+  archived_at:         { label: 'Sold / Archived',  kind: 'date' },
+  price_gold:          { label: 'Price (G)',        kind: 'gold' },
+  cost_gold:           { label: 'Cost (G)',         kind: 'gold' },
+  price_gold_received: { label: 'Received (G)',     kind: 'gold' },
+  cost_gold_paid:      { label: 'Paid (G)',         kind: 'gold' },
+  price_rate:          { label: 'Price Rate ($)',   kind: 'rate' },
+  cost_rate:           { label: 'Cost Rate ($)',    kind: 'rate' },
+  php_rate:            { label: 'PHP Rate (Price)', kind: 'rate' },
+  cost_php_rate:       { label: 'PHP Rate (Cost)',  kind: 'rate' },
+  price_php:           { label: 'Price (₱)',        kind: 'php' },
+  cost_php:            { label: 'Cost (₱)',         kind: 'php' },
+  profit_php:          { label: 'Profit (₱)',       kind: 'php' },
+  middleman_fee:       { label: 'Middleman Fee',    kind: 'text' },
+}
+
+/** How a field is shown; `amount` depends on the module (G for gold, $ for balance, ₱ otherwise). */
+function fieldMeta(field: string, module: LogEntry['module']): { label: string; kind: ValueKind } {
+  if (field === 'amount') return { label: 'Amount', kind: module === 'gold' ? 'gold' : module === 'balance' ? 'usd' : module === 'trade' ? 'text' : 'php' }
+  return FIELD_META[field] ?? { label: field.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()), kind: 'text' }
+}
+
+function formatValue(value: unknown, kind: ValueKind): string {
+  if (value === null || value === undefined || value === '') return '—'
+  const n = Number(value)
+  const money = (v: number) => v.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  switch (kind) {
+    case 'gold': return Number.isFinite(n) ? `${Math.round(n).toLocaleString()} G` : String(value)
+    case 'php':  return Number.isFinite(n) ? `₱${money(n)}` : String(value)
+    case 'usd':  return Number.isFinite(n) ? `$${money(n)}` : String(value)
+    case 'rate': return Number.isFinite(n) ? String(Math.round(n * 10000) / 10000) : String(value)
+    case 'date': {
+      const d = new Date(String(value).length <= 10 ? `${value}T00:00:00` : String(value))
+      return isNaN(d.getTime()) ? String(value) : d.toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' })
+    }
+    default: return String(value)
+  }
+}
+
+function ChangeList({ entry }: { entry: LogEntry }) {
+  const rows = Object.entries(entry.changes ?? {})
+  if (rows.length === 0) return null
+  return (
+    <div className="mt-2 overflow-hidden rounded-lg border border-gray-100 dark:border-gray-700/60 divide-y divide-gray-100 dark:divide-gray-700/60">
+      {rows.map(([field, { before, after }]) => {
+        const { label, kind } = fieldMeta(field, entry.module)
+        const isMoney = kind === 'php' || kind === 'usd'
+        const b = formatValue(before, kind)
+        const a = formatValue(after, kind)
+        return (
+          <div key={field} className="grid grid-cols-[minmax(90px,140px)_1fr] sm:grid-cols-[160px_1fr] items-start gap-2 px-3 py-1.5 bg-gray-50/60 dark:bg-gray-800/30">
+            <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 truncate" title={label}>{label}</span>
+            <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs min-w-0">
+              <span className="text-red-500/90 dark:text-red-400/90 line-through decoration-red-300/60 break-all">
+                {isMoney && b !== '—' ? <Amt value={b} /> : b}
+              </span>
+              <span className="text-gray-300 dark:text-gray-600">→</span>
+              <span className="font-semibold text-emerald-600 dark:text-emerald-400 break-all">
+                {isMoney && a !== '—' ? <Amt value={a} /> : a}
+              </span>
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
 }
 
 function isPositiveEntry(e: LogEntry): boolean {
@@ -313,9 +394,9 @@ export default function Logs() {
               const typeLabel = TYPE_LABEL[e.type] ?? e.type
               const device   = detectDevice(e.user_agent)
               return (
-                <div key={i} className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                <div key={i} className={['flex gap-3 px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors', e.changes ? 'items-start' : 'items-center'].join(' ')}>
                   {/* Module dot */}
-                  <div className={['h-2 w-2 rounded-full shrink-0 mt-px', cfg.dot].join(' ')} />
+                  <div className={['h-2 w-2 rounded-full shrink-0', e.changes ? 'mt-[26px]' : 'mt-px', cfg.dot].join(' ')} />
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">
@@ -348,6 +429,7 @@ export default function Logs() {
                     {e.ip_address && (
                       <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5 font-mono">{e.ip_address}</p>
                     )}
+                    {e.type === 'edited' && <ChangeList entry={e} />}
                   </div>
 
                   {/* Amount + time */}

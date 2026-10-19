@@ -46,12 +46,11 @@ class TradeObserver
         }
         // Log regular edit events (excluding archive, middleman_fee-only, and timestamp-only changes)
         elseif ($model->isDirty() && !$this->onlyTimestampsOrFeeChanged($model)) {
-            ActivityLog::create([
+            ActivityLog::recordEdit($model, [
                 'user_id'       => auth()->id(),
                 'loggable_type' => Trade::class,
                 'loggable_id'   => $model->id,
                 'module'        => 'trade',
-                'type'          => 'edited',
                 'description'   => $this->buildDescription($model),
                 'amount'        => $model->amount,
                 'ip_address'    => request()->ip(),

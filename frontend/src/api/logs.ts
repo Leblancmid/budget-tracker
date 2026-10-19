@@ -5,6 +5,8 @@ export interface LogEntry {
   type: string
   description: string | null
   amount: string | null
+  /** Field-by-field diff for "edited" entries */
+  changes?: Record<string, { before: unknown; after: unknown }> | null
   date: string | null
   created_at: string
   ip_address: string | null

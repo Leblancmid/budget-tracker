@@ -26,12 +26,11 @@ class BalanceEntryObserver
     {
         // Skip logging if only timestamps changed
         if ($model->isDirty() && !$this->onlyTimestampsChanged($model)) {
-            ActivityLog::create([
+            ActivityLog::recordEdit($model, [
                 'user_id'       => auth()->id(),
                 'loggable_type' => BalanceEntry::class,
                 'loggable_id'   => $model->id,
                 'module'        => 'balance',
-                'type'          => 'edited',
                 'description'   => $model->description,
                 'amount'        => $model->amount,
                 'ip_address'    => request()->ip(),

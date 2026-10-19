@@ -26,12 +26,11 @@ class GoldLogObserver
     {
         // Skip logging if only timestamps changed
         if ($model->isDirty() && !$this->onlyTimestampsChanged($model)) {
-            ActivityLog::create([
+            ActivityLog::recordEdit($model, [
                 'user_id'       => auth()->id(),
                 'loggable_type' => GoldLog::class,
                 'loggable_id'   => $model->id,
                 'module'        => 'gold',
-                'type'          => 'edited',
                 'description'   => $model->description,
                 'amount'        => $model->amount,
                 'ip_address'    => request()->ip(),

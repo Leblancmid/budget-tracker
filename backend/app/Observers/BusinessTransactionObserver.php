@@ -40,12 +40,11 @@ class BusinessTransactionObserver
         }
         // Log regular edit events (excluding archive and timestamp-only changes)
         elseif ($model->isDirty() && !$this->onlyTimestampsChanged($model)) {
-            ActivityLog::create([
+            ActivityLog::recordEdit($model, [
                 'user_id'       => auth()->id(),
                 'loggable_type' => BusinessTransaction::class,
                 'loggable_id'   => $model->id,
                 'module'        => 'business',
-                'type'          => 'edited',
                 'description'   => $model->description,
                 'amount'        => $model->profit_php ?? $model->price_php ?? $model->cost_php ?? $model->amount,
                 'ip_address'    => request()->ip(),

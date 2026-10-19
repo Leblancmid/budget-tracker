@@ -16,6 +16,7 @@ import { toast } from '@/components/ui/Toast'
 import { paginateLocally, formatCurrency, formatDate, formatWithCommas, handleAmountInput, todayISO, MONTHS } from '@/utils/format'
 import { flattenApiErrors } from '@/utils/api'
 import { exportCsv } from '@/utils/csv'
+import { goldTopUp } from '@/utils/goldTrade'
 import { isBusinessIncome } from '@/utils/business'
 import { Amt } from '@/context/AmountVisibilityContext'
 import type { AccountPaymentStatus, BusinessTransaction, BusinessTransactionType, RucoyAccount } from '@/types'
@@ -674,26 +675,7 @@ export default function Accounts() {
     setAddGoldTarget(tx); setAddPrice(''); setAddCost(''); setAddGoldError(null)
   }
 
-  /** ₱ value of `gold` at the trade's rates; falls back to scaling the old ₱ value when rates are missing. */
-  const goldToPhp = (gold: number, oldGold: number, usdRate: string | null, phpRate: string | null | undefined, oldPhp: string | null) => {
-    if (usdRate != null && phpRate != null && Number(usdRate) && Number(phpRate)) {
-      return Math.round((gold / 1_000_000) * Number(usdRate) * Number(phpRate) * 100) / 100
-    }
-    if (oldPhp != null && oldGold > 0) return Math.round(Number(oldPhp) * (gold / oldGold) * 100) / 100
-    return null
-  }
-
-  const addGoldPreview = addGoldTarget && (() => {
-    const tx        = addGoldTarget
-    const oldPrice  = Number(tx.price_gold ?? 0)
-    const oldCost   = Number(tx.cost_gold ?? 0)
-    const newPrice  = oldPrice + (parseFloat(addPrice) || 0)
-    const newCost   = oldCost  + (parseFloat(addCost)  || 0)
-    const pricePhp  = goldToPhp(newPrice, oldPrice, tx.price_rate, tx.php_rate, tx.price_php)
-    const costPhp   = goldToPhp(newCost,  oldCost,  tx.cost_rate,  tx.cost_php_rate ?? tx.php_rate, tx.cost_php)
-    const profitPhp = pricePhp != null && costPhp != null ? pricePhp - costPhp : null
-    return { oldPrice, oldCost, newPrice, newCost, pricePhp, costPhp, profitPhp }
-  })()
+  const addGoldPreview = addGoldTarget && goldTopUp(addGoldTarget, parseFloat(addPrice) || 0, parseFloat(addCost) || 0)
 
   const handleAddGold = async () => {
     if (!addGoldTarget || !addGoldPreview) return
@@ -701,15 +683,7 @@ export default function Accounts() {
     if (p.newPrice === p.oldPrice && p.newCost === p.oldCost) { setAddGoldError('Enter gold to add to the price or cost.'); return }
     setAddingGold(true)
     try {
-      await updateBizTx(addGoldTarget.id, {
-        type:       'gold',
-        date:       addGoldTarget.date,
-        amount:     p.profitPhp != null && p.profitPhp > 0 ? Math.round(p.profitPhp * 100) / 100 : 0.01,
-        price_gold: p.newPrice,
-        cost_gold:  p.newCost,
-        price_php:  p.pricePhp,
-        cost_php:   p.costPhp,
-      })
+      await updateBizTx(addGoldTarget.id, p.payload)
       toast.success(`Gold added — now ${p.newPrice.toLocaleString()} G price · ${p.newCost.toLocaleString()} G cost.`)
       setAddGoldTarget(null)
     } catch (err: unknown) {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -10,9 +10,11 @@ interface GoldModalProps {
   onClose: () => void
   onSubmit: (data: { amount: number; description?: string }) => Promise<void>
   gold?: Gold | null
+  /** Extra fields rendered above the buttons; receives the amount currently entered */
+  renderExtra?: (amount: number) => ReactNode
 }
 
-export function GoldModal({ open, onClose, onSubmit, gold }: GoldModalProps) {
+export function GoldModal({ open, onClose, onSubmit, gold, renderExtra }: GoldModalProps) {
   const [amount, setAmount] = useState('')
   const [description, setDescription] = useState('')
   const [error, setError] = useState('')
@@ -73,6 +75,8 @@ export function GoldModal({ open, onClose, onSubmit, gold }: GoldModalProps) {
           onChange={(e) => setDescription(e.target.value)}
           placeholder="e.g. Main stash"
         />
+
+        {renderExtra?.(parseFloat(amount) || 0)}
 
         <div className="flex justify-end gap-3">
           <Button variant="secondary" onClick={onClose} disabled={loading}>Cancel</Button>

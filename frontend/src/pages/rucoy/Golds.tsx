@@ -12,6 +12,9 @@ import { useGoldLogs } from '@/hooks/useGoldLogs'
 import { useRucoyDashboard } from '@/hooks/useRucoyDashboard'
 import { useMiddlemanFees } from '@/hooks/useMiddlemanFees'
 import { useTrades } from '@/hooks/useTrades'
+import { useBusinessTransactions } from '@/hooks/useBusinessTransactions'
+import { GoldTradeTarget, type GoldTradeTargetValue } from '@/components/ui/GoldTradeTarget'
+import { goldTopUp } from '@/utils/goldTrade'
 import { goldsApi } from '@/api/rucoy'
 import type { GoldLog, Trade } from '@/types'
 import { toast } from '@/components/ui/Toast'
@@ -28,6 +31,28 @@ export default function Golds() {
   const { trades, loading: tradesLoading } = useTrades()
   const { stats } = useRucoyDashboard()
   const { create: createFee } = useMiddlemanFees()
+  const { transactions: bizTxs, update: updateBizTx } = useBusinessTransactions()
+  const pendingGoldTrades = useMemo(() => bizTxs.filter((tx) => tx.type === 'gold' && tx.archived_at == null), [bizTxs])
+
+  // "Apply to gold trade" target per dialog (default side: add → cost, sell → price, fee → cost)
+  const [addTarget, setAddTarget]   = useState<GoldTradeTargetValue>({ tradeId: null, side: 'cost' })
+  const [sellTarget, setSellTarget] = useState<GoldTradeTargetValue>({ tradeId: null, side: 'price' })
+  const [feeTarget, setFeeTarget]   = useState<GoldTradeTargetValue>({ tradeId: null, side: 'cost' })
+
+  /** Adds `amount` G onto the chosen trade's price or cost. Returns a toast suffix. */
+  const applyToTrade = async (target: GoldTradeTargetValue, amount: number): Promise<string> => {
+    const trade = pendingGoldTrades.find((t) => t.id === target.tradeId)
+    if (!trade) return ''
+    const { payload } = goldTopUp(trade, target.side === 'price' ? amount : 0, target.side === 'cost' ? amount : 0)
+    try {
+      await updateBizTx(trade.id, payload)
+      return ` Added to ${trade.description || 'gold trade'}'s ${target.side}.`
+    } catch {
+      toast.error(`Gold recorded, but "${trade.description || 'the gold trade'}" could not be updated — add it from Transactions.`)
+      return ''
+    }
+  }
+
   const accountCost = Number(stats?.account_total_cost ?? 0)
   const accountsToPay = Number(stats?.accounts_to_pay ?? 0)
 
@@ -86,7 +111,7 @@ export default function Golds() {
   const [mmFeeError, setMmFeeError] = useState('')
   const [mmFeeSaving, setMmFeeSaving] = useState(false)
 
-  const openMmFee = () => { setMmFeeOpen(true); setMmFeeAmount(''); setMmFeeDesc(''); setMmFeeError('') }
+  const openMmFee = () => { setMmFeeOpen(true); setMmFeeAmount(''); setMmFeeDesc(''); setMmFeeError(''); setFeeTarget({ tradeId: null, side: 'cost' }) }
   const closeMmFee = () => { setMmFeeOpen(false); setMmFeeAmount(''); setMmFeeDesc(''); setMmFeeError('') }
 
   const handleMmFee = async () => {
@@ -95,8 +120,9 @@ export default function Golds() {
     setMmFeeSaving(true)
     try {
       await createFee(parsed, mmFeeDesc || undefined)
+      const applied = await applyToTrade(feeTarget, parsed)
       await Promise.all([refetchGolds(), refetchLogs()])
-      toast.success(`MM Fee of ${parsed.toLocaleString()} G recorded.`)
+      toast.success(`MM Fee of ${parsed.toLocaleString()} G recorded.${applied}`)
       closeMmFee()
     } catch (err: unknown) {
       setMmFeeError((err as { message: string }).message)
@@ -144,7 +170,7 @@ export default function Golds() {
     }
   }
 
-  const openSell = () => { setSellOpen(true); setSellAmount(''); setSellDesc(''); setSellError('') }
+  const openSell = () => { setSellOpen(true); setSellAmount(''); setSellDesc(''); setSellError(''); setSellTarget({ tradeId: null, side: 'price' }) }
   const closeSell = () => { setSellOpen(false); setSellAmount(''); setSellDesc(''); setSellError('') }
 
   const handleExport = () => exportCsv('golds', logs.map((l) => ({
@@ -153,7 +179,8 @@ export default function Golds() {
 
   const handleAdd = async (data: { amount: number; description?: string }) => {
     await create(data)
-    toast.success('Gold added.')
+    const applied = await applyToTrade(addTarget, data.amount)
+    toast.success(`Gold added.${applied}`)
     await refetchLogs()
   }
 
@@ -163,8 +190,9 @@ export default function Golds() {
     setSelling(true)
     try {
       await goldsApi.sell(parsed, sellDesc || undefined)
+      const applied = await applyToTrade(sellTarget, parsed)
       await Promise.all([refetchGolds(), refetchLogs()])
-      toast.success(`Sold ${parsed.toLocaleString()} G.`)
+      toast.success(`Sold ${parsed.toLocaleString()} G.${applied}`)
       closeSell()
     } catch (err: unknown) {
       setSellError((err as { message: string }).message)
@@ -211,7 +239,7 @@ export default function Golds() {
               {/* Actions */}
               <div className="flex flex-col gap-2 shrink-0">
                 <button
-                  onClick={() => setAddOpen(true)}
+                  onClick={() => { setAddTarget({ tradeId: null, side: 'cost' }); setAddOpen(true) }}
                   className="flex items-center gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white px-4 py-2.5 text-sm font-semibold transition-colors shadow-sm"
                 >
                   <Plus size={15} /> Add Gold
@@ -471,7 +499,15 @@ export default function Golds() {
         )}
       </Card>
 
-      <GoldModal open={addOpen} onClose={() => setAddOpen(false)} onSubmit={handleAdd} gold={null} />
+      <GoldModal
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        onSubmit={handleAdd}
+        gold={null}
+        renderExtra={(amount) => pendingGoldTrades.length > 0 && (
+          <GoldTradeTarget trades={pendingGoldTrades} value={addTarget} onChange={setAddTarget} amount={amount} />
+        )}
+      />
 
       {/* MM Fee modal */}
       <Modal open={mmFeeOpen} onClose={closeMmFee} title="Middleman Fee" size="sm">
@@ -503,6 +539,10 @@ export default function Golds() {
             onChange={(e) => setMmFeeDesc(e.target.value)}
             placeholder="e.g. Fee for trade #123"
           />
+
+          {pendingGoldTrades.length > 0 && (
+            <GoldTradeTarget trades={pendingGoldTrades} value={feeTarget} onChange={setFeeTarget} amount={parseFloat(mmFeeAmount) || 0} />
+          )}
 
           <div className="flex justify-end gap-3 pt-1">
             <Button variant="secondary" onClick={closeMmFee} disabled={mmFeeSaving}>Cancel</Button>
@@ -555,6 +595,10 @@ export default function Golds() {
             onChange={(e) => setSellDesc(e.target.value)}
             placeholder="e.g. Sold to buyer"
           />
+
+          {pendingGoldTrades.length > 0 && (
+            <GoldTradeTarget trades={pendingGoldTrades} value={sellTarget} onChange={setSellTarget} amount={parseFloat(sellAmount) || 0} />
+          )}
 
           <div className="flex justify-end gap-3 pt-1">
             <Button variant="secondary" onClick={closeSell} disabled={selling}>Cancel</Button>

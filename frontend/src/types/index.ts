@@ -209,8 +209,19 @@ export interface BusinessDashboardStats {
   archived_expense: number
   initial_profit: number
   recent_transactions: BusinessTransaction[]
+  /** Items sold in the selected month, newest first */
+  recent_sold?: BusinessTransaction[]
+  sold_count?: number
+  prev_profit?: number
+  prev_count?: number
   expense_by_type: Array<{ type: string; total: string }>
-  profit_by_type: Array<{ type: string; total: string }>
+  profit_by_type: Array<{ type: string; total: string | number; count?: number; income?: number }>
+  /** Sold results per month of the selected year */
+  realized_trend?: Array<{ month: number; income: number; expense: number; profit: number; count: number }>
+  /** Unsold accounts + gold trades */
+  pipeline?: { count: number; awaiting_pricing: number; income: number; cost: number; profit: number; by_type: Array<{ type: string; count: number }> }
+  /** Business-tagged daily transactions this month (Transactions page) */
+  daily_business?: { income: number; expense: number; count: number }
   monthly_trend: Array<{
     month: number
     year: number

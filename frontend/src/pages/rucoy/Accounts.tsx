@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Plus, Pencil, Trash2, Users, User, TrendingUp, TrendingDown, DollarSign, Search, Check, Archive, RotateCcw, Download, CalendarClock, Calendar, ArrowUp, ArrowDown, ArrowUpDown, Receipt, Coins, BarChart3, Link2Off } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { Plus, Pencil, Trash2, Users, User, TrendingUp, TrendingDown, DollarSign, Search, Check, Archive, RotateCcw, Download, CalendarClock, Calendar, ArrowUp, ArrowDown, ArrowUpDown, Receipt, Coins, BarChart3, Link2Off, type LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -216,6 +216,27 @@ function AccountCard({ a, tx, onEdit, onArchive, onDelete, archived = false, onU
             </span>
           )
         })()}
+      </div>
+    </div>
+  )
+}
+
+function HeroStat({ Icon, label, value, valueCls, sub }: {
+  Icon: LucideIcon
+  label: string
+  value: ReactNode
+  valueCls: string
+  sub?: ReactNode
+}) {
+  return (
+    <div className="flex items-center gap-2.5 min-w-0">
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/10">
+        <Icon className="h-3.5 w-3.5 text-slate-300" />
+      </div>
+      <div className="min-w-0">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">{label}</p>
+        <p className={['text-base font-bold truncate', valueCls].join(' ')}>{value}</p>
+        {sub && <p className="text-[11px] font-medium text-slate-400 truncate">{sub}</p>}
       </div>
     </div>
   )
@@ -581,6 +602,23 @@ export default function Accounts() {
     [bizTxs, archivedTxs]
   )
 
+  const handleExport = () => exportCsv('rucoy-transactions', [
+    ...accounts.map((a) => {
+      const tx = txByAccount.get(a.id)
+      return {
+        type: 'account', date: tx?.date ?? '', description: a.description ?? '', email: a.email ?? '',
+        payment_status: a.payment_status, price_gold: a.price ?? '', cost_gold: a.cost ?? '',
+        price_php: tx?.price_php ?? '', cost_php: tx?.cost_php ?? '', profit_php: tx?.profit_php ?? '',
+      }
+    }),
+    ...pendingGoldTrades.map((tx) => ({
+      type: 'gold', date: tx.date, description: tx.description ?? '', email: '',
+      payment_status: '', price_gold: tx.price_gold ?? '', cost_gold: tx.cost_gold ?? '',
+      price_php: tx.price_php ?? '', cost_php: tx.cost_php ?? '', profit_php: tx.profit_php ?? '',
+    })),
+  ])
+
+  // Listed (unsold) accounts: G totals, plus ₱ totals for those with rates set
   const totals = useMemo(() => {
     let price = 0, cost = 0, profit = 0, pricePhp = 0, costPhp = 0, profitPhp = 0
     for (const a of accounts) {
@@ -598,28 +636,70 @@ export default function Accounts() {
     return { price, cost, profit, pricePhp, costPhp, profitPhp }
   }, [accounts, txByAccount])
 
-  const handleExport = () => exportCsv('rucoy-transactions', [
-    ...accounts.map((a) => {
-      const tx = txByAccount.get(a.id)
-      return {
-        type: 'account', date: tx?.date ?? '', description: a.description ?? '', email: a.email ?? '',
-        payment_status: a.payment_status, price_gold: a.price ?? '', cost_gold: a.cost ?? '',
-        price_php: tx?.price_php ?? '', cost_php: tx?.cost_php ?? '', profit_php: tx?.profit_php ?? '',
-      }
-    }),
-    ...pendingGoldTrades.map((tx) => ({
-      type: 'gold', date: tx.date, description: tx.description ?? '', email: '',
-      payment_status: '', price_gold: tx.price_gold ?? '', cost_gold: tx.cost_gold ?? '',
-      price_php: tx.price_php ?? '', cost_php: tx.cost_php ?? '', profit_php: tx.profit_php ?? '',
-    })),
-  ])
-
   const monthPositive = (summary?.profit ?? 0) >= 0
 
   return (
     <div className="flex flex-col gap-5">
 
       {error && <div className="text-red-500 text-sm text-center py-2">{error}</div>}
+
+      {/* Hero banner — left: realized ₱ profit this month · right: listed accounts in G */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-700 to-slate-900 p-6 shadow-lg shadow-slate-900/30 dark:shadow-black/40">
+        <div className="absolute -top-8 -right-8 h-40 w-40 rounded-full bg-white/5" />
+        <div className="absolute -bottom-10 -left-6 h-32 w-32 rounded-full bg-white/[0.03]" />
+        <div className="absolute -bottom-16 left-1/2 h-40 w-40 rounded-full bg-indigo-400/[0.04]" />
+
+        <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-0 lg:divide-x divide-white/10">
+
+          {/* Sold this month */}
+          <section className="flex flex-col gap-4 lg:pr-6">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-teal-400/20">
+                  <BarChart3 className="h-3.5 w-3.5 text-teal-400" />
+                </div>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Sold Profit</span>
+                <span className="ml-auto text-[10px] font-semibold text-slate-400 bg-white/10 px-2 py-0.5 rounded-full">{CUR_LABEL}</span>
+              </div>
+              <p className={['text-3xl font-bold', monthPositive ? 'text-teal-300' : 'text-red-400'].join(' ')}>
+                <Amt value={formatCurrency(summary?.profit ?? 0)} />
+              </p>
+              <p className="mt-1 text-xs text-slate-500">Accounts &amp; golds marked as sold this month</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3 pt-3 border-t border-white/10">
+              <HeroStat Icon={TrendingUp} label="Income" value={<Amt value={formatCurrency(summary?.income ?? 0)} />} valueCls="text-emerald-400" />
+              <HeroStat Icon={TrendingDown} label="Cost" value={<Amt value={formatCurrency(summary?.expense ?? 0)} />} valueCls="text-red-400" />
+            </div>
+          </section>
+
+          {/* Listed (unsold) accounts */}
+          <section className="flex flex-col gap-4 pt-6 border-t border-white/10 lg:pt-0 lg:border-t-0 lg:pl-6">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-400/20">
+                  <Users className="h-3.5 w-3.5 text-indigo-300" />
+                </div>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Listed Profit</span>
+                <span className="ml-auto text-[10px] font-semibold text-slate-400 bg-white/10 px-2 py-0.5 rounded-full">
+                  {accounts.length} account{accounts.length !== 1 ? 's' : ''}
+                </span>
+              </div>
+              <p className={['text-3xl font-bold', totals.profit >= 0 ? 'text-emerald-300' : 'text-red-400'].join(' ')}>
+                {fmtGold(totals.profit)}
+              </p>
+              <p className="mt-1 text-xs text-slate-500">
+                ≈ <span className="font-semibold text-slate-300"><Amt value={formatCurrency(totals.profitPhp)} /></span> at the rates you've set
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3 pt-3 border-t border-white/10">
+              <HeroStat Icon={DollarSign} label="Total Price" value={fmtGold(totals.price)} valueCls="text-indigo-300"
+                sub={<Amt value={formatCurrency(totals.pricePhp)} />} />
+              <HeroStat Icon={TrendingDown} label="Total Cost" value={fmtGold(totals.cost)} valueCls="text-slate-200"
+                sub={<Amt value={formatCurrency(totals.costPhp)} />} />
+            </div>
+          </section>
+        </div>
+      </div>
 
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2">
@@ -707,67 +787,6 @@ export default function Accounts() {
           <Button size="sm" icon={<Plus className="h-3.5 w-3.5" />} onClick={openAdd}>Add Transaction</Button>
         </div>
       </div>
-
-      {/* Stats strip */}
-      {!loading && (accounts.length > 0 || summary) && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-          {[
-            {
-              label: 'Total Price', value: totals.price, php: totals.pricePhp, Icon: DollarSign,
-              wrapCls: 'border-indigo-100 dark:border-indigo-900/30 bg-indigo-50/60 dark:bg-indigo-900/10',
-              iconCls: 'bg-indigo-100 dark:bg-indigo-900/40', iconColor: 'text-indigo-600 dark:text-indigo-400',
-              textColor: 'text-indigo-700 dark:text-indigo-300',
-            },
-            {
-              label: 'Total Cost', value: totals.cost, php: totals.costPhp, Icon: TrendingDown,
-              wrapCls: 'border-gray-100 dark:border-gray-700/60 bg-white dark:bg-gray-900',
-              iconCls: 'bg-gray-100 dark:bg-gray-800', iconColor: 'text-gray-500 dark:text-gray-400',
-              textColor: 'text-gray-700 dark:text-gray-300',
-            },
-            {
-              label: 'Total Profit', value: totals.profit, php: totals.profitPhp, Icon: totals.profit >= 0 ? TrendingUp : TrendingDown,
-              wrapCls: totals.profit >= 0
-                ? 'border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/60 dark:bg-emerald-900/10'
-                : 'border-red-100 dark:border-red-900/30 bg-red-50/60 dark:bg-red-900/10',
-              iconCls: totals.profit >= 0 ? 'bg-emerald-100 dark:bg-emerald-900/40' : 'bg-red-100 dark:bg-red-900/40',
-              iconColor: totals.profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400',
-              textColor: totals.profit >= 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300',
-            },
-          ].map(({ label, value, php, Icon, wrapCls, iconCls, iconColor, textColor }) => (
-            <div key={label} className={['flex items-center gap-3 rounded-xl border px-4 py-3', wrapCls].join(' ')}>
-              <div className={['flex h-8 w-8 shrink-0 items-center justify-center rounded-lg', iconCls].join(' ')}>
-                <Icon className={['h-4 w-4', iconColor].join(' ')} />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">{label}</p>
-                <p className={['text-base font-bold truncate', textColor].join(' ')}>{fmtGold(value)}</p>
-                <p className="text-[11px] font-semibold text-gray-400 dark:text-gray-500"><Amt value={formatCurrency(php)} /></p>
-              </div>
-            </div>
-          ))}
-
-          {/* Realized profit this month (sold accounts + golds) */}
-          <div className="flex items-center gap-3 rounded-xl border border-teal-100 dark:border-teal-900/30 bg-teal-50/60 dark:bg-teal-900/10 px-4 py-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-100 dark:bg-teal-900/40">
-              <BarChart3 className="h-4 w-4 text-teal-600 dark:text-teal-400" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">Sold Profit</p>
-                <span className="ml-auto text-[10px] font-semibold text-teal-700 dark:text-teal-400 bg-teal-100/80 dark:bg-teal-900/40 px-1.5 py-0.5 rounded-full">{CUR_LABEL}</span>
-              </div>
-              <p className={['text-base font-bold', monthPositive ? 'text-teal-700 dark:text-teal-300' : 'text-red-700 dark:text-red-300'].join(' ')}>
-                <Amt value={formatCurrency(summary?.profit ?? 0)} />
-              </p>
-              <p className="text-[11px] font-semibold text-gray-400 dark:text-gray-500">
-                <span className="text-emerald-600 dark:text-emerald-400"><Amt value={formatCurrency(summary?.income ?? 0)} /></span>
-                {' · '}
-                <span className="text-red-500 dark:text-red-400"><Amt value={formatCurrency(summary?.expense ?? 0)} /></span>
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Skeleton loading */}
       {loading && (

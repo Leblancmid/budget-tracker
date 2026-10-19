@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Plus, Pencil, Trash2, Users, User, TrendingUp, TrendingDown, DollarSign, Search, Check, Archive, RotateCcw, Download, CalendarClock, Calendar, ArrowUp, ArrowDown, ArrowUpDown, Receipt, Coins, BarChart3, Link2Off, type LucideIcon } from 'lucide-react'
+import { Plus, Pencil, Trash2, Users, User, TrendingUp, TrendingDown, DollarSign, Search, Check, Archive, RotateCcw, Download, CalendarClock, Calendar, ArrowUp, ArrowDown, ArrowUpDown, Receipt, Coins, BarChart3, Link2Off, HandCoins, type LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Pagination } from '@/components/ui/Pagination'
+import { ProgressBar } from '@/components/ui/ProgressBar'
 import { RucoyTransactionModal, type AccountPricingPayload, type RucoyTxKind } from '@/components/modals/RucoyTransactionModal'
 import { useRucoyAccounts } from '@/hooks/useRucoyAccounts'
 import { useArchive } from '@/hooks/useArchive'
@@ -12,7 +13,8 @@ import { Modal } from '@/components/ui/Modal'
 import { rucoyAccountsApi, type AccountPayload } from '@/api/rucoy'
 import { businessTransactionsApi, type BusinessSummary, type BusinessTransactionPayload } from '@/api/business'
 import { toast } from '@/components/ui/Toast'
-import { paginateLocally, formatCurrency, formatDate, todayISO, MONTHS } from '@/utils/format'
+import { paginateLocally, formatCurrency, formatDate, formatWithCommas, handleAmountInput, todayISO, MONTHS } from '@/utils/format'
+import { flattenApiErrors } from '@/utils/api'
 import { exportCsv } from '@/utils/csv'
 import { isBusinessIncome } from '@/utils/business'
 import { Amt } from '@/context/AmountVisibilityContext'
@@ -250,11 +252,37 @@ function HeroStat({ Icon, label, value, valueCls, sub }: {
   )
 }
 
-function GoldTradeRow({ tx, archived = false, onEdit, onArchive, onDelete, onUnarchive }: {
+function GoldAmountLine({ label, total, done, doneLabel, color }: {
+  label: string
+  total: string | null
+  done: string | null | undefined
+  doneLabel: string
+  color: string
+}) {
+  if (total == null) return null
+  const totalNum = Number(total)
+  const doneNum  = done != null ? Number(done) : null
+  const pct      = doneNum != null && totalNum > 0 ? (doneNum / totalNum) * 100 : null
+  return (
+    <div className="flex flex-col items-end gap-0.5">
+      <span className={['text-xs font-semibold', color].join(' ')}>{label}: {totalNum.toLocaleString()} G</span>
+      {pct != null && (
+        <div className="flex items-center gap-1.5" title={`${doneLabel} ${doneNum!.toLocaleString()} of ${totalNum.toLocaleString()} G`}>
+          <ProgressBar percent={pct} color="bg-amber-500" className="!w-20" />
+          <span className={['text-[10px] font-semibold', pct >= 100 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'].join(' ')}>
+            {pct >= 100 ? `${doneLabel} ✓` : `${Math.round(pct)}% ${doneLabel.toLowerCase()}`}
+          </span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function GoldTradeRow({ tx, archived = false, onEdit, onSell, onDelete, onUnarchive }: {
   tx: BusinessTransaction
   archived?: boolean
   onEdit?: () => void
-  onArchive?: () => void
+  onSell?: () => void
   onDelete?: () => void
   onUnarchive?: () => void
 }) {
@@ -284,12 +312,6 @@ function GoldTradeRow({ tx, archived = false, onEdit, onArchive, onDelete, onUna
                 className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
                 <Pencil size={13} />
               </button>
-              {!isPending && (
-                <button onClick={onArchive} title="Mark as sold"
-                  className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors">
-                  <Check size={13} />
-                </button>
-              )}
               <button onClick={onDelete} title="Remove"
                 className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
                 <Trash2 size={13} />
@@ -298,10 +320,10 @@ function GoldTradeRow({ tx, archived = false, onEdit, onArchive, onDelete, onUna
           )}
         </div>
 
-        {/* Gold price / cost */}
-        <div className="hidden sm:flex flex-col items-end text-right">
-          {tx.price_gold != null && <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Price: {Number(tx.price_gold).toLocaleString()} G</span>}
-          {tx.cost_gold  != null && <span className="text-xs font-semibold text-red-500 dark:text-red-400">Cost: {Number(tx.cost_gold).toLocaleString()} G</span>}
+        {/* Gold price / cost, with received / paid progress */}
+        <div className="hidden sm:flex flex-col items-end gap-1 text-right">
+          <GoldAmountLine label="Price" total={tx.price_gold} done={tx.price_gold_received} doneLabel="Received" color="text-emerald-600 dark:text-emerald-400" />
+          <GoldAmountLine label="Cost"  total={tx.cost_gold}  done={tx.cost_gold_paid}      doneLabel="Paid"     color="text-red-500 dark:text-red-400" />
         </div>
 
         {/* PHP profit / status */}
@@ -319,6 +341,19 @@ function GoldTradeRow({ tx, archived = false, onEdit, onArchive, onDelete, onUna
             </span>
           )}
         </div>
+
+        {/* Sell — confirmed trades only */}
+        {!archived && (
+          <button
+            onClick={onSell}
+            disabled={isPending}
+            title={isPending ? 'Set the rates before selling' : 'Sell all or part of this gold'}
+            className="flex items-center gap-1 rounded-lg border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-900/20 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            <HandCoins size={12} />
+            Sell
+          </button>
+        )}
       </div>
     </div>
   )
@@ -609,6 +644,51 @@ export default function Accounts() {
     } finally {
       setConverting(false)
       setConvertTarget(null)
+    }
+  }
+
+  // Sell all or part of a confirmed gold trade
+  const [sellTarget, setSellTarget]   = useState<BusinessTransaction | null>(null)
+  const [sellAmount, setSellAmount]   = useState('')
+  const [sellDeduct, setSellDeduct]   = useState(true)
+  const [sellError, setSellError]     = useState<string | null>(null)
+  const [selling, setSelling]         = useState(false)
+
+  const openSell = (tx: BusinessTransaction) => {
+    setSellTarget(tx)
+    setSellAmount(tx.price_gold != null ? String(Number(tx.price_gold)) : '')
+    setSellDeduct(true)
+    setSellError(null)
+  }
+
+  const sellTotal    = sellTarget?.price_gold != null ? Number(sellTarget.price_gold) : 0
+  const sellNum      = parseFloat(sellAmount) || 0
+  const sellFraction = sellTotal > 0 ? Math.min(sellNum / sellTotal, 1) : 0
+  const sellPreview  = sellTarget && {
+    pricePhp:  Number(sellTarget.price_php ?? 0) * sellFraction,
+    costPhp:   Number(sellTarget.cost_php ?? 0) * sellFraction,
+    costGold:  Math.round(Number(sellTarget.cost_gold ?? 0) * sellFraction),
+    remaining: Math.max(sellTotal - sellNum, 0),
+  }
+
+  const handleSell = async () => {
+    if (!sellTarget) return
+    if (sellNum <= 0) { setSellError('Enter how much gold to sell.'); return }
+    if (sellNum > sellTotal) { setSellError(`You can sell at most ${sellTotal.toLocaleString()} G.`); return }
+    setSelling(true)
+    try {
+      const { remaining } = await businessTransactionsApi.sell(sellTarget.id, sellNum, sellDeduct)
+      refetchBizTxs()
+      afterSoldChange()
+      toast.success(remaining
+        ? `Sold ${sellNum.toLocaleString()} G — ${remaining.price_gold != null ? Number(remaining.price_gold).toLocaleString() : 0} G still pending.`
+        : `Sold all ${sellNum.toLocaleString()} G.`)
+      setSellTarget(null)
+    } catch (err: unknown) {
+      const flat = flattenApiErrors(err)
+      setSellError(flat?.amount ?? (err as { message?: string }).message ?? 'Failed to sell gold.')
+    } finally {
+      setSelling(false)
     }
   }
 
@@ -916,7 +996,7 @@ export default function Accounts() {
                 key={tx.id}
                 tx={tx}
                 onEdit={() => openEditGold(tx)}
-                onArchive={() => setArchivePendingTarget(tx)}
+                onSell={() => openSell(tx)}
                 onDelete={() => setDeletePendingTarget(tx)}
               />
             ))}
@@ -1197,6 +1277,90 @@ export default function Accounts() {
 
       <ConfirmDialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} loading={deleting}
         title="Delete Account" message={`Delete "${deleteTarget?.description || deleteTarget?.email}" and its pricing transaction? This cannot be undone.`} confirmLabel="Delete" />
+
+      {/* Sell gold modal */}
+      <Modal open={!!sellTarget} onClose={() => setSellTarget(null)} title="Sell Gold" size="md">
+        {sellTarget && sellPreview && (
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-3 rounded-xl border border-amber-100 dark:border-amber-900/40 bg-amber-50/60 dark:bg-amber-900/10 px-4 py-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/40">
+                <Coins size={15} className="text-amber-600 dark:text-amber-400" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">{sellTarget.description || 'Gold Trade'}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Available: {sellTotal.toLocaleString()} G</p>
+              </div>
+            </div>
+
+            <div>
+              <div className="mb-1.5 flex items-center justify-between">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Amount to sell (G)</p>
+                <span className="text-xs font-semibold text-gray-400 dark:text-gray-500">{Math.round(sellFraction * 100)}% of trade</span>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  autoFocus
+                  value={formatWithCommas(sellAmount)}
+                  onChange={(e) => { handleAmountInput(e.target.value, setSellAmount); setSellError(null) }}
+                  className={['block w-full rounded-lg border bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-gray-800 dark:text-gray-100 transition-colors', sellError ? 'border-red-400 dark:border-red-500' : 'border-gray-300 hover:border-gray-400 dark:border-gray-600 dark:hover:border-gray-500'].join(' ')}
+                />
+                {[50, 100].map((pct) => (
+                  <button
+                    key={pct}
+                    type="button"
+                    onClick={() => { setSellAmount(String(Math.round(sellTotal * pct / 100))); setSellError(null) }}
+                    className="shrink-0 rounded-lg border border-gray-200 dark:border-gray-600 px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    {pct === 100 ? 'All' : `${pct}%`}
+                  </button>
+                ))}
+              </div>
+              {sellError && <p className="mt-1 text-xs text-red-500">{sellError}</p>}
+            </div>
+
+            {/* Preview of the split */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-lg border border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/50 dark:bg-emerald-900/10 px-3 py-2.5">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">Sold now</p>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Price <span className="font-semibold text-gray-700 dark:text-gray-200"><Amt value={formatCurrency(sellPreview.pricePhp)} /></span></p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Cost <span className="font-semibold text-gray-700 dark:text-gray-200"><Amt value={formatCurrency(sellPreview.costPhp)} /></span> · {sellPreview.costGold.toLocaleString()} G</p>
+                <p className={['mt-1 text-sm font-bold', sellPreview.pricePhp - sellPreview.costPhp >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'].join(' ')}>
+                  <Amt value={formatCurrency(sellPreview.pricePhp - sellPreview.costPhp)} /> profit
+                </p>
+              </div>
+              <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 px-3 py-2.5">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Stays pending</p>
+                <p className="mt-1 text-sm font-bold text-gray-700 dark:text-gray-200">{sellPreview.remaining.toLocaleString()} G</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">
+                  {sellPreview.remaining > 0 ? 'Keeps the same rates' : 'Whole trade moves to Sold Golds'}
+                </p>
+              </div>
+            </div>
+
+            <label className="flex items-start gap-2.5 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+              <input
+                type="checkbox"
+                checked={sellDeduct}
+                onChange={(e) => setSellDeduct(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+              />
+              <span>
+                <span className="block text-sm font-medium text-gray-700 dark:text-gray-200">Deduct from Golds inventory</span>
+                <span className="block text-xs text-gray-400 dark:text-gray-500">Removes {sellNum.toLocaleString()} G from Rucoy → Golds and logs the sale</span>
+              </span>
+            </label>
+
+            <div className="flex justify-end gap-3 pt-1">
+              <Button variant="secondary" onClick={() => setSellTarget(null)} disabled={selling}>Cancel</Button>
+              <Button onClick={handleSell} loading={selling} icon={<HandCoins className="h-4 w-4" />}>
+                {sellNum >= sellTotal ? 'Sell All' : `Sell ${sellNum.toLocaleString()} G`}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       <ConfirmDialog open={!!convertTarget} onClose={() => setConvertTarget(null)} onConfirm={handleConvertToGold} loading={converting}
         title="Convert to Gold Trade" confirmLabel="Convert"

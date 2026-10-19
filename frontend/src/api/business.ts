@@ -14,6 +14,8 @@ export interface BusinessTransactionPayload {
   cost_rate?: number | null
   price_gold?: number | null
   cost_gold?: number | null
+  price_gold_received?: number | null
+  cost_gold_paid?: number | null
   php_rate?: number | null
   cost_php_rate?: number | null
   amount: number
@@ -41,5 +43,10 @@ export const businessTransactionsApi = {
     api.post<BusinessTransaction>(`/business/transactions/${id}/unarchive`).then((r) => r.data),
   delete:    (id: number) =>
     api.delete<{ message: string }>(`/business/transactions/${id}`).then((r) => r.data),
+  /** Sell all or part of a confirmed gold trade (amount in G). */
+  sell:      (id: number, amount: number, deductInventory: boolean) =>
+    api.post<{ sold: BusinessTransaction; remaining: BusinessTransaction | null }>(
+      `/business/transactions/${id}/sell`, { amount, deduct_inventory: deductInventory },
+    ).then((r) => r.data),
 }
 

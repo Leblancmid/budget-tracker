@@ -3,6 +3,7 @@ import { CalendarClock } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { ProgressBar } from '@/components/ui/ProgressBar'
 import type { AccountPayload } from '@/api/rucoy'
 import type { BusinessTransactionPayload } from '@/api/business'
 import type { AccountPaymentStatus, BusinessTransaction, RucoyAccount } from '@/types'
@@ -56,6 +57,10 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
   const [costPhpRate, setCostPhpRate]   = useState('')
   const [date, setDate]                 = useState(todayISO())
 
+  // Gold-only: how much of the price has been received / cost has been paid so far
+  const [receivedGold, setReceivedGold] = useState('')
+  const [paidGold, setPaidGold]         = useState('')
+
   const [errors, setErrors]   = useState<Partial<Record<string, string>>>({})
   const [loading, setLoading] = useState(false)
 
@@ -78,6 +83,8 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
     setPricePhpRate(num(tx?.php_rate))
     setCostPhpRate(num(tx?.cost_php_rate) || num(tx?.php_rate))
     setDate(tx?.date ?? todayISO())
+    setReceivedGold(num(goldTx?.price_gold_received))
+    setPaidGold(num(goldTx?.cost_gold_paid))
   }, [open, kind, account, accountTx, goldTx])
 
   // Formula: G / 1M × rate = $  →  $ × PHP rate = ₱
@@ -89,6 +96,9 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
   const pricePhp = priceUsd != null && parseFloat(pricePhpRate) ? priceUsd * parseFloat(pricePhpRate) : null
   const costPhp  = costUsd  != null && parseFloat(costPhpRate)  ? costUsd  * parseFloat(costPhpRate)  : null
   const profitPhp = pricePhp != null && costPhp != null ? pricePhp - costPhp : null
+
+  const receivedGoldNum = receivedGold !== '' ? parseFloat(receivedGold) : null
+  const paidGoldNum     = paidGold     !== '' ? parseFloat(paidGold)     : null
 
   const hasRates = [priceRate, costRate, pricePhpRate, costPhpRate].some((v) => v !== '')
 
@@ -118,6 +128,10 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
       if (priceGoldNum == null) errs.price_gold = 'Price (G) is required.'
       if (costGoldNum == null)  errs.cost_gold  = 'Cost (G) is required.'
       if (!date) errs.date = 'Date is required.'
+      if (receivedGoldNum != null && priceGoldNum != null && receivedGoldNum > priceGoldNum)
+        errs.price_gold_received = 'Received cannot be more than the price.'
+      if (paidGoldNum != null && costGoldNum != null && paidGoldNum > costGoldNum)
+        errs.cost_gold_paid = 'Paid cannot be more than the cost.'
     }
     setErrors(errs)
     return Object.keys(errs).length === 0
@@ -140,7 +154,13 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
           accountTx || hasRates ? buildPricing('account') : null,
         )
       } else {
-        await onSubmitGold({ ...buildPricing('gold'), price_gold: priceGoldNum, cost_gold: costGoldNum })
+        await onSubmitGold({
+          ...buildPricing('gold'),
+          price_gold:          priceGoldNum,
+          cost_gold:           costGoldNum,
+          price_gold_received: receivedGoldNum,
+          cost_gold_paid:      paidGoldNum,
+        })
       }
       onClose()
     } catch (err: unknown) {
@@ -158,6 +178,7 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
       rate: priceRate, onRate: setPriceRate, usd: priceUsd,
       phpRate: pricePhpRate, onPhpRate: setPricePhpRate, php: pricePhp,
       color: 'text-emerald-600 dark:text-emerald-400',
+      progress: { label: 'Received so far', value: receivedGold, onChange: setReceivedGold, num: receivedGoldNum, total: priceGoldNum, error: errors.price_gold_received },
     },
     {
       key: 'cost', gold: costGold, onGold: setCostGold, goldError: errors.cost_gold,
@@ -165,6 +186,7 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
       rate: costRate, onRate: setCostRate, usd: costUsd,
       phpRate: costPhpRate, onPhpRate: setCostPhpRate, php: costPhp,
       color: 'text-red-600 dark:text-red-400',
+      progress: { label: 'Paid so far', value: paidGold, onChange: setPaidGold, num: paidGoldNum, total: costGoldNum, error: errors.cost_gold_paid },
     },
   ]
 
@@ -272,6 +294,43 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
               </div>
             </div>
             {row.goldError && <p className="mt-1 text-xs text-red-500">{row.goldError}</p>}
+
+            {/* Gold only: partial received / paid tracking */}
+            {kind === 'gold' && (() => {
+              const p   = row.progress
+              const pct = p.total ? ((p.num ?? 0) / p.total) * 100 : 0
+              return (
+                <div className="mt-2 rounded-lg border border-dashed border-gray-200 dark:border-gray-700 px-3 py-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-medium text-gray-500 dark:text-gray-400 w-24 shrink-0">{p.label}</span>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={formatWithCommas(p.value)}
+                      onChange={(e) => handleAmountInput(e.target.value, p.onChange)}
+                      placeholder="0"
+                      className={[inputCls, '!w-40 !py-1', p.error ? 'border-red-400 dark:border-red-500' : ''].join(' ')}
+                    />
+                    <span className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">
+                      of {p.total != null ? p.total.toLocaleString() : '—'} G
+                    </span>
+                    <ProgressBar percent={pct} color="bg-amber-500" className="flex-1 min-w-[60px]" />
+                    <span className={['text-xs font-semibold w-10 text-right', pct >= 100 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'].join(' ')}>
+                      {Math.round(pct)}%
+                    </span>
+                    <button
+                      type="button"
+                      disabled={p.total == null}
+                      onClick={() => p.total != null && p.onChange(String(p.total))}
+                      className="rounded-md border border-gray-200 dark:border-gray-600 px-2 py-0.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 transition-colors"
+                    >
+                      All
+                    </button>
+                  </div>
+                  {p.error && <p className="mt-1 text-xs text-red-500">{p.error}</p>}
+                </div>
+              )
+            })()}
           </div>
         ))}
 

@@ -346,6 +346,14 @@ function GoldTradeRow({ tx, archived = false, onEdit, onSell, onAddGold, onDelet
         <div className="hidden sm:flex flex-col items-end gap-1 text-right">
           <GoldAmountLine label="Price" total={tx.price_gold} done={tx.price_gold_received} doneLabel="Received" color="text-emerald-600 dark:text-emerald-400" />
           <GoldAmountLine label="Cost"  total={tx.cost_gold}  done={tx.cost_gold_paid}      doneLabel="Paid"     color="text-red-500 dark:text-red-400" />
+          {tx.price_gold != null && tx.cost_gold != null && (() => {
+            const profitGold = Number(tx.price_gold) - Number(tx.cost_gold)
+            return (
+              <span className={['text-xs font-semibold', profitGold >= 0 ? 'text-indigo-500 dark:text-indigo-400' : 'text-red-500 dark:text-red-400'].join(' ')}>
+                Profit: {profitGold.toLocaleString()} G
+              </span>
+            )
+          })()}
         </div>
 
         {/* PHP profit / status */}

@@ -88,13 +88,20 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
   }, [open, kind, account, accountTx, goldTx])
 
   // Formula: G / 1M × rate = $  →  $ × PHP rate = ₱
-  const priceGoldNum = parseFloat(priceGold) || null
-  const costGoldNum  = parseFloat(costGold)  || null
-  const priceUsd = priceGoldNum != null && parseFloat(priceRate) ? (priceGoldNum / 1_000_000) * parseFloat(priceRate) : null
-  const costUsd  = costGoldNum  != null && parseFloat(costRate)  ? (costGoldNum  / 1_000_000) * parseFloat(costRate)  : null
+  // '' = not entered; 0 is a valid amount (e.g. gold that cost nothing)
+  const parseGold = (v: string) => (v !== '' && Number.isFinite(parseFloat(v)) ? parseFloat(v) : null)
+  const priceGoldNum = parseGold(priceGold)
+  const costGoldNum  = parseGold(costGold)
+  // 0 G is worth $0 / ₱0 whatever the rates, so a free side never blocks the profit
+  const toUsd = (gold: number | null, rate: string) =>
+    gold === 0 ? 0 : gold != null && parseFloat(rate) ? (gold / 1_000_000) * parseFloat(rate) : null
+  const toPhp = (gold: number | null, usd: number | null, rate: string) =>
+    gold === 0 ? 0 : usd != null && parseFloat(rate) ? usd * parseFloat(rate) : null
+  const priceUsd = toUsd(priceGoldNum, priceRate)
+  const costUsd  = toUsd(costGoldNum, costRate)
   const profitUsd = priceUsd != null && costUsd != null ? priceUsd - costUsd : null
-  const pricePhp = priceUsd != null && parseFloat(pricePhpRate) ? priceUsd * parseFloat(pricePhpRate) : null
-  const costPhp  = costUsd  != null && parseFloat(costPhpRate)  ? costUsd  * parseFloat(costPhpRate)  : null
+  const pricePhp = toPhp(priceGoldNum, priceUsd, pricePhpRate)
+  const costPhp  = toPhp(costGoldNum, costUsd, costPhpRate)
   const profitPhp = pricePhp != null && costPhp != null ? pricePhp - costPhp : null
 
   const receivedGoldNum = receivedGold !== '' ? parseFloat(receivedGold) : null

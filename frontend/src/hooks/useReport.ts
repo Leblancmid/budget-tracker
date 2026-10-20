@@ -36,6 +36,8 @@ export interface ReportData {
   totals: ReportTotals
   /** Daily Expenses only: per-category totals for the same range */
   categories?: ReportCategory[]
+  /** Business only: totals per sale type (account / gold / expense) for the same range */
+  types?: Array<{ type: string; count: number; income: number; expense: number; profit: number }>
 }
 
 export function useReport(

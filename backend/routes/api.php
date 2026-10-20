@@ -71,6 +71,7 @@ Route::prefix('v1')->group(function () {
             Route::get('dashboard', [RucoyDashboardController::class, 'index']);
             Route::apiResource('golds', GoldController::class)->except(['show', 'create', 'edit']);
             Route::post('golds/sell', [GoldController::class, 'sell']);
+            Route::post('golds/adjust', [GoldController::class, 'adjust']);
             Route::get('gold-logs', [GoldController::class, 'logs']);
             Route::post('gold-logs/{goldLog}/cancel', [GoldController::class, 'cancelLog']);
             Route::get('middleman-fees', [MiddlemanFeeController::class, 'index']);

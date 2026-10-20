@@ -33,6 +33,12 @@ export const goldsApi = {
     api.post<Gold[]>('/rucoy/golds/sell', { amount, description }).then((r) => r.data),
 }
 
+/** Set the stash to the gold actually on hand; records one correction for the difference. */
+export const goldStashApi = {
+  adjust: (actual: number, description?: string) =>
+    api.post<{ previous: number; delta: number; stash: number }>('/rucoy/golds/adjust', { actual, description: description || null }).then((r) => r.data),
+}
+
 export const goldLogsApi = {
   getAll:  ()           => api.get<GoldLog[]>('/rucoy/gold-logs').then((r) => r.data),
   cancel:  (id: number) => api.post<GoldLog>(`/rucoy/gold-logs/${id}/cancel`).then((r) => r.data),

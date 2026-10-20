@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
+use App\Models\BalanceAccount;
 use App\Models\BalanceEntry;
 use App\Models\BusinessTransaction;
 use App\Models\GoldLog;
@@ -49,11 +50,17 @@ class LogController extends Controller
                 $logs->push($this->entry('savings', $t->type, $t->description, $t->amount, $t->date, $t->created_at, $log));
             });
 
-        BalanceEntry::select('id', 'type', 'description', 'amount', 'date', 'created_at')
+        // Balance amounts are in their account's currency (USD or PHP)
+        $balanceAccounts = BalanceAccount::get(['code', 'name', 'currency'])->keyBy('code');
+        BalanceEntry::select('id', 'account', 'type', 'description', 'amount', 'date', 'created_at')
             ->orderBy('created_at', 'desc')->limit(500)->get()
-            ->each(function ($t) use (&$logs, $activityMap) {
+            ->each(function ($t) use (&$logs, $activityMap, $balanceAccounts) {
                 $log = $activityMap->get(BalanceEntry::class . '|' . $t->id);
-                $logs->push($this->entry('balance', $t->type, $t->description, $t->amount, $t->date, $t->created_at, $log));
+                $logs->push([
+                    ...$this->entry('balance', $t->type, $t->description, $t->amount, $t->date, $t->created_at, $log),
+                    'currency'     => $balanceAccounts[$t->account]->currency ?? 'USD',
+                    'account_name' => $balanceAccounts[$t->account]->name ?? $t->account,
+                ]);
             });
 
         GoldLog::select('id', 'type', 'description', 'amount', 'created_at')
@@ -75,8 +82,12 @@ class LogController extends Controller
             });
 
         // Append archived and edited events as standalone entries
-        $standaloneEvents->each(function ($log) use (&$logs) {
+        $editedBalance = BalanceEntry::whereIn('id', $standaloneEvents->where('loggable_type', BalanceEntry::class)->pluck('loggable_id'))
+            ->pluck('account', 'id');
+        $standaloneEvents->each(function ($log) use (&$logs, $editedBalance, $balanceAccounts) {
+            $account = $log->loggable_type === BalanceEntry::class ? ($editedBalance[$log->loggable_id] ?? null) : null;
             $logs->push([
+                ...($account ? ['currency' => $balanceAccounts[$account]->currency ?? 'USD', 'account_name' => $balanceAccounts[$account]->name ?? $account] : []),
                 'module'      => $log->module,
                 'type'        => $log->type,
                 'description' => $log->description,

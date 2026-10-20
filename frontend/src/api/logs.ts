@@ -14,6 +14,9 @@ export interface LogEntry {
   user_id: number | null
   user_name: string | null
   user_email: string | null
+  /** Balance entries: the account's currency and name */
+  currency?: 'USD' | 'PHP'
+  account_name?: string
 }
 
 export const logsApi = {

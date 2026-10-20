@@ -30,7 +30,19 @@ class ReportController extends Controller
             'net'     => round(collect($rows)->sum('net'), 2),
         ];
 
-        return response()->json(compact('period', 'year', 'month', 'rows', 'totals'));
+        // Category breakdown for the same range (Personal only, like the rows)
+        $range = Transaction::personal()->where('transactions.user_id', $userId)
+            ->join('categories', 'categories.id', '=', 'transactions.category_id');
+        if ($period === 'weekly')      $range->whereYear('date', $year)->whereMonth('date', $month);
+        elseif ($period === 'monthly') $range->whereYear('date', $year);
+        $categories = $range
+            ->selectRaw('categories.id, categories.name, categories.color, categories.icon, transactions.type, SUM(transactions.amount) as total, COUNT(*) as count')
+            ->groupBy('categories.id', 'categories.name', 'categories.color', 'categories.icon', 'transactions.type')
+            ->orderByDesc('total')
+            ->get()
+            ->map(fn ($c) => [...$c->toArray(), 'total' => round((float) $c->total, 2), 'count' => (int) $c->count]);
+
+        return response()->json(compact('period', 'year', 'month', 'rows', 'totals', 'categories'));
     }
 
     public function business(Request $request): JsonResponse
@@ -51,7 +63,17 @@ class ReportController extends Controller
             'profit'  => round(collect($rows)->sum('profit'), 2),
         ];
 
-        return response()->json(compact('period', 'year', 'month', 'rows', 'totals'));
+        // Breakdown by type (account / gold / item) for the same range, by month sold
+        $sold = BusinessTransaction::whereNotNull('archived_at');
+        if ($period === 'weekly')      $sold->whereYear('archived_at', $year)->whereMonth('archived_at', $month);
+        elseif ($period === 'monthly') $sold->whereYear('archived_at', $year);
+        $types = $sold->get()->groupBy('type')->map(fn ($g, $type) => [
+            'type'  => $type,
+            'count' => $g->count(),
+            ...array_map(fn ($v) => round($v, 2), $this->businessTotals($g)),
+        ])->sortByDesc('profit')->values();
+
+        return response()->json(compact('period', 'year', 'month', 'rows', 'totals', 'types'));
     }
 
     // ── Daily Expenses ────────────────────────────────────────────────────────

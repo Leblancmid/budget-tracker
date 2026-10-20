@@ -18,12 +18,24 @@ export interface ReportTotals {
   profit?: number
 }
 
+export interface ReportCategory {
+  id: number
+  name: string
+  color: string
+  icon: string
+  type: 'income' | 'expense'
+  total: number
+  count: number
+}
+
 export interface ReportData {
   period: ReportPeriod
   year:   number
   month:  number
   rows:   ReportRow[]
   totals: ReportTotals
+  /** Daily Expenses only: per-category totals for the same range */
+  categories?: ReportCategory[]
 }
 
 export function useReport(

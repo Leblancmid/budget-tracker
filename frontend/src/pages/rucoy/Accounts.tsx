@@ -760,12 +760,20 @@ export default function Accounts() {
   const sellTotal    = sellTarget?.price_gold != null ? Number(sellTarget.price_gold) : 0
   const sellNum      = parseFloat(sellAmount) || 0
   const sellFraction = sellTotal > 0 ? Math.min(sellNum / sellTotal, 1) : 0
-  const sellPreview  = sellTarget && {
-    pricePhp:  Number(sellTarget.price_php ?? 0) * sellFraction,
-    costPhp:   Number(sellTarget.cost_php ?? 0) * sellFraction,
-    costGold:  Math.round(Number(sellTarget.cost_gold ?? 0) * sellFraction),
-    remaining: Math.max(sellTotal - sellNum, 0),
-  }
+  // Cost comes off by the same gold as the price (capped at the cost there is), e.g.
+  // 1,200 / 700 selling 200 → 1,000 / 500. Matches the API's partial-sale rule.
+  const sellPreview  = sellTarget && (() => {
+    const costTotal = Number(sellTarget.cost_gold ?? 0)
+    const costGold  = sellFraction >= 1 ? costTotal : Math.min(sellNum, costTotal)
+    const costShare = costTotal > 0 ? costGold / costTotal : 0
+    return {
+      pricePhp:      Number(sellTarget.price_php ?? 0) * sellFraction,
+      costPhp:       Number(sellTarget.cost_php ?? 0) * costShare,
+      costGold,
+      remaining:     Math.max(sellTotal - sellNum, 0),
+      remainingCost: Math.max(costTotal - costGold, 0),
+    }
+  })()
 
   const handleSell = async () => {
     if (!sellTarget) return
@@ -1616,8 +1624,9 @@ export default function Accounts() {
               </div>
               <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 px-3 py-2.5">
                 <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Stays pending</p>
-                <p className="mt-1 text-sm font-bold text-gray-700 dark:text-gray-200">{sellPreview.remaining.toLocaleString()} G</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500">
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Price <span className="font-bold text-gray-700 dark:text-gray-200">{sellPreview.remaining.toLocaleString()} G</span></p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Cost <span className="font-bold text-gray-700 dark:text-gray-200">{sellPreview.remainingCost.toLocaleString()} G</span></p>
+                <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
                   {sellPreview.remaining > 0 ? 'Keeps the same rates' : 'Whole trade moves to Sold Golds'}
                 </p>
               </div>

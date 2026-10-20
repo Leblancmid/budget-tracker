@@ -180,12 +180,18 @@ class BusinessTransactionController extends Controller
                 $sold = $tx->replicate();
                 $sold->system_key  = null;
                 $sold->inventory_gold = null; // the sold piece is history; only the open trade is tracked
+                // Cost comes off by the same amount of gold as the price (e.g. sell 200 of 1,200 / 700
+                // → 1,000 / 500), never more than the cost there is; ₱ follows each side's own rate.
+                $costTotal = $tx->cost_gold !== null ? (float) $tx->cost_gold : null;
+                $soldCost  = $costTotal !== null ? min($sell, $costTotal) : null;
+                $costShare = $costTotal ? $soldCost / $costTotal : 0;
+
                 $sold->price_gold  = $sell;
-                $sold->cost_gold   = $part($tx->cost_gold, 0);
+                $sold->cost_gold   = $soldCost;
                 $sold->price_php   = $part($tx->price_php);
-                $sold->cost_php    = $part($tx->cost_php);
+                $sold->cost_php    = $tx->cost_php !== null ? round((float) $tx->cost_php * $costShare, 2) : null;
                 $sold->profit_php  = $sold->cost_php !== null ? round($sold->price_php - $sold->cost_php, 2) : null;
-                $sold->amount      = max($part($tx->amount), 0.01);
+                $sold->amount      = $sold->profit_php !== null ? max($sold->profit_php, 0.01) : max($part($tx->amount), 0.01);
                 $sold->notes       = $withNote($tx->notes, 'Partial sale of ' . number_format($sell) . ' / ' . number_format($total) . ' G' . ($note !== '' ? ' — ' . $note : ''));
                 $sold->archived_at = now();
                 if ($hasProgress) {
@@ -199,7 +205,9 @@ class BusinessTransactionController extends Controller
                 $tx->price_php  = round($minus($tx->price_php, $sold->price_php), 2);
                 $tx->cost_php   = $tx->cost_php !== null ? round($minus($tx->cost_php, $sold->cost_php), 2) : null;
                 $tx->profit_php = $tx->cost_php !== null ? round($tx->price_php - $tx->cost_php, 2) : null;
-                $tx->amount     = max(round((float) $tx->amount - (float) $sold->amount, 2), 0.01);
+                $tx->amount     = $tx->profit_php !== null
+                    ? max($tx->profit_php, 0.01)
+                    : max(round((float) $tx->amount - (float) $sold->amount, 2), 0.01);
                 if ($hasProgress) {
                     $tx->price_gold_received = $minus($tx->price_gold_received, $sold->price_gold_received);
                     $tx->cost_gold_paid      = $minus($tx->cost_gold_paid, $sold->cost_gold_paid);

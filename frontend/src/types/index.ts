@@ -167,6 +167,14 @@ export interface MasterDashboardStats {
   total_price:       number
   balance_usd_total: number
   balance_php_total: number
+  business_profit?: number
+  daily_net?: number
+  monthly_business_profit?: number
+  monthly_daily_net?: number
+  kks_gold?: number
+  account_count?: number
+  balance_usd_accounts?: number
+  balance_php_accounts?: number
 }
 
 // ── Business ─────────────────────────────────────────────────────────────────

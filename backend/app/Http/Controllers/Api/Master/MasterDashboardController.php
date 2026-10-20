@@ -9,6 +9,7 @@ use App\Models\BalanceEntry;
 use App\Models\Gold;
 use App\Models\RucoyAccount;
 use App\Models\Saving;
+use App\Models\Trade;
 use App\Models\Transaction;
 use Illuminate\Http\JsonResponse;
 
@@ -67,6 +68,15 @@ class MasterDashboardController extends Controller
             'total_price'       => $totalPrice,
             'balance_usd_total' => $balanceUsdTotal,
             'balance_php_total' => $balancePhpTotal,
+            // Breakdowns behind the profit figures above
+            'business_profit'         => round($businessProfit, 2),
+            'daily_net'               => round($dailyIncome - $dailyExpense, 2),
+            'monthly_business_profit' => round($monthlyBusinessProfit, 2),
+            'monthly_daily_net'       => round($monthlyDailyIncome - $monthlyDailyExpense, 2),
+            'kks_gold'                => (float) Trade::where('status', 'kks')->whereNull('archived_at')->sum('amount'),
+            'account_count'           => RucoyAccount::whereNull('archived_at')->count(),
+            'balance_usd_accounts'    => count($usdAccounts),
+            'balance_php_accounts'    => count($phpAccounts),
         ]);
     }
 }

@@ -195,6 +195,8 @@ export interface BusinessTransaction {
   cost_gold: string | null
   price_gold_received?: string | null
   cost_gold_paid?: string | null
+  /** Gold this trade has put into the Golds inventory; null = not tracked (older trades) */
+  inventory_gold?: string | null
   php_rate: string | null
   cost_php_rate?: string | null
   price_php: string | null

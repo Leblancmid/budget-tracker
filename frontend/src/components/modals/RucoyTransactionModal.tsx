@@ -360,6 +360,13 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
           <Input label="Date" type="date" value={date} onChange={(e) => setDate(e.target.value)} error={errors.date} />
         )}
 
+        {kind === 'gold' && (priceGoldNum ?? 0) > 0 && (!isEdit || goldTx?.inventory_gold != null) && (
+          <p className="text-xs text-gray-500 dark:text-gray-400 -mt-1">
+            {isEdit
+              ? 'Changing Price (G) updates your Golds stash by the difference.'
+              : <>{(priceGoldNum ?? 0).toLocaleString()} G will be added to your Golds stash in Rucoy → Summary.</>}
+          </p>
+        )}
         {!hasRates && (
           <p className="text-xs text-gray-400 dark:text-gray-500 -mt-1">
             Rates are optional — leave them blank and it will show as <span className="font-semibold text-amber-600 dark:text-amber-400">Awaiting pricing</span> until you fill them in.

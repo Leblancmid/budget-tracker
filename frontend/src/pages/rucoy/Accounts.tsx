@@ -528,8 +528,9 @@ export default function Accounts() {
       await updateBizTx(editingGold.id, data)
       toast.success('Gold trade updated.')
     } else {
-      await createBizTx(data)
-      toast.success('Gold trade added.')
+      // The trade's Price (G) also goes into the Golds inventory (Rucoy → Summary)
+      await createBizTx({ ...data, add_to_inventory: true })
+      toast.success(data.price_gold ? `Gold trade added — ${Number(data.price_gold).toLocaleString()} G added to your stash.` : 'Gold trade added.')
     }
   }
 

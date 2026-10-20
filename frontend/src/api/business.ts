@@ -24,6 +24,8 @@ export interface BusinessTransactionPayload {
   notes?: string | null
   price_php?: number | null
   cost_php?: number | null
+  /** New gold trades only: also put the Price (G) into the Golds inventory */
+  add_to_inventory?: boolean
 }
 
 export interface BusinessSummary { income: number; expense: number; profit: number; month: number; year: number }

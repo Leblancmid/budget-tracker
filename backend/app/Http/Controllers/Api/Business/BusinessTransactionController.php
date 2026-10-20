@@ -82,8 +82,17 @@ class BusinessTransactionController extends Controller
     {
         $data = $this->withoutMissingColumns($request->validated());
 
-        $tx = BusinessTransaction::create($data);
-        $this->computePhpValues($tx);
+        $tx = DB::transaction(function () use ($data, $request) {
+            $tx = BusinessTransaction::create($data);
+            $this->computePhpValues($tx);
+
+            // New gold trades from the Add Gold dialog put their price gold into the Golds inventory
+            if ($request->boolean('add_to_inventory') && $tx->type === 'gold' && !$tx->isSystem() && $this->tracksInventory()) {
+                $tx->inventory_gold = 0;
+                $this->syncInventory($tx, 'Added');
+            }
+            return $tx;
+        });
 
         return response()->json($tx->fresh(), 201);
     }
@@ -92,8 +101,14 @@ class BusinessTransactionController extends Controller
     {
         $data = $this->withoutMissingColumns($request->validated());
 
-        $businessTransaction->update($data);
-        $this->computePhpValues($businessTransaction);
+        DB::transaction(function () use ($businessTransaction, $data) {
+            $businessTransaction->update($data);
+            $this->computePhpValues($businessTransaction);
+            // Tracked trades keep the inventory in step with their price gold
+            if ($businessTransaction->inventory_gold !== null && $businessTransaction->archived_at === null) {
+                $this->syncInventory($businessTransaction->fresh(), 'Adjusted');
+            }
+        });
 
         return response()->json($businessTransaction->fresh());
     }
@@ -104,7 +119,16 @@ class BusinessTransactionController extends Controller
             return response()->json(['message' => 'The Middleman Fee trade cannot be deleted.'], 422);
         }
 
-        $businessTransaction->delete();
+        DB::transaction(function () use ($businessTransaction) {
+            // Take back the gold this (unsold) trade put into the inventory
+            $inv = (float) ($businessTransaction->inventory_gold ?? 0);
+            if ($inv != 0 && $businessTransaction->archived_at === null) {
+                $label = 'Removed: ' . ($businessTransaction->description ?: 'Gold trade');
+                Gold::create(['amount' => -$inv, 'description' => $label]);
+                GoldLog::create(['type' => 'add', 'amount' => -$inv, 'description' => $label]);
+            }
+            $businessTransaction->delete();
+        });
 
         return response()->json(['message' => 'Transaction deleted.']);
     }
@@ -155,6 +179,7 @@ class BusinessTransactionController extends Controller
 
                 $sold = $tx->replicate();
                 $sold->system_key  = null;
+                $sold->inventory_gold = null; // the sold piece is history; only the open trade is tracked
                 $sold->price_gold  = $sell;
                 $sold->cost_gold   = $part($tx->cost_gold, 0);
                 $sold->price_php   = $part($tx->price_php);
@@ -179,6 +204,8 @@ class BusinessTransactionController extends Controller
                     $tx->price_gold_received = $minus($tx->price_gold_received, $sold->price_gold_received);
                     $tx->cost_gold_paid      = $minus($tx->cost_gold_paid, $sold->cost_gold_paid);
                 }
+                // The sold gold leaves with the sale; keep the tracked amount in step with the remaining price
+                if ($tx->inventory_gold !== null) $tx->inventory_gold = max(0, (float) $tx->inventory_gold - $sell);
                 $tx->save();
                 $remaining = $tx;
             }
@@ -245,6 +272,8 @@ class BusinessTransactionController extends Controller
 
                 $tx->price_gold = $oldPrice + $addPrice;
                 $tx->cost_gold  = $oldCost + $addCost;
+                // Already added to the inventory above — record it so a later edit doesn't add it again
+                if ($tx->inventory_gold !== null) $tx->inventory_gold = (float) $tx->inventory_gold + $addPrice;
                 $tx->recomputeGoldPhp();
 
                 // No rates yet but a ₱ value exists: scale it with the gold instead of dropping it
@@ -263,6 +292,28 @@ class BusinessTransactionController extends Controller
         });
 
         return response()->json($tx->fresh());
+    }
+
+    private function tracksInventory(): bool
+    {
+        return Schema::hasColumn('business_transactions', 'inventory_gold');
+    }
+
+    /**
+     * Move the difference between a tracked trade's price gold and what it has already
+     * put into the inventory, so the stash always reflects it exactly once.
+     */
+    private function syncInventory(BusinessTransaction $tx, string $verb): void
+    {
+        if ($tx->inventory_gold === null || !$this->tracksInventory()) return;
+        $delta = (float) ($tx->price_gold ?? 0) - (float) $tx->inventory_gold;
+        if ($delta != 0) {
+            $label = $verb . ': ' . ($tx->description ?: 'Gold trade');
+            Gold::create(['amount' => $delta, 'description' => $label]);
+            GoldLog::create(['type' => 'add', 'amount' => $delta, 'description' => $label]);
+        }
+        $tx->inventory_gold = (float) ($tx->price_gold ?? 0);
+        $tx->saveQuietly();
     }
 
     /** Drop optional columns that older databases may not have yet. */

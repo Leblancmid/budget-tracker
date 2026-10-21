@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Moon, Sun, Eye, EyeOff, LogOut, Menu } from 'lucide-react'
 import { useTheme } from '@/context/ThemeContext'
@@ -18,12 +19,15 @@ const PAGE_META: Record<string, { title: string; section: string }> = {
   '/master/savings':          { title: 'Savings',         section: 'Master File'    },
   '/master/balance':          { title: 'Balance',         section: 'Daily Expenses' },
   '/logs':                    { title: 'Logs',            section: 'Master File'    },
+  '/reports/daily-expenses':  { title: 'Daily Expenses',  section: 'Reports'        },
+  '/reports/business':        { title: 'Business',        section: 'Reports'        },
 }
 
 const SECTION_STYLES: Record<string, { badge: string }> = {
   'Daily Expenses': { badge: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' },
   'Business':       { badge: 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300'         },
   'Rucoy':          { badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'     },
+  'Reports':        { badge: 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300'             },
   'Master File':    { badge: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300' },
 }
 
@@ -38,8 +42,11 @@ export function Header({ onMenuClick }: HeaderProps) {
   const { hidden, toggle: toggleAmounts } = useAmountVisibility()
   const { logout } = useAuth()
 
-  const meta    = PAGE_META[pathname] ?? { title: "Mikey's Tracker", section: 'Daily Expenses' }
+  const meta    = PAGE_META[pathname] ?? { title: 'Dashboard', section: 'Daily Expenses' }
   const styles  = SECTION_STYLES[meta.section] ?? SECTION_STYLES['Daily Expenses']
+
+  // Browser tab shows the current page instead of a fixed app name
+  useEffect(() => { document.title = `${meta.title} · ${meta.section}` }, [meta.title, meta.section])
 
   const handleLogout = async () => {
     await logout()

@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Wallet, Eye, EyeOff, LogIn } from 'lucide-react'
+import { Eye, EyeOff, LogIn } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 
 export default function Login() {
@@ -35,11 +35,12 @@ export default function Login() {
 
         {/* Logo */}
         <div className="flex flex-col items-center gap-3 mb-8">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-600 shadow-lg shadow-indigo-500/30">
-            <Wallet className="h-6 w-6 text-white" />
-          </div>
+          <span className="relative flex h-16 w-16">
+            <span className="absolute inset-0 rounded-2xl bg-violet-500/40 blur-xl" />
+            <img src="/logo.svg" alt="" className="relative h-16 w-16 rounded-2xl shadow-lg" />
+          </span>
           <div className="text-center">
-            <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Mikey's Tracker</h1>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Welcome back</h1>
             <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">Sign in to your account</p>
           </div>
         </div>

@@ -1,3 +1,4 @@
+import { SidebarBrand } from './SidebarBrand'
 import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { ChevronDown, ChevronRight, Wallet, Gamepad2, Briefcase, FolderOpen, PanelLeftClose, PanelLeftOpen, BarChart2 } from 'lucide-react'
@@ -185,13 +186,9 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
       'w-56',
     ].join(' ')}>
 
-      {/* Brand */}
-      <div className={['flex items-center border-b border-gray-100 dark:border-gray-700/60 shrink-0', collapsed ? 'md:justify-center md:py-3.5 md:px-0 gap-3 px-4 py-4' : 'gap-3 px-4 py-4'].join(' ')}>
-        <img src="/logo.svg" alt="Logo" className="h-8 w-8 shrink-0 rounded-xl" />
-        <div className={['flex-1 min-w-0', collapsed ? 'md:hidden' : ''].join(' ')}>
-          <p className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate capitalize">{user?.name ?? 'Tracker'}'s Tracker</p>
-          <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">{user?.role === 'daily_only' ? 'Daily Expenses' : 'Finance & Gaming'}</p>
-        </div>
+      {/* Brand: logo + a live headline number */}
+      <div className={['shrink-0 border-b border-gray-100 dark:border-gray-700/60', collapsed ? 'md:flex md:justify-center md:py-3.5 px-3 py-3' : 'px-3 py-3'].join(' ')}>
+        <SidebarBrand collapsed={collapsed} onNavigate={onClose} />
       </div>
 
       {/* Nav */}

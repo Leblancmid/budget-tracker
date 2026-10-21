@@ -2,3 +2,10 @@
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Frontend build output (npm run build copies frontend/dist into backend/public)
+/backend/public/assets/
+/backend/public/index.html
+/backend/public/favicon.svg
+/backend/public/icons.svg
+/backend/public/logo.svg

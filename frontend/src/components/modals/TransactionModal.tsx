@@ -19,6 +19,7 @@ interface TransactionModalProps {
   /** PHP balance accounts that can be linked; empty/undefined hides the picker */
   balanceAccounts?: BalanceAccountConfig[]
 }
+/** Test data */
 
 export interface TransactionFormData {
   category_id: number

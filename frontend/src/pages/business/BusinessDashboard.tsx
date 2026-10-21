@@ -5,7 +5,7 @@ import { useBusinessDashboard } from '@/hooks/useBusinessDashboard'
 import { Card } from '@/components/ui/Card'
 import { MonthNav } from '@/components/ui/MonthNav'
 import { formatCurrency, formatDate, MONTHS } from '@/utils/format'
-import { Amt } from '@/context/AmountVisibilityContext'
+import { Amt } from '@/components/ui/Amt'
 import type { LucideIcon } from 'lucide-react'
 
 const TYPES: Record<string, { label: string; color: string; Icon: LucideIcon }> = {

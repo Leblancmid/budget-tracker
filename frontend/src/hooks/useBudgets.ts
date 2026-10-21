@@ -1,32 +1,20 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { budgetsApi } from '@/api/budgets'
 import type { Budget } from '@/types'
+import { useAsyncData } from './useAsyncData'
+
+const NONE: Budget[] = []
 
 export function useBudgets(initialMonth = new Date().getMonth() + 1, initialYear = new Date().getFullYear()) {
-  const [budgets, setBudgets] = useState<Budget[]>([])
   const [month, setMonth] = useState(initialMonth)
-  const [year, setYear] = useState(initialYear)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [year, setYear]   = useState(initialYear)
 
-  const fetch = useCallback(async (m: number, y: number) => {
-    setLoading(true)
-    setError(null)
-    try {
-      const data = await budgetsApi.getAll(m, y)
-      setBudgets(data)
-    } catch (err: unknown) {
-      setError((err as { message: string }).message)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => { fetch(month, year) }, [fetch, month, year])
+  const load = useCallback(() => budgetsApi.getAll(month, year), [month, year])
+  const { data: budgets, setData: setBudgets, loading, error, refetch } = useAsyncData(load, NONE)
 
   const create = async (data: Parameters<typeof budgetsApi.create>[0]) => {
     const budget = await budgetsApi.create(data)
-    await fetch(month, year)
+    await refetch()
     return budget
   }
 
@@ -44,7 +32,7 @@ export function useBudgets(initialMonth = new Date().getMonth() + 1, initialYear
   return {
     budgets, month, year, loading, error,
     setMonth, setYear,
-    refetch: () => fetch(month, year),
+    refetch,
     create, update, remove,
   }
 }

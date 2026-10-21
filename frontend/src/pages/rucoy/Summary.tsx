@@ -13,7 +13,7 @@ import { useGoldLogs } from '@/hooks/useGoldLogs'
 import { useRucoyDashboard } from '@/hooks/useRucoyDashboard'
 import { useTrades } from '@/hooks/useTrades'
 import type { GoldLog, Trade } from '@/types'
-import { toast } from '@/components/ui/Toast'
+import { toast } from '@/lib/toast'
 import { formatDateLong, formatTime, paginateLocally, MONTHS } from '@/utils/format'
 import { exportCsv } from '@/utils/csv'
 import type { LucideIcon } from 'lucide-react'
@@ -46,7 +46,7 @@ function logDelta(log: GoldLog): number {
   return log.type === 'add' || log.type === 'fee' ? amt : -Math.abs(amt)
 }
 
-export default function Golds() {
+export default function RucoySummary() {
   const { totalGold, loading, error, refetch: refetchGolds } = useGolds()
   const { logs, loading: logsLoading, cancel: cancelLog, refetch: refetchLogs } = useGoldLogs()
 

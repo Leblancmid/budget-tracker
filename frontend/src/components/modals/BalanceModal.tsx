@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/Input'
 import { formatWithCommas, handleAmountInput, todayISO } from '@/utils/format'
 import { flattenApiErrors } from '@/utils/api'
 import { colorOf, iconOf } from '@/utils/balanceAccounts'
-import { toast } from '@/components/ui/Toast'
+import { toast } from '@/lib/toast'
 import type { BalanceAccount, BalanceAccountConfig, BalanceEntry, BalanceEntryType } from '@/types'
 import type { BalanceEntryPayload } from '@/api/master'
 

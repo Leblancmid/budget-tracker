@@ -1,71 +1,10 @@
-import { useState, useEffect, useCallback } from 'react'
-import api from '@/api/axios'
+import { useCallback } from 'react'
+import { reportsApi } from '@/api/reports'
+import type { ReportData, ReportKind, ReportPeriod } from '@/types'
+import { useAsyncData } from './useAsyncData'
 
-export type ReportPeriod = 'weekly' | 'monthly' | 'yearly'
-
-export interface ReportRow {
-  label:   string
-  income:  number
-  expense: number
-  net?:    number
-  profit?: number
-}
-
-export interface ReportTotals {
-  income:  number
-  expense: number
-  net?:    number
-  profit?: number
-}
-
-export interface ReportCategory {
-  id: number
-  name: string
-  color: string
-  icon: string
-  type: 'income' | 'expense'
-  total: number
-  count: number
-}
-
-export interface ReportData {
-  period: ReportPeriod
-  year:   number
-  month:  number
-  rows:   ReportRow[]
-  totals: ReportTotals
-  /** Daily Expenses only: per-category totals for the same range */
-  categories?: ReportCategory[]
-  /** Business only: totals per sale type (account / gold / expense) for the same range */
-  types?: Array<{ type: string; count: number; income: number; expense: number; profit: number }>
-}
-
-export function useReport(
-  type:   'daily-expenses' | 'business',
-  period: ReportPeriod,
-  year:   number,
-  month:  number,
-) {
-  const [data,    setData]    = useState<ReportData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error,   setError]   = useState('')
-
-  const fetch = useCallback(async () => {
-    setLoading(true)
-    setError('')
-    try {
-      const params: Record<string, string | number> = { period, year }
-      if (period === 'weekly') params.month = month
-      const { data: res } = await api.get<ReportData>(`/reports/${type}`, { params })
-      setData(res)
-    } catch (e: unknown) {
-      setError((e as { message: string }).message ?? 'Failed to load report')
-    } finally {
-      setLoading(false)
-    }
-  }, [type, period, year, month])
-
-  useEffect(() => { fetch() }, [fetch])
-
-  return { data, loading, error, refetch: fetch }
+export function useReport(kind: ReportKind, period: ReportPeriod, year: number, month: number) {
+  const load = useCallback(() => reportsApi.get(kind, period, year, month), [kind, period, year, month])
+  const { data, loading, error, refetch } = useAsyncData<ReportData | null>(load, null)
+  return { data, loading, error: error ?? '', refetch }
 }

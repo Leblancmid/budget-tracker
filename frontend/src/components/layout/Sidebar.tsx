@@ -2,7 +2,8 @@ import { SidebarBrand } from './SidebarBrand'
 import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { ChevronDown, ChevronRight, Wallet, Gamepad2, Briefcase, FolderOpen, PanelLeftClose, PanelLeftOpen, BarChart2 } from 'lucide-react'
-import { useAuth } from '@/context/AuthContext'
+import { useAuth } from '@/context/auth'
+import { readString, STORAGE_KEYS, writeString } from '@/lib/storage'
 
 type SectionVariant = 'master' | 'default' | 'business' | 'rucoy' | 'reports' | 'logs'
 
@@ -131,8 +132,6 @@ function sectionIdFor(pathname: string): string {
   return 'daily'
 }
 
-const COLLAPSED_KEY = 'sidebar_collapsed'
-
 interface SidebarProps {
   mobileOpen?: boolean
   onClose?: () => void
@@ -152,7 +151,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
         )
     : SECTIONS
 
-  const [collapsed, setCollapsed] = useState(() => localStorage.getItem(COLLAPSED_KEY) === 'true')
+  const [collapsed, setCollapsed] = useState(() => readString(STORAGE_KEYS.sidebarCollapsed) === 'true')
 
   const [open, setOpen] = useState<Record<string, boolean>>(() => {
     const state: Record<string, boolean> = {}
@@ -165,7 +164,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
 
   const toggleCollapsed = () => {
     setCollapsed((prev) => {
-      localStorage.setItem(COLLAPSED_KEY, String(!prev))
+      writeString(STORAGE_KEYS.sidebarCollapsed, String(!prev))
       return !prev
     })
   }

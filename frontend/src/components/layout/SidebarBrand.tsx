@@ -1,18 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { TrendingDown, TrendingUp } from 'lucide-react'
-import { useAuth } from '@/context/AuthContext'
-import { useAmountVisibility } from '@/context/AmountVisibilityContext'
+import { useAuth } from '@/context/auth'
+import { useAmountVisibility } from '@/context/amountVisibility'
 import { masterDashboardApi } from '@/api/master'
 import { dashboardApi } from '@/api/dashboard'
-
-// Same rates the Master → Overview page uses (and saves)
-function savedRate(key: string, fallback: number) {
-  try {
-    const v = localStorage.getItem(key)
-    return v ? parseFloat(v) || fallback : fallback
-  } catch { return fallback }
-}
+import { goldToPhp, savedGoldRates } from '@/lib/goldRates'
 
 /** Compact ₱ figure for a narrow sidebar: ₱444.9k, ₱1.2M. */
 function compactPhp(n: number) {
@@ -44,10 +37,10 @@ export function SidebarBrand({ collapsed, onNavigate }: { collapsed: boolean; on
           if (!cancelled) setHeadline({ label: 'Daily net this month', value: d.total_income - d.total_expense, delta: null, deltaLabel: '', to: '/' })
         } else {
           const s = await masterDashboardApi.getStats()
-          const usdRate = savedRate('master_account_usd_rate', 0.22)
-          const phpRate = savedRate('master_account_php_rate', 61)
-          const goldToPhp = (g: number) => (g / 1_000_000) * usdRate * phpRate
-          const net = s.balance_php_total + s.balance_usd_total * phpRate + goldToPhp(s.gold_stash) + goldToPhp(s.total_price)
+          // Same rates the Master → Overview page uses (and saves)
+          const { usdRate, phpRate } = savedGoldRates()
+          const toPhp = (g: number) => goldToPhp(g, usdRate, phpRate)
+          const net = s.balance_php_total + s.balance_usd_total * phpRate + toPhp(s.gold_stash) + toPhp(s.total_price)
           if (!cancelled) setHeadline({ label: 'Net worth', value: net, delta: s.monthly_profit, deltaLabel: 'this month', to: '/master' })
         }
       } catch { /* the logo still shows */ }

@@ -1,25 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
 import { balanceEntriesApi, type BalanceEntryPayload } from '@/api/master'
 import type { BalanceEntry } from '@/types'
+import { useAsyncData } from './useAsyncData'
+
+const NONE: BalanceEntry[] = []
 
 export function useBalanceEntries() {
-  const [entries, setEntries] = useState<BalanceEntry[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError]     = useState<string | null>(null)
-
-  const fetch = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      setEntries(await balanceEntriesApi.getAll())
-    } catch (err: unknown) {
-      setError((err as { message: string }).message)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => { fetch() }, [fetch])
+  const { data: entries, setData: setEntries, loading, error, refetch } = useAsyncData(balanceEntriesApi.getAll, NONE)
 
   const create = async (data: BalanceEntryPayload) => {
     const e = await balanceEntriesApi.create(data)
@@ -38,5 +24,5 @@ export function useBalanceEntries() {
     setEntries((prev) => prev.filter((e) => e.id !== id))
   }
 
-  return { entries, loading, error, refetch: fetch, create, update, remove }
+  return { entries, loading, error, refetch, create, update, remove }
 }

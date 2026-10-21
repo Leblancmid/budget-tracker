@@ -4,7 +4,8 @@ import { Card } from '@/components/ui/Card'
 import { useGolds } from '@/hooks/useGolds'
 import { useRucoyDashboard } from '@/hooks/useRucoyDashboard'
 import { formatWithCommas } from '@/utils/format'
-import { toast } from '@/components/ui/Toast'
+import { toast } from '@/lib/toast'
+import { readJson, STORAGE_KEYS, writeJson } from '@/lib/storage'
 
 type Code = 'PHP' | 'USD' | 'EUR'
 
@@ -24,7 +25,6 @@ const CURRENCIES: Record<Code, {
   EUR: { symbol: '€', flag: '🇪🇺', label: 'Euro',            quote: 'unit-per-million', defaultRate: 0.17,  rateLabel: (r) => `1M G = €${r || 0}`,                          text: 'text-violet-600 dark:text-violet-400', soft: 'bg-violet-50 dark:bg-violet-900/15', ring: 'focus:ring-violet-400/40' },
 }
 const CODES: Code[] = ['PHP', 'USD', 'EUR']
-const RATES_KEY = 'gold_calculator_rates'
 const QUICK = [100e6, 500e6, 1e9, 5e9]
 
 const goldToMoney = (code: Code, gold: number, rate: number) =>
@@ -38,8 +38,7 @@ const shortG = (n: number) => (n >= 1e9 ? `${n / 1e9}B` : `${n / 1e6}M`)
 function loadRates(): Record<Code, string> {
   const defaults = Object.fromEntries(CODES.map((c) => [c, String(CURRENCIES[c].defaultRate)])) as Record<Code, string>
   try {
-    const saved = JSON.parse(localStorage.getItem(RATES_KEY) ?? '{}')
-    return { ...defaults, ...saved }
+    return { ...defaults, ...readJson<Partial<Record<Code, string>>>(STORAGE_KEYS.goldCalculatorRates, {}) }
   } catch { return defaults }
 }
 
@@ -71,7 +70,7 @@ export default function GoldCalculator() {
   const [rates, setRates] = useState<Record<Code, string>>(loadRates)
 
   useEffect(() => {
-    try { localStorage.setItem(RATES_KEY, JSON.stringify(rates)) } catch { /* storage unavailable */ }
+    writeJson(STORAGE_KEYS.goldCalculatorRates, rates)
   }, [rates])
 
   const rateNum = (c: Code) => {

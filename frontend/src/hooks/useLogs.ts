@@ -1,18 +1,11 @@
-import { useState, useEffect, useCallback } from 'react'
 import { logsApi, type LogEntry } from '@/api/logs'
+import { useAsyncData } from './useAsyncData'
+
+const NONE: LogEntry[] = []
+const load = () => logsApi.getAll().then((r) => r.data)
 
 export function useLogs() {
-  const [entries, setEntries]   = useState<LogEntry[]>([])
-  const [loading, setLoading]   = useState(true)
+  const { data: entries, loading, refetch } = useAsyncData(load, NONE)
 
-  const fetch = useCallback(() => {
-    setLoading(true)
-    logsApi.getAll()
-      .then((r) => setEntries(r.data))
-      .finally(() => setLoading(false))
-  }, [])
-
-  useEffect(() => { fetch() }, [fetch])
-
-  return { entries, loading, refetch: fetch }
+  return { entries, loading, refetch }
 }

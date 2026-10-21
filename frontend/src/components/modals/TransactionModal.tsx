@@ -8,7 +8,8 @@ import { formatWithCommas, handleAmountInput, todayISO } from '@/utils/format'
 import { colorOf, fmtPhp, iconOf } from '@/utils/balanceAccounts'
 import { categoryIcon } from '@/utils/categoryIcons'
 import { flattenApiErrors } from '@/utils/api'
-import { Amt } from '@/context/AmountVisibilityContext'
+import { Amt } from '@/components/ui/Amt'
+import { readString, removeItem, STORAGE_KEYS, writeString } from '@/lib/storage'
 
 interface TransactionModalProps {
   open: boolean
@@ -31,7 +32,6 @@ export interface TransactionFormData {
   balance_account: string | null
 }
 
-const LAST_ACCOUNT_KEY = 'tx_last_balance_account'
 
 const emptyForm = (): TransactionFormData => ({
   category_id: 0,
@@ -41,7 +41,7 @@ const emptyForm = (): TransactionFormData => ({
   description: '',
   date: todayISO(),
   notes: '',
-  balance_account: localStorage.getItem(LAST_ACCOUNT_KEY) || null,
+  balance_account: readString(STORAGE_KEYS.lastBalanceAccount) || null,
 })
 
 export function TransactionModal({ open, onClose, onSubmit, categories, transaction, balanceAccounts = [] }: TransactionModalProps) {
@@ -110,8 +110,8 @@ export function TransactionModal({ open, onClose, onSubmit, categories, transact
     try {
       await onSubmit(form)
       if (!transaction) {
-        if (form.balance_account) localStorage.setItem(LAST_ACCOUNT_KEY, form.balance_account)
-        else localStorage.removeItem(LAST_ACCOUNT_KEY)
+        if (form.balance_account) writeString(STORAGE_KEYS.lastBalanceAccount, form.balance_account)
+        else removeItem(STORAGE_KEYS.lastBalanceAccount)
       }
       onClose()
     } catch (err: unknown) {

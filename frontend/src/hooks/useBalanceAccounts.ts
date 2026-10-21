@@ -1,21 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
 import { balanceAccountsApi, type BalanceAccountPayload } from '@/api/master'
 import type { BalanceAccountConfig } from '@/types'
+import { useAsyncData } from './useAsyncData'
+
+const NONE: BalanceAccountConfig[] = []
 
 export function useBalanceAccounts() {
-  const [accounts, setAccounts] = useState<BalanceAccountConfig[]>([])
-  const [loading, setLoading]   = useState(true)
-
-  const fetch = useCallback(async () => {
-    setLoading(true)
-    try {
-      setAccounts(await balanceAccountsApi.getAll())
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => { fetch() }, [fetch])
+  const { data: accounts, setData: setAccounts, loading, refetch } = useAsyncData(balanceAccountsApi.getAll, NONE)
 
   const create = async (data: BalanceAccountPayload) => {
     const a = await balanceAccountsApi.create(data)
@@ -40,5 +30,5 @@ export function useBalanceAccounts() {
     setAccounts((prev) => prev.filter((a) => a.id !== id))
   }
 
-  return { accounts, loading, refetch: fetch, create, update, reorder, remove }
+  return { accounts, loading, refetch, create, update, reorder, remove }
 }

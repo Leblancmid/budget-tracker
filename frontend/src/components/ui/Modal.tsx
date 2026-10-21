@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect } from 'react'
+import { type ReactNode, useEffect, useId } from 'react'
 import { X } from 'lucide-react'
 
 interface ModalProps {
@@ -12,6 +12,8 @@ interface ModalProps {
 const sizes = { sm: 'max-w-sm', md: 'max-w-md', lg: 'max-w-lg', xl: 'max-w-xl', '2xl': 'max-w-2xl' }
 
 export function Modal({ open, onClose, title, children, size = 'md' }: ModalProps) {
+  const titleId = useId()
+
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -32,6 +34,9 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
         onClick={onClose}
       />
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
         className={[
           'relative w-full rounded-xl bg-white shadow-xl',
           'flex flex-col max-h-[90vh]',
@@ -40,9 +45,10 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
         ].join(' ')}
       >
         <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4 dark:border-gray-700/60">
-          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">{title}</h2>
+          <h2 id={titleId} className="text-base font-semibold text-gray-900 dark:text-gray-100">{title}</h2>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-300"
           >
             <X className="h-4 w-4" />

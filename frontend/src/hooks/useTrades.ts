@@ -1,25 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
 import { tradesApi, type TradePayload } from '@/api/rucoy'
 import type { Trade } from '@/types'
+import { useAsyncData } from './useAsyncData'
+
+const NONE: Trade[] = []
 
 export function useTrades() {
-  const [trades, setTrades] = useState<Trade[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  const fetch = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      setTrades(await tradesApi.getAll())
-    } catch (err: unknown) {
-      setError((err as { message: string }).message)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => { fetch() }, [fetch])
+  const { data: trades, setData: setTrades, loading, error, refetch } = useAsyncData(tradesApi.getAll, NONE)
 
   const create = async (data: TradePayload) => {
     const trade = await tradesApi.create(data)
@@ -48,5 +34,5 @@ export function useTrades() {
     setTrades((prev) => prev.filter((t) => t.id !== id))
   }
 
-  return { trades, loading, error, refetch: fetch, create, update, archive, unarchive, remove }
+  return { trades, loading, error, refetch, create, update, archive, unarchive, remove }
 }

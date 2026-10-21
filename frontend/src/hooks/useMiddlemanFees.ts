@@ -1,38 +1,26 @@
-import { useCallback, useEffect, useState } from 'react'
 import { middlemanFeesApi } from '@/api/rucoy'
-import type { MiddlemanFee } from '@/types'
+import type { MiddlemanFeeIndex } from '@/types'
+import { useAsyncData } from './useAsyncData'
+
+const EMPTY: MiddlemanFeeIndex = { fees: [], total: 0 }
 
 export function useMiddlemanFees() {
-  const [fees,    setFees]    = useState<MiddlemanFee[]>([])
-  const [total,   setTotal]   = useState(0)
-  const [loading, setLoading] = useState(true)
-
-  const fetch = useCallback(async () => {
-    setLoading(true)
-    try {
-      const { fees: f, total: t } = await middlemanFeesApi.getAll()
-      setFees(f)
-      setTotal(t)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => { fetch() }, [fetch])
+  const { data, setData, loading, refetch } = useAsyncData(middlemanFeesApi.getAll, EMPTY)
 
   const create = async (amount: number, description?: string) => {
     const fee = await middlemanFeesApi.create(amount, description)
-    setFees((prev) => [fee, ...prev])
-    setTotal((prev) => prev + parseFloat(fee.amount))
+    setData((prev) => ({ fees: [fee, ...prev.fees], total: prev.total + parseFloat(fee.amount) }))
     return fee
   }
 
   const remove = async (id: number) => {
-    const fee = fees.find((f) => f.id === id)
+    const fee = data.fees.find((f) => f.id === id)
     await middlemanFeesApi.delete(id)
-    setFees((prev) => prev.filter((f) => f.id !== id))
-    if (fee) setTotal((prev) => prev - parseFloat(fee.amount))
+    setData((prev) => ({
+      fees:  prev.fees.filter((f) => f.id !== id),
+      total: fee ? prev.total - parseFloat(fee.amount) : prev.total,
+    }))
   }
 
-  return { fees, total, loading, refetch: fetch, create, remove }
+  return { fees: data.fees, total: data.total, loading, refetch, create, remove }
 }

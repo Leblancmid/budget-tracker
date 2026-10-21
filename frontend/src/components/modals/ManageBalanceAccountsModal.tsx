@@ -3,7 +3,7 @@ import { ArrowDown, ArrowUp, ChevronLeft, Eye, EyeOff, Pencil, Plus, Trash2 } fr
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { toast } from '@/components/ui/Toast'
+import { toast } from '@/lib/toast'
 import { flattenApiErrors } from '@/utils/api'
 import { ACCOUNT_COLORS, ACCOUNT_ICONS, colorOf, iconOf } from '@/utils/balanceAccounts'
 import type { BalanceAccountPayload } from '@/api/master'

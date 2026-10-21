@@ -5,17 +5,10 @@ import type { LucideIcon } from 'lucide-react'
 import { MONTHS, formatCurrency } from '@/utils/format'
 import { useMasterDashboard } from '@/hooks/useMasterDashboard'
 import { Card } from '@/components/ui/Card'
-import { Amt } from '@/context/AmountVisibilityContext'
+import { Amt } from '@/components/ui/Amt'
+import { goldToPhp as goldValueInPhp, savedGoldRates } from '@/lib/goldRates'
+import { STORAGE_KEYS, writeString, type StorageKey } from '@/lib/storage'
 
-const USD_RATE_KEY = 'master_account_usd_rate'
-const PHP_RATE_KEY = 'master_account_php_rate'
-
-function getSaved(key: string, fallback: number): number {
-  try {
-    const v = localStorage.getItem(key)
-    return v ? parseFloat(v) || fallback : fallback
-  } catch { return fallback }
-}
 
 const fmtUsd = (n: number) => `${n < 0 ? '−' : ''}$${Math.abs(n).toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 const fmtSigned = (n: number) => `${n < 0 ? '−' : '+'}${formatCurrency(Math.abs(n))}`
@@ -65,23 +58,23 @@ function ProfitCard({ title, badge, total, business, daily }: { title: string; b
 export default function MasterDashboard() {
   const { stats, loading } = useMasterDashboard()
 
-  const [usdRate, setUsdRate]   = useState(() => getSaved(USD_RATE_KEY, 0.22))
-  const [phpRate, setPhpRate]   = useState(() => getSaved(PHP_RATE_KEY, 61))
-  const [usdInput, setUsdInput] = useState(() => String(getSaved(USD_RATE_KEY, 0.22)))
-  const [phpInput, setPhpInput] = useState(() => String(getSaved(PHP_RATE_KEY, 61)))
+  const [usdRate, setUsdRate]   = useState(() => savedGoldRates().usdRate)
+  const [phpRate, setPhpRate]   = useState(() => savedGoldRates().phpRate)
+  const [usdInput, setUsdInput] = useState(() => String(savedGoldRates().usdRate))
+  const [phpInput, setPhpInput] = useState(() => String(savedGoldRates().phpRate))
 
-  const saveRate = (key: string, val: string, setVal: (s: string) => void, setNum: (n: number) => void) => {
+  const saveRate = (key: StorageKey, val: string, setVal: (s: string) => void, setNum: (n: number) => void) => {
     setVal(val)
     const n = parseFloat(val)
     if (!isNaN(n) && n > 0) {
       setNum(n)
-      try { localStorage.setItem(key, String(n)) } catch { /* storage unavailable */ }
+      writeString(key, String(n))
     }
   }
 
   // Gold → ₱ via 1M G = $usdRate, 1 USD = ₱phpRate
   const goldToUsd = (g: number) => (g / 1_000_000) * usdRate
-  const goldToPhp = (g: number) => goldToUsd(g) * phpRate
+  const goldToPhp = (g: number) => goldValueInPhp(g, usdRate, phpRate)
 
   const goldStash    = stats?.gold_stash ?? 0
   const accountCostG = stats?.total_price ?? 0
@@ -173,13 +166,13 @@ export default function MasterDashboard() {
                 <label className="flex items-center gap-1.5 rounded-xl bg-white/10 px-3 py-1.5 text-xs text-slate-300">
                   <span className="font-medium">1M G = $</span>
                   <input type="number" min="0.000001" step="0.01" value={usdInput}
-                    onChange={(e) => saveRate(USD_RATE_KEY, e.target.value, setUsdInput, setUsdRate)}
+                    onChange={(e) => saveRate(STORAGE_KEYS.masterUsdRate, e.target.value, setUsdInput, setUsdRate)}
                     className="w-14 rounded-md border border-white/10 bg-white/10 px-1.5 py-0.5 text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-violet-400/40" />
                 </label>
                 <label className="flex items-center gap-1.5 rounded-xl bg-white/10 px-3 py-1.5 text-xs text-slate-300">
                   <span className="font-medium">1 USD = ₱</span>
                   <input type="number" min="0.01" step="0.01" value={phpInput}
-                    onChange={(e) => saveRate(PHP_RATE_KEY, e.target.value, setPhpInput, setPhpRate)}
+                    onChange={(e) => saveRate(STORAGE_KEYS.masterPhpRate, e.target.value, setPhpInput, setPhpRate)}
                     className="w-14 rounded-md border border-white/10 bg-white/10 px-1.5 py-0.5 text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-violet-400/40" />
                 </label>
               </div>

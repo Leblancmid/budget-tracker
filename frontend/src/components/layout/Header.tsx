@@ -1,9 +1,9 @@
 import { useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Moon, Sun, Eye, EyeOff, LogOut, Menu } from 'lucide-react'
-import { useTheme } from '@/context/ThemeContext'
-import { useAmountVisibility } from '@/context/AmountVisibilityContext'
-import { useAuth } from '@/context/AuthContext'
+import { useTheme } from '@/context/theme'
+import { useAmountVisibility } from '@/context/amountVisibility'
+import { useAuth } from '@/context/auth'
 
 const PAGE_META: Record<string, { title: string; section: string }> = {
   '/':                       { title: 'Dashboard',       section: 'Daily Expenses' },

@@ -53,23 +53,7 @@ export function formatDateLong(iso: string | null): string {
   })
 }
 
-export function buildYearOptions(count = 5): { value: number; label: string }[] {
-  const base = new Date().getFullYear() - 2
-  return Array.from({ length: count }, (_, i) => ({ value: base + i, label: String(base + i) }))
-}
-
 export const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
-]
-
-export const ICON_OPTIONS = [
-  'tag', 'shopping-cart', 'home', 'car', 'utensils', 'heart-pulse',
-  'graduation-cap', 'plane', 'tv', 'dumbbell', 'shirt', 'piggy-bank',
-  'briefcase', 'gift', 'music', 'coffee',
-]
-
-export const COLOR_OPTIONS = [
-  '#6366f1', '#8b5cf6', '#ec4899', '#ef4444', '#f97316',
-  '#eab308', '#22c55e', '#14b8a6', '#3b82f6', '#06b6d4',
 ]

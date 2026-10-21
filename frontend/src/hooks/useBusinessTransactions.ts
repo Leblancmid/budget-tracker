@@ -1,26 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
 import { businessTransactionsApi, type BusinessTransactionPayload } from '@/api/business'
 import type { BusinessTransaction } from '@/types'
+import { useAsyncData } from './useAsyncData'
+
+const NONE: BusinessTransaction[] = []
 
 export function useBusinessTransactions() {
-  const [transactions, setTransactions] = useState<BusinessTransaction[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  const fetch = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const data = await businessTransactionsApi.getAll()
-      setTransactions(data)
-    } catch (err: unknown) {
-      setError((err as { message: string }).message)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => { fetch() }, [fetch])
+  const { data: transactions, setData: setTransactions, loading, error, refetch } = useAsyncData(businessTransactionsApi.getAll, NONE)
 
   const create = async (data: BusinessTransactionPayload) => {
     const tx = await businessTransactionsApi.create(data)
@@ -50,5 +35,5 @@ export function useBusinessTransactions() {
     setTransactions((prev) => prev.filter((t) => t.id !== id))
   }
 
-  return { transactions, loading, error, refetch: fetch, create, update, archive, unarchive, remove }
+  return { transactions, loading, error, refetch, create, update, archive, unarchive, remove }
 }

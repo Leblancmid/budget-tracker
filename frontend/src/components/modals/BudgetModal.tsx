@@ -3,8 +3,8 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { MONTHS, formatCurrency, formatWithCommas, handleAmountInput } from '@/utils/format'
 import { flattenApiErrors } from '@/utils/api'
-import { CategoryIcon } from '@/utils/categoryIcons'
-import { Amt } from '@/context/AmountVisibilityContext'
+import { CategoryIcon } from '@/components/ui/CategoryIcon'
+import { Amt } from '@/components/ui/Amt'
 import type { Budget, Category } from '@/types'
 
 interface BudgetModalProps {

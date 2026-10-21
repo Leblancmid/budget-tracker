@@ -1,12 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { CheckCircle, XCircle, X } from 'lucide-react'
-
-export type ToastType = 'success' | 'error'
-
-interface ToastAction {
-  label: string
-  onClick: () => void
-}
+import { setToastHandler, type ToastAction, type ToastType } from '@/lib/toast'
 
 interface ToastItem {
   id: number
@@ -15,33 +9,26 @@ interface ToastItem {
   action?: ToastAction
 }
 
-interface ToastOptions {
-  action?: ToastAction
-}
-
-let addToast: ((message: string, type: ToastType, opts?: ToastOptions) => void) | null = null
-
-export const toast = {
-  success: (message: string, opts?: ToastOptions) => addToast?.(message, 'success', opts),
-  error: (message: string, opts?: ToastOptions) => addToast?.(message, 'error', opts),
-}
+const DURATION_MS = 4000
 
 export function ToastContainer() {
   const [toasts, setToasts] = useState<ToastItem[]>([])
+  // A counter, not Date.now(): two toasts in the same millisecond must not share an id
+  const nextId = useRef(0)
 
   useEffect(() => {
-    addToast = (message, type, opts) => {
-      const id = Date.now()
+    setToastHandler((message, type, opts) => {
+      const id = ++nextId.current
       setToasts((prev) => [...prev, { id, message, type, action: opts?.action }])
-      setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 4000)
-    }
-    return () => { addToast = null }
+      setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), DURATION_MS)
+    })
+    return () => setToastHandler(null)
   }, [])
 
   const dismiss = (id: number) => setToasts((prev) => prev.filter((t) => t.id !== id))
 
   return (
-    <div className="fixed bottom-5 right-5 z-[100] flex flex-col gap-2 w-80">
+    <div className="fixed bottom-5 right-5 z-[100] flex flex-col gap-2 w-80" role="status" aria-live="polite">
       {toasts.map((t) => (
         <div
           key={t.id}
@@ -70,7 +57,7 @@ export function ToastContainer() {
               {t.action.label}
             </button>
           )}
-          <button onClick={() => dismiss(t.id)} className="shrink-0 text-gray-400 hover:text-gray-600 dark:text-gray-600 dark:hover:text-gray-400">
+          <button onClick={() => dismiss(t.id)} aria-label="Dismiss" className="shrink-0 text-gray-400 hover:text-gray-600 dark:text-gray-600 dark:hover:text-gray-400">
             <X className="h-3.5 w-3.5" />
           </button>
         </div>

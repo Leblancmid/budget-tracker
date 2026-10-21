@@ -104,11 +104,6 @@ export interface TransactionFilters {
   page?: number
 }
 
-export interface ApiError {
-  message: string
-  errors?: Record<string, string[]>
-}
-
 // ── Master ───────────────────────────────────────────────────────────────────
 
 /** Code of a user-managed balance account (see BalanceAccountConfig) */
@@ -306,4 +301,47 @@ export interface RucoyDashboardStats {
   account_total_cost:  number
   account_total_price: number
   accounts_to_pay: number
+}
+
+// ── Reports ──────────────────────────────────────────────────────────────────
+
+export type ReportPeriod = 'weekly' | 'monthly' | 'yearly'
+
+export type ReportKind = 'daily-expenses' | 'business'
+
+export interface ReportRow {
+  label:   string
+  income:  number
+  expense: number
+  net?:    number
+  profit?: number
+}
+
+export interface ReportTotals {
+  income:  number
+  expense: number
+  net?:    number
+  profit?: number
+}
+
+export interface ReportCategory {
+  id: number
+  name: string
+  color: string
+  icon: string
+  type: 'income' | 'expense'
+  total: number
+  count: number
+}
+
+export interface ReportData {
+  period: ReportPeriod
+  year:   number
+  month:  number
+  rows:   ReportRow[]
+  totals: ReportTotals
+  /** Daily Expenses only: per-category totals for the same range */
+  categories?: ReportCategory[]
+  /** Business only: totals per sale type (account / gold / expense) for the same range */
+  types?: Array<{ type: string; count: number; income: number; expense: number; profit: number }>
 }

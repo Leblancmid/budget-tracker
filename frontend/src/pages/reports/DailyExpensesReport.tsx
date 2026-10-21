@@ -1,48 +1,30 @@
 import { useMemo, useState } from 'react'
-import { ArrowDownLeft, ArrowUpRight, BarChart2, ChevronLeft, ChevronRight, Download, PiggyBank, Trophy, TrendingDown } from 'lucide-react'
-import { useReport, type ReportPeriod, type ReportRow } from '@/hooks/useReport'
+import { ArrowDownLeft, ArrowUpRight, BarChart2, PiggyBank, Trophy, TrendingDown } from 'lucide-react'
+import { useReport } from '@/hooks/useReport'
+import { useReportRange } from '@/hooks/useReportRange'
+import type { ReportRow } from '@/types'
 import { Card } from '@/components/ui/Card'
-import { Amt } from '@/context/AmountVisibilityContext'
-import { formatCurrency, MONTHS } from '@/utils/format'
-import { CategoryIcon } from '@/utils/categoryIcons'
+import { Amt } from '@/components/ui/Amt'
+import { CategoryIcon } from '@/components/ui/CategoryIcon'
+import { ReportHeader } from '@/components/reports/ReportHeader'
+import { formatCurrency } from '@/utils/format'
 import { exportCsv } from '@/utils/csv'
+import { currentIndex, exportName, periodUnit, runningTotals, shortLabel } from '@/utils/reportPeriods'
 
-const PERIOD_TABS: { value: ReportPeriod; label: string; unit: string }[] = [
-  { value: 'weekly',  label: 'Weekly',  unit: 'week'  },
-  { value: 'monthly', label: 'Monthly', unit: 'month' },
-  { value: 'yearly',  label: 'Yearly',  unit: 'year'  },
-]
-
-const now = new Date()
-
-/** Short x-axis label for a row ("Week 2 (Oct 8–14)" → "W2", "October 2026" → "Oct"). */
-function shortLabel(row: ReportRow, period: ReportPeriod, i: number) {
-  if (period === 'weekly')  return `W${i + 1}`
-  if (period === 'monthly') return row.label.slice(0, 3)
-  return row.label
-}
-
-/** Index of the row that contains today, or -1. */
-function currentIndex(period: ReportPeriod, rows: ReportRow[], year: number, month: number) {
-  if (period === 'monthly') return year === now.getFullYear() ? now.getMonth() : -1
-  if (period === 'weekly')  return year === now.getFullYear() && month === now.getMonth() + 1 ? Math.min(Math.floor((now.getDate() - 1) / 7), rows.length - 1) : -1
-  return rows.findIndex((r) => r.label === String(now.getFullYear()))
-}
+const NO_ROWS: ReportRow[] = []
 
 export default function DailyExpensesReport() {
-  const [period, setPeriod] = useState<ReportPeriod>('monthly')
-  const [year,   setYear]   = useState(now.getFullYear())
-  const [month,  setMonth]  = useState(now.getMonth() + 1)
+  const { period, setPeriod, year, month, shift: shiftRange, label: rangeLabel } = useReportRange()
   const [catType, setCatType] = useState<'expense' | 'income'>('expense')
 
   const { data, loading } = useReport('daily-expenses', period, year, month)
 
-  const rows    = data?.rows ?? []
+  const rows    = data?.rows ?? NO_ROWS
   const totals  = data?.totals
   const income  = totals?.income ?? 0
   const expense = totals?.expense ?? 0
   const net     = totals?.net ?? income - expense
-  const unit    = PERIOD_TABS.find((p) => p.value === period)!.unit
+  const unit    = periodUnit(period)
 
   const active   = rows.filter((r) => r.income > 0 || r.expense > 0)
   const avgSpend = active.length ? expense / active.length : 0
@@ -53,28 +35,14 @@ export default function DailyExpensesReport() {
   const curIdx   = currentIndex(period, rows, year, month)
 
   // Running balance down the table
-  const running = useMemo(() => {
-    let acc = 0
-    return rows.map((r) => (acc += r.net ?? r.income - r.expense))
-  }, [rows])
+  const running = useMemo(() => runningTotals(rows, (r) => r.net ?? r.income - r.expense), [rows])
 
   const cats      = (data?.categories ?? []).filter((c) => c.type === catType)
   const catsTotal = cats.reduce((s, c) => s + c.total, 0)
 
-  const rangeLabel = period === 'weekly' ? `${MONTHS[month - 1]} ${year}` : period === 'monthly' ? String(year) : 'All years'
-
-  const shiftRange = (delta: number) => {
-    if (period === 'weekly') {
-      const d = new Date(year, month - 1 + delta, 1)
-      setMonth(d.getMonth() + 1); setYear(d.getFullYear())
-    } else {
-      setYear((y) => y + delta)
-    }
-  }
-
   const handleExport = () => {
     if (!rows.length) return
-    exportCsv(`daily-expenses-${period}-${period === 'weekly' ? `${year}-${month}` : year}`, rows.map((r, i) => ({
+    exportCsv(exportName('daily-expenses', period, year, month), rows.map((r, i) => ({
       period: r.label, income: r.income, expense: r.expense, net: r.net ?? 0, running: running[i],
     })))
   }
@@ -82,34 +50,16 @@ export default function DailyExpensesReport() {
   return (
     <div className="flex flex-col gap-5">
 
-      {/* ── Header ─────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">Daily Expenses report</h1>
-          <p className="text-xs text-gray-400 dark:text-gray-500">Personal transactions only · Business ones are left out</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1 rounded-xl bg-gray-100 dark:bg-gray-800 p-1">
-            {PERIOD_TABS.map(({ value, label }) => (
-              <button key={value} onClick={() => setPeriod(value)}
-                className={['rounded-lg px-3 py-1.5 text-sm font-semibold transition-all', period === value ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-900 dark:text-gray-100' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'].join(' ')}>
-                {label}
-              </button>
-            ))}
-          </div>
-          {period !== 'yearly' && (
-            <div className="flex items-center rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm">
-              <button onClick={() => shiftRange(-1)} className="flex h-9 w-9 items-center justify-center rounded-l-xl text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800"><ChevronLeft size={16} /></button>
-              <span className="min-w-[8.5rem] px-2 text-center text-sm font-semibold text-gray-800 dark:text-gray-100">{rangeLabel}</span>
-              <button onClick={() => shiftRange(1)} className="flex h-9 w-9 items-center justify-center rounded-r-xl text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800"><ChevronRight size={16} /></button>
-            </div>
-          )}
-          <button onClick={handleExport} disabled={!rows.length}
-            className="hidden md:flex items-center gap-1.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40 transition-colors">
-            <Download className="h-4 w-4" /> Export
-          </button>
-        </div>
-      </div>
+      <ReportHeader
+        title="Daily Expenses report"
+        subtitle="Personal transactions only · Business ones are left out"
+        period={period}
+        onPeriodChange={setPeriod}
+        rangeLabel={rangeLabel}
+        onShift={shiftRange}
+        onExport={handleExport}
+        canExport={rows.length > 0}
+      />
 
       {/* ── Hero ───────────────────────────────────────────────────── */}
       {loading ? (

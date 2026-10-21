@@ -4,7 +4,8 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { flattenApiErrors } from '@/utils/api'
-import { CATEGORY_COLORS, CATEGORY_ICONS, CategoryIcon, categoryIcon } from '@/utils/categoryIcons'
+import { CATEGORY_COLORS, CATEGORY_ICONS, categoryIcon } from '@/utils/categoryIcons'
+import { CategoryIcon } from '@/components/ui/CategoryIcon'
 import type { Category } from '@/types'
 
 interface CategoryModalProps {

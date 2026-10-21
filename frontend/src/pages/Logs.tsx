@@ -4,9 +4,9 @@ import type { LucideIcon } from 'lucide-react'
 import { useLogs } from '@/hooks/useLogs'
 import { Card } from '@/components/ui/Card'
 import { Pagination } from '@/components/ui/Pagination'
-import { Amt } from '@/context/AmountVisibilityContext'
+import { Amt } from '@/components/ui/Amt'
 import { paginateLocally } from '@/utils/format'
-import { useAuth } from '@/context/AuthContext'
+import { useAuth } from '@/context/auth'
 import type { LogEntry } from '@/api/logs'
 
 const PER_PAGE = 30

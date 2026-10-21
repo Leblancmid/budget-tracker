@@ -1,25 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
 import { goldsApi, type GoldPayload } from '@/api/rucoy'
 import type { Gold } from '@/types'
+import { useAsyncData } from './useAsyncData'
+
+const NONE: Gold[] = []
 
 export function useGolds() {
-  const [golds, setGolds] = useState<Gold[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  const fetch = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      setGolds(await goldsApi.getAll())
-    } catch (err: unknown) {
-      setError((err as { message: string }).message)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => { fetch() }, [fetch])
+  const { data: golds, setData: setGolds, loading, error, refetch } = useAsyncData(goldsApi.getAll, NONE)
 
   const create = async (data: GoldPayload) => {
     const gold = await goldsApi.create(data)
@@ -40,5 +26,5 @@ export function useGolds() {
 
   const totalGold = golds.reduce((sum, g) => sum + parseFloat(g.amount), 0)
 
-  return { golds, totalGold, loading, error, refetch: fetch, create, update, remove }
+  return { golds, totalGold, loading, error, refetch, create, update, remove }
 }

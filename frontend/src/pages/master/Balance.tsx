@@ -10,20 +10,18 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Pagination } from '@/components/ui/Pagination'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
-import { toast } from '@/components/ui/Toast'
+import { toast } from '@/lib/toast'
 import { formatDate, paginateLocally } from '@/utils/format'
 import { colorOf, fmtIn, fmtPhp, fmtUsd, iconOf } from '@/utils/balanceAccounts'
-import { Amt } from '@/context/AmountVisibilityContext'
+import { Amt } from '@/components/ui/Amt'
 import type { BalanceAccount, BalanceAccountConfig, BalanceEntry, BalanceEntryType } from '@/types'
 import type { BalanceEntryPayload } from '@/api/master'
+import { readNumber, STORAGE_KEYS, writeString } from '@/lib/storage'
 
-const PHP_RATE_KEY = 'balance_php_rate'
 const PER_PAGE     = 10
 
-function getSavedRate(): number {
-  const v = localStorage.getItem(PHP_RATE_KEY)
-  return v ? parseFloat(v) || 58 : 58
-}
+/** USD → ₱ rate for this page; defaults to ₱58 */
+const getSavedRate = () => readNumber(STORAGE_KEYS.balancePhpRate, 58)
 
 interface AccountStats { balance: number; count: number; last: string | null }
 
@@ -150,7 +148,7 @@ export default function Balance() {
     const n = parseFloat(val)
     if (!isNaN(n) && n > 0) {
       setPhpRate(n)
-      localStorage.setItem(PHP_RATE_KEY, String(n))
+      writeString(STORAGE_KEYS.balancePhpRate, String(n))
     }
   }
 

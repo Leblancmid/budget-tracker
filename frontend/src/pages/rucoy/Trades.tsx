@@ -1,12 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Plus, Pencil, Trash2, ArrowLeftRight, ArrowUp, ArrowDown, ArrowUpDown, Banknote, CalendarClock, ChevronLeft, ChevronRight, Coins, HandCoins, Search, Check, Archive, RotateCcw, Download } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { TradeModal } from '@/components/modals/TradeModal'
 import { useTrades } from '@/hooks/useTrades'
+import { useArchive } from '@/hooks/useArchive'
 import { tradesApi } from '@/api/rucoy'
-import { toast } from '@/components/ui/Toast'
+import { toast } from '@/lib/toast'
 import { formatCurrency, formatDateLong, formatTime } from '@/utils/format'
 import { exportCsv } from '@/utils/csv'
 import { CURRENCY_SYMBOLS } from '@/utils/rucoy'
@@ -57,21 +58,11 @@ export default function Trades() {
   const [deleteTarget, setDeleteTarget] = useState<Trade | null>(null)
   const [deleting, setDeleting]     = useState(false)
 
-  const [showArchive, setShowArchive]       = useState(false)
-  const [archivedTrades, setArchivedTrades] = useState<Trade[]>([])
-  const [archiveLoading, setArchiveLoading] = useState(false)
-  const [archiveTarget, setArchiveTarget]   = useState<Trade | null>(null)
-  const [archiving, setArchiving]           = useState(false)
+  const { showArchive, setShowArchive, archivedItems: archivedTrades, archiveLoading, fetchArchived, removeFromArchived } = useArchive(tradesApi.getArchived)
+  const [archiveTarget, setArchiveTarget]     = useState<Trade | null>(null)
+  const [archiving, setArchiving]             = useState(false)
   const [unarchiveTarget, setUnarchiveTarget] = useState<Trade | null>(null)
-  const [unarchiving, setUnarchiving]       = useState(false)
-
-  const fetchArchived = useCallback(async () => {
-    setArchiveLoading(true)
-    try { setArchivedTrades(await tradesApi.getArchived()) }
-    finally { setArchiveLoading(false) }
-  }, [])
-
-  useEffect(() => { if (showArchive) fetchArchived() }, [showArchive, fetchArchived])
+  const [unarchiving, setUnarchiving]         = useState(false)
 
   const handleArchive = async () => {
     if (!archiveTarget) return
@@ -96,7 +87,7 @@ export default function Trades() {
     setUnarchiving(true)
     try {
       await unarchive(unarchiveTarget.id)
-      setArchivedTrades((prev) => prev.filter((t) => t.id !== unarchiveTarget.id))
+      removeFromArchived((t) => t.id !== unarchiveTarget.id)
       toast.success('Trade restored.')
     } catch {
       toast.error('Failed to restore trade.')

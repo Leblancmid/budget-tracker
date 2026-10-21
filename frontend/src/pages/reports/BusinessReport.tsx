@@ -1,17 +1,15 @@
-import { useMemo, useState } from 'react'
-import { ArrowDownLeft, ArrowUpRight, BarChart3, ChevronLeft, ChevronRight, Coins, Download, Package, Percent, ShoppingBag, Trophy, TrendingDown, User } from 'lucide-react'
+import { useMemo } from 'react'
+import { ArrowDownLeft, ArrowUpRight, BarChart3, Coins, Package, Percent, ShoppingBag, Trophy, TrendingDown, User } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { useReport, type ReportPeriod, type ReportRow } from '@/hooks/useReport'
+import { useReport } from '@/hooks/useReport'
+import { useReportRange } from '@/hooks/useReportRange'
+import type { ReportRow } from '@/types'
 import { Card } from '@/components/ui/Card'
-import { Amt } from '@/context/AmountVisibilityContext'
-import { formatCurrency, MONTHS } from '@/utils/format'
+import { Amt } from '@/components/ui/Amt'
+import { ReportHeader } from '@/components/reports/ReportHeader'
+import { formatCurrency } from '@/utils/format'
 import { exportCsv } from '@/utils/csv'
-
-const PERIOD_TABS: { value: ReportPeriod; label: string; unit: string }[] = [
-  { value: 'weekly',  label: 'Weekly',  unit: 'week'  },
-  { value: 'monthly', label: 'Monthly', unit: 'month' },
-  { value: 'yearly',  label: 'Yearly',  unit: 'year'  },
-]
+import { currentIndex, exportName, periodUnit, runningTotals, shortLabel } from '@/utils/reportPeriods'
 
 const TYPES: Record<string, { label: string; color: string; Icon: LucideIcon }> = {
   account: { label: 'Accounts', color: '#6366f1', Icon: User },
@@ -20,33 +18,19 @@ const TYPES: Record<string, { label: string; color: string; Icon: LucideIcon }> 
 }
 const typeOf = (t: string) => TYPES[t] ?? { label: t, color: '#14b8a6', Icon: ShoppingBag }
 
-const now = new Date()
 const profitOf = (r: ReportRow) => r.profit ?? r.income - r.expense
-
-function shortLabel(row: ReportRow, period: ReportPeriod, i: number) {
-  if (period === 'weekly')  return `W${i + 1}`
-  if (period === 'monthly') return row.label.slice(0, 3)
-  return row.label
-}
-
-function currentIndex(period: ReportPeriod, rows: ReportRow[], year: number, month: number) {
-  if (period === 'monthly') return year === now.getFullYear() ? now.getMonth() : -1
-  if (period === 'weekly')  return year === now.getFullYear() && month === now.getMonth() + 1 ? Math.min(Math.floor((now.getDate() - 1) / 7), rows.length - 1) : -1
-  return rows.findIndex((r) => r.label === String(now.getFullYear()))
-}
+const NO_ROWS: ReportRow[] = []
 
 export default function BusinessReport() {
-  const [period, setPeriod] = useState<ReportPeriod>('monthly')
-  const [year,   setYear]   = useState(now.getFullYear())
-  const [month,  setMonth]  = useState(now.getMonth() + 1)
+  const { period, setPeriod, year, month, shift: shiftRange, label: rangeLabel } = useReportRange()
 
   const { data, loading } = useReport('business', period, year, month)
 
-  const rows    = data?.rows ?? []
+  const rows    = data?.rows ?? NO_ROWS
   const income  = data?.totals.income ?? 0
   const cost    = data?.totals.expense ?? 0
   const profit  = data?.totals.profit ?? income - cost
-  const unit    = PERIOD_TABS.find((p) => p.value === period)!.unit
+  const unit    = periodUnit(period)
 
   const active    = rows.filter((r) => r.income > 0 || r.expense > 0)
   const avgProfit = active.length ? profit / active.length : 0
@@ -56,28 +40,14 @@ export default function BusinessReport() {
   const maxBar    = Math.max(1, ...rows.map((r) => Math.max(r.income, r.expense)))
   const curIdx    = currentIndex(period, rows, year, month)
 
-  const running = useMemo(() => {
-    let acc = 0
-    return rows.map((r) => (acc += profitOf(r)))
-  }, [rows])
+  const running = useMemo(() => runningTotals(rows, profitOf), [rows])
 
   const types      = data?.types ?? []
   const typesTotal = types.reduce((s, t) => s + Math.max(0, t.profit), 0)
 
-  const rangeLabel = period === 'weekly' ? `${MONTHS[month - 1]} ${year}` : period === 'monthly' ? String(year) : 'All years'
-
-  const shiftRange = (delta: number) => {
-    if (period === 'weekly') {
-      const d = new Date(year, month - 1 + delta, 1)
-      setMonth(d.getMonth() + 1); setYear(d.getFullYear())
-    } else {
-      setYear((y) => y + delta)
-    }
-  }
-
   const handleExport = () => {
     if (!rows.length) return
-    exportCsv(`business-${period}-${period === 'weekly' ? `${year}-${month}` : year}`, rows.map((r, i) => ({
+    exportCsv(exportName('business', period, year, month), rows.map((r, i) => ({
       period: r.label, revenue: r.income, cost: r.expense, profit: profitOf(r), running: running[i],
     })))
   }
@@ -85,34 +55,16 @@ export default function BusinessReport() {
   return (
     <div className="flex flex-col gap-5">
 
-      {/* ── Header ─────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">Business report</h1>
-          <p className="text-xs text-gray-400 dark:text-gray-500">Sold accounts and gold trades, counted in the period they were sold</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1 rounded-xl bg-gray-100 dark:bg-gray-800 p-1">
-            {PERIOD_TABS.map(({ value, label }) => (
-              <button key={value} onClick={() => setPeriod(value)}
-                className={['rounded-lg px-3 py-1.5 text-sm font-semibold transition-all', period === value ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-900 dark:text-gray-100' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'].join(' ')}>
-                {label}
-              </button>
-            ))}
-          </div>
-          {period !== 'yearly' && (
-            <div className="flex items-center rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm">
-              <button onClick={() => shiftRange(-1)} className="flex h-9 w-9 items-center justify-center rounded-l-xl text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800"><ChevronLeft size={16} /></button>
-              <span className="min-w-[8.5rem] px-2 text-center text-sm font-semibold text-gray-800 dark:text-gray-100">{rangeLabel}</span>
-              <button onClick={() => shiftRange(1)} className="flex h-9 w-9 items-center justify-center rounded-r-xl text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800"><ChevronRight size={16} /></button>
-            </div>
-          )}
-          <button onClick={handleExport} disabled={!rows.length}
-            className="hidden md:flex items-center gap-1.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40 transition-colors">
-            <Download className="h-4 w-4" /> Export
-          </button>
-        </div>
-      </div>
+      <ReportHeader
+        title="Business report"
+        subtitle="Sold accounts and gold trades, counted in the period they were sold"
+        period={period}
+        onPeriodChange={setPeriod}
+        rangeLabel={rangeLabel}
+        onShift={shiftRange}
+        onExport={handleExport}
+        canExport={rows.length > 0}
+      />
 
       {/* ── Hero ───────────────────────────────────────────────────── */}
       {loading ? (

@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { transactionsApi } from '@/api/transactions'
 import type { Paginated, Transaction, TransactionFilters } from '@/types'
+import { useAsyncData } from './useAsyncData'
 
 const EMPTY_PAGE: Paginated<Transaction> = {
   data: [],
@@ -9,25 +10,10 @@ const EMPTY_PAGE: Paginated<Transaction> = {
 }
 
 export function useTransactions(initialFilters: TransactionFilters = {}) {
-  const [result, setResult] = useState<Paginated<Transaction>>(EMPTY_PAGE)
   const [filters, setFilters] = useState<TransactionFilters>({ per_page: 10, page: 1, ...initialFilters })
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
-  const fetch = useCallback(async (f: TransactionFilters) => {
-    setLoading(true)
-    setError(null)
-    try {
-      const data = await transactionsApi.getAll(f)
-      setResult(data)
-    } catch (err: unknown) {
-      setError((err as { message: string }).message)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => { fetch(filters) }, [fetch, filters])
+  const load = useCallback(() => transactionsApi.getAll(filters), [filters])
+  const { data: result, loading, error, refetch } = useAsyncData(load, EMPTY_PAGE)
 
   const applyFilters = (updated: Partial<TransactionFilters>) => {
     setFilters((prev) => ({ ...prev, ...updated, page: 1 }))
@@ -39,19 +25,19 @@ export function useTransactions(initialFilters: TransactionFilters = {}) {
 
   const create = async (data: Parameters<typeof transactionsApi.create>[0]) => {
     const tx = await transactionsApi.create(data)
-    await fetch(filters)
+    await refetch()
     return tx
   }
 
   const update = async (id: number, data: Parameters<typeof transactionsApi.update>[1]) => {
     const tx = await transactionsApi.update(id, data)
-    await fetch(filters)
+    await refetch()
     return tx
   }
 
   const remove = async (id: number) => {
     await transactionsApi.delete(id)
-    await fetch(filters)
+    await refetch()
   }
 
   return {
@@ -62,7 +48,7 @@ export function useTransactions(initialFilters: TransactionFilters = {}) {
     error,
     applyFilters,
     setPage,
-    refetch: () => fetch(filters),
+    refetch,
     create,
     update,
     remove,

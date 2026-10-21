@@ -46,7 +46,8 @@ class MiddlemanFeeTrade
             return;
         }
         $tx = self::get();
-        if (! $tx) {
+        // A trade created just now was seeded from the fees as they already are, this one included
+        if (! $tx || $tx->wasRecentlyCreated) {
             return;
         }
 

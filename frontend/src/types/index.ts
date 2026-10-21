@@ -111,20 +111,6 @@ export interface ApiError {
 
 // ── Master ───────────────────────────────────────────────────────────────────
 
-export type SavingModeOfPayment = 'CIMB' | 'MARIBANK' | 'GCASH'
-export type SavingType = 'deposit' | 'withdraw'
-
-export interface Saving {
-  id: number
-  mode_of_payment: SavingModeOfPayment
-  type: SavingType
-  description: string | null
-  amount: string
-  date: string
-  created_at: string
-  updated_at: string
-}
-
 /** Code of a user-managed balance account (see BalanceAccountConfig) */
 export type BalanceAccount = string
 

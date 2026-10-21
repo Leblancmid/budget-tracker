@@ -9,3 +9,6 @@ desktop.ini
 /backend/public/favicon.svg
 /backend/public/icons.svg
 /backend/public/logo.svg
+
+# Database dumps (contain real data; backups go to backend/storage/app/backups)
+/*.sql

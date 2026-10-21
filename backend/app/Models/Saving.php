@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+/** Legacy savings entries (replaced by Balance). Read-only: kept so their history still shows on the Logs page. */
 class Saving extends Model
 {
     protected $fillable = [

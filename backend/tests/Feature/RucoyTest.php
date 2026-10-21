@@ -101,6 +101,18 @@ class RucoyTest extends TestCase
         $this->deleteJson("/api/v1/rucoy/trades/{$id}")->assertOk();
     }
 
+    public function test_first_fee_is_counted_once_when_the_pinned_trade_is_created(): void
+    {
+        // No pinned trade yet: the fee itself triggers its creation
+        $this->assertNull(BusinessTransaction::where('system_key', MiddlemanFeeTrade::KEY)->first());
+
+        $this->postJson('/api/v1/rucoy/middleman-fees', ['amount' => 40])->assertCreated();
+        $this->assertEquals(40, $this->mmTradeGold());
+
+        $this->postJson('/api/v1/rucoy/middleman-fees', ['amount' => 10])->assertCreated();
+        $this->assertEquals(50, $this->mmTradeGold());
+    }
+
     public function test_cash_trades_have_no_middleman_fee(): void
     {
         $this->postJson('/api/v1/rucoy/trades', ['status' => 'cash', 'amount' => 10, 'middleman_fee' => 5])->assertCreated();

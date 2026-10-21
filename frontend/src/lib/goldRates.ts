@@ -1,8 +1,8 @@
 import { readNumber, STORAGE_KEYS } from './storage'
 
 /** Defaults until rates are set on Master → Overview: 1M G = $0.22, $1 = ₱61. */
-export const DEFAULT_USD_PER_MILLION_GOLD = 0.22
-export const DEFAULT_PHP_PER_USD          = 61
+const DEFAULT_USD_PER_MILLION_GOLD = 0.22
+const DEFAULT_PHP_PER_USD          = 61
 
 /** The rates saved on Master → Overview (also used for the sidebar net worth). */
 export function savedGoldRates(): { usdRate: number; phpRate: number } {

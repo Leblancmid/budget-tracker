@@ -8,13 +8,14 @@ use App\Http\Requests\UpdateCategoryRequest;
 use App\Models\Category;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class CategoryController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $month = (int) $request->get('month', now()->month);
-        $year  = (int) $request->get('year', now()->year);
+        $month = $request->integer('month', now()->month);
+        $year  = $request->integer('year', now()->year);
 
         // Totals count Personal transactions only, matching the Daily Expenses dashboard
         $categories = Category::withCount('transactions')
@@ -41,13 +42,14 @@ class CategoryController extends Controller
 
     public function show(Category $category): JsonResponse
     {
-        abort_if($category->user_id !== auth()->id(), 403);
+        Gate::authorize('view', $category);
+
         return response()->json($category->loadCount('transactions'));
     }
 
     public function update(UpdateCategoryRequest $request, Category $category): JsonResponse
     {
-        abort_if($category->user_id !== auth()->id(), 403);
+        Gate::authorize('update', $category);
         $category->update($request->validated());
 
         return response()->json($category);
@@ -55,7 +57,7 @@ class CategoryController extends Controller
 
     public function destroy(Category $category): JsonResponse
     {
-        abort_if($category->user_id !== auth()->id(), 403);
+        Gate::authorize('delete', $category);
 
         if ($category->transactions()->exists()) {
             return response()->json([

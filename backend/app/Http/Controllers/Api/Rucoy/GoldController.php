@@ -3,13 +3,14 @@
 namespace App\Http\Controllers\Api\Rucoy;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreGoldRequest;
-use App\Http\Requests\UpdateGoldRequest;
+use App\Http\Requests\Rucoy\AdjustGoldRequest;
+use App\Http\Requests\Rucoy\SellGoldRequest;
+use App\Http\Requests\Rucoy\StoreGoldRequest;
+use App\Http\Requests\Rucoy\UpdateGoldRequest;
 use App\Models\Gold;
 use App\Models\GoldLog;
 use App\Services\GoldInventory;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class GoldController extends Controller
@@ -21,23 +22,15 @@ class GoldController extends Controller
 
     public function store(StoreGoldRequest $request): JsonResponse
     {
-        $gold = Gold::create($request->validated());
-
-        GoldLog::create([
-            'type'        => 'add',
-            'amount'      => $gold->amount,
-            'description' => $gold->description,
-        ]);
+        $validated = $request->validated();
+        $gold      = GoldInventory::record((float) $validated['amount'], $validated['description'] ?? null);
 
         return response()->json($gold, 201);
     }
 
-    public function sell(Request $request): JsonResponse
+    public function sell(SellGoldRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'amount'      => ['required', 'numeric', 'min:0.01'],
-            'description' => ['nullable', 'string', 'max:255'],
-        ]);
+        $validated = $request->validated();
 
         GoldInventory::deduct((float) $validated['amount'], $validated['description'] ?? null);
 
@@ -49,10 +42,7 @@ class GoldController extends Controller
         return response()->json(GoldLog::latest()->get());
     }
 
-    /**
-     * Cancel a history entry: undo its effect on the stash and keep the line, marked cancelled.
-     * (Previously this only deleted the log line, so the stash never changed.)
-     */
+    /** Cancel a history entry: undo its effect on the stash and keep the line, marked cancelled. */
     public function cancelLog(GoldLog $goldLog): JsonResponse
     {
         if ($goldLog->cancelled_at) {
@@ -77,25 +67,17 @@ class GoldController extends Controller
         return response()->json($goldLog->fresh());
     }
 
-    /**
-     * Set the stash to the gold you actually have: records one correction for the difference.
-     */
-    public function adjust(Request $request): JsonResponse
+    /** Set the stash to the gold you actually have: records one correction for the difference. */
+    public function adjust(AdjustGoldRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'actual'      => ['required', 'numeric'],
-            'description' => ['nullable', 'string', 'max:255'],
-        ]);
+        $validated = $request->validated();
 
         $current = (float) Gold::sum('amount');
         $delta   = round((float) $validated['actual'] - $current);
 
         if ($delta != 0) {
             $label = trim((string) ($validated['description'] ?? '')) ?: 'Stash correction';
-            DB::transaction(function () use ($delta, $label) {
-                Gold::create(['amount' => $delta, 'description' => $label]);
-                GoldLog::create(['type' => 'add', 'amount' => $delta, 'description' => $label]);
-            });
+            DB::transaction(fn () => GoldInventory::record($delta, $label));
         }
 
         return response()->json(['previous' => $current, 'delta' => $delta, 'stash' => (float) Gold::sum('amount')]);

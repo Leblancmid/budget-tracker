@@ -9,9 +9,12 @@ class MiddlemanFee extends Model
 {
     protected $fillable = ['trade_id', 'amount', 'description'];
 
-    protected $casts = [
-        'amount' => 'decimal:2',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'amount' => 'decimal:2',
+        ];
+    }
 
     public function trade(): BelongsTo
     {

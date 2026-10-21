@@ -10,7 +10,7 @@ class BudgetSeeder extends Seeder
 {
     public function run(): void
     {
-        $cat = fn(string $name) => Category::where('name', $name)->value('id');
+        $cat = fn (string $name) => Category::where('name', $name)->value('id');
 
         $budgets = [
             // June 2026

@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Archivable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class RucoyAccount extends Model
 {
-    use HasFactory;
+    use Archivable, HasFactory;
 
     protected $table = 'rucoy_accounts';
 
@@ -15,11 +16,14 @@ class RucoyAccount extends Model
 
     protected $appends = ['profit'];
 
-    protected $casts = [
-        'price'       => 'float',
-        'cost'        => 'float',
-        'archived_at' => 'datetime',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'price'       => 'float',
+            'cost'        => 'float',
+            'archived_at' => 'datetime',
+        ];
+    }
 
     public function getProfitAttribute(): ?float
     {

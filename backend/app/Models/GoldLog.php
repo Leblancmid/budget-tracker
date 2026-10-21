@@ -8,5 +8,10 @@ class GoldLog extends Model
 {
     protected $fillable = ['type', 'amount', 'description'];
 
-    protected $casts = ['amount' => 'decimal:2'];
+    protected function casts(): array
+    {
+        return [
+            'amount' => 'decimal:2',
+        ];
+    }
 }

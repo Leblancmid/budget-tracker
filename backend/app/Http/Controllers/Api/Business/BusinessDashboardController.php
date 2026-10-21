@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Business;
 use App\Http\Controllers\Controller;
 use App\Models\BusinessTransaction;
 use App\Models\Transaction;
+use App\Services\BusinessProfit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -37,14 +38,15 @@ class BusinessDashboardController extends Controller
         $recentSold = $soldThisMonth->sortByDesc('archived_at')->take(6)->values();
 
         // Realized trend for the year, by month sold
-        $soldThisYear = BusinessTransaction::whereNotNull('archived_at')->whereYear('archived_at', $year)->get();
+        $soldThisYear = BusinessTransaction::archived()->whereYear('archived_at', $year)->get();
         $realizedTrend = collect(range(1, 12))->map(function ($m) use ($soldThisYear) {
             $r = $this->realize($soldThisYear->filter(fn ($t) => (int) $t->archived_at->month === $m));
+
             return ['month' => $m, ...$r];
         })->values();
 
         // ── Pipeline: unsold accounts + gold trades ──
-        $open = BusinessTransaction::whereNull('archived_at')->whereIn('type', ['account', 'gold'])->get();
+        $open = BusinessTransaction::active()->whereIn('type', ['account', 'gold'])->get();
         $priced = $open->whereNotNull('price_php');
         $pipeline = [
             'count'            => $open->count(),
@@ -100,22 +102,17 @@ class BusinessDashboardController extends Controller
 
     private function soldIn(int $year, int $month): Collection
     {
-        return BusinessTransaction::whereNotNull('archived_at')
+        return BusinessTransaction::archived()
             ->whereYear('archived_at', $year)->whereMonth('archived_at', $month)
             ->get();
     }
 
-    /** Same rule as the Sales page "Sold Profit": price − cost for sales, plus item expenses. */
+    /** Rounded realized results plus how many sales they cover. */
     private function realize(Collection $sold): array
     {
-        $income  = (float) $sold->whereNotIn('type', ['expense'])->sum('price_php');
-        $expense = (float) $sold->whereNotIn('type', ['expense'])->sum('cost_php')
-                 + (float) $sold->where('type', 'expense')->sum('amount');
         return [
-            'income'  => round($income, 2),
-            'expense' => round($expense, 2),
-            'profit'  => round($income - $expense, 2),
-            'count'   => $sold->count(),
+            ...array_map(fn (float $v) => round($v, 2), BusinessProfit::realized($sold)),
+            'count' => $sold->count(),
         ];
     }
 }

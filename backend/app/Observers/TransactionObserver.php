@@ -2,48 +2,10 @@
 
 namespace App\Observers;
 
-use App\Models\ActivityLog;
-use App\Models\Transaction;
-
-class TransactionObserver
+class TransactionObserver extends ActivityLogObserver
 {
-    public function created(Transaction $model): void
+    protected function module(): string
     {
-        ActivityLog::create([
-            'user_id'       => auth()->id(),
-            'loggable_type' => Transaction::class,
-            'loggable_id'   => $model->id,
-            'module'        => 'daily',
-            'type'          => $model->type,
-            'description'   => $model->description,
-            'amount'        => $model->amount,
-            'ip_address'    => request()->ip(),
-            'user_agent'    => request()->userAgent(),
-        ]);
-    }
-
-    public function updated(Transaction $model): void
-    {
-        // Skip logging if only timestamps changed
-        if ($model->isDirty() && !$this->onlyTimestampsChanged($model)) {
-            ActivityLog::recordEdit($model, [
-                'user_id'       => auth()->id(),
-                'loggable_type' => Transaction::class,
-                'loggable_id'   => $model->id,
-                'module'        => 'daily',
-                'description'   => $model->description,
-                'amount'        => $model->amount,
-                'ip_address'    => request()->ip(),
-                'user_agent'    => request()->userAgent(),
-            ]);
-        }
-    }
-
-    private function onlyTimestampsChanged(Transaction $model): bool
-    {
-        $dirty = array_keys($model->getDirty());
-        $timestampFields = ['updated_at', 'created_at'];
-        
-        return count($dirty) === count(array_intersect($dirty, $timestampFields));
+        return 'daily';
     }
 }

@@ -9,6 +9,7 @@ use App\Models\Transaction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 class TransactionController extends Controller
 {
@@ -48,7 +49,7 @@ class TransactionController extends Controller
             $query->where('description', 'like', '%' . $request->search . '%');
         }
 
-        $perPage = (int) $request->get('per_page', 10);
+        $perPage = $request->integer('per_page', 10);
         $transactions = $query->paginate($perPage);
 
         return response()->json($transactions);
@@ -61,6 +62,7 @@ class TransactionController extends Controller
         $transaction = DB::transaction(function () use ($data) {
             $tx = Transaction::create(array_merge(collect($data)->except('balance_account')->all(), ['user_id' => auth()->id()]));
             $this->syncBalance($tx, $data['balance_account'] ?? null);
+
             return $tx;
         });
 
@@ -69,13 +71,14 @@ class TransactionController extends Controller
 
     public function show(Transaction $transaction): JsonResponse
     {
-        abort_if($transaction->user_id !== auth()->id(), 403);
+        Gate::authorize('view', $transaction);
+
         return response()->json($this->present($transaction));
     }
 
     public function update(UpdateTransactionRequest $request, Transaction $transaction): JsonResponse
     {
-        abort_if($transaction->user_id !== auth()->id(), 403);
+        Gate::authorize('update', $transaction);
         $data = $request->validated();
 
         DB::transaction(function () use ($transaction, $data) {
@@ -92,7 +95,7 @@ class TransactionController extends Controller
 
     public function destroy(Transaction $transaction): JsonResponse
     {
-        abort_if($transaction->user_id !== auth()->id(), 403);
+        Gate::authorize('delete', $transaction);
         // The linked balance entry is removed with it (cascade), restoring the account balance
         $transaction->balanceEntry?->delete();
         $transaction->delete();
@@ -108,8 +111,9 @@ class TransactionController extends Controller
     {
         $entry = $tx->balanceEntry()->first();
 
-        if (!$account) {
+        if (! $account) {
             $entry?->delete();
+
             return;
         }
 

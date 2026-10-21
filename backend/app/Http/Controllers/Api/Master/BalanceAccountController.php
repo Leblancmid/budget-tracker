@@ -3,12 +3,13 @@
 namespace App\Http\Controllers\Api\Master;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Master\ReorderBalanceAccountsRequest;
+use App\Http\Requests\Master\StoreBalanceAccountRequest;
+use App\Http\Requests\Master\UpdateBalanceAccountRequest;
 use App\Models\BalanceAccount;
 use App\Models\BalanceEntry;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 
 class BalanceAccountController extends Controller
 {
@@ -27,9 +28,9 @@ class BalanceAccountController extends Controller
         );
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreBalanceAccountRequest $request): JsonResponse
     {
-        $data = $request->validate($this->rules());
+        $data = $request->validated();
 
         $account = BalanceAccount::create([
             ...$data,
@@ -40,13 +41,9 @@ class BalanceAccountController extends Controller
         return response()->json([...$account->toArray(), 'entry_count' => 0], 201);
     }
 
-    public function update(Request $request, BalanceAccount $balanceAccount): JsonResponse
+    public function update(UpdateBalanceAccountRequest $request, BalanceAccount $balanceAccount): JsonResponse
     {
-        $data = $request->validate([
-            ...$this->rules(partial: true),
-            'sort_order' => ['sometimes', 'integer', 'min:0'],
-            'hidden'     => ['sometimes', 'boolean'],
-        ]);
+        $data = $request->validated();
 
         if (array_key_exists('hidden', $data)) {
             $data['hidden_at'] = $data['hidden'] ? ($balanceAccount->hidden_at ?? now()) : null;
@@ -60,12 +57,12 @@ class BalanceAccountController extends Controller
     }
 
     /** Save a new order: { ids: [3, 1, 2, ...] } */
-    public function reorder(Request $request): JsonResponse
+    public function reorder(ReorderBalanceAccountsRequest $request): JsonResponse
     {
-        $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer', 'exists:balance_accounts,id']])['ids'];
-        foreach (array_values($ids) as $i => $id) {
+        foreach (array_values($request->validated('ids')) as $i => $id) {
             BalanceAccount::whereKey($id)->update(['sort_order' => $i + 1]);
         }
+
         return $this->index();
     }
 
@@ -75,18 +72,8 @@ class BalanceAccountController extends Controller
             return response()->json(['message' => 'This account has entries — hide it instead, or delete its entries first.'], 422);
         }
         $balanceAccount->delete();
-        return response()->json(['message' => 'Account deleted.']);
-    }
 
-    private function rules(bool $partial = false): array
-    {
-        $req = $partial ? 'sometimes' : 'required';
-        return [
-            'name'     => [$req, 'string', 'max:100'],
-            'currency' => [$req, Rule::in(BalanceAccount::CURRENCIES)],
-            'color'    => [$req, 'string', 'max:20', 'regex:/^[a-z]+$/'],
-            'icon'     => [$req, 'string', 'max:30', 'regex:/^[a-z0-9-]+$/'],
-        ];
+        return response()->json(['message' => 'Account deleted.']);
     }
 
     private function uniqueCode(string $name): string
@@ -96,6 +83,7 @@ class BalanceAccountController extends Controller
         for ($i = 2; BalanceAccount::where('code', $code)->exists(); $i++) {
             $code = $base . '_' . $i;
         }
+
         return $code;
     }
 }

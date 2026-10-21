@@ -9,10 +9,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('business_transactions', function (Blueprint $table) {
-            if (!Schema::hasColumn('business_transactions', 'price_gold_received')) {
+            if (! Schema::hasColumn('business_transactions', 'price_gold_received')) {
                 $table->decimal('price_gold_received', 20, 0)->nullable()->after('cost_gold');
             }
-            if (!Schema::hasColumn('business_transactions', 'cost_gold_paid')) {
+            if (! Schema::hasColumn('business_transactions', 'cost_gold_paid')) {
                 $table->decimal('cost_gold_paid', 20, 0)->nullable()->after('price_gold_received');
             }
         });

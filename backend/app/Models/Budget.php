@@ -12,11 +12,14 @@ class Budget extends Model
 
     protected $fillable = ['user_id', 'category_id', 'amount', 'month', 'year'];
 
-    protected $casts = [
-        'amount' => 'decimal:2',
-        'month'  => 'integer',
-        'year'   => 'integer',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'amount' => 'decimal:2',
+            'month'  => 'integer',
+            'year'   => 'integer',
+        ];
+    }
 
     public function category(): BelongsTo
     {

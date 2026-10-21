@@ -14,7 +14,12 @@ class Gold extends Model
 
     protected $fillable = ['amount', 'description'];
 
-    protected $casts = ['amount' => 'decimal:2'];
+    protected function casts(): array
+    {
+        return [
+            'amount' => 'decimal:2',
+        ];
+    }
 
     public function trades(): HasMany
     {

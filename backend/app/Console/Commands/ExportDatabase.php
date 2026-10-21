@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\File;
 class ExportDatabase extends Command
 {
     protected $signature   = 'db:export {--keep=30 : Number of recent backups to keep}';
+
     protected $description = 'Export the MySQL database to a timestamped SQL file in storage/app/backups';
 
     public function handle(): int
@@ -39,6 +40,7 @@ class ExportDatabase extends Command
             $this->error("Export failed (exit {$exitCode}). Check {$filepath} for mysqldump error output.");
             // Remove the bad file
             @unlink($filepath);
+
             return self::FAILURE;
         }
 

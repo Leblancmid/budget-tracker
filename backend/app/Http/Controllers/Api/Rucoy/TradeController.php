@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api\Rucoy;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreTradeRequest;
-use App\Http\Requests\UpdateTradeRequest;
+use App\Http\Requests\Rucoy\StoreTradeRequest;
+use App\Http\Requests\Rucoy\UpdateTradeRequest;
 use App\Models\Trade;
 use Illuminate\Http\JsonResponse;
 
@@ -12,12 +12,12 @@ class TradeController extends Controller
 {
     public function index(): JsonResponse
     {
-        return response()->json(Trade::whereNull('archived_at')->latest()->get());
+        return response()->json(Trade::active()->latest()->get());
     }
 
     public function archived(): JsonResponse
     {
-        return response()->json(Trade::whereNotNull('archived_at')->latest('archived_at')->get());
+        return response()->json(Trade::archived()->latest('archived_at')->get());
     }
 
     public function store(StoreTradeRequest $request): JsonResponse

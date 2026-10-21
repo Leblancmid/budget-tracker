@@ -2,159 +2,101 @@
 
 namespace App\Observers;
 
-use App\Models\ActivityLog;
-use App\Models\Gold;
-use App\Models\GoldLog;
 use App\Models\MiddlemanFee;
 use App\Models\Trade;
+use App\Services\GoldInventory;
+use Illuminate\Database\Eloquent\Model;
 
-class TradeObserver
+class TradeObserver extends ActivityLogObserver
 {
-    public function created(Trade $model): void
-    {
-        ActivityLog::create([
-            'user_id'       => auth()->id(),
-            'loggable_type' => Trade::class,
-            'loggable_id'   => $model->id,
-            'module'        => 'trade',
-            'type'          => $model->status,
-            'description'   => $this->buildDescription($model),
-            'amount'        => $model->amount,
-            'ip_address'    => request()->ip(),
-            'user_agent'    => request()->userAgent(),
-        ]);
+    /** Middleman fee changes are logged through the gold history instead. */
+    protected array $ignoredOnEdit = ['updated_at', 'created_at', 'archived_at', 'middleman_fee'];
 
-        // Handle middleman fee creation
+    protected bool $logsArchive = true;
+
+    /** @param Trade $model */
+    public function created(Model $model): void
+    {
+        parent::created($model);
+
         $this->handleMiddlemanFee($model);
     }
 
-    public function updated(Trade $model): void
+    /** @param Trade $model */
+    public function updated(Model $model): void
     {
-        // Log archive events
-        if ($model->isDirty('archived_at') && $model->archived_at !== null) {
-            ActivityLog::create([
-                'user_id'       => auth()->id(),
-                'loggable_type' => Trade::class,
-                'loggable_id'   => $model->id,
-                'module'        => 'trade',
-                'type'          => 'archived',
-                'description'   => $this->buildDescription($model),
-                'amount'        => $model->amount,
-                'ip_address'    => request()->ip(),
-                'user_agent'    => request()->userAgent(),
-            ]);
-        }
-        // Log regular edit events (excluding archive, middleman_fee-only, and timestamp-only changes)
-        elseif ($model->isDirty() && !$this->onlyTimestampsOrFeeChanged($model)) {
-            ActivityLog::recordEdit($model, [
-                'user_id'       => auth()->id(),
-                'loggable_type' => Trade::class,
-                'loggable_id'   => $model->id,
-                'module'        => 'trade',
-                'description'   => $this->buildDescription($model),
-                'amount'        => $model->amount,
-                'ip_address'    => request()->ip(),
-                'user_agent'    => request()->userAgent(),
-            ]);
-        }
+        parent::updated($model);
 
-        // Handle middleman fee updates
         if ($model->isDirty('middleman_fee')) {
             $this->handleMiddlemanFee($model);
         }
     }
 
-    private function onlyTimestampsOrFeeChanged(Trade $model): bool
+    protected function module(): string
     {
-        $dirty = array_keys($model->getDirty());
-        $excludedFields = ['updated_at', 'created_at', 'archived_at', 'middleman_fee'];
-        
-        return count($dirty) === count(array_intersect($dirty, $excludedFields));
+        return 'trade';
     }
 
-    private function handleMiddlemanFee(Trade $model): void
+    /** @param Trade $model */
+    protected function type(Model $model): ?string
     {
-        // Only handle for KKS trades
-        if ($model->status !== 'kks') {
-            return;
-        }
-
-        $existingFee = $model->middlemanFeeRecord;
-        $newFeeAmount = $model->middleman_fee;
-
-        // Case 1: No fee now, but there was one before - delete it
-        if (!$newFeeAmount && $existingFee) {
-            // Remove from gold stash
-            Gold::create([
-                'amount'      => -$existingFee->amount,
-                'description' => 'MM Fee removed: ' . ($model->description ?? 'Trade #' . $model->id),
-            ]);
-
-            // Record in transaction history
-            GoldLog::create([
-                'type'        => 'fee',
-                'amount'      => -$existingFee->amount,
-                'description' => 'MM Fee removed: ' . ($model->description ?? 'Trade #' . $model->id),
-            ]);
-
-            $existingFee->delete();
-            return;
-        }
-
-        // Case 2: There's a fee now
-        if ($newFeeAmount) {
-            if ($existingFee) {
-                // Update existing fee - adjust the difference in gold
-                $difference = $newFeeAmount - $existingFee->amount;
-
-                if ($difference != 0) {
-                    // Adjust gold stash by the difference
-                    Gold::create([
-                        'amount'      => $difference,
-                        'description' => 'MM Fee adjusted: ' . ($model->description ?? 'Trade #' . $model->id),
-                    ]);
-
-                    // Record in transaction history
-                    GoldLog::create([
-                        'type'        => 'fee',
-                        'amount'      => $difference,
-                        'description' => 'MM Fee adjusted: ' . ($model->description ?? 'Trade #' . $model->id),
-                    ]);
-
-                    // Update the middleman fee record
-                    $existingFee->update([
-                        'amount'      => $newFeeAmount,
-                        'description' => $model->description ?? 'Trade #' . $model->id,
-                    ]);
-                }
-            } else {
-                // Create new fee
-                Gold::create([
-                    'amount'      => $newFeeAmount,
-                    'description' => $model->description ?? 'MM Fee',
-                ]);
-
-                GoldLog::create([
-                    'type'        => 'fee',
-                    'amount'      => $newFeeAmount,
-                    'description' => $model->description ?? 'MM Fee',
-                ]);
-
-                MiddlemanFee::create([
-                    'trade_id'    => $model->id,
-                    'amount'      => $newFeeAmount,
-                    'description' => $model->description ?? 'Trade #' . $model->id,
-                ]);
-            }
-        }
+        return $model->status;
     }
 
-    private function buildDescription(Trade $model): ?string
+    /** @param Trade $model */
+    protected function description(Model $model): ?string
     {
         $description = $model->description;
         if ($model->currency) {
             $description = trim(($description ? $description . ' · ' : '') . $model->currency);
         }
+
         return $description ?: null;
+    }
+
+    /** Keep a KKS trade's middleman fee record, and the gold stash, in step with its fee. */
+    private function handleMiddlemanFee(Trade $model): void
+    {
+        if ($model->status !== 'kks') {
+            return;
+        }
+
+        $existingFee  = $model->middlemanFeeRecord;
+        $newFeeAmount = $model->middleman_fee;
+        $label        = $model->description ?? 'Trade #' . $model->id;
+
+        // Fee removed
+        if (! $newFeeAmount && $existingFee) {
+            GoldInventory::record(-$existingFee->amount, 'MM Fee removed: ' . $label, 'fee');
+            $existingFee->delete();
+
+            return;
+        }
+
+        if (! $newFeeAmount) {
+            return;
+        }
+
+        // Fee changed: move only the difference
+        if ($existingFee) {
+            $difference = $newFeeAmount - $existingFee->amount;
+            if ($difference != 0) {
+                GoldInventory::record($difference, 'MM Fee adjusted: ' . $label, 'fee');
+                $existingFee->update([
+                    'amount'      => $newFeeAmount,
+                    'description' => $label,
+                ]);
+            }
+
+            return;
+        }
+
+        // New fee
+        GoldInventory::record($newFeeAmount, $model->description ?? 'MM Fee', 'fee');
+        MiddlemanFee::create([
+            'trade_id'    => $model->id,
+            'amount'      => $newFeeAmount,
+            'description' => $label,
+        ]);
     }
 }

@@ -16,10 +16,13 @@ class Transaction extends Model
 
     protected $fillable = ['user_id', 'category_id', 'type', 'scope', 'amount', 'description', 'date', 'notes'];
 
-    protected $casts = [
-        'amount' => 'decimal:2',
-        'date'   => 'date:Y-m-d',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'amount' => 'decimal:2',
+            'date'   => 'date:Y-m-d',
+        ];
+    }
 
     protected $attributes = [
         'scope' => 'personal',

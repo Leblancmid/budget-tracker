@@ -15,8 +15,11 @@ class BalanceEntry extends Model
         'date',
     ];
 
-    protected $casts = [
-        'amount' => 'decimal:2',
-        'date'   => 'date:Y-m-d',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'amount' => 'decimal:2',
+            'date'   => 'date:Y-m-d',
+        ];
+    }
 }

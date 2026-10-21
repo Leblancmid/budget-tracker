@@ -13,7 +13,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('business_transactions', function (Blueprint $table) {
-            if (!Schema::hasColumn('business_transactions', 'inventory_gold')) {
+            if (! Schema::hasColumn('business_transactions', 'inventory_gold')) {
                 $table->decimal('inventory_gold', 20, 0)->nullable()->after('cost_gold_paid');
             }
         });

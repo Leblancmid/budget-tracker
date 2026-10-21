@@ -11,10 +11,13 @@ class BalanceAccount extends Model
 
     protected $fillable = ['code', 'name', 'currency', 'color', 'icon', 'sort_order', 'hidden_at'];
 
-    protected $casts = [
-        'sort_order' => 'integer',
-        'hidden_at'  => 'datetime',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'sort_order' => 'integer',
+            'hidden_at'  => 'datetime',
+        ];
+    }
 
     public function entries(): HasMany
     {

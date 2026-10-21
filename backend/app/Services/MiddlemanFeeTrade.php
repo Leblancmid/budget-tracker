@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Models\BusinessTransaction;
 use App\Models\MiddlemanFee;
-use Illuminate\Support\Facades\Schema;
+use App\Support\SchemaColumns;
 
 /**
  * The pinned "Middleman Fee" gold trade. Every middleman fee adds its gold to
@@ -16,10 +16,14 @@ class MiddlemanFeeTrade
 
     public static function get(): ?BusinessTransaction
     {
-        if (!Schema::hasColumn('business_transactions', 'system_key')) return null;
+        if (! SchemaColumns::has('business_transactions', 'system_key')) {
+            return null;
+        }
 
         $tx = BusinessTransaction::where('system_key', self::KEY)->first();
-        if ($tx) return $tx;
+        if ($tx) {
+            return $tx;
+        }
 
         // First use: start from this month's fees (later fees are added as they come in)
         return BusinessTransaction::create([
@@ -38,9 +42,13 @@ class MiddlemanFeeTrade
     /** Add (or, if negative, remove) gold from the trade's price and refresh its ₱ values. */
     public static function adjust(float $gold): void
     {
-        if ($gold == 0) return;
+        if ($gold == 0) {
+            return;
+        }
         $tx = self::get();
-        if (!$tx) return;
+        if (! $tx) {
+            return;
+        }
 
         $tx->price_gold = max(0, (float) $tx->price_gold + $gold);
         $tx->recomputeGoldPhp();

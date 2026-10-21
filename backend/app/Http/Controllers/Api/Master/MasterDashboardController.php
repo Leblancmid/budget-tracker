@@ -3,14 +3,14 @@
 namespace App\Http\Controllers\Api\Master;
 
 use App\Http\Controllers\Controller;
-use App\Models\BusinessTransaction;
 use App\Models\BalanceAccount;
 use App\Models\BalanceEntry;
+use App\Models\BusinessTransaction;
 use App\Models\Gold;
 use App\Models\RucoyAccount;
-use App\Models\Saving;
 use App\Models\Trade;
 use App\Models\Transaction;
+use App\Services\BusinessProfit;
 use Illuminate\Http\JsonResponse;
 
 class MasterDashboardController extends Controller
@@ -20,23 +20,16 @@ class MasterDashboardController extends Controller
         $now = now();
 
         // Overall Profit = Business archived profit (all types) + Daily net
-        $allArchived         = BusinessTransaction::whereNotNull('archived_at')->get();
-        $businessIncome      = (float) $allArchived->whereNotIn('type', ['expense'])->sum('price_php');
-        $businessExpense     = (float) $allArchived->whereNotIn('type', ['expense'])->sum('cost_php')
-                             + (float) $allArchived->where('type', 'expense')->sum('amount');
-        $businessProfit      = $businessIncome - $businessExpense;
-        $dailyIncome         = (float) Transaction::personal()->where('type', 'income')->sum('amount');
-        $dailyExpense        = (float) Transaction::personal()->where('type', 'expense')->sum('amount');
-        $overallProfit       = $businessProfit + ($dailyIncome - $dailyExpense);
+        $businessProfit = BusinessProfit::realized(BusinessTransaction::archived()->get())['profit'];
+        $dailyIncome    = (float) Transaction::personal()->where('type', 'income')->sum('amount');
+        $dailyExpense   = (float) Transaction::personal()->where('type', 'expense')->sum('amount');
+        $overallProfit  = $businessProfit + ($dailyIncome - $dailyExpense);
 
         // Monthly Profit (current month only)
-        $monthlyArchived         = BusinessTransaction::whereNotNull('archived_at')
-            ->whereYear('archived_at', $now->year)->whereMonth('archived_at', $now->month)->get();
-        $monthlyBusinessIncome   = (float) $monthlyArchived->whereNotIn('type', ['expense'])->sum('price_php');
-        $monthlyBusinessExpense  = (float) $monthlyArchived->whereNotIn('type', ['expense'])->sum('cost_php')
-                                 + (float) $monthlyArchived->where('type', 'expense')->sum('amount');
-        $monthlyBusinessProfit   = $monthlyBusinessIncome - $monthlyBusinessExpense;
-        $monthlyDailyIncome  = (float) Transaction::personal()->where('type', 'income')
+        $monthlyBusinessProfit = BusinessProfit::realized(
+            BusinessTransaction::archived()->whereYear('archived_at', $now->year)->whereMonth('archived_at', $now->month)->get()
+        )['profit'];
+        $monthlyDailyIncome = (float) Transaction::personal()->where('type', 'income')
             ->whereYear('date', $now->year)->whereMonth('date', $now->month)->sum('amount');
         $monthlyDailyExpense = (float) Transaction::personal()->where('type', 'expense')
             ->whereYear('date', $now->year)->whereMonth('date', $now->month)->sum('amount');
@@ -44,39 +37,35 @@ class MasterDashboardController extends Controller
 
         // Rucoy
         $manualGold = (float) Gold::sum('amount');
-        $totalPrice = (float) RucoyAccount::whereNull('archived_at')->sum('cost');
-
-        // Savings
-        $savingsDeposit  = (float) Saving::where('type', 'deposit')->sum('amount');
-        $savingsWithdraw = (float) Saving::where('type', 'withdraw')->sum('amount');
-        $savingsBalance  = $savingsDeposit - $savingsWithdraw;
+        $totalPrice = (float) RucoyAccount::active()->sum('cost');
 
         // Balance — split USD vs PHP accounts
         $usdAccounts = BalanceAccount::codesFor('USD');
         $phpAccounts = BalanceAccount::codesFor('PHP');
-
-        $balanceUsdTotal = (float) BalanceEntry::whereIn('account', $usdAccounts)->where('type', 'add')->sum('amount')
-                         - (float) BalanceEntry::whereIn('account', $usdAccounts)->where('type', 'sell')->sum('amount');
-
-        $balancePhpTotal = (float) BalanceEntry::whereIn('account', $phpAccounts)->where('type', 'add')->sum('amount')
-                         - (float) BalanceEntry::whereIn('account', $phpAccounts)->where('type', 'sell')->sum('amount');
 
         return response()->json([
             'overall_profit'    => $overallProfit,
             'monthly_profit'    => $monthlyProfit,
             'gold_stash'        => $manualGold,
             'total_price'       => $totalPrice,
-            'balance_usd_total' => $balanceUsdTotal,
-            'balance_php_total' => $balancePhpTotal,
+            'balance_usd_total' => $this->balanceOf($usdAccounts),
+            'balance_php_total' => $this->balanceOf($phpAccounts),
             // Breakdowns behind the profit figures above
             'business_profit'         => round($businessProfit, 2),
             'daily_net'               => round($dailyIncome - $dailyExpense, 2),
             'monthly_business_profit' => round($monthlyBusinessProfit, 2),
             'monthly_daily_net'       => round($monthlyDailyIncome - $monthlyDailyExpense, 2),
-            'kks_gold'                => (float) Trade::where('status', 'kks')->whereNull('archived_at')->sum('amount'),
-            'account_count'           => RucoyAccount::whereNull('archived_at')->count(),
+            'kks_gold'                => (float) Trade::where('status', 'kks')->active()->sum('amount'),
+            'account_count'           => RucoyAccount::active()->count(),
             'balance_usd_accounts'    => count($usdAccounts),
             'balance_php_accounts'    => count($phpAccounts),
         ]);
+    }
+
+    /** Money added minus money taken out across the given balance accounts. */
+    private function balanceOf(array $accounts): float
+    {
+        return (float) BalanceEntry::whereIn('account', $accounts)->where('type', 'add')->sum('amount')
+             - (float) BalanceEntry::whereIn('account', $accounts)->where('type', 'sell')->sum('amount');
     }
 }

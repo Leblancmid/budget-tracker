@@ -9,14 +9,15 @@ use App\Models\Budget;
 use App\Models\Transaction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class BudgetController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
         $userId = auth()->id();
-        $month  = (int) $request->get('month', now()->month);
-        $year   = (int) $request->get('year', now()->year);
+        $month  = $request->integer('month', now()->month);
+        $year   = $request->integer('year', now()->year);
 
         $budgets = Budget::with('category')
             ->where('user_id', $userId)
@@ -52,7 +53,7 @@ class BudgetController extends Controller
 
     public function update(UpdateBudgetRequest $request, Budget $budget): JsonResponse
     {
-        abort_if($budget->user_id !== auth()->id(), 403);
+        Gate::authorize('update', $budget);
         $budget->update($request->validated());
 
         return response()->json($budget->load('category'));
@@ -60,7 +61,7 @@ class BudgetController extends Controller
 
     public function destroy(Budget $budget): JsonResponse
     {
-        abort_if($budget->user_id !== auth()->id(), 403);
+        Gate::authorize('delete', $budget);
         $budget->delete();
 
         return response()->json(['message' => 'Budget deleted successfully.']);

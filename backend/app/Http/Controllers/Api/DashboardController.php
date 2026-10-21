@@ -13,8 +13,8 @@ class DashboardController extends Controller
     public function index(Request $request): JsonResponse
     {
         $userId = auth()->id();
-        $month  = (int) $request->get('month', now()->month);
-        $year   = (int) $request->get('year', now()->year);
+        $month  = $request->integer('month', now()->month);
+        $year   = $request->integer('year', now()->year);
 
         $totalIncome = Transaction::where('user_id', $userId)->personal()
             ->where('type', 'income')
@@ -47,11 +47,11 @@ class DashboardController extends Controller
             ->get();
 
         $monthlyTrend = Transaction::select(
-                DB::raw('MONTH(date) as month'),
-                DB::raw('YEAR(date) as year'),
-                'type',
-                DB::raw('SUM(amount) as total')
-            )
+            DB::raw('MONTH(date) as month'),
+            DB::raw('YEAR(date) as year'),
+            'type',
+            DB::raw('SUM(amount) as total')
+        )
             ->where('user_id', $userId)->personal()
             ->whereYear('date', $year)
             ->groupBy('year', 'month', 'type')

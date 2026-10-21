@@ -5,23 +5,31 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\BusinessTransaction;
 use App\Models\Transaction;
+use App\Services\BusinessProfit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 class ReportController extends Controller
 {
+    /** Day ranges of the five "weeks" in a month; the last one is cut to the month's length. */
+    private const WEEKS = [[1, 7], [8, 14], [15, 21], [22, 28], [29, 31]];
+
     public function dailyExpenses(Request $request): JsonResponse
     {
         $period = $request->input('period', 'monthly');
-        $year   = (int) $request->input('year', now()->year);
-        $month  = (int) $request->input('month', now()->month);
+        $year   = $request->integer('year', now()->year);
+        $month  = $request->integer('month', now()->month);
         $userId = auth()->id();
 
+        $txns   = Transaction::personal()->where('user_id', $userId);
+        $totals = fn (Collection $slice) => $this->dailyTotals($slice);
+
         $rows = match ($period) {
-            'weekly' => $this->dailyWeekly($year, $month, $userId),
-            'yearly' => $this->dailyYearly($userId),
-            default  => $this->dailyMonthly($year, $userId),
+            'weekly' => $this->weeklyRows($txns->whereYear('date', $year)->whereMonth('date', $month)->get(), 'date', $year, $month, $totals),
+            'yearly' => $this->yearlyRows($txns->orderBy('date')->get(), 'date', $totals),
+            default  => $this->monthlyRows($txns->whereYear('date', $year)->get(), 'date', $year, $totals),
         };
 
         $totals = [
@@ -33,8 +41,11 @@ class ReportController extends Controller
         // Category breakdown for the same range (Personal only, like the rows)
         $range = Transaction::personal()->where('transactions.user_id', $userId)
             ->join('categories', 'categories.id', '=', 'transactions.category_id');
-        if ($period === 'weekly')      $range->whereYear('date', $year)->whereMonth('date', $month);
-        elseif ($period === 'monthly') $range->whereYear('date', $year);
+        if ($period === 'weekly') {
+            $range->whereYear('date', $year)->whereMonth('date', $month);
+        } elseif ($period === 'monthly') {
+            $range->whereYear('date', $year);
+        }
         $categories = $range
             ->selectRaw('categories.id, categories.name, categories.color, categories.icon, transactions.type, SUM(transactions.amount) as total, COUNT(*) as count')
             ->groupBy('categories.id', 'categories.name', 'categories.color', 'categories.icon', 'transactions.type')
@@ -48,13 +59,17 @@ class ReportController extends Controller
     public function business(Request $request): JsonResponse
     {
         $period = $request->input('period', 'monthly');
-        $year   = (int) $request->input('year', now()->year);
-        $month  = (int) $request->input('month', now()->month);
+        $year   = $request->integer('year', now()->year);
+        $month  = $request->integer('month', now()->month);
+
+        // A sale counts in the period it was sold (archived)
+        $sold    = BusinessTransaction::archived();
+        $realize = fn (Collection $slice) => BusinessProfit::realized($slice);
 
         $rows = match ($period) {
-            'weekly' => $this->businessWeekly($year, $month),
-            'yearly' => $this->businessYearly(),
-            default  => $this->businessMonthly($year),
+            'weekly' => $this->weeklyRows($sold->whereYear('archived_at', $year)->whereMonth('archived_at', $month)->get(), 'archived_at', $year, $month, $realize),
+            'yearly' => $this->yearlyRows($sold->orderBy('archived_at')->get(), 'archived_at', $realize),
+            default  => $this->monthlyRows($sold->whereYear('archived_at', $year)->get(), 'archived_at', $year, $realize),
         };
 
         $totals = [
@@ -64,143 +79,80 @@ class ReportController extends Controller
         ];
 
         // Breakdown by type (account / gold / item) for the same range, by month sold
-        $sold = BusinessTransaction::whereNotNull('archived_at');
-        if ($period === 'weekly')      $sold->whereYear('archived_at', $year)->whereMonth('archived_at', $month);
-        elseif ($period === 'monthly') $sold->whereYear('archived_at', $year);
-        $types = $sold->get()->groupBy('type')->map(fn ($g, $type) => [
+        $range = BusinessTransaction::archived();
+        if ($period === 'weekly') {
+            $range->whereYear('archived_at', $year)->whereMonth('archived_at', $month);
+        } elseif ($period === 'monthly') {
+            $range->whereYear('archived_at', $year);
+        }
+        $types = $range->get()->groupBy('type')->map(fn ($g, $type) => [
             'type'  => $type,
             'count' => $g->count(),
-            ...array_map(fn ($v) => round($v, 2), $this->businessTotals($g)),
+            ...array_map(fn ($v) => round($v, 2), BusinessProfit::realized($g)),
         ])->sortByDesc('profit')->values();
 
         return response()->json(compact('period', 'year', 'month', 'rows', 'totals', 'types'));
     }
 
-    // ── Daily Expenses ────────────────────────────────────────────────────────
-
-    private function dailyWeekly(int $year, int $month, int $userId): array
+    /** @return array{income: float, expense: float, net: float} */
+    private function dailyTotals(Collection $slice): array
     {
-        $txns        = Transaction::personal()->where('user_id', $userId)->whereYear('date', $year)->whereMonth('date', $month)->get();
-        $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
-        $monthName   = Carbon::createFromDate($year, $month, 1)->format('M');
+        $income  = (float) $slice->where('type', 'income')->sum('amount');
+        $expense = (float) $slice->where('type', 'expense')->sum('amount');
+
+        return ['income' => $income, 'expense' => $expense, 'net' => $income - $expense];
+    }
+
+    // ── Period rows: one labelled row of totals per week / month / year ─────────
+
+    private function weeklyRows(Collection $items, string $dateField, int $year, int $month, callable $totals): array
+    {
+        $start       = Carbon::createFromDate($year, $month, 1);
+        $daysInMonth = $start->daysInMonth;
+        $monthName   = $start->format('M');
         $rows        = [];
 
-        foreach ([[1, 7], [8, 14], [15, 21], [22, 28], [29, $daysInMonth]] as $i => [$from, $to]) {
-            if ($from > $daysInMonth) break;
+        foreach (self::WEEKS as $i => [$from, $to]) {
+            if ($from > $daysInMonth) {
+                break;
+            }
             $actualTo = min($to, $daysInMonth);
-            $slice    = $txns->filter(fn($t) => Carbon::parse($t->date)->day >= $from && Carbon::parse($t->date)->day <= $actualTo);
-            $income   = (float) $slice->where('type', 'income')->sum('amount');
-            $expense  = (float) $slice->where('type', 'expense')->sum('amount');
+            $slice    = $items->filter(fn ($t) => Carbon::parse($t->{$dateField})->day >= $from && Carbon::parse($t->{$dateField})->day <= $actualTo);
             $rows[]   = [
-                'label'   => 'Week ' . ($i + 1) . " ({$monthName} {$from}–{$actualTo})",
-                'income'  => $income,
-                'expense' => $expense,
-                'net'     => $income - $expense,
+                'label' => 'Week ' . ($i + 1) . " ({$monthName} {$from}–{$actualTo})",
+                ...$totals($slice),
             ];
         }
 
         return $rows;
     }
 
-    private function dailyMonthly(int $year, int $userId): array
+    private function monthlyRows(Collection $items, string $dateField, int $year, callable $totals): array
     {
-        $txns = Transaction::personal()->where('user_id', $userId)->whereYear('date', $year)->get();
         $rows = [];
 
         for ($m = 1; $m <= 12; $m++) {
-            $slice   = $txns->filter(fn($t) => Carbon::parse($t->date)->month === $m);
-            $income  = (float) $slice->where('type', 'income')->sum('amount');
-            $expense = (float) $slice->where('type', 'expense')->sum('amount');
-            $rows[]  = [
-                'label'   => Carbon::createFromDate($year, $m, 1)->format('F Y'),
-                'income'  => $income,
-                'expense' => $expense,
-                'net'     => $income - $expense,
+            $slice  = $items->filter(fn ($t) => Carbon::parse($t->{$dateField})->month === $m);
+            $rows[] = [
+                'label' => Carbon::createFromDate($year, $m, 1)->format('F Y'),
+                ...$totals($slice),
             ];
         }
 
         return $rows;
     }
 
-    private function dailyYearly(int $userId): array
+    private function yearlyRows(Collection $items, string $dateField, callable $totals): array
     {
-        $txns  = Transaction::personal()->where('user_id', $userId)->orderBy('date')->get();
-        $years = $txns->map(fn($t) => Carbon::parse($t->date)->year)->unique()->sort()->values();
+        $years = $items->map(fn ($t) => Carbon::parse($t->{$dateField})->year)->unique()->sort()->values();
         $rows  = [];
 
         foreach ($years as $year) {
-            $slice   = $txns->filter(fn($t) => Carbon::parse($t->date)->year === $year);
-            $income  = (float) $slice->where('type', 'income')->sum('amount');
-            $expense = (float) $slice->where('type', 'expense')->sum('amount');
-            $rows[]  = [
-                'label'   => (string) $year,
-                'income'  => $income,
-                'expense' => $expense,
-                'net'     => $income - $expense,
+            $slice  = $items->filter(fn ($t) => Carbon::parse($t->{$dateField})->year === $year);
+            $rows[] = [
+                'label' => (string) $year,
+                ...$totals($slice),
             ];
-        }
-
-        return $rows;
-    }
-
-    // ── Business ──────────────────────────────────────────────────────────────
-
-    private function businessTotals($slice): array
-    {
-        $income  = (float) $slice->whereNotIn('type', ['expense'])->sum('price_php');
-        $expense = (float) $slice->whereNotIn('type', ['expense'])->sum('cost_php')
-                 + (float) $slice->where('type', 'expense')->sum('amount');
-        return ['income' => $income, 'expense' => $expense, 'profit' => $income - $expense];
-    }
-
-    private function businessWeekly(int $year, int $month): array
-    {
-        $txns        = BusinessTransaction::whereNotNull('archived_at')->whereYear('archived_at', $year)->whereMonth('archived_at', $month)->get();
-        $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
-        $monthName   = Carbon::createFromDate($year, $month, 1)->format('M');
-        $rows        = [];
-
-        foreach ([[1, 7], [8, 14], [15, 21], [22, 28], [29, $daysInMonth]] as $i => [$from, $to]) {
-            if ($from > $daysInMonth) break;
-            $actualTo = min($to, $daysInMonth);
-            $slice    = $txns->filter(fn($t) => Carbon::parse($t->archived_at)->day >= $from && Carbon::parse($t->archived_at)->day <= $actualTo);
-            $rows[]   = array_merge(
-                ['label' => 'Week ' . ($i + 1) . " ({$monthName} {$from}–{$actualTo})"],
-                $this->businessTotals($slice),
-            );
-        }
-
-        return $rows;
-    }
-
-    private function businessMonthly(int $year): array
-    {
-        $txns = BusinessTransaction::whereNotNull('archived_at')->whereYear('archived_at', $year)->get();
-        $rows = [];
-
-        for ($m = 1; $m <= 12; $m++) {
-            $slice  = $txns->filter(fn($t) => Carbon::parse($t->archived_at)->month === $m);
-            $rows[] = array_merge(
-                ['label' => Carbon::createFromDate($year, $m, 1)->format('F Y')],
-                $this->businessTotals($slice),
-            );
-        }
-
-        return $rows;
-    }
-
-    private function businessYearly(): array
-    {
-        $txns  = BusinessTransaction::whereNotNull('archived_at')->orderBy('archived_at')->get();
-        $years = $txns->map(fn($t) => Carbon::parse($t->archived_at)->year)->unique()->sort()->values();
-        $rows  = [];
-
-        foreach ($years as $year) {
-            $slice  = $txns->filter(fn($t) => Carbon::parse($t->archived_at)->year === $year);
-            $rows[] = array_merge(
-                ['label' => (string) $year],
-                $this->businessTotals($slice),
-            );
         }
 
         return $rows;

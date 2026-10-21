@@ -13,7 +13,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('business_transactions', function (Blueprint $table) {
-            if (!Schema::hasColumn('business_transactions', 'system_key')) {
+            if (! Schema::hasColumn('business_transactions', 'system_key')) {
                 $table->string('system_key', 50)->nullable()->unique()->after('type');
             }
         });

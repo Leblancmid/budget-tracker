@@ -11,6 +11,7 @@ use App\Models\GoldLog;
 use App\Models\Saving;
 use App\Models\Trade;
 use App\Models\Transaction;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 
 class LogController extends Controller
@@ -21,7 +22,7 @@ class LogController extends Controller
 
         // created events → keyed for IP/device merge into original table rows
         $activityMap = $allActivityLogs->whereIn('type', ['income', 'expense', 'gold', 'fee', 'add', 'sell', 'buy', 'kks', 'pending', 'completed', 'cancelled'])
-            ->keyBy(fn($l) => $l->loggable_type . '|' . $l->loggable_id);
+            ->keyBy(fn ($l) => $l->loggable_type . '|' . $l->loggable_id);
 
         // archived and edited events → standalone log entries
         $standaloneEvents = $allActivityLogs->whereIn('type', ['archived', 'edited']);
@@ -116,7 +117,7 @@ class LogController extends Controller
             'description' => $description,
             'amount'      => $amount,
             'date'        => $date,
-            'created_at'  => $createdAt instanceof \Carbon\Carbon ? $createdAt->toISOString() : $createdAt,
+            'created_at'  => $createdAt instanceof Carbon ? $createdAt->toISOString() : $createdAt,
             'ip_address'  => $log?->ip_address,
             'user_agent'  => $log?->user_agent,
             'user_id'     => $log?->user_id,

@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "postbuild": "node deploy-to-laravel.mjs",
-    "typecheck": "tsc -b",
+    "typecheck": "tsc -b && tsc -p tsconfig.test.json --noEmit",
     "lint": "oxlint",
     "test": "vitest run",
     "test:watch": "vitest",

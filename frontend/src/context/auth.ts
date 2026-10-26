@@ -10,7 +10,9 @@ export interface AuthUser {
 export interface AuthContextValue {
   user: AuthUser | null
   token: string | null
-  login: (email: string, password: string) => Promise<void>
+  /** ISO time this login stops working (null for logins saved before expiry was tracked) */
+  expiresAt: string | null
+  login: (email: string, password: string, remember: boolean) => Promise<void>
   logout: () => Promise<void>
   isAuthenticated: boolean
 }

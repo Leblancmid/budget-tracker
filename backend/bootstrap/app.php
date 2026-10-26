@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\SecureApiHeaders;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -18,6 +19,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->api(prepend: [
             HandleCors::class,
+        ], append: [
+            SecureApiHeaders::class,
         ]);
 
         $middleware->validateCsrfTokens(except: ['api/*']);

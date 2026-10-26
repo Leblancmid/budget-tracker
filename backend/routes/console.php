@@ -10,3 +10,6 @@ Artisan::command('inspire', function () {
 
 // Auto-export database daily at 2:00 AM
 Schedule::command('db:export --keep=2')->twiceDaily(2, 14);
+
+// Remove login tokens that expired more than a day ago
+Schedule::command('sanctum:prune-expired --hours=24')->daily();

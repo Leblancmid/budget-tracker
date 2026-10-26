@@ -21,11 +21,13 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
     // Public
-    Route::post('auth/login', [AuthController::class, 'login'])->name('auth.login');
+    // Per-email lockout lives in LoginRequest; this caps attempts per IP across all emails
+    Route::post('auth/login', [AuthController::class, 'login'])->middleware('throttle:20,1')->name('auth.login');
 
     // Protected
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
+        Route::post('auth/logout-all', [AuthController::class, 'logoutAll'])->name('auth.logout-all');
 
         // Logs
         Route::get('logs', [LogController::class, 'index'])->name('logs.index');

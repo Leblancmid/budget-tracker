@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { readString, removeItem, STORAGE_KEYS } from '@/lib/storage'
+import { clearSession, sessionToken } from '@/lib/authSession'
 import type { ApiError } from '@/utils/api'
 
 const api = axios.create({
@@ -8,19 +8,20 @@ const api = axios.create({
 })
 
 api.interceptors.request.use((config) => {
-  const token = readString(STORAGE_KEYS.authToken)
+  const token = sessionToken()
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
+
+const loginPath = `${import.meta.env.BASE_URL}login`
 
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Session expired: drop it and go to the login page (respecting the app's base path)
-      removeItem(STORAGE_KEYS.authToken)
-      removeItem(STORAGE_KEYS.authUser)
-      window.location.href = `${import.meta.env.BASE_URL}login`
+      // Session expired or revoked: drop it and go to the login page (respecting the app's base path)
+      clearSession()
+      if (window.location.pathname !== loginPath) window.location.href = loginPath
     }
     const rejection: ApiError = {
       message: error.response?.data?.message ?? error.message ?? 'An unexpected error occurred.',

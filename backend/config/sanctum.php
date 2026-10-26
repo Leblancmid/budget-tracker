@@ -50,7 +50,8 @@ return [
     |
     */
 
-    'expiration' => null,
+    // Hard cap for every token (including ones issued before per-token expiry existed)
+    'expiration' => (int) env('SANCTUM_EXPIRATION', 60 * 24 * 30),
 
     /*
     |--------------------------------------------------------------------------
@@ -65,7 +66,7 @@ return [
     |
     */
 
-    'token_prefix' => env('SANCTUM_TOKEN_PREFIX', ''),
+    'token_prefix' => env('SANCTUM_TOKEN_PREFIX', 'budget_'),
 
     /*
     |--------------------------------------------------------------------------

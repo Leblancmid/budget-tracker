@@ -114,4 +114,35 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    /*
+    |--------------------------------------------------------------------------
+    | API Token Lifetimes
+    |--------------------------------------------------------------------------
+    |
+    | How long a login token stays valid, in minutes. "Remember me" logins get
+    | the longer lifetime; the rest end after a working day. Sanctum's global
+    | expiration (config/sanctum.php) caps every token at the remember length.
+    |
+    */
+
+    'token_lifetime' => [
+        'session'  => (int) env('AUTH_SESSION_TOKEN_MINUTES', 60 * 12),
+        'remember' => (int) env('AUTH_REMEMBER_TOKEN_MINUTES', 60 * 24 * 30),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Login Throttling
+    |--------------------------------------------------------------------------
+    |
+    | Failed logins allowed per email + IP before a lockout, and how long the
+    | lockout lasts (seconds).
+    |
+    */
+
+    'login_throttle' => [
+        'max_attempts'  => (int) env('AUTH_LOGIN_MAX_ATTEMPTS', 5),
+        'decay_seconds' => (int) env('AUTH_LOGIN_LOCKOUT_SECONDS', 60),
+    ],
+
 ];

@@ -11,7 +11,6 @@ trait ValidatesListing
 
         return [
             'level'             => ['nullable', 'integer', 'min:1', 'max:9999'],
-            'hp'                => ['nullable', 'integer', 'min:0', 'max:1000000'],
             'melee'             => $stat,
             'distance'          => $stat,
             'magic'             => $stat,

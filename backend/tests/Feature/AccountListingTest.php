@@ -23,7 +23,7 @@ class AccountListingTest extends TestCase
 
     private function stats(): array
     {
-        return ['level' => 618, 'hp' => 9370, 'melee' => 602, 'distance' => 378, 'magic' => 485, 'defense' => 552];
+        return ['level' => 618, 'melee' => 602, 'distance' => 378, 'magic' => 485, 'defense' => 552];
     }
 
     public function test_daily_only_users_cannot_reach_business_data(): void

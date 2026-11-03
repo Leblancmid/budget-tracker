@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * What a buyer sees in a listing: the in-game stats screen (level, HP, skills),
+     * What a buyer sees in a listing: the in-game stats screen (level, skills),
      * its screenshot, whether the price is shown, and when it went up for sale.
      * listed_at → archived_at (sold) gives days-to-sell for pricing decisions.
      */
@@ -16,8 +16,7 @@ return new class extends Migration
     {
         Schema::table('rucoy_accounts', function (Blueprint $table) {
             $table->unsignedSmallInteger('level')->nullable()->after('email');
-            $table->unsignedInteger('hp')->nullable()->after('level');
-            $table->unsignedSmallInteger('melee')->nullable()->after('hp');
+            $table->unsignedSmallInteger('melee')->nullable()->after('level');
             $table->unsignedSmallInteger('distance')->nullable()->after('melee');
             $table->unsignedSmallInteger('magic')->nullable()->after('distance');
             $table->unsignedSmallInteger('defense')->nullable()->after('magic');
@@ -34,7 +33,7 @@ return new class extends Migration
     {
         Schema::table('rucoy_accounts', function (Blueprint $table) {
             $table->dropIndex(['listed_at']);
-            $table->dropColumn(['level', 'hp', 'melee', 'distance', 'magic', 'defense', 'screenshot', 'show_price', 'listed_at']);
+            $table->dropColumn(['level', 'melee', 'distance', 'magic', 'defense', 'screenshot', 'show_price', 'listed_at']);
         });
     }
 };

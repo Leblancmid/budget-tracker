@@ -264,7 +264,6 @@ export interface RucoyAccount {
   payment_date: string | null
   /** In-game Stats screen, shown on listings */
   level: number | null
-  hp: number | null
   melee: number | null
   distance: number | null
   magic: number | null

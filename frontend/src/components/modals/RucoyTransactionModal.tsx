@@ -31,12 +31,11 @@ interface RucoyTransactionModalProps {
   onSubmitGold: (data: BusinessTransactionPayload) => Promise<void>
 }
 
-type StatKey = 'level' | 'hp' | 'melee' | 'distance' | 'magic' | 'defense'
+type StatKey = 'level' | 'melee' | 'distance' | 'magic' | 'defense'
 
 /** In-game Stats screen fields, in the order the game shows them. */
 const STAT_FIELDS: { key: StatKey; label: string; min: number }[] = [
   { key: 'level',    label: 'Level',    min: 1 },
-  { key: 'hp',       label: 'HP',       min: 0 },
   { key: 'melee',    label: 'Melee',    min: 0 },
   { key: 'distance', label: 'Distance', min: 0 },
   { key: 'magic',    label: 'Magic',    min: 0 },
@@ -159,7 +158,7 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
       if (!description.trim()) errs.description = 'Description is required.'
       for (const { key, label, min } of STAT_FIELDS) {
         const v = stats[key]
-        if (v !== '' && (!/^\d+$/.test(v) || Number(v) < min || Number(v) > (key === 'hp' ? 1_000_000 : 9999))) {
+        if (v !== '' && (!/^\d+$/.test(v) || Number(v) < min || Number(v) > 9999)) {
           errs[key] = `${label} must be a whole number${min ? ' above 0' : ''}.`
         }
       }
@@ -306,7 +305,7 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
             {/* Listing: what buyers see (Listing Kit image) */}
             <fieldset className="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
               <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Listing</legend>
-              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                 {STAT_FIELDS.map(({ key, label }) => (
                   <div key={key} className="min-w-0">
                     <label htmlFor={`stat-${key}`} className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400 truncate">{label}</label>

@@ -6,7 +6,7 @@ import {
 } from './listing'
 
 const account = (overrides: Partial<RucoyAccount> = {}) => ({
-  id: 1, description: 'Acc', email: 'a@example.com', level: 618, hp: 9370,
+  id: 1, description: 'Acc', email: 'a@example.com', level: 618,
   melee: 602, distance: 378, magic: 485, defense: 552,
   price: 700_000_000, show_price: true, listed_at: '2026-11-01T00:00:00Z',
   ...overrides,

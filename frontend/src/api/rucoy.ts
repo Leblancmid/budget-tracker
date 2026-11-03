@@ -74,7 +74,6 @@ export interface AccountPayload {
   payment_status?: AccountPaymentStatus
   payment_date?: string | null
   level?: number | null
-  hp?: number | null
   melee?: number | null
   distance?: number | null
   magic?: number | null
@@ -86,7 +85,7 @@ export interface AccountPayload {
   show_price?: boolean
 }
 
-const LISTING_NUMBERS = ['level', 'hp', 'melee', 'distance', 'magic', 'defense'] as const
+const LISTING_NUMBERS = ['level', 'melee', 'distance', 'magic', 'defense'] as const
 
 function buildAccountForm(data: AccountPayload, method?: 'PUT'): FormData {
   const fd = new FormData()

@@ -23,6 +23,11 @@ export default defineConfig(({ mode }) => {
           target: 'http://localhost:8000',
           changeOrigin: true,
         },
+        // Uploaded screenshots: same origin in dev so the listing-image canvas can export them
+        '/storage': {
+          target: 'http://localhost:8000',
+          changeOrigin: true,
+        },
       },
     },
   }

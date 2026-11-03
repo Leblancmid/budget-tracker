@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureAdmin;
 use App\Http\Middleware\SecureApiHeaders;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
@@ -22,6 +23,8 @@ return Application::configure(basePath: dirname(__DIR__))
         ], append: [
             SecureApiHeaders::class,
         ]);
+
+        $middleware->alias(['admin' => EnsureAdmin::class]);
 
         $middleware->validateCsrfTokens(except: ['api/*']);
     })

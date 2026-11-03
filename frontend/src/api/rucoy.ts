@@ -73,7 +73,20 @@ export interface AccountPayload {
   cost?: number | null
   payment_status?: AccountPaymentStatus
   payment_date?: string | null
+  level?: number | null
+  hp?: number | null
+  melee?: number | null
+  distance?: number | null
+  magic?: number | null
+  defense?: number | null
+  /** A new screenshot to upload */
+  screenshot?: File | null
+  /** Delete the current screenshot */
+  remove_screenshot?: boolean
+  show_price?: boolean
 }
+
+const LISTING_NUMBERS = ['level', 'hp', 'melee', 'distance', 'magic', 'defense'] as const
 
 function buildAccountForm(data: AccountPayload, method?: 'PUT'): FormData {
   const fd = new FormData()
@@ -85,6 +98,13 @@ function buildAccountForm(data: AccountPayload, method?: 'PUT'): FormData {
   if (data.cost != null) fd.append('cost', String(data.cost))
   if (data.payment_status) fd.append('payment_status', data.payment_status)
   if (data.payment_date !== undefined) fd.append('payment_date', data.payment_date ?? '')
+  // '' reaches Laravel as null, which clears a stat that was removed
+  for (const key of LISTING_NUMBERS) {
+    if (data[key] !== undefined) fd.append(key, data[key] != null ? String(data[key]) : '')
+  }
+  if (data.screenshot instanceof File) fd.append('screenshot', data.screenshot)
+  else if (data.remove_screenshot) fd.append('remove_screenshot', '1')
+  if (data.show_price !== undefined) fd.append('show_price', data.show_price ? '1' : '0')
   return fd
 }
 

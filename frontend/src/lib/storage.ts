@@ -20,6 +20,8 @@ export const STORAGE_KEYS = {
   /** USD → ₱ rate on Balance */
   balancePhpRate:      'balance_php_rate',
   goldCalculatorRates: 'gold_calculator_rates',
+  /** Listing Kit settings: columns, NEW window, promos, headline, link */
+  listingKit:          'listing_kit',
 } as const
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS]

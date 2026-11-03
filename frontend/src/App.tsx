@@ -22,6 +22,7 @@ const Trades              = lazy(() => import('@/pages/rucoy/Trades'))
 const GoldCalculator      = lazy(() => import('@/pages/rucoy/GoldCalculator'))
 const BusinessDashboard   = lazy(() => import('@/pages/business/BusinessDashboard'))
 const Sales               = lazy(() => import('@/pages/business/Sales'))
+const ListingKit          = lazy(() => import('@/pages/business/ListingKit'))
 const DailyExpensesReport = lazy(() => import('@/pages/reports/DailyExpensesReport'))
 const BusinessReport      = lazy(() => import('@/pages/reports/BusinessReport'))
 const Logs                = lazy(() => import('@/pages/Logs'))
@@ -66,6 +67,7 @@ export default function App() {
 
                     <Route path="/business"              element={<BusinessDashboard />} />
                     <Route path="/business/transactions" element={<Sales />} />
+                    <Route path="/business/listing"      element={<ListingKit />} />
 
                     <Route path="/reports/business" element={<BusinessReport />} />
 

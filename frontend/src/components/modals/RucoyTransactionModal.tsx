@@ -9,6 +9,8 @@ import type { BusinessTransactionPayload } from '@/api/business'
 import type { AccountPaymentStatus, BusinessTransaction, RucoyAccount } from '@/types'
 import { formatWithCommas, handleAmountInput, todayISO } from '@/utils/format'
 import { flattenApiErrors } from '@/utils/api'
+import { screenshotError } from '@/utils/listing'
+import { ScreenshotField } from './ScreenshotField'
 
 export type RucoyTxKind = 'account' | 'gold'
 
@@ -29,6 +31,19 @@ interface RucoyTransactionModalProps {
   onSubmitGold: (data: BusinessTransactionPayload) => Promise<void>
 }
 
+type StatKey = 'level' | 'hp' | 'melee' | 'distance' | 'magic' | 'defense'
+
+/** In-game Stats screen fields, in the order the game shows them. */
+const STAT_FIELDS: { key: StatKey; label: string; min: number }[] = [
+  { key: 'level',    label: 'Level',    min: 1 },
+  { key: 'hp',       label: 'HP',       min: 0 },
+  { key: 'melee',    label: 'Melee',    min: 0 },
+  { key: 'distance', label: 'Distance', min: 0 },
+  { key: 'magic',    label: 'Magic',    min: 0 },
+  { key: 'defense',  label: 'Defense',  min: 0 },
+]
+const EMPTY_STATS = Object.fromEntries(STAT_FIELDS.map(({ key }) => [key, ''])) as Record<StatKey, string>
+
 const num = (v: string | null | undefined) => (v != null && v !== '' ? String(parseFloat(v)) : '')
 const round2 = (v: number) => Math.round(v * 100) / 100
 const fmtUSD = (v: number | null) =>
@@ -46,6 +61,12 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
   const [email, setEmail]                 = useState('')
   const [paymentStatus, setPaymentStatus] = useState<AccountPaymentStatus>('not_paid')
   const [paymentDate, setPaymentDate]     = useState('')
+
+  // Account-only: what buyers see in the listing
+  const [stats, setStats]           = useState<Record<StatKey, string>>(EMPTY_STATS)
+  const [showPrice, setShowPrice]   = useState(false)
+  const [shotFile, setShotFile]     = useState<File | null>(null)
+  const [shotRemoved, setShotRemoved] = useState(false)
 
   // Shared fields
   const [description, setDescription]   = useState('')
@@ -71,6 +92,10 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
     setEmail(account?.email ?? '')
     setPaymentStatus(account?.payment_status ?? 'not_paid')
     setPaymentDate(account?.payment_date ?? '')
+    setStats(Object.fromEntries(STAT_FIELDS.map(({ key }) => [key, account?.[key] != null ? String(account[key]) : ''])) as Record<StatKey, string>)
+    setShowPrice(account?.show_price ?? false)
+    setShotFile(null)
+    setShotRemoved(false)
     setDescription(kind === 'account' ? (account?.description ?? '') : (goldTx?.description ?? ''))
     setPriceGold(kind === 'account'
       ? (account?.price != null ? String(account.price) : '')
@@ -131,6 +156,17 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
     const errs: typeof errors = {}
     if (kind === 'account') {
       if (!email.trim()) errs.email = 'Email is required.'
+      if (!description.trim()) errs.description = 'Description is required.'
+      for (const { key, label, min } of STAT_FIELDS) {
+        const v = stats[key]
+        if (v !== '' && (!/^\d+$/.test(v) || Number(v) < min || Number(v) > (key === 'hp' ? 1_000_000 : 9999))) {
+          errs[key] = `${label} must be a whole number${min ? ' above 0' : ''}.`
+        }
+      }
+      if (shotFile) {
+        const shotErr = screenshotError(shotFile)
+        if (shotErr) errs.screenshot = shotErr
+      }
     } else {
       if (priceGoldNum == null) errs.price_gold = 'Price (G) is required.'
       if (costGoldNum == null)  errs.cost_gold  = 'Cost (G) is required.'
@@ -157,6 +193,10 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
             cost:           costGoldNum,
             payment_status: paymentStatus,
             payment_date:   paymentDate || null,
+            ...Object.fromEntries(STAT_FIELDS.map(({ key }) => [key, stats[key] !== '' ? Number(stats[key]) : null])),
+            show_price:        showPrice,
+            screenshot:        shotFile,
+            remove_screenshot: shotRemoved && !shotFile,
           },
           accountTx || hasRates ? buildPricing('account') : null,
         )
@@ -226,6 +266,7 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
         <Input
           label="Description"
           value={description}
+          error={errors.description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder={kind === 'account' ? 'e.g. Leblanc 583 Dist' : 'e.g. 9/100 Crash'}
         />
@@ -261,6 +302,48 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
                 <input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} className={inputCls} />
               </div>
             </div>
+
+            {/* Listing: what buyers see (Listing Kit image) */}
+            <fieldset className="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+              <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Listing</legend>
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                {STAT_FIELDS.map(({ key, label }) => (
+                  <div key={key} className="min-w-0">
+                    <label htmlFor={`stat-${key}`} className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400 truncate">{label}</label>
+                    <input
+                      id={`stat-${key}`}
+                      type="text"
+                      inputMode="numeric"
+                      value={stats[key]}
+                      onChange={(e) => /^\d*$/.test(e.target.value) && setStats((s) => ({ ...s, [key]: e.target.value }))}
+                      className={[inputCls, errors[key] ? 'border-red-400 dark:border-red-500' : ''].join(' ')}
+                    />
+                  </div>
+                ))}
+              </div>
+              {STAT_FIELDS.map(({ key }) => errors[key] && <p key={key} className="mt-1 text-xs text-red-500">{errors[key]}</p>)}
+
+              <div className="mt-3">
+                <ScreenshotField
+                  currentUrl={account?.screenshot ?? null}
+                  file={shotFile}
+                  removed={shotRemoved}
+                  error={errors.screenshot}
+                  onFile={(f) => { setShotFile(f); setShotRemoved(false); setErrors((e) => ({ ...e, screenshot: screenshotError(f) ?? undefined })) }}
+                  onRemove={() => { setShotFile(null); setShotRemoved(true) }}
+                />
+              </div>
+
+              <label className="mt-3 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showPrice}
+                  onChange={(e) => setShowPrice(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                />
+                Show the price on the listing image
+              </label>
+            </fieldset>
           </>
         )}
 

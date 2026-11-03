@@ -262,6 +262,19 @@ export interface RucoyAccount {
   profit: number | null
   payment_status: AccountPaymentStatus
   payment_date: string | null
+  /** In-game Stats screen, shown on listings */
+  level: number | null
+  hp: number | null
+  melee: number | null
+  distance: number | null
+  magic: number | null
+  defense: number | null
+  /** Stats-screen screenshot used for the listing image */
+  screenshot: string | null
+  /** Print the price on the listing image */
+  show_price: boolean
+  /** When it went up for sale (days-to-sell runs from here to archived_at) */
+  listed_at: string | null
   archived_at: string | null
   created_at: string
   updated_at: string

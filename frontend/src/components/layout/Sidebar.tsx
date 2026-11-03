@@ -82,6 +82,7 @@ const SECTIONS = [
     items: [
       { to: '/business', label: 'Stats', end: true },
       { to: '/business/transactions', label: 'Sales', end: false },
+      { to: '/business/listing', label: 'Listing Kit', end: false },
     ],
   },
   {

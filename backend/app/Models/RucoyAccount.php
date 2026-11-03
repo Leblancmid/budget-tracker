@@ -12,7 +12,10 @@ class RucoyAccount extends Model
 
     protected $table = 'rucoy_accounts';
 
-    protected $fillable = ['description', 'email', 'avatar', 'price', 'cost', 'payment_status', 'payment_date'];
+    protected $fillable = [
+        'description', 'email', 'avatar', 'price', 'cost', 'payment_status', 'payment_date',
+        'level', 'hp', 'melee', 'distance', 'magic', 'defense', 'screenshot', 'show_price', 'listed_at',
+    ];
 
     protected $appends = ['profit'];
 
@@ -21,6 +24,14 @@ class RucoyAccount extends Model
         return [
             'price'       => 'float',
             'cost'        => 'float',
+            'level'       => 'integer',
+            'hp'          => 'integer',
+            'melee'       => 'integer',
+            'distance'    => 'integer',
+            'magic'       => 'integer',
+            'defense'     => 'integer',
+            'show_price'  => 'boolean',
+            'listed_at'   => 'datetime',
             'archived_at' => 'datetime',
         ];
     }

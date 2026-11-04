@@ -184,6 +184,124 @@ class BusinessTransactionService
         });
     }
 
+    /**
+     * Take gold out of a gold trade to pay for something else (an account). Like a partial sale,
+     * the price and cost come off by the gold taken and ₱ follows each side's own rate, but no
+     * sale is recorded: the cost moves to what was bought, and profit is counted when that sells.
+     * The gold also leaves the stash. A trade used up completely is removed.
+     *
+     * @return array Exactly what was taken (gold, ₱, progress, stash, the trade's details), for returnGold().
+     */
+    public function takeGold(BusinessTransaction $tx, float $gold, string $label): array
+    {
+        $total     = (float) $tx->price_gold;
+        $f         = $total > 0 ? min($gold / $total, 1) : 0;
+        $costTotal = $tx->cost_gold !== null ? (float) $tx->cost_gold : null;
+        $takenCost = $costTotal !== null ? min($gold, $costTotal) : null;
+        $costShare = $costTotal ? $takenCost / $costTotal : 0;
+        $hasProgress = SchemaColumns::has('business_transactions', 'price_gold_received');
+
+        $taken = [
+            'price_gold' => $gold,
+            'cost_gold'  => $takenCost,
+            'price_php'  => $tx->price_php !== null ? round((float) $tx->price_php * $f, 2) : null,
+            'cost_php'   => $tx->cost_php !== null ? round((float) $tx->cost_php * $costShare, 2) : null,
+            'received'   => $hasProgress && $tx->price_gold_received !== null ? min((float) $tx->price_gold_received, $gold) : null,
+            'paid'       => $hasProgress && $tx->cost_gold_paid !== null && $takenCost !== null ? min((float) $tx->cost_gold_paid, $takenCost) : null,
+            'stash'      => $tx->inventory_gold !== null ? min((float) $tx->inventory_gold, $gold) : 0,
+            // Enough to recreate the trade if it gets used up and removed
+            'trade' => [
+                'description'   => $tx->description,
+                'price_rate'    => $tx->price_rate,
+                'cost_rate'     => $tx->cost_rate,
+                'php_rate'      => $tx->php_rate,
+                'cost_php_rate' => $tx->cost_php_rate,
+                'date'          => $tx->date?->format('Y-m-d'),
+                'notes'         => $tx->notes,
+            ],
+        ];
+
+        $minus = fn ($v, $p) => $v === null ? null : (float) $v - (float) ($p ?? 0);
+        $tx->price_gold = $total - $gold;
+        $tx->cost_gold  = $minus($tx->cost_gold, $taken['cost_gold']);
+        $tx->price_php  = $tx->price_php !== null ? round($minus($tx->price_php, $taken['price_php']), 2) : null;
+        $tx->cost_php   = $tx->cost_php !== null ? round($minus($tx->cost_php, $taken['cost_php']), 2) : null;
+        if ($hasProgress) {
+            $tx->price_gold_received = $minus($tx->price_gold_received, $taken['received']);
+            $tx->cost_gold_paid      = $minus($tx->cost_gold_paid, $taken['paid']);
+        }
+        if ($tx->inventory_gold !== null) {
+            $tx->inventory_gold = max(0, (float) $tx->inventory_gold - $taken['stash']);
+        }
+        $this->refreshProfit($tx);
+
+        if ($taken['stash'] > 0) {
+            GoldInventory::deduct($taken['stash'], $label);
+        }
+
+        $taken['removed'] = (float) $tx->price_gold <= 0 && ! $tx->isSystem();
+        $taken['removed'] ? $tx->delete() : $tx->save();
+
+        return $taken;
+    }
+
+    /**
+     * Undo takeGold(): put the gold, ₱ and stash back on the trade. If the trade was used up and
+     * removed (or has since been sold), a pending trade with the same details is recreated instead.
+     */
+    public function returnGold(?BusinessTransaction $tx, array $taken, string $label): BusinessTransaction
+    {
+        if (! $tx || $tx->archived_at !== null) {
+            $trade = $taken['trade'] ?? [];
+            $tx = BusinessTransaction::create([
+                'type'          => 'gold',
+                'description'   => $trade['description'] ?? 'Gold trade',
+                'price_rate'    => $trade['price_rate'] ?? null,
+                'cost_rate'     => $trade['cost_rate'] ?? null,
+                'php_rate'      => $trade['php_rate'] ?? null,
+                'cost_php_rate' => $trade['cost_php_rate'] ?? null,
+                'date'          => $trade['date'] ?? now('Asia/Manila')->toDateString(),
+                'notes'         => trim(($trade['notes'] ?? '') . "\nReturned from a removed account payment"),
+                'price_gold'    => 0,
+                'cost_gold'     => 0,
+                'price_php'     => 0,
+                'cost_php'      => 0,
+                'amount'        => 0.01,
+            ]);
+            if ($this->tracksInventory()) {
+                $tx->inventory_gold = 0;
+            }
+        }
+
+        $plus = fn ($v, $p) => $p === null ? $v : (float) ($v ?? 0) + (float) $p;
+        $tx->price_gold = $plus($tx->price_gold, $taken['price_gold']);
+        $tx->cost_gold  = $plus($tx->cost_gold, $taken['cost_gold']);
+        $tx->price_php  = $taken['price_php'] !== null ? round($plus($tx->price_php, $taken['price_php']), 2) : $tx->price_php;
+        $tx->cost_php   = $taken['cost_php'] !== null ? round($plus($tx->cost_php, $taken['cost_php']), 2) : $tx->cost_php;
+        if (SchemaColumns::has('business_transactions', 'price_gold_received')) {
+            $tx->price_gold_received = $plus($tx->price_gold_received, $taken['received']);
+            $tx->cost_gold_paid      = $plus($tx->cost_gold_paid, $taken['paid']);
+        }
+
+        $stash = (float) ($taken['stash'] ?? 0);
+        if ($stash > 0) {
+            GoldInventory::record($stash, $label);
+            $tx->inventory_gold = (float) ($tx->inventory_gold ?? 0) + $stash;
+        }
+        $this->refreshProfit($tx);
+        $tx->save();
+
+        return $tx;
+    }
+
+    private function refreshProfit(BusinessTransaction $tx): void
+    {
+        $tx->profit_php = $tx->price_php !== null && $tx->cost_php !== null
+            ? round((float) $tx->price_php - (float) $tx->cost_php, 2)
+            : null;
+        $tx->amount = $tx->profit_php !== null && $tx->profit_php > 0 ? $tx->profit_php : 0.01;
+    }
+
     private function tracksInventory(): bool
     {
         return SchemaColumns::has('business_transactions', 'inventory_gold');
@@ -252,6 +370,11 @@ class BusinessTransactionService
             $tx->profit_php = ($pricePhp !== null && $costPhp !== null)
                 ? round($pricePhp - $costPhp, 2)
                 : null;
+
+            // Paid with payments: their exact rates win over the single typed cost rate
+            if ($account->payments()->exists()) {
+                AccountCost::apply($tx, $account);
+            }
 
             $tx->save();
 

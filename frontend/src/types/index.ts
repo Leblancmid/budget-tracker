@@ -263,6 +263,30 @@ export interface Trade {
 
 export type AccountPaymentStatus = 'not_paid' | 'partially_paid' | 'fully_paid'
 
+export type AccountPaymentMethod = 'gold_trade' | 'cash'
+
+/** One payment toward an account's cost: gold from a gold trade, or cash from a Balance wallet. */
+export interface AccountPayment {
+  id: number
+  account_id: number
+  method: AccountPaymentMethod
+  /** Gold of the account's cost this payment covers */
+  gold: number
+  /** Exact ₱ cost of this payment */
+  cost_php: number
+  cost_rate: number | null
+  cost_php_rate: number | null
+  /** Gold trade it came from (null once that trade was used up) */
+  source_trade_id: number | null
+  /** What was taken from the trade, including the trade's description */
+  taken: { trade?: { description?: string | null } } | null
+  balance_account: string | null
+  cash_amount: number | null
+  currency: string | null
+  date: string
+  note: string | null
+}
+
 export interface RucoyAccount {
   id: number
   description: string | null
@@ -281,6 +305,12 @@ export interface RucoyAccount {
   defense: number | null
   /** Accessory keys (see utils/accessories.ts) */
   accessories: string[] | null
+  /** Payments toward the cost, oldest first */
+  payments?: AccountPayment[]
+  /** Gold paid toward the cost so far (sum of payments) */
+  paid_gold?: number
+  /** Exact ₱ of the paid part (each payment at its own rates) */
+  paid_cost_php?: number
   /** Stats-screen screenshot used for the listing image */
   screenshot: string | null
   /** Print the price on the listing image */

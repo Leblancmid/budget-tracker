@@ -48,9 +48,11 @@ class BusinessTest extends TestCase
         $this->assertEquals(1_200_000, $this->stash());
         $this->assertDatabaseHas('golds', ['description' => 'Added: G1']);
 
-        $this->putJson("/api/v1/business/transactions/{$tx->id}", ['price_gold' => 1_500_000])->assertOk();
+        // Price (G) is locked in Edit Gold; gold is added with Add Gold, which moves the stash too
+        $this->putJson("/api/v1/business/transactions/{$tx->id}", ['price_gold' => 1_500_000])->assertStatus(422);
+        $this->assertEquals(1_200_000, $this->stash());
+        $this->postJson("/api/v1/business/transactions/{$tx->id}/add-gold", ['price_gold' => 300_000])->assertOk();
         $this->assertEquals(1_500_000, $this->stash());
-        $this->assertDatabaseHas('golds', ['description' => 'Adjusted: G1', 'amount' => 300_000]);
 
         $this->deleteJson("/api/v1/business/transactions/{$tx->id}")->assertOk();
         $this->assertEquals(0, $this->stash());

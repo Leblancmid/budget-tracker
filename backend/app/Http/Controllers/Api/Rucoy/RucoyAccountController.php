@@ -19,12 +19,12 @@ class RucoyAccountController extends Controller
 {
     public function index(): JsonResponse
     {
-        return response()->json(RucoyAccount::active()->latest()->get()->map(fn ($a) => $this->transform($a)));
+        return response()->json(RucoyAccount::active()->with('payments')->latest()->get()->map(fn ($a) => $this->transform($a)));
     }
 
     public function archived(): JsonResponse
     {
-        return response()->json(RucoyAccount::archived()->latest('archived_at')->get()->map(fn ($a) => $this->transform($a)));
+        return response()->json(RucoyAccount::archived()->with('payments')->latest('archived_at')->get()->map(fn ($a) => $this->transform($a)));
     }
 
     /** Mark the account sold: archive its business transactions and add its price to the stash. */
@@ -162,8 +162,13 @@ class RucoyAccountController extends Controller
 
     private function transform(RucoyAccount $account): array
     {
+        $account->loadMissing('payments');
+
         return [
             ...$account->toArray(),
+            // Paid toward the cost so far, from its payments (gold and exact ₱)
+            'paid_gold'     => (float) $account->payments->sum('gold'),
+            'paid_cost_php' => round((float) $account->payments->sum('cost_php'), 2),
             'avatar' => $account->avatar
                 ? asset('storage/' . $account->avatar)
                 : null,

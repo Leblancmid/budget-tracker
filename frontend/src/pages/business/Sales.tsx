@@ -6,6 +6,8 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Pagination } from '@/components/ui/Pagination'
 import { RucoyTransactionModal, type AccountPricingPayload, type RucoyTxKind } from '@/components/modals/RucoyTransactionModal'
 import { useRucoyAccounts } from '@/hooks/useRucoyAccounts'
+import { useBalanceAccounts } from '@/hooks/useBalanceAccounts'
+import { AccountPaymentsModal } from './sales/AccountPaymentsModal'
 import { useArchive } from '@/hooks/useArchive'
 import { useBusinessTransactions } from '@/hooks/useBusinessTransactions'
 import { useMiddlemanFees } from '@/hooks/useMiddlemanFees'
@@ -34,7 +36,11 @@ const toNum = (v: string | null | undefined) => (v != null ? Number(v) : null)
 
 /** Business → Sales: listed accounts, pending gold trades and everything sold. */
 export default function Sales() {
-  const { accounts, loading, error, create, update, archive, unarchive, remove } = useRucoyAccounts()
+  const { accounts, loading, error, refetch: refetchAccounts, create, update, archive, unarchive, remove } = useRucoyAccounts()
+  const { accounts: wallets, refetch: refetchWallets } = useBalanceAccounts()
+  // Account whose payments dialog is open (looked up by id so it shows fresh data after each change)
+  const [payingId, setPayingId] = useState<number | null>(null)
+  const payingAccount = payingId != null ? accounts.find((a) => a.id === payingId) ?? null : null
 
   const [search, setSearch]         = useState('')
   const [profitSort, setProfitSort] = useState<'asc' | 'desc' | null>(null)
@@ -588,6 +594,7 @@ export default function Sales() {
                       onArchive={() => setArchiveTarget(a)}
                       onDelete={() => setDeleteTarget(a)}
                       onConvertToGold={() => setConvertTarget(a)}
+                      onPay={() => setPayingId(a.id)}
                     />
                   ))}
                 </div>
@@ -752,6 +759,15 @@ export default function Sales() {
           onAdded={(tx) => { refetchBizTxs(); if (tx.system_key === 'middleman_fee') refetchMmFees() }}
         />
       )}
+
+      <AccountPaymentsModal
+        open={payingAccount != null}
+        onClose={() => setPayingId(null)}
+        account={payingAccount}
+        goldTrades={bizTxs}
+        wallets={wallets}
+        onChanged={() => Promise.all([refetchAccounts(), refetchBizTxs(), refetchWallets()])}
+      />
 
       {sellTarget && (
         <SellGoldModal target={sellTarget} onClose={() => setSellTarget(null)} onSold={() => { refetchBizTxs(); afterSoldChange() }} />

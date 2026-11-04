@@ -42,6 +42,11 @@ export function paginateLocally<T>(items: T[], page: number, perPage: number) {
   }
 }
 
+/** Today's date (Y-m-d) in the Philippines, whatever the computer's clock zone. */
+export function todayManila(): string {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' })
+}
+
 export function todayISO(): string {
   return new Date().toISOString().split('T')[0]
 }

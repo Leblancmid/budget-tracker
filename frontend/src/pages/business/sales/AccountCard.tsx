@@ -1,16 +1,19 @@
-import { Calendar, CalendarClock, Coins, HandCoins, Pencil, RotateCcw, Trash2, User } from 'lucide-react'
+import { Calendar, CalendarClock, Coins, HandCoins, Pencil, RotateCcw, Trash2, User, Wallet } from 'lucide-react'
+import { ProgressBar } from '@/components/ui/ProgressBar'
 import { formatDate } from '@/utils/format'
 import type { BusinessTransaction, RucoyAccount } from '@/types'
 import { ProfitPhpBar } from './ProfitPhpBar'
 import { fmtGold, PAYMENT_STATUS_STYLES } from './salesUtils'
 
-export function AccountCard({ a, tx, onEdit, onArchive, onDelete, onConvertToGold, archived = false, onUnarchive }: {
+export function AccountCard({ a, tx, onEdit, onArchive, onDelete, onConvertToGold, onPay, archived = false, onUnarchive }: {
   a: RucoyAccount
   tx?: BusinessTransaction | null
   onEdit?: () => void
   onArchive?: () => void
   onDelete?: () => void
   onConvertToGold?: () => void
+  /** Open the payments dialog (pay the cost with gold trades or cash) */
+  onPay?: () => void
   archived?: boolean
   onUnarchive?: () => void
 }) {
@@ -74,6 +77,16 @@ export function AccountCard({ a, tx, onEdit, onArchive, onDelete, onConvertToGol
                 <HandCoins size={12} />
                 Sell
               </button>
+              {onPay && (
+                <button
+                  onClick={onPay}
+                  title="Pay with gold trades or cash"
+                  className="flex items-center gap-1 rounded-lg border border-sky-200 dark:border-sky-800/60 bg-sky-50 dark:bg-sky-900/20 px-2.5 py-1 text-[11px] font-semibold text-sky-700 dark:text-sky-400 hover:bg-sky-100 dark:hover:bg-sky-900/40 transition-colors"
+                >
+                  <Wallet size={12} />
+                  Pay
+                </button>
+              )}
               <button
                 onClick={onConvertToGold}
                 title="Convert to gold trade"
@@ -117,6 +130,23 @@ export function AccountCard({ a, tx, onEdit, onArchive, onDelete, onConvertToGol
             </div>
           ))}
         </div>
+      )}
+
+      {/* Paid toward the cost (from payments) */}
+      {(a.paid_gold ?? 0) > 0 && (
+        <button
+          type="button"
+          onClick={onPay}
+          disabled={!onPay}
+          title="Payments"
+          className="mx-4 mb-2 flex items-center gap-2 rounded-lg px-1 text-left disabled:cursor-default"
+        >
+          <span className="shrink-0 text-[11px] text-gray-500 dark:text-gray-400">Paid</span>
+          <ProgressBar percent={a.cost ? ((a.paid_gold ?? 0) / a.cost) * 100 : 100} color="bg-amber-500" className="flex-1" />
+          <span className="shrink-0 text-[11px] font-semibold text-gray-600 dark:text-gray-300">
+            {a.cost && (a.paid_gold ?? 0) >= a.cost ? 'Fully paid' : `${fmtGold(a.paid_gold ?? 0)}${a.cost ? ` / ${fmtGold(a.cost)}` : ''}`}
+          </span>
+        </button>
       )}
 
       {/* Profit row (PHP, from the linked business transaction) */}

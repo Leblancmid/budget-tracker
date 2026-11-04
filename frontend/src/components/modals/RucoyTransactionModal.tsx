@@ -11,6 +11,7 @@ import { formatWithCommas, handleAmountInput, todayISO } from '@/utils/format'
 import { flattenApiErrors } from '@/utils/api'
 import { screenshotError } from '@/utils/listing'
 import { ScreenshotField } from './ScreenshotField'
+import { accountCostPhp } from '@/utils/accountCost'
 import { AccessoryPicker } from './AccessoryPicker'
 
 export type RucoyTxKind = 'account' | 'gold'
@@ -124,11 +125,21 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
     gold === 0 ? 0 : gold != null && parseFloat(rate) ? (gold / 1_000_000) * parseFloat(rate) : null
   const toPhp = (gold: number | null, usd: number | null, rate: string) =>
     gold === 0 ? 0 : usd != null && parseFloat(rate) ? usd * parseFloat(rate) : null
+  // An account paid with payments (gold trades / cash at different rates): its ₱ cost is exact,
+  // the same as the server works out; there's no single $ cost any more.
+  const paid = kind === 'account' && account && (account.paid_gold ?? 0) > 0
+    ? { gold: account.paid_gold ?? 0, php: account.paid_cost_php ?? 0 }
+    : null
+  // A gold trade's gold changes only through Add Gold / Sell / account payments
+  const lockGold = kind === 'gold' && isEdit
+
   const priceUsd = toUsd(priceGoldNum, priceRate)
-  const costUsd  = toUsd(costGoldNum, costRate)
+  const costUsd  = paid ? null : toUsd(costGoldNum, costRate)
   const profitUsd = priceUsd != null && costUsd != null ? priceUsd - costUsd : null
   const pricePhp = toPhp(priceGoldNum, priceUsd, pricePhpRate)
-  const costPhp  = toPhp(costGoldNum, costUsd, costPhpRate)
+  const costPhp  = paid
+    ? accountCostPhp(paid, costGoldNum, parseFloat(costRate) || null, parseFloat(costPhpRate) || null)
+    : toPhp(costGoldNum, costUsd, costPhpRate)
   const profitPhp = pricePhp != null && costPhp != null ? pricePhp - costPhp : null
 
   const receivedGoldNum = receivedGold !== '' ? parseFloat(receivedGold) : null
@@ -365,8 +376,10 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
                   inputMode="decimal"
                   value={formatWithCommas(row.gold)}
                   onChange={(e) => handleAmountInput(e.target.value, row.onGold)}
+                  readOnly={lockGold}
+                  title={lockGold ? 'Use Add Gold or Sell to change the gold' : undefined}
                   placeholder="0"
-                  className={[inputCls, row.goldError ? 'border-red-400 dark:border-red-500' : ''].join(' ')}
+                  className={[lockGold ? readonlyCls + ' w-full text-gray-700 dark:text-gray-200 cursor-not-allowed' : inputCls, row.goldError ? 'border-red-400 dark:border-red-500' : ''].join(' ')}
                 />
               </div>
               <span className="pb-2 text-gray-400 dark:text-gray-500 text-xs sm:text-sm font-medium shrink-0">×</span>
@@ -391,6 +404,27 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
               </div>
             </div>
             {row.goldError && <p className="mt-1 text-xs text-red-500">{row.goldError}</p>}
+            {lockGold && row.key === 'cost' && (
+              <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">Price (G) and Cost (G) are locked: use Add Gold or Sell on the trade to change the gold.</p>
+            )}
+
+            {/* Account: paid so far, from its payments (managed with Pay on the account card) */}
+            {kind === 'account' && row.key === 'cost' && account && (
+              <div className="mt-2 rounded-lg border border-dashed border-gray-200 dark:border-gray-700 px-3 py-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400 w-24 shrink-0">Paid so far</span>
+                  <span className="text-xs text-gray-600 dark:text-gray-300 whitespace-nowrap">
+                    {(account.paid_gold ?? 0).toLocaleString()} of {costGoldNum != null ? costGoldNum.toLocaleString() : '—'} G
+                  </span>
+                  <ProgressBar percent={costGoldNum ? ((account.paid_gold ?? 0) / costGoldNum) * 100 : 0} color="bg-amber-500" className="flex-1 min-w-[60px]" />
+                </div>
+                <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                  {paid
+                    ? <>Cost (₱) is exact: {fmtPHP(paid.php)} paid at each payment's own rate{costGoldNum != null && costGoldNum > paid.gold ? ', plus the unpaid gold at the rates above' : ''}. Add or remove payments with <span className="font-semibold">Pay</span> on the account card.</>
+                    : <>Paying in parts or at different rates? Use <span className="font-semibold">Pay</span> on the account card to add each payment.</>}
+                </p>
+              </div>
+            )}
 
             {/* Gold only: partial received / paid tracking */}
             {kind === 'gold' && (() => {

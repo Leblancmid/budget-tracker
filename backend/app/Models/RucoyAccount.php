@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\Archivable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class RucoyAccount extends Model
 {
@@ -43,6 +44,11 @@ class RucoyAccount extends Model
             'listed_at'   => 'datetime',
             'archived_at' => 'datetime',
         ];
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(AccountPayment::class, 'account_id')->orderBy('date')->orderBy('id');
     }
 
     public function getProfitAttribute(): ?float

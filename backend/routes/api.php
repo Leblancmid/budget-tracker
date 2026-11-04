@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\Master\BalanceAccountController;
 use App\Http\Controllers\Api\Master\BalanceEntryController;
 use App\Http\Controllers\Api\Master\MasterDashboardController;
 use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\Rucoy\AccountPaymentController;
 use App\Http\Controllers\Api\Rucoy\GoldController;
 use App\Http\Controllers\Api\Rucoy\MiddlemanFeeController;
 use App\Http\Controllers\Api\Rucoy\RucoyAccountController;
@@ -97,6 +98,12 @@ Route::prefix('v1')->group(function () {
                     Route::post('{rucoyAccount}/archive', 'archive')->name('archive');
                     Route::post('{rucoyAccount}/unarchive', 'unarchive')->name('unarchive');
                 });
+                // Payments toward an account's cost (gold from a trade, or cash from a wallet)
+                Route::scopeBindings()->group(function () {
+                    Route::post('accounts/{rucoyAccount}/payments', [AccountPaymentController::class, 'store'])->name('accounts.payments.store');
+                    Route::delete('accounts/{rucoyAccount}/payments/{payment}', [AccountPaymentController::class, 'destroy'])->name('accounts.payments.destroy');
+                });
+
                 Route::apiResource('accounts', RucoyAccountController::class)
                     ->except(['show'])
                     ->parameters(['accounts' => 'rucoyAccount']);

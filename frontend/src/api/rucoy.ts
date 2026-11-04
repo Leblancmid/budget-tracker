@@ -1,5 +1,5 @@
 import api from './axios'
-import type { AccountPaymentStatus, Gold, GoldLog, MiddlemanFee, MiddlemanFeeIndex, RucoyAccount, RucoyDashboardStats, Trade, TradeCurrency, TradePaymentMethod, TradeStatus } from '@/types'
+import type { AccountPayment, AccountPaymentMethod, AccountPaymentStatus, Gold, GoldLog, MiddlemanFee, MiddlemanFeeIndex, RucoyAccount, RucoyDashboardStats, Trade, TradeCurrency, TradePaymentMethod, TradeStatus } from '@/types'
 
 export interface TradePayload {
   description?: string
@@ -119,6 +119,24 @@ function buildAccountForm(data: AccountPayload, method?: 'PUT'): FormData {
  * which silently drops files. Multipart keeps them; the browser adds the boundary itself.
  */
 export const MULTIPART = { headers: { 'Content-Type': 'multipart/form-data' } } as const
+
+export interface AccountPaymentPayload {
+  method: AccountPaymentMethod
+  gold: number
+  date: string
+  note?: string | null
+  source_trade_id?: number
+  balance_account?: string
+  cash_amount?: number
+  php_rate?: number | null
+}
+
+export const accountPaymentsApi = {
+  create: (accountId: number, data: AccountPaymentPayload) =>
+    api.post<AccountPayment>(`/rucoy/accounts/${accountId}/payments`, data).then((r) => r.data),
+  delete: (accountId: number, paymentId: number) =>
+    api.delete<{ message: string }>(`/rucoy/accounts/${accountId}/payments/${paymentId}`).then((r) => r.data),
+}
 
 export const rucoyAccountsApi = {
   getAll: () => api.get<RucoyAccount[]>('/rucoy/accounts').then((r) => r.data),

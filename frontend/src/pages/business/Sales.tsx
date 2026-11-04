@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useDataChanged } from '@/lib/dataEvents'
 import { Plus, Users, User, Search, Check, Archive, Trash2, Download, ArrowUp, ArrowDown, ArrowUpDown, Receipt, Coins, Link2Off } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -53,6 +54,8 @@ export default function Sales() {
 
   const { showArchive, setShowArchive, archivedItems: archivedAccounts, archiveLoading, fetchArchived, removeFromArchived } = useArchive(rucoyAccountsApi.getArchived)
   const { transactions: bizTxs, loading: bizTxLoading, refetch: refetchBizTxs, create: createBizTx, update: updateBizTx, archive: archiveBizTx, unarchive: unarchiveBizTx, remove: removeBizTx } = useBusinessTransactions()
+  // Quick Add (header) saved a gold trade: show it
+  useDataChanged(() => { refetchBizTxs(); refetchWallets() })
 
   // Archived business transactions (sold golds + pricing of sold accounts)
   const [archivedTxs, setArchivedTxs]               = useState<BusinessTransaction[]>([])

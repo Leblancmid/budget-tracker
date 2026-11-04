@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ArrowDownLeft, ArrowUpRight, Briefcase, Download, Filter, Pencil, Plus, Search, Trash2, TrendingUp, Wallet } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, Briefcase, Download, Filter, Pencil, Plus, Repeat, Search, Trash2, TrendingUp, Wallet } from 'lucide-react'
 import { useTransactions } from '@/hooks/useTransactions'
 import { useCategories } from '@/hooks/useCategories'
 import { useDashboard } from '@/hooks/useDashboard'
@@ -12,6 +12,8 @@ import { Pagination } from '@/components/ui/Pagination'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Card } from '@/components/ui/Card'
 import { TransactionModal, type TransactionFormData } from '@/components/modals/TransactionModal'
+import { RecurringEntriesModal } from '@/components/modals/RecurringEntriesModal'
+import { useDataChanged } from '@/lib/dataEvents'
 import { toast } from '@/lib/toast'
 import { formatCurrency, formatDate, formatTime, MONTHS } from '@/utils/format'
 import { colorOf, iconOf } from '@/utils/balanceAccounts'
@@ -46,7 +48,7 @@ function Segmented<T extends string>({ value, options, onChange }: {
 }
 
 export function Transactions() {
-  const { transactions, meta, filters, loading, applyFilters, setPage, create, update, remove } = useTransactions()
+  const { transactions, meta, filters, loading, applyFilters, setPage, create, update, remove, refetch } = useTransactions()
   const { categories } = useCategories()
   const { stats, refetch: refetchStats } = useDashboard()
   const { user } = useAuth()
@@ -58,9 +60,14 @@ export function Transactions() {
   const accountByCode = useMemo(() => new Map(accounts.map((a) => [a.code, a])), [accounts])
 
   const [modalOpen, setModalOpen]       = useState(false)
+  const [recurringOpen, setRecurringOpen] = useState(false)
   const [editTarget, setEditTarget]     = useState<Transaction | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
+
+  const refreshAll = () => { refetch(); refetchStats(); refetchAccounts() }
+  // Quick Add (header) saved something: show it here too
+  useDataChanged(refreshAll)
 
   const handleSubmit = async (data: TransactionFormData) => {
     const payload = { ...data, balance_account: isAdmin ? data.balance_account : undefined }
@@ -205,6 +212,9 @@ export function Transactions() {
           <div className="hidden md:block">
             <Button variant="secondary" icon={<Download className="h-4 w-4" />} onClick={handleExport}>Export</Button>
           </div>
+          <Button variant="secondary" icon={<Repeat className="h-4 w-4" />} onClick={() => setRecurringOpen(true)} title="Bills and allowances that add themselves">
+            <span className="hidden sm:inline">Recurring</span>
+          </Button>
           <Button icon={<Plus className="h-4 w-4" />} onClick={openAdd}>Add</Button>
         </div>
 
@@ -318,6 +328,11 @@ export function Transactions() {
                             <span>{tx.category.name}</span>
                             <span>·</span>
                             <span>{formatTime(tx.created_at)}</span>
+                            {tx.recurring_entry_id && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-600 dark:text-indigo-300" title="Added automatically by a recurring entry">
+                                <Repeat size={9} /> Recurring
+                              </span>
+                            )}
                             {isBiz && (
                               <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 dark:bg-teal-900/30 px-1.5 py-0.5 text-[10px] font-semibold text-teal-700 dark:text-teal-300">
                                 <Briefcase size={9} /> Business
@@ -369,6 +384,16 @@ export function Transactions() {
         transaction={editTarget}
         balanceAccounts={phpAccounts}
       />
+
+      {recurringOpen && (
+        <RecurringEntriesModal
+          categories={categories}
+          wallets={phpAccounts}
+          canUseBusiness={isAdmin}
+          onClose={() => setRecurringOpen(false)}
+          onChanged={refreshAll}
+        />
+      )}
 
       <ConfirmDialog
         open={!!deleteTarget}

@@ -16,6 +16,8 @@ import { cashToPhp, type CashCurrency } from '@/utils/cash'
 import { CashPricing } from './CashPricing'
 import { AccessoryPicker } from './AccessoryPicker'
 import { WalletPicker } from './WalletPicker'
+import { PriceGuidePanel } from './PriceGuidePanel'
+import { guessLevelAndClass } from '@/utils/priceGuide'
 import { costPaidInPhp, goldWalletCost } from '@/utils/goldTrade'
 import { Amt } from '@/components/ui/Amt'
 import { fmtIn } from '@/utils/balanceAccounts'
@@ -354,6 +356,9 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
     )
   })()
 
+  // Price guide: level / class from the stats, or from the name ("Leblanc 640 Dist")
+  const guess = kind === 'account' ? guessLevelAndClass(description, stats) : null
+
   const title = `${isEdit ? 'Edit' : 'Add'} ${kind === 'account' ? 'Account' : 'Gold'}`
 
   return (
@@ -487,6 +492,12 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
           </div>
         )}
         {errors.deal_type && <p className="-mt-2 text-xs text-red-500">{errors.deal_type}</p>}
+
+        {/* What similar accounts sold for / your recent gold rates */}
+        {open && guess && (
+          <PriceGuidePanel kind="account" level={guess.level} accountClass={guess.accountClass} excludeId={account?.id ?? null} />
+        )}
+        {open && kind === 'gold' && !isEdit && <PriceGuidePanel kind="gold" />}
 
         {isCash && (
           <CashPricing

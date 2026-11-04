@@ -1,12 +1,19 @@
-import { Minus, Plus } from 'lucide-react'
+import { BadgeCheck, Minus, Plus, ScanSearch } from 'lucide-react'
 import { Amt } from '@/components/ui/Amt'
-import { formatDate } from '@/utils/format'
+import { formatDate, todayManila } from '@/utils/format'
 import { colorOf, dailyInterest, fmtIn, fmtPhp, iconOf } from '@/utils/balanceAccounts'
 import type { BalanceAccountConfig, BalanceEntryType } from '@/types'
 import { formatShare, type AccountStats } from './balanceStats'
 
+/** Days since the last bank check, or null if never checked. */
+function daysSinceCheck(checkedAt: string | null | undefined): number | null {
+  if (!checkedAt) return null
+  const ms = Date.parse(todayManila() + 'T00:00:00Z') - Date.parse(checkedAt + 'T00:00:00Z')
+  return Math.max(0, Math.round(ms / 86_400_000))
+}
+
 /** One account card: balance, share of net worth, and quick Add / Sell. Click to filter the history. */
-export function AccountTile({ account: a, stats: s, share, phpRate, active, onToggleFilter, onAdd }: {
+export function AccountTile({ account: a, stats: s, share, phpRate, active, onToggleFilter, onAdd, onCheck }: {
   account: BalanceAccountConfig
   stats: AccountStats | undefined
   /** Share of the positive-balance total, 0–1 */
@@ -16,7 +23,11 @@ export function AccountTile({ account: a, stats: s, share, phpRate, active, onTo
   active: boolean
   onToggleFilter: () => void
   onAdd: (type: BalanceEntryType) => void
+  /** Bank check: match the balance to what the bank shows */
+  onCheck: () => void
 }) {
+  const checkedDays = daysSinceCheck(a.checked_at)
+  const checkDue    = checkedDays == null || checkedDays >= 7
   const c    = colorOf(a.color)
   const Icon = iconOf(a.icon)
   const bal  = s?.balance ?? 0
@@ -68,6 +79,23 @@ export function AccountTile({ account: a, stats: s, share, phpRate, active, onTo
               {a.interest_rate}% a year · +<Amt value={fmtIn(a, dailyInterest(bal, a.interest_rate, a.interest_tax ?? 20))} />/day
             </p>
           )}
+          <button
+            onClick={(e) => { e.stopPropagation(); onCheck() }}
+            title="Compare with what the bank shows and fix any difference"
+            className={[
+              'mt-1.5 flex items-center gap-1 text-[11px] font-semibold transition-colors',
+              checkDue
+                ? 'text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300'
+                : 'text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300',
+            ].join(' ')}
+          >
+            {checkDue ? <ScanSearch size={12} /> : <BadgeCheck size={12} className="text-emerald-500" />}
+            {checkedDays == null
+              ? 'Check against bank'
+              : checkedDays === 0
+              ? 'Checked today'
+              : `Checked ${checkedDays} day${checkedDays === 1 ? '' : 's'} ago${checkDue ? ' · check again' : ''}`}
+          </button>
         </div>
 
         <div className="h-1 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">

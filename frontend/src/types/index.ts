@@ -41,6 +41,8 @@ export interface Transaction {
   notes: string | null
   /** Balance entry this transaction adds to / deducts from */
   balance_entry?: { id: number; transaction_id: number; account: string } | null
+  /** Posted automatically by this recurring entry */
+  recurring_entry_id?: number | null
   created_at: string
   updated_at: string
 }
@@ -139,6 +141,9 @@ export interface BalanceAccountConfig {
   interest_tax?: number
   /** Last day interest was credited for */
   interest_credited_through?: string | null
+  /** Last bank check: the day, and the real balance it was matched to */
+  checked_at?: string | null
+  checked_balance?: number | null
   created_at: string
   updated_at: string
 }
@@ -150,8 +155,8 @@ export interface BalanceEntry {
   transaction_id?: number | null
   /** Set when it's one side (or the fee) of a transfer; removing it undoes the whole transfer */
   balance_transfer_id?: number | null
-  /** 'interest' for daily interest credits */
-  kind?: 'interest' | null
+  /** 'interest' for daily interest credits; 'adjustment' for a bank check difference */
+  kind?: 'interest' | 'adjustment' | null
   account: BalanceAccount
   type: BalanceEntryType
   amount: string
@@ -419,4 +424,100 @@ export interface ReportData {
   categories?: ReportCategory[]
   /** Business only: totals per sale type (account / gold / expense) for the same range */
   types?: Array<{ type: string; count: number; income: number; expense: number; profit: number }>
+}
+
+// ── Automation: recurring entries, weekly brief, price guide ──
+
+export type RecurringFrequency = 'daily' | 'weekly' | 'monthly'
+
+export interface RecurringEntry {
+  id: number
+  category_id: number
+  category: Category
+  type: TransactionType
+  scope: TransactionScope
+  amount: string
+  description: string | null
+  /** PHP Balance account it's paid from / into */
+  balance_account: string | null
+  frequency: RecurringFrequency
+  /** Monthly: the day it repeats on (short months use their last day) */
+  day_of_month: number | null
+  next_date: string
+  active: boolean
+  last_posted_on: string | null
+}
+
+export type BriefLevel = 'bad' | 'warn' | 'good' | 'info'
+
+export interface BriefInsight {
+  key: string
+  level: BriefLevel
+  title: string
+  detail: string
+  /** App path to act on it */
+  link: string | null
+}
+
+export interface BusinessBrief {
+  from: string
+  to: string
+  /** Monday of the current week (Y-m-d) */
+  week: string
+  summary: {
+    profit: number
+    prev_profit: number
+    accounts_sold: number
+    gold_sold: number
+    gold_margin: number | null
+    usual_gold_margin: number | null
+  }
+  insights: BriefInsight[]
+}
+
+export type AccountClass = 'melee' | 'distance' | 'magic'
+
+export interface PriceComparable {
+  id: number
+  description: string | null
+  level: number | null
+  /** Stats screen; null when it wasn't filled in */
+  melee: number | null
+  distance: number | null
+  magic: number | null
+  defense: number | null
+  class: AccountClass | null
+  price_php: number | null
+  cost_php: number | null
+  price_gold: number | null
+  cost_gold: number | null
+  days_to_sell: number | null
+  sold_on: string | null
+}
+
+export interface PriceGuide {
+  account: {
+    level: number | null
+    class: AccountClass | null
+    sold_count: number
+    /** % profit of price over all sold accounts */
+    usual_margin: number | null
+    comparables: PriceComparable[]
+    /** ± levels the comparables are within */
+    level_range: number | null
+    price_php: number | null
+    price_gold: number | null
+    days_to_sell: number | null
+    max_buy_php: number | null
+    max_buy_gold: number | null
+  }
+  gold: {
+    sales: number
+    sell_rate: number | null
+    recent_sell_rate: number | null
+    buy_rate: number | null
+    usual_margin: number | null
+    usual_spread: number | null
+    max_buy_rate: number | null
+  }
 }

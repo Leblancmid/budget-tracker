@@ -6,6 +6,8 @@ import { useBalanceAccounts } from '@/hooks/useBalanceAccounts'
 import { BalanceModal } from '@/components/modals/BalanceModal'
 import { ManageBalanceAccountsModal } from '@/components/modals/ManageBalanceAccountsModal'
 import { TransferModal } from '@/components/modals/TransferModal'
+import { BankCheckModal } from '@/components/modals/BankCheckModal'
+import { useDataChanged } from '@/lib/dataEvents'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Pagination } from '@/components/ui/Pagination'
@@ -13,7 +15,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { toast } from '@/lib/toast'
 import { paginateLocally } from '@/utils/format'
 import { colorOf, fmtIn } from '@/utils/balanceAccounts'
-import type { BalanceAccount, BalanceEntry, BalanceEntryType } from '@/types'
+import type { BalanceAccount, BalanceAccountConfig, BalanceEntry, BalanceEntryType } from '@/types'
 import type { BalanceEntryPayload } from '@/api/master'
 import { readNumber, STORAGE_KEYS, writeString } from '@/lib/storage'
 import { AccountTile } from './balance/AccountTile'
@@ -45,6 +47,7 @@ export default function Balance() {
 
   const [manageOpen,     setManageOpen]     = useState(false)
   const [transferOpen,   setTransferOpen]   = useState(false)
+  const [checkTarget,    setCheckTarget]    = useState<BalanceAccountConfig | null>(null)
   const [manageStartNew, setManageStartNew] = useState(false)
   const [showHidden,     setShowHidden]     = useState(false)
 
@@ -53,6 +56,9 @@ export default function Balance() {
   const [typeFilter,    setTypeFilter]    = useState<'all' | BalanceEntryType>('all')
   const [search,        setSearch]        = useState('')
   const [page,          setPage]          = useState(1)
+
+  // Quick Add (header) saved something that moves money: show it
+  useDataChanged(() => { refetchEntries(); refetchAccounts() })
 
   const accountByCode = useMemo(() => new Map(accounts.map((a) => [a.code, a])), [accounts])
 
@@ -196,6 +202,7 @@ export default function Balance() {
                   active={active}
                   onToggleFilter={() => changeFilter(setAccountFilter)(active ? null : a.code)}
                   onAdd={(type) => openAdd(a.code, type)}
+                  onCheck={() => setCheckTarget(a)}
                 />
               )
             })}
@@ -331,6 +338,15 @@ export default function Balance() {
         defaultAccount={defaultAcc}
         defaultType={defaultType}
       />
+
+      {checkTarget && (
+        <BankCheckModal
+          account={checkTarget}
+          balance={stats.get(checkTarget.code)?.balance ?? 0}
+          onClose={() => setCheckTarget(null)}
+          onDone={() => Promise.all([refetchEntries(), refetchAccounts()])}
+        />
+      )}
 
       {transferOpen && (
         <TransferModal

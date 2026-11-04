@@ -7,6 +7,7 @@ import { MonthNav } from '@/components/ui/MonthNav'
 import { formatCurrency, formatDate, MONTHS } from '@/utils/format'
 import { Amt } from '@/components/ui/Amt'
 import type { LucideIcon } from 'lucide-react'
+import { WeeklyBrief } from './WeeklyBrief'
 
 const TYPES: Record<string, { label: string; color: string; Icon: LucideIcon }> = {
   account: { label: 'Accounts', color: '#6366f1', Icon: User },
@@ -65,6 +66,9 @@ export default function BusinessDashboard() {
           </Link>
         </div>
       </div>
+
+      {/* ── This week: what changed and what needs you ─────────────── */}
+      <WeeklyBrief />
 
       {/* ── Hero ───────────────────────────────────────────────────── */}
       {loading ? (

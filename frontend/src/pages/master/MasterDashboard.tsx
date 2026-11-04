@@ -168,7 +168,7 @@ export default function MasterDashboard() {
               <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500"><ArrowLeftRight size={11} /> Rates</span>
               <div className="flex flex-wrap gap-2">
                 <label className="flex items-center gap-1.5 rounded-xl bg-white/10 px-3 py-1.5 text-xs text-slate-300">
-                  <span className="font-medium">1M G = $</span>
+                  <span className="font-medium">1KK G = $</span>
                   <input type="number" min="0.000001" step="0.01" value={usdInput}
                     onChange={(e) => saveRate(STORAGE_KEYS.masterUsdRate, e.target.value, setUsdInput, setUsdRate)}
                     className="w-14 rounded-md border border-white/10 bg-white/10 px-1.5 py-0.5 text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-violet-400/40" />

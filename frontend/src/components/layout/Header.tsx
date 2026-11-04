@@ -1,6 +1,7 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Moon, Sun, Eye, EyeOff, LogOut, Menu } from 'lucide-react'
+import { Moon, Sun, Eye, EyeOff, LogOut, Menu, Zap } from 'lucide-react'
+import { QuickAddModal } from '@/components/modals/QuickAddModal'
 import { useTheme } from '@/context/theme'
 import { useAmountVisibility } from '@/context/amountVisibility'
 import { useAuth } from '@/context/auth'
@@ -39,7 +40,17 @@ export function Header({ onMenuClick }: HeaderProps) {
   const navigate     = useNavigate()
   const { theme, toggle } = useTheme()
   const { hidden, toggle: toggleAmounts } = useAmountVisibility()
-  const { logout } = useAuth()
+  const { logout, user } = useAuth()
+  const [quickAdd, setQuickAdd] = useState(false)
+
+  // Ctrl+K (⌘K on Mac) opens Quick Add from any page
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setQuickAdd(true) }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [])
 
   const meta    = PAGE_META[pathname] ?? { title: 'Dashboard', section: 'Daily Expenses' }
   const styles  = SECTION_STYLES[meta.section] ?? SECTION_STYLES['Daily Expenses']
@@ -75,6 +86,17 @@ export function Header({ onMenuClick }: HeaderProps) {
       {/* Right: controls */}
       <div className="flex items-center gap-1 shrink-0">
         <button
+          onClick={() => setQuickAdd(true)}
+          title="Quick add (Ctrl+K): type one line like 250 lunch gcash"
+          aria-label="Quick add"
+          className="mr-1 flex h-8 items-center gap-1.5 rounded-lg bg-indigo-600 px-2.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 transition-colors"
+        >
+          <Zap className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Quick add</span>
+          <kbd className="hidden lg:inline rounded bg-white/20 px-1 text-[10px] font-medium">Ctrl K</kbd>
+        </button>
+
+        <button
           onClick={toggleAmounts}
           title={hidden ? 'Show amounts' : 'Hide amounts'}
           className={[
@@ -104,6 +126,7 @@ export function Header({ onMenuClick }: HeaderProps) {
           <LogOut className="h-4 w-4" />
         </button>
       </div>
+      {quickAdd && <QuickAddModal isAdmin={user?.role !== 'daily_only'} onClose={() => setQuickAdd(false)} />}
     </header>
   )
 }

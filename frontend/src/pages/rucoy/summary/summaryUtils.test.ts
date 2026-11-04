@@ -42,8 +42,8 @@ describe('gold summary', () => {
   })
 
   it('shortens big numbers for chart labels', () => {
-    expect(shortG(1_500_000_000)).toBe('1.5B')
-    expect(shortG(350_000_000)).toBe('350M')
+    expect(shortG(1_500_000_000)).toBe('1.5KKK')
+    expect(shortG(350_000_000)).toBe('350KK')
     expect(shortG(12_000)).toBe('12k')
   })
 })

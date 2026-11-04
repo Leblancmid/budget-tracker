@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Api\Master;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Master\CheckBalanceAccountRequest;
 use App\Http\Requests\Master\ReorderBalanceAccountsRequest;
 use App\Http\Requests\Master\StoreBalanceAccountRequest;
 use App\Http\Requests\Master\UpdateBalanceAccountRequest;
 use App\Models\BalanceAccount;
 use App\Models\BalanceEntry;
+use App\Services\BalanceCheck;
 use App\Services\BalanceInterest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
@@ -70,6 +72,21 @@ class BalanceAccountController extends Controller
         $balanceAccount->update($data);
 
         return response()->json([...$balanceAccount->fresh()->toArray(), 'entry_count' => $balanceAccount->entries()->count()]);
+    }
+
+    /**
+     * Bank check: { actual } is what the bank shows. Records the difference as an adjustment
+     * entry (if any) and remembers when the account was last checked.
+     */
+    public function check(CheckBalanceAccountRequest $request, BalanceAccount $balanceAccount): JsonResponse
+    {
+        $result = BalanceCheck::match($balanceAccount, (float) $request->validated('actual'), $request->validated('note'));
+
+        return response()->json([
+            'difference' => $result['difference'],
+            'entry'      => $result['entry'],
+            'account'    => [...$balanceAccount->fresh()->toArray(), 'entry_count' => $balanceAccount->entries()->count()],
+        ]);
     }
 
     /** Save a new order: { ids: [3, 1, 2, ...] } */

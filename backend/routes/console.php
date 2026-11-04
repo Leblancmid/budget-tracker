@@ -15,5 +15,8 @@ Schedule::command('db:export --keep=2')->twiceDaily(2, 14);
 // and catches up quickly after the PC was off.
 Schedule::command('balance:interest')->hourly()->withoutOverlapping();
 
+// Recurring daily transactions (bills, allowances): posted on their dates, missed ones caught up
+Schedule::command('recurring:post')->hourly()->withoutOverlapping();
+
 // Remove login tokens that expired more than a day ago
 Schedule::command('sanctum:prune-expired --hours=24')->daily();

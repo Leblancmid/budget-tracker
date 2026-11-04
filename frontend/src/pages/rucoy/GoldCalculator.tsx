@@ -21,8 +21,8 @@ const CURRENCIES: Record<Code, {
   text: string; soft: string; ring: string
 }> = {
   PHP: { symbol: '₱', flag: '🇵🇭', label: 'Philippine Peso', quote: 'gold-per-unit',    defaultRate: 95000, rateLabel: (r) => `₱1 = ${Number(r || 0).toLocaleString()} G`, text: 'text-rose-600 dark:text-rose-400',     soft: 'bg-rose-50 dark:bg-rose-900/15',     ring: 'focus:ring-rose-400/40' },
-  USD: { symbol: '$', flag: '🇺🇸', label: 'US Dollar',       quote: 'unit-per-million', defaultRate: 0.18,  rateLabel: (r) => `1M G = $${r || 0}`,                          text: 'text-sky-600 dark:text-sky-400',       soft: 'bg-sky-50 dark:bg-sky-900/15',       ring: 'focus:ring-sky-400/40' },
-  EUR: { symbol: '€', flag: '🇪🇺', label: 'Euro',            quote: 'unit-per-million', defaultRate: 0.17,  rateLabel: (r) => `1M G = €${r || 0}`,                          text: 'text-violet-600 dark:text-violet-400', soft: 'bg-violet-50 dark:bg-violet-900/15', ring: 'focus:ring-violet-400/40' },
+  USD: { symbol: '$', flag: '🇺🇸', label: 'US Dollar',       quote: 'unit-per-million', defaultRate: 0.18,  rateLabel: (r) => `1KK G = $${r || 0}`,                          text: 'text-sky-600 dark:text-sky-400',       soft: 'bg-sky-50 dark:bg-sky-900/15',       ring: 'focus:ring-sky-400/40' },
+  EUR: { symbol: '€', flag: '🇪🇺', label: 'Euro',            quote: 'unit-per-million', defaultRate: 0.17,  rateLabel: (r) => `1KK G = €${r || 0}`,                          text: 'text-violet-600 dark:text-violet-400', soft: 'bg-violet-50 dark:bg-violet-900/15', ring: 'focus:ring-violet-400/40' },
 }
 const CODES: Code[] = ['PHP', 'USD', 'EUR']
 const QUICK = [100e6, 500e6, 1e9, 5e9]
@@ -33,7 +33,7 @@ const moneyToGold = (code: Code, money: number, rate: number) =>
   CURRENCIES[code].quote === 'gold-per-unit' ? money * rate : (money / rate) * 1_000_000
 
 const fmtMoney = (n: number) => n.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-const shortG = (n: number) => (n >= 1e9 ? `${n / 1e9}B` : `${n / 1e6}M`)
+const shortG = (n: number) => (n >= 1e9 ? `${n / 1e9}KKK` : `${n / 1e6}KK`)
 
 function loadRates(): Record<Code, string> {
   const defaults = Object.fromEntries(CODES.map((c) => [c, String(CURRENCIES[c].defaultRate)])) as Record<Code, string>
@@ -249,7 +249,7 @@ export default function GoldCalculator() {
 
               <div className="px-5 py-4">
                 <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
-                  {c.quote === 'gold-per-unit' ? `Gold per ${c.symbol}1` : `${c.symbol} per 1M G`}
+                  {c.quote === 'gold-per-unit' ? `Gold per ${c.symbol}1` : `${c.symbol} per 1KK G`}
                 </label>
                 <div className="flex items-center gap-2">
                   <NumberInput value={rates[code]} onChange={(v) => setRates((p) => ({ ...p, [code]: v }))}

@@ -7,6 +7,7 @@ use App\Models\BalanceEntry;
 use App\Models\BusinessTransaction;
 use App\Models\GoldLog;
 use App\Models\MiddlemanFee;
+use App\Models\RecurringEntry;
 use App\Models\Trade;
 use App\Models\Transaction;
 use App\Observers\AccountPaymentObserver;
@@ -14,6 +15,7 @@ use App\Observers\BalanceEntryObserver;
 use App\Observers\BusinessTransactionObserver;
 use App\Observers\GoldLogObserver;
 use App\Observers\MiddlemanFeeObserver;
+use App\Observers\RecurringEntryObserver;
 use App\Observers\TradeObserver;
 use App\Observers\TransactionObserver;
 use Illuminate\Support\ServiceProvider;
@@ -31,5 +33,6 @@ class AppServiceProvider extends ServiceProvider
         Trade::observe(TradeObserver::class);
         MiddlemanFee::observe(MiddlemanFeeObserver::class);
         AccountPayment::observe(AccountPaymentObserver::class);
+        RecurringEntry::observe(RecurringEntryObserver::class);
     }
 }

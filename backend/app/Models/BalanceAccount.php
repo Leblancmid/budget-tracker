@@ -9,7 +9,7 @@ class BalanceAccount extends Model
 {
     public const CURRENCIES = ['USD', 'PHP'];
 
-    protected $fillable = ['code', 'name', 'currency', 'color', 'icon', 'sort_order', 'hidden_at', 'interest_rate', 'interest_tax', 'interest_credited_through'];
+    protected $fillable = ['code', 'name', 'currency', 'color', 'icon', 'sort_order', 'hidden_at', 'interest_rate', 'interest_tax', 'interest_credited_through', 'checked_at', 'checked_balance'];
 
     protected function casts(): array
     {
@@ -19,6 +19,8 @@ class BalanceAccount extends Model
             'interest_rate' => 'float',
             'interest_tax'  => 'float',
             'interest_credited_through' => 'date:Y-m-d',
+            'checked_at'      => 'date:Y-m-d',
+            'checked_balance' => 'float',
         ];
     }
 

@@ -190,7 +190,7 @@ export function AccountPaymentsModal({ open, onClose, account, goldTrades, walle
             {costGold != null && <ProgressBar percent={pct} color="bg-amber-500" className="mt-2" />}
             <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
               Exact cost so far <span className="font-semibold text-gray-800 dark:text-gray-100">{php(paid.php)}</span>
-              {blended != null && <> · {php(blended)} per 1M G</>}
+              {blended != null && <> · {php(blended)} per 1KK G</>}
               {costGold == null && <> · set the Cost (G) in Edit Account to track what's left</>}
             </p>
           </div>

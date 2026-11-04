@@ -63,7 +63,7 @@ export function TradePicker({ trades, value, onChange, error }: {
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-semibold text-gray-800 dark:text-gray-100">{t.description || 'Gold trade'}</span>
                 <span className="block truncate text-xs text-gray-500 dark:text-gray-400">
-                  {perM != null ? <><Amt value={php(perM)} /> per 1M</> : 'No cost yet'}
+                  {perM != null ? <><Amt value={php(perM)} /> per 1KK</> : 'No cost yet'}
                   {rates && <> · {rates}</>}
                 </span>
               </span>

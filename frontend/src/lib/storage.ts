@@ -26,6 +26,8 @@ export const STORAGE_KEYS = {
   goldCalculatorRates: 'gold_calculator_rates',
   /** Listing Kit settings: columns, NEW window, promos, headline, link */
   listingKit:          'listing_kit',
+  /** Monday (Y-m-d) of the last weekly brief opened, for the "new brief" dot */
+  briefSeenWeek:       'brief_seen_week',
 } as const
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS]

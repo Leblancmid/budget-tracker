@@ -54,4 +54,7 @@ export const balanceAccountsApi = {
     api.put<BalanceAccountConfig>(`/master/balance-accounts/${id}`, data).then((r) => r.data),
   reorder: (ids: number[]) => api.post<BalanceAccountConfig[]>('/master/balance-accounts/reorder', { ids }).then((r) => r.data),
   delete:  (id: number) => api.delete<{ message: string }>(`/master/balance-accounts/${id}`).then((r) => r.data),
+  /** Bank check: match the account to what the bank shows; the difference becomes one entry */
+  check:   (id: number, actual: number, note?: string | null) =>
+    api.post<{ difference: number; entry: BalanceEntry | null; account: BalanceAccountConfig }>(`/master/balance-accounts/${id}/check`, { actual, note }).then((r) => r.data),
 }

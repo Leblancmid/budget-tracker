@@ -1,5 +1,12 @@
 import api from './axios'
-import type { BusinessTransaction, BusinessDashboardStats, BusinessTransactionType, BusinessTransactionAction } from '@/types'
+import type { AccountClass, BusinessBrief, BusinessTransaction, BusinessDashboardStats, BusinessTransactionType, BusinessTransactionAction, PriceGuide } from '@/types'
+
+/** Rule-based insights from your own numbers */
+export const businessInsightsApi = {
+  brief:      () => api.get<BusinessBrief>('/business/brief').then((r) => r.data),
+  priceGuide: (params: { level?: number | null; class?: AccountClass | null; exclude_id?: number | null }) =>
+    api.get<PriceGuide>('/business/price-guide', { params }).then((r) => r.data),
+}
 
 export const businessDashboardApi = {
   getStats: (month: number, year: number) =>

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ArrowLeftRight, ExternalLink, Pencil, Percent, Receipt, Trash2, Undo2 } from 'lucide-react'
+import { ArrowLeftRight, ExternalLink, Pencil, Percent, Receipt, ScanSearch, Trash2, Undo2 } from 'lucide-react'
 import { Amt } from '@/components/ui/Amt'
 import { formatDate } from '@/utils/format'
 import { colorOf, fmtIn, fmtPhp, iconOf } from '@/utils/balanceAccounts'
@@ -44,6 +44,11 @@ export function BalanceEntryRow({ entry: e, account: a, phpRate, onEdit, onDelet
           {e.kind === 'interest' && (
             <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-900/30 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-300">
               <Percent size={9} /> Interest
+            </span>
+          )}
+          {e.kind === 'adjustment' && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-300">
+              <ScanSearch size={9} /> Bank check
             </span>
           )}
         </p>

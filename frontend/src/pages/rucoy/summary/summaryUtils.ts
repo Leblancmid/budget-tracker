@@ -27,10 +27,10 @@ export const MM_FEE_PERIOD_LABEL: Record<MmFeePeriod, string> = {
 
 export const fmtG = (n: number) => `${Math.round(n).toLocaleString()} G`
 
-/** Compact G for chart labels: 1.2B, 350M, 12k. */
+/** Compact G for chart labels: 1.2KKK, 350KK, 12k. */
 export const shortG = (n: number) => {
   const a = Math.abs(n)
-  return a >= 1e9 ? `${(n / 1e9).toFixed(1)}B` : a >= 1e6 ? `${(n / 1e6).toFixed(0)}M` : a >= 1e3 ? `${(n / 1e3).toFixed(0)}k` : String(Math.round(n))
+  return a >= 1e9 ? `${(n / 1e9).toFixed(1)}KKK` : a >= 1e6 ? `${(n / 1e6).toFixed(0)}KK` : a >= 1e3 ? `${(n / 1e3).toFixed(0)}k` : String(Math.round(n))
 }
 
 /** Signed effect of a gold log on the stash (cancelled entries count as 0). */

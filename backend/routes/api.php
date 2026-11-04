@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BudgetController;
 use App\Http\Controllers\Api\Business\BusinessDashboardController;
 use App\Http\Controllers\Api\Business\BusinessTransactionController;
+use App\Http\Controllers\Api\Business\InsightsController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\LogController;
@@ -11,6 +12,7 @@ use App\Http\Controllers\Api\Master\BalanceAccountController;
 use App\Http\Controllers\Api\Master\BalanceEntryController;
 use App\Http\Controllers\Api\Master\BalanceTransferController;
 use App\Http\Controllers\Api\Master\MasterDashboardController;
+use App\Http\Controllers\Api\RecurringEntryController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\Rucoy\AccountPaymentController;
 use App\Http\Controllers\Api\Rucoy\GoldController;
@@ -37,6 +39,8 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('categories', CategoryController::class);
         Route::apiResource('transactions', TransactionController::class);
         Route::apiResource('budgets', BudgetController::class)->except(['show']);
+        Route::apiResource('recurring-entries', RecurringEntryController::class)->except(['show'])
+            ->parameters(['recurring-entries' => 'recurringEntry']);
 
         // Everything below is admin-only: daily_only users get 403
         Route::middleware('admin')->group(function () {
@@ -52,6 +56,7 @@ Route::prefix('v1')->group(function () {
                 Route::get('dashboard', [MasterDashboardController::class, 'index'])->name('dashboard');
                 Route::apiResource('balance-entries', BalanceEntryController::class)->except(['show']);
                 Route::apiResource('balance-transfers', BalanceTransferController::class)->only(['store', 'destroy']);
+                Route::post('balance-accounts/{balanceAccount}/check', [BalanceAccountController::class, 'check'])->name('balance-accounts.check');
                 Route::post('balance-accounts/reorder', [BalanceAccountController::class, 'reorder'])->name('balance-accounts.reorder');
                 Route::apiResource('balance-accounts', BalanceAccountController::class)->except(['show']);
             });
@@ -59,6 +64,8 @@ Route::prefix('v1')->group(function () {
             // Business
             Route::prefix('business')->name('business.')->group(function () {
                 Route::get('dashboard', [BusinessDashboardController::class, 'index'])->name('dashboard');
+                Route::get('brief', [InsightsController::class, 'brief'])->name('brief');
+                Route::get('price-guide', [InsightsController::class, 'priceGuide'])->name('price-guide');
                 Route::apiResource('transactions', BusinessTransactionController::class)
                     ->except(['show'])
                     ->parameters(['transactions' => 'businessTransaction']);

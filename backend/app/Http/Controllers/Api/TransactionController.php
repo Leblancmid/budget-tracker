@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreTransactionRequest;
 use App\Http\Requests\UpdateTransactionRequest;
 use App\Models\Transaction;
+use App\Services\TransactionBalance;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -61,7 +62,7 @@ class TransactionController extends Controller
 
         $transaction = DB::transaction(function () use ($data) {
             $tx = Transaction::create(array_merge(collect($data)->except('balance_account')->all(), ['user_id' => auth()->id()]));
-            $this->syncBalance($tx, $data['balance_account'] ?? null);
+            TransactionBalance::sync($tx, $data['balance_account'] ?? null);
 
             return $tx;
         });
@@ -87,7 +88,7 @@ class TransactionController extends Controller
             $account = array_key_exists('balance_account', $data)
                 ? $data['balance_account']
                 : $transaction->balanceEntry?->account;
-            $this->syncBalance($transaction->fresh(), $account);
+            TransactionBalance::sync($transaction->fresh(), $account);
         });
 
         return response()->json($this->present($transaction));
@@ -101,31 +102,6 @@ class TransactionController extends Controller
         $transaction->delete();
 
         return response()->json(['message' => 'Transaction deleted successfully.']);
-    }
-
-    /**
-     * Mirror the transaction into its Balance account: income adds, expense deducts.
-     * No account → any previous entry is removed.
-     */
-    private function syncBalance(Transaction $tx, ?string $account): void
-    {
-        $entry = $tx->balanceEntry()->first();
-
-        if (! $account) {
-            $entry?->delete();
-
-            return;
-        }
-
-        $values = [
-            'account'     => $account,
-            'type'        => $tx->type === 'income' ? 'add' : 'sell',
-            'amount'      => $tx->amount,
-            'date'        => $tx->date->format('Y-m-d'),
-            'description' => $tx->description ?: ($tx->category?->name ?? 'Daily transaction'),
-        ];
-
-        $entry ? $entry->update($values) : $tx->balanceEntry()->create($values);
     }
 
     private function present(Transaction $tx): Transaction

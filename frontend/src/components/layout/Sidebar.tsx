@@ -1,6 +1,7 @@
 import { SidebarBrand } from './SidebarBrand'
 import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
+import { useBriefUnseen } from '@/lib/briefSeen'
 import { ChevronDown, ChevronRight, Wallet, Gamepad2, Briefcase, FolderOpen, PanelLeftClose, PanelLeftOpen, BarChart2 } from 'lucide-react'
 import { useAuth } from '@/context/auth'
 import { readString, STORAGE_KEYS, writeString } from '@/lib/storage'
@@ -141,6 +142,8 @@ interface SidebarProps {
 export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
   const { pathname } = useLocation()
   const { user } = useAuth()
+  // A new weekly brief (every Monday) that hasn't been opened yet
+  const briefUnseen = useBriefUnseen() && user?.role !== 'daily_only'
 
   const visibleSections = user?.role === 'daily_only'
     ? SECTIONS
@@ -233,6 +236,9 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
                 <span className={['flex-1 text-[13px] font-semibold truncate', isActive ? 'text-gray-900 dark:text-gray-100' : 'text-gray-600 dark:text-gray-400'].join(' ')}>
                   {section.label}
                 </span>
+                {section.id === 'business' && briefUnseen && !isOpen && (
+                  <span className="h-2 w-2 shrink-0 rounded-full bg-indigo-500" title="New weekly brief" aria-label="New weekly brief" />
+                )}
                 {isOpen
                   ? <ChevronDown className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500 shrink-0" />
                   : <ChevronRight className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500 shrink-0" />
@@ -258,6 +264,9 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
                       }
                     >
                       {label}
+                      {to === '/business' && briefUnseen && (
+                        <span className="ml-auto h-2 w-2 rounded-full bg-indigo-500" title="New weekly brief" aria-label="New weekly brief" />
+                      )}
                     </NavLink>
                   ))}
                 </div>

@@ -312,7 +312,8 @@ export default function Sales() {
     setConverting(true)
     try {
       if (tx) await updateBizTx(tx.id, payload)
-      else await createBizTx(payload)
+      // No pricing row yet: a new gold trade, its gold added to the stash like Add Gold
+      else await createBizTx({ ...payload, add_to_inventory: true })
     } catch {
       toast.error('Failed to convert to gold trade.')
       setConverting(false)

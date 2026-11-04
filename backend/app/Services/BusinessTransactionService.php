@@ -46,8 +46,16 @@ class BusinessTransactionService
         $data = $this->withoutMissingColumns($data);
 
         DB::transaction(function () use ($tx, $data) {
+            $wasAccount = $tx->type === 'account';
             $tx->update($data);
             $this->computePhpValues($tx);
+            // An account converted into a gold trade (To Gold): its gold goes into the stash too,
+            // like gold added with Add Gold
+            if ($wasAccount && $tx->type === 'gold') {
+                $this->trackConverted($tx);
+
+                return;
+            }
             // Tracked trades keep the inventory in step with their price gold
             if ($tx->inventory_gold !== null && $tx->archived_at === null) {
                 $this->syncInventory($tx->fresh(), 'Adjusted');
@@ -399,6 +407,20 @@ class BusinessTransactionService
             ? round((float) $tx->price_php - (float) $tx->cost_php, 2)
             : null;
         $tx->amount = $tx->profit_php !== null && $tx->profit_php > 0 ? $tx->profit_php : 0.01;
+    }
+
+    /**
+     * Start tracking a gold trade that was converted from an account: its price gold is added
+     * to the stash once, logged as "Converted: …". Sold or already-tracked trades are left alone.
+     */
+    public function trackConverted(BusinessTransaction $tx): void
+    {
+        if ($tx->type !== 'gold' || $tx->archived_at !== null || $tx->isSystem()
+            || $tx->inventory_gold !== null || ! $this->tracksInventory()) {
+            return;
+        }
+        $tx->inventory_gold = 0;
+        $this->syncInventory($tx, 'Converted');
     }
 
     private function tracksInventory(): bool

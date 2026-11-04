@@ -81,7 +81,7 @@ class RucoyAccountController extends Controller
 
     public function store(StoreRucoyAccountRequest $request): JsonResponse
     {
-        $data = $this->withScreenshot($request->validated(), $request);
+        $data = $this->withScreenshot($this->normalizeAccessories($request->validated()), $request);
 
         if ($request->hasFile('avatar')) {
             $data['avatar'] = $request->file('avatar')->store('avatars', 'public');
@@ -97,7 +97,7 @@ class RucoyAccountController extends Controller
 
     public function update(UpdateRucoyAccountRequest $request, RucoyAccount $rucoyAccount): JsonResponse
     {
-        $data = $this->withScreenshot($request->validated(), $request, $rucoyAccount);
+        $data = $this->withScreenshot($this->normalizeAccessories($request->validated()), $request, $rucoyAccount);
 
         if ($request->hasFile('avatar')) {
             if ($rucoyAccount->avatar) {
@@ -127,6 +127,16 @@ class RucoyAccountController extends Controller
     private function soldLabel(RucoyAccount $account): string
     {
         return 'Sold: ' . $account->description;
+    }
+
+    /** No accessories is stored as null; duplicates are dropped. */
+    private function normalizeAccessories(array $data): array
+    {
+        if (array_key_exists('accessories', $data)) {
+            $data['accessories'] = $data['accessories'] ? array_values(array_unique($data['accessories'])) : null;
+        }
+
+        return $data;
     }
 
     /**

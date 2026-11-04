@@ -1,3 +1,4 @@
+import { accessoriesFor } from './accessories'
 import type { RucoyAccount } from '@/types'
 
 /** How an account is marketed: its highest attack skill. */
@@ -111,20 +112,22 @@ export function coverCrop(region: Rect, dstW: number, dstH: number): Rect {
   return { x: region.x + (region.w - w) / 2, y: region.y + (region.h - h) / 2, w, h }
 }
 
+/** What already sits on a tile, for deciding where promo tags go. */
+export interface TileContent { price: boolean; accessories: boolean }
+
 /**
- * Which tile each promo tag goes on: down the first column (like the Canva layout),
- * then any other tile without a price tag, then any tile left.
+ * Which tile each promo tag goes on. Promos sit bottom-left, where accessories also go,
+ * so tiles with accessories come last; tiles with a price tag next to last. Among equals,
+ * the first column comes first (like the Canva layout), then left to right.
  */
-export function promoTiles(promoCount: number, columns: number, hasPrice: boolean[]): number[] {
-  const n = hasPrice.length
-  const firstColumn = Array.from({ length: Math.ceil(n / Math.max(columns, 1)) }, (_, r) => r * columns).filter((i) => i < n)
-  const order = [
-    ...firstColumn.filter((i) => !hasPrice[i]),
-    ...Array.from({ length: n }, (_, i) => i).filter((i) => !hasPrice[i] && !firstColumn.includes(i)),
-    ...firstColumn.filter((i) => hasPrice[i]),
-    ...Array.from({ length: n }, (_, i) => i).filter((i) => hasPrice[i] && !firstColumn.includes(i)),
-  ]
-  return order.slice(0, promoCount)
+export function promoTiles(promoCount: number, columns: number, tiles: TileContent[]): number[] {
+  const cols = Math.max(columns, 1)
+  const score = (t: TileContent) => (t.accessories ? 2 : 0) + (t.price ? 1 : 0)
+  return tiles
+    .map((t, i) => ({ i, score: score(t), firstCol: i % cols === 0 ? 0 : 1 }))
+    .sort((a, b) => a.score - b.score || a.firstCol - b.firstCol || a.i - b.i)
+    .slice(0, promoCount)
+    .map((t) => t.i)
 }
 
 /** Split text into lines no wider than `maxWidth` (a single long word stays on its own line). */
@@ -152,12 +155,13 @@ export interface CaptionOptions {
 
 /** Text to paste with the image: one line per account, then promos and the link. */
 export function listingCaption(
-  accounts: Pick<RucoyAccount, 'level' | 'melee' | 'distance' | 'magic' | 'description' | 'email' | 'price' | 'show_price'>[],
+  accounts: Pick<RucoyAccount, 'level' | 'melee' | 'distance' | 'magic' | 'description' | 'email' | 'price' | 'show_price' | 'accessories'>[],
   { headline, link, promos }: CaptionOptions,
 ): string {
   const lines = accounts.map((a) => {
     const price = a.show_price && a.price ? formatGoldShort(a.price) : 'DM for price'
-    return `• ${listingTitle(a)} — ${price}`
+    const extras = accessoriesFor(a.accessories).map((x) => x.label)
+    return `• ${listingTitle(a)}${extras.length ? ` + ${extras.join(', ')}` : ''} — ${price}`
   })
   return [
     headline.trim(),

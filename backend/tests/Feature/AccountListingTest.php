@@ -139,6 +139,32 @@ class AccountListingTest extends TestCase
         Storage::disk('public')->assertMissing($third);
     }
 
+    public function test_accessories_are_saved_cleared_and_validated(): void
+    {
+        // Multipart, as the app sends it
+        $id = $this->post('/api/v1/rucoy/accounts', [
+            'description' => 'Lv 721 Distance',
+            'email'       => 'acc@example.com',
+            'accessories' => ['crown', 'ring-green', 'necklace-green'],
+        ], ['Accept' => 'application/json'])->assertCreated()
+            ->assertJsonPath('accessories', ['crown', 'ring-green', 'necklace-green'])
+            ->json('id');
+
+        // Unknown or repeated items are rejected
+        $this->putJson("/api/v1/rucoy/accounts/{$id}", ['accessories' => ['crown', 'wings']])
+            ->assertStatus(422)->assertJsonValidationErrors(['accessories.1']);
+        $this->putJson("/api/v1/rucoy/accounts/{$id}", ['accessories' => ['crown', 'crown']])
+            ->assertStatus(422);
+
+        // A partial update leaves them alone
+        $this->putJson("/api/v1/rucoy/accounts/{$id}", ['show_price' => true])
+            ->assertOk()->assertJsonPath('accessories', ['crown', 'ring-green', 'necklace-green']);
+
+        // An empty value (what the app sends when all are unticked) clears them
+        $this->post("/api/v1/rucoy/accounts/{$id}", ['_method' => 'PUT', 'accessories' => ''], ['Accept' => 'application/json'])
+            ->assertOk()->assertJsonPath('accessories', null);
+    }
+
     public function test_selling_keeps_listed_date_so_days_to_sell_can_be_measured(): void
     {
         $this->travelTo(now()->subDays(3));

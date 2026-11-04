@@ -2,6 +2,9 @@
 
 namespace App\Http\Requests\Rucoy\Concerns;
 
+use App\Models\RucoyAccount;
+use Illuminate\Validation\Rule;
+
 /** Listing fields shared by the create and update account requests. */
 trait ValidatesListing
 {
@@ -15,6 +18,9 @@ trait ValidatesListing
             'distance'          => $stat,
             'magic'             => $stat,
             'defense'           => $stat,
+            // Empty (sent as '') clears them
+            'accessories'       => ['nullable', 'array', 'max:' . count(RucoyAccount::ACCESSORIES)],
+            'accessories.*'     => ['distinct', Rule::in(RucoyAccount::ACCESSORIES)],
             // Game screenshots are large PNGs; the stored name is generated, never the client's
             'screenshot'        => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
             'remove_screenshot' => ['sometimes', 'boolean'],

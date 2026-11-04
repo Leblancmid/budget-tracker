@@ -105,14 +105,27 @@ describe('coverCrop', () => {
 })
 
 describe('promoTiles', () => {
+  const tile = (price = false, accessories = false) => ({ price, accessories })
+
   it('goes down the first column on tiles without a price, like the Canva layout', () => {
     // 3 columns; tiles 0 and 3 start each row, tile 1 has a price
-    expect(promoTiles(2, 3, [false, true, false, false, false, true])).toEqual([0, 3])
+    expect(promoTiles(2, 3, [tile(), tile(true), tile(), tile(), tile(), tile(true)])).toEqual([0, 3])
   })
 
   it('falls back to other free tiles, then priced ones', () => {
-    expect(promoTiles(3, 3, [true, false, false])).toEqual([1, 2, 0])
-    expect(promoTiles(5, 3, [false, false])).toEqual([0, 1])
+    expect(promoTiles(3, 3, [tile(true), tile(), tile()])).toEqual([1, 2, 0])
+    expect(promoTiles(5, 3, [tile(), tile()])).toEqual([0, 1])
+  })
+
+  it('avoids tiles with accessories, which use the same corner', () => {
+    expect(promoTiles(2, 3, [tile(false, true), tile(true), tile(), tile(false, true)])).toEqual([2, 1])
+  })
+})
+
+describe('listingCaption accessories', () => {
+  it('lists what comes with the account', () => {
+    const text = listingCaption([account({ accessories: ['ring-green', 'crown'] })], { headline: '', link: '', promos: [] })
+    expect(text).toBe('• Lv 618 Melee + Crown, Green ring — 700KK')
   })
 })
 

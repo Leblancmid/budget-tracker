@@ -12,9 +12,18 @@ class RucoyAccount extends Model
 
     protected $table = 'rucoy_accounts';
 
+    /** Accessories an account can include. Keep in sync with frontend/src/utils/accessories.ts. */
+    public const ACCESSORIES = [
+        // Decorations
+        'bandana', 'crown', 'hood',
+        // Buffs
+        'necklace-green', 'necklace-purple', 'necklace-blue', 'necklace-gold',
+        'ring-green', 'ring-purple', 'ring-blue', 'ring-gold',
+    ];
+
     protected $fillable = [
         'description', 'email', 'avatar', 'price', 'cost', 'payment_status', 'payment_date',
-        'level', 'melee', 'distance', 'magic', 'defense', 'screenshot', 'show_price', 'listed_at',
+        'level', 'melee', 'distance', 'magic', 'defense', 'accessories', 'screenshot', 'show_price', 'listed_at',
     ];
 
     protected $appends = ['profit'];
@@ -29,6 +38,7 @@ class RucoyAccount extends Model
             'distance'    => 'integer',
             'magic'       => 'integer',
             'defense'     => 'integer',
+            'accessories' => 'array',
             'show_price'  => 'boolean',
             'listed_at'   => 'datetime',
             'archived_at' => 'datetime',

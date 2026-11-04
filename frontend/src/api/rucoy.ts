@@ -78,6 +78,8 @@ export interface AccountPayload {
   distance?: number | null
   magic?: number | null
   defense?: number | null
+  /** Accessory keys; an empty list clears them */
+  accessories?: string[]
   /** A new screenshot to upload */
   screenshot?: File | null
   /** Delete the current screenshot */
@@ -100,6 +102,11 @@ function buildAccountForm(data: AccountPayload, method?: 'PUT'): FormData {
   // '' reaches Laravel as null, which clears a stat that was removed
   for (const key of LISTING_NUMBERS) {
     if (data[key] !== undefined) fd.append(key, data[key] != null ? String(data[key]) : '')
+  }
+  if (data.accessories !== undefined) {
+    // FormData can't carry an empty list; '' reaches Laravel as null, which clears them
+    if (data.accessories.length) data.accessories.forEach((key) => fd.append('accessories[]', key))
+    else fd.append('accessories', '')
   }
   if (data.screenshot instanceof File) fd.append('screenshot', data.screenshot)
   else if (data.remove_screenshot) fd.append('remove_screenshot', '1')

@@ -11,6 +11,7 @@ import { formatWithCommas, handleAmountInput, todayISO } from '@/utils/format'
 import { flattenApiErrors } from '@/utils/api'
 import { screenshotError } from '@/utils/listing'
 import { ScreenshotField } from './ScreenshotField'
+import { AccessoryPicker } from './AccessoryPicker'
 
 export type RucoyTxKind = 'account' | 'gold'
 
@@ -64,6 +65,7 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
   // Account-only: what buyers see in the listing
   const [stats, setStats]           = useState<Record<StatKey, string>>(EMPTY_STATS)
   const [showPrice, setShowPrice]   = useState(false)
+  const [accessories, setAccessories] = useState<string[]>([])
   const [shotFile, setShotFile]     = useState<File | null>(null)
   const [shotRemoved, setShotRemoved] = useState(false)
 
@@ -93,6 +95,7 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
     setPaymentDate(account?.payment_date ?? '')
     setStats(Object.fromEntries(STAT_FIELDS.map(({ key }) => [key, account?.[key] != null ? String(account[key]) : ''])) as Record<StatKey, string>)
     setShowPrice(account?.show_price ?? false)
+    setAccessories(account?.accessories ?? [])
     setShotFile(null)
     setShotRemoved(false)
     setDescription(kind === 'account' ? (account?.description ?? '') : (goldTx?.description ?? ''))
@@ -194,6 +197,7 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
             payment_date:   paymentDate || null,
             ...Object.fromEntries(STAT_FIELDS.map(({ key }) => [key, stats[key] !== '' ? Number(stats[key]) : null])),
             show_price:        showPrice,
+            accessories,
             screenshot:        shotFile,
             remove_screenshot: shotRemoved && !shotFile,
           },
@@ -321,6 +325,10 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
                 ))}
               </div>
               {STAT_FIELDS.map(({ key }) => errors[key] && <p key={key} className="mt-1 text-xs text-red-500">{errors[key]}</p>)}
+
+              <div className="mt-3">
+                <AccessoryPicker value={accessories} onChange={setAccessories} />
+              </div>
 
               <div className="mt-3">
                 <ScreenshotField

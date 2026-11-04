@@ -279,6 +279,8 @@ export interface RucoyAccount {
   distance: number | null
   magic: number | null
   defense: number | null
+  /** Accessory keys (see utils/accessories.ts) */
+  accessories: string[] | null
   /** Stats-screen screenshot used for the listing image */
   screenshot: string | null
   /** Print the price on the listing image */

@@ -16,6 +16,7 @@ import {
   daysListed, DEFAULT_CROP, formatGoldShort, isNewListing, listingCaption, sameOriginPath, sortForListing,
   type CropInsets,
 } from '@/utils/listing'
+import { accessoriesFor } from '@/utils/accessories'
 import { AccountPickRow } from './listing/AccountPickRow'
 import { canvasToBlob, drawListing, pngUnder, type ListingTile } from './listing/drawListing'
 
@@ -71,7 +72,14 @@ export default function ListingKit() {
   const included = useMemo(() => ordered.filter((a) => a.screenshot && !excluded.has(a.id)), [ordered, excluded])
   const promos   = useMemo(() => settings.promos.split('\n').map((p) => p.trim()).filter(Boolean), [settings.promos])
   const urls     = useMemo(() => included.map((a) => sameOriginPath(a.screenshot!)), [included])
-  const { images, failed, loading: imagesLoading } = useLoadedImages(urls)
+  const { images, failed, loading: shotsLoading } = useLoadedImages(urls)
+  // Accessory icons used by the included accounts (bundled with the app, so they always load)
+  const iconSrcs = useMemo(
+    () => [...new Set(included.flatMap((a) => accessoriesFor(a.accessories).map((x) => x.src)))].sort(),
+    [included],
+  )
+  const { images: icons, loading: iconsLoading } = useLoadedImages(iconSrcs)
+  const imagesLoading = shotsLoading || iconsLoading
 
   const tiles: ListingTile[] = useMemo(() => included.flatMap((a, i) => {
     const image = images.get(urls[i])
@@ -80,8 +88,9 @@ export default function ListingKit() {
       image,
       isNew: isNewListing(a.listed_at, nowMs, settings.newForDays),
       priceLabel: a.show_price && a.price ? formatGoldShort(a.price) : null,
+      accessories: accessoriesFor(a.accessories).flatMap((x) => icons.get(x.src) ?? []),
     }]
-  }), [included, images, urls, nowMs, settings.newForDays])
+  }), [included, images, icons, urls, nowMs, settings.newForDays])
 
   // Paint the canvas (an external system) whenever what's on it changes
   useEffect(() => {

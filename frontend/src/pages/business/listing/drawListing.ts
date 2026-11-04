@@ -1,3 +1,4 @@
+import { accessorySlots, slotsBounds } from '@/utils/accessories'
 import { coverCrop, cropRegion, listingLayout, promoTiles, wrapText, type CropInsets, type Rect } from '@/utils/listing'
 
 export interface ListingTile {
@@ -5,6 +6,8 @@ export interface ListingTile {
   isNew: boolean
   /** e.g. "700KK"; null hides the price tag */
   priceLabel: string | null
+  /** Accessory icons, in catalogue order */
+  accessories: HTMLImageElement[]
 }
 
 export interface DrawOptions {
@@ -44,11 +47,14 @@ export function drawListing(canvas: HTMLCanvasElement, tiles: ListingTile[], opt
 
   // Tags on top of the screenshots, like the Canva layout
   const promos = opts.promos.map((p) => p.trim().toUpperCase()).filter(Boolean)
-  const promoAt = new Map(promoTiles(promos.length, opts.columns, tiles.map((t) => !!t.priceLabel)).map((tileIdx, k) => [tileIdx, promos[k]]))
+  const promoAt = new Map(promoTiles(promos.length, opts.columns, tiles.map((t) => ({ price: !!t.priceLabel, accessories: t.accessories.length > 0 }))).map((tileIdx, k) => [tileIdx, promos[k]]))
 
   tiles.forEach((tile, i) => {
     const r = layout.tiles[i]
     if (tile.isNew) drawRibbon(ctx, r)
+    const slots = accessorySlots(tile.accessories.length, r)
+    drawTray(ctx, slotsBounds(slots, r.w * 0.012))
+    slots.forEach((slot, k) => drawAccessory(ctx, tile.accessories[k], slot))
     if (tile.priceLabel) drawPill(ctx, [tile.priceLabel], r.x + r.w * 0.025, r.y + r.h * 0.42, 62)
     const promo = promoAt.get(i)
     if (promo) {
@@ -59,6 +65,40 @@ export function drawListing(canvas: HTMLCanvasElement, tiles: ListingTile[], opt
       drawPill(ctx, lines, r.x + r.w * 0.025, r.y + r.h - h - r.h * 0.04, size)
     }
   })
+}
+
+/** Dark panel behind a tile's accessories so the game text underneath doesn't show through the gaps. */
+function drawTray(ctx: CanvasRenderingContext2D, box: Rect | null) {
+  if (!box) return
+  ctx.save()
+  ctx.shadowColor = 'rgba(0,0,0,0.55)'
+  ctx.shadowBlur = 16
+  ctx.fillStyle = 'rgba(8,10,14,0.86)'
+  ctx.beginPath()
+  ctx.roundRect(box.x, box.y, box.w, box.h, Math.min(box.w, box.h) * 0.12)
+  ctx.fill()
+  ctx.restore()
+}
+
+/** One accessory in a uniform dark slot, so every icon lines up the same on every tile. */
+function drawAccessory(ctx: CanvasRenderingContext2D, img: HTMLImageElement, slot: Rect) {
+  const radius = slot.w * 0.14
+  const inset = slot.w * 0.06
+  ctx.save()
+  ctx.fillStyle = 'rgba(255,255,255,0.06)'
+  ctx.beginPath()
+  ctx.roundRect(slot.x, slot.y, slot.w, slot.h, radius)
+  ctx.fill()
+  ctx.strokeStyle = 'rgba(255,255,255,0.22)'
+  ctx.lineWidth = 2
+  ctx.stroke()
+  ctx.beginPath()
+  ctx.roundRect(slot.x + inset, slot.y + inset, slot.w - inset * 2, slot.h - inset * 2, radius * 0.6)
+  ctx.clip()
+  ctx.imageSmoothingEnabled = true
+  ctx.imageSmoothingQuality = 'high'
+  ctx.drawImage(img, slot.x + inset, slot.y + inset, slot.w - inset * 2, slot.h - inset * 2)
+  ctx.restore()
 }
 
 const pillFont = (size: number) => `800 ${size}px ${FONT}`

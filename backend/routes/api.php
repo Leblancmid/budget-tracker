@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\BudgetController;
 use App\Http\Controllers\Api\Business\BusinessDashboardController;
 use App\Http\Controllers\Api\Business\BusinessTransactionController;
 use App\Http\Controllers\Api\Business\InsightsController;
+use App\Http\Controllers\Api\Business\ListingPublishController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\LogController;
@@ -66,6 +67,9 @@ Route::prefix('v1')->group(function () {
                 Route::get('dashboard', [BusinessDashboardController::class, 'index'])->name('dashboard');
                 Route::get('brief', [InsightsController::class, 'brief'])->name('brief');
                 Route::get('price-guide', [InsightsController::class, 'priceGuide'])->name('price-guide');
+                // Accounts for sale → the Leblanc website (git push → Vercel)
+                Route::get('listing/publish', [ListingPublishController::class, 'preview'])->name('listing.preview');
+                Route::post('listing/publish', [ListingPublishController::class, 'publish'])->middleware('throttle:6,1')->name('listing.publish');
                 Route::apiResource('transactions', BusinessTransactionController::class)
                     ->except(['show'])
                     ->parameters(['transactions' => 'businessTransaction']);

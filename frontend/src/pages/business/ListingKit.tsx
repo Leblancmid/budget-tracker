@@ -18,6 +18,7 @@ import {
 } from '@/utils/listing'
 import { accessoriesFor } from '@/utils/accessories'
 import { AccountPickRow } from './listing/AccountPickRow'
+import { PublishToWebsite } from './listing/PublishToWebsite'
 import { canvasToBlob, drawListing, pngUnder, type ListingTile } from './listing/drawListing'
 
 interface KitSettings {
@@ -282,6 +283,8 @@ export default function ListingKit() {
               <Input label="Website link (caption)" value={settings.link} onChange={(e) => patch({ link: e.target.value })} />
               <Input label="Caption headline" value={settings.headline} onChange={(e) => patch({ headline: e.target.value })} />
             </Card>
+
+            <PublishToWebsite />
 
             {avgDaysToSell && (
               <Card className="flex items-center gap-3 p-4">

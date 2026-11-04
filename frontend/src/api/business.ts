@@ -1,6 +1,29 @@
 import api from './axios'
 import type { AccountClass, BusinessBrief, BusinessTransaction, BusinessDashboardStats, BusinessTransactionType, BusinessTransactionAction, PriceGuide } from '@/types'
 
+export interface PublishedListing {
+  id: string
+  category: 'Melee' | 'Distance' | 'Magic'
+  level: number
+  stats?: { melee: number; distance: number; magic: number; defense: number }
+  image: string
+  price?: string
+  featured?: boolean
+}
+
+export interface ListingPublishPreview {
+  /** LISTING_SITE_PATH points at the website repo */
+  configured: boolean
+  listings: PublishedListing[]
+  skipped: { id: number; name: string; reason: string }[]
+}
+
+/** Accounts for sale → the Leblanc website (commit + push; Vercel redeploys) */
+export const listingPublishApi = {
+  preview: () => api.get<ListingPublishPreview>('/business/listing/publish').then((r) => r.data),
+  publish: () => api.post<{ count: number; changed: boolean; pushed: boolean; commit: string | null }>('/business/listing/publish').then((r) => r.data),
+}
+
 /** Rule-based insights from your own numbers */
 export const businessInsightsApi = {
   brief:      () => api.get<BusinessBrief>('/business/brief').then((r) => r.data),

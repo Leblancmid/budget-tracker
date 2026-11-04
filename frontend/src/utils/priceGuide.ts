@@ -1,12 +1,7 @@
 import type { AccountClass } from '@/types'
 
-/** 1_500_000_000 → "1.5KKK", 540_000_000 → "540KK" (how gold is quoted in trade chats). */
-export function formatGoldShort(g: number): string {
-  const trim = (n: number, d: number) => String(Number(n.toFixed(d)))
-  if (Math.abs(g) >= 1_000_000_000) return `${trim(g / 1_000_000_000, 2)}KKK`
-  if (Math.abs(g) >= 1_000_000) return `${trim(g / 1_000_000, 1)}KK`
-  return g.toLocaleString('en')
-}
+/** Gold in trade-chat units (540KK, 1.5KKK): the same helper as the Listing Kit. */
+export { formatGoldShort } from './listing'
 
 /**
  * Level and class for the price guide, the same way the server reads sold accounts: the

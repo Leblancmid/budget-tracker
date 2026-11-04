@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { CalendarClock } from 'lucide-react'
+import { Banknote, CalendarClock, Coins } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -12,6 +12,8 @@ import { flattenApiErrors } from '@/utils/api'
 import { screenshotError } from '@/utils/listing'
 import { ScreenshotField } from './ScreenshotField'
 import { accountCostPhp } from '@/utils/accountCost'
+import { cashToPhp, type CashCurrency } from '@/utils/cash'
+import { CashPricing } from './CashPricing'
 import { AccessoryPicker } from './AccessoryPicker'
 
 export type RucoyTxKind = 'account' | 'gold'
@@ -67,6 +69,11 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
   const [stats, setStats]           = useState<Record<StatKey, string>>(EMPTY_STATS)
   const [showPrice, setShowPrice]   = useState(false)
   const [accessories, setAccessories] = useState<string[]>([])
+  // Gold deal (G × rates) or cash deal (₱ / $ amounts)
+  const [dealType, setDealType]     = useState<'gold' | 'cash'>('gold')
+  const [currency, setCurrency]     = useState<CashCurrency>('PHP')
+  const [priceCash, setPriceCash]   = useState('')
+  const [costCash, setCostCash]     = useState('')
   const [shotFile, setShotFile]     = useState<File | null>(null)
   const [shotRemoved, setShotRemoved] = useState(false)
 
@@ -97,6 +104,10 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
     setStats(Object.fromEntries(STAT_FIELDS.map(({ key }) => [key, account?.[key] != null ? String(account[key]) : ''])) as Record<StatKey, string>)
     setShowPrice(account?.show_price ?? false)
     setAccessories(account?.accessories ?? [])
+    setDealType(account?.deal_type ?? 'gold')
+    setCurrency(account?.cash_currency ?? 'PHP')
+    setPriceCash(account?.price_cash != null ? String(account.price_cash) : '')
+    setCostCash(account?.cost_cash != null ? String(account.cost_cash) : '')
     setShotFile(null)
     setShotRemoved(false)
     setDescription(kind === 'account' ? (account?.description ?? '') : (goldTx?.description ?? ''))
@@ -133,11 +144,16 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
   // A gold trade's gold changes only through Add Gold / Sell / account payments
   const lockGold = kind === 'gold' && isEdit
 
-  const priceUsd = toUsd(priceGoldNum, priceRate)
-  const costUsd  = paid ? null : toUsd(costGoldNum, costRate)
+  const isCash = kind === 'account' && dealType === 'cash'
+  const cashNum = (v: string) => (v !== '' && Number.isFinite(parseFloat(v)) ? parseFloat(v) : null)
+
+  const priceUsd = isCash ? (currency === 'USD' ? cashNum(priceCash) : null) : toUsd(priceGoldNum, priceRate)
+  const costUsd  = isCash ? (currency === 'USD' ? cashNum(costCash) : null) : paid ? null : toUsd(costGoldNum, costRate)
   const profitUsd = priceUsd != null && costUsd != null ? priceUsd - costUsd : null
-  const pricePhp = toPhp(priceGoldNum, priceUsd, pricePhpRate)
-  const costPhp  = paid
+  const pricePhp = isCash ? cashToPhp(priceCash, currency, pricePhpRate) : toPhp(priceGoldNum, priceUsd, pricePhpRate)
+  const costPhp  = isCash
+    ? cashToPhp(costCash, currency, costPhpRate)
+    : paid
     ? accountCostPhp(paid, costGoldNum, parseFloat(costRate) || null, parseFloat(costPhpRate) || null)
     : toPhp(costGoldNum, costUsd, costPhpRate)
   const profitPhp = pricePhp != null && costPhp != null ? pricePhp - costPhp : null
@@ -156,10 +172,11 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
       amount:        amount != null && amount > 0 ? round2(amount) : 0.01,
       description:   description || null,
       date,
-      price_rate:    parseFloat(priceRate)    || null,
-      cost_rate:     parseFloat(costRate)     || null,
-      php_rate:      parseFloat(pricePhpRate) || null,
-      cost_php_rate: parseFloat(costPhpRate)  || null,
+      price_rate:    isCash ? null : parseFloat(priceRate) || null,
+      cost_rate:     isCash ? null : parseFloat(costRate)  || null,
+      // Cash in pesos needs no rate; dollars keep each side's ₱ rate
+      php_rate:      isCash && currency === 'PHP' ? null : parseFloat(pricePhpRate) || null,
+      cost_php_rate: isCash && currency === 'PHP' ? null : parseFloat(costPhpRate)  || null,
       price_php:     pricePhp != null ? round2(pricePhp) : null,
       cost_php:      costPhp  != null ? round2(costPhp)  : null,
     }
@@ -202,8 +219,12 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
           {
             email:          email.trim(),
             description:    description,
-            price:          priceGoldNum,
-            cost:           costGoldNum,
+            deal_type:      dealType,
+            price:          isCash ? null : priceGoldNum,
+            cost:           isCash ? null : costGoldNum,
+            price_cash:     isCash ? cashNum(priceCash) : null,
+            cost_cash:      isCash ? cashNum(costCash) : null,
+            cash_currency:  isCash ? currency : null,
             payment_status: paymentStatus,
             payment_date:   paymentDate || null,
             ...Object.fromEntries(STAT_FIELDS.map(({ key }) => [key, stats[key] !== '' ? Number(stats[key]) : null])),
@@ -212,7 +233,7 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
             screenshot:        shotFile,
             remove_screenshot: shotRemoved && !shotFile,
           },
-          accountTx || hasRates ? buildPricing('account') : null,
+          accountTx || hasRates || (isCash && (priceCash !== '' || costCash !== '')) ? buildPricing('account') : null,
         )
       } else {
         await onSubmitGold({
@@ -274,19 +295,21 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
   const title = `${isEdit ? 'Edit' : 'Add'} ${kind === 'account' ? 'Account' : 'Gold'}`
 
   return (
-    <Modal open={open} onClose={onClose} title={title} size="2xl">
+    // Accounts have a lot to fill in: on wide screens, details + listing on the left and
+    // pricing on the right, so everything is visible without scrolling. Gold trades stay narrow.
+    <Modal open={open} onClose={onClose} title={title} size={kind === 'account' ? '6xl' : '2xl'}>
+      <div className={kind === 'account' ? 'grid grid-cols-1 gap-x-6 gap-y-4 lg:grid-cols-2' : 'flex flex-col gap-4'}>
       <div className="flex flex-col gap-4">
 
-        <Input
-          label="Description"
-          value={description}
-          error={errors.description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder={kind === 'account' ? 'e.g. Leblanc 583 Dist' : 'e.g. 9/100 Crash'}
-        />
-
-        {kind === 'account' && (
-          <>
+        <div className={kind === 'account' ? 'grid grid-cols-1 gap-3 sm:grid-cols-2' : ''}>
+          <Input
+            label="Description"
+            value={description}
+            error={errors.description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder={kind === 'account' ? 'e.g. Leblanc 583 Dist' : 'e.g. 9/100 Crash'}
+          />
+          {kind === 'account' && (
             <Input
               label="Email"
               value={email}
@@ -294,6 +317,11 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
               error={errors.email}
               placeholder="account@example.com"
             />
+          )}
+        </div>
+
+        {kind === 'account' && (
+          <>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
@@ -364,9 +392,53 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
             </fieldset>
           </>
         )}
+      </div>
+
+      {/* Pricing column (below the details on narrow screens) */}
+      <div className="flex flex-col gap-4">
+
+        {/* Account: priced in gold or in cash */}
+        {kind === 'account' && (
+          <div className="flex gap-1 rounded-xl bg-gray-100 p-1 dark:bg-gray-800" role="radiogroup" aria-label="Paid with">
+            {([['gold', 'Gold', Coins], ['cash', 'Cash', Banknote]] as const).map(([value, label, Icon]) => (
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-checked={dealType === value}
+                disabled={value === 'cash' && !!paid}
+                title={value === 'cash' && paid ? 'This account has gold payments. Remove them with Pay first.' : undefined}
+                onClick={() => setDealType(value)}
+                className={[
+                  'flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold disabled:opacity-40',
+                  dealType === value
+                    ? ['bg-white shadow-sm dark:bg-gray-950 ring-1 ring-inset',
+                       value === 'gold'
+                         ? 'text-amber-600 ring-amber-300 dark:text-amber-400 dark:ring-amber-500/50'
+                         : 'text-emerald-600 ring-emerald-300 dark:text-emerald-400 dark:ring-emerald-500/50'].join(' ')
+                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200',
+                ].join(' ')}
+              >
+                <Icon size={14} /> {label}
+              </button>
+            ))}
+          </div>
+        )}
+        {errors.deal_type && <p className="-mt-2 text-xs text-red-500">{errors.deal_type}</p>}
+
+        {isCash && (
+          <CashPricing
+            currency={currency}
+            onCurrency={setCurrency}
+            rows={[
+              { key: 'price', label: 'Selling price', hint: 'What the buyer pays you. Leave blank until it sells.', amount: priceCash, onAmount: setPriceCash, phpRate: pricePhpRate, onPhpRate: setPricePhpRate, color: 'text-emerald-600 dark:text-emerald-400' },
+              { key: 'cost', label: 'Cost (what you paid)', hint: 'What you paid the seller for the account.', amount: costCash, onAmount: setCostCash, phpRate: costPhpRate, onPhpRate: setCostPhpRate, color: 'text-red-600 dark:text-red-400' },
+            ]}
+          />
+        )}
 
         {/* Formula rows: G × rate = $ × PHP rate = ₱ */}
-        {formulaRows.map((row) => (
+        {!isCash && formulaRows.map((row) => (
           <div key={row.key}>
             <div className="flex items-end gap-1.5 sm:gap-2">
               <div className="flex-[1.3] min-w-0">
@@ -470,7 +542,7 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
           {[
             { label: 'Profit ($)', value: profitUsd, text: fmtUSD(profitUsd) },
             { label: 'Profit (₱)', value: profitPhp, text: fmtPHP(profitPhp) },
-          ].map(({ label, value, text }) => (
+          ].filter(({ label }) => !(isCash && currency === 'PHP' && label === 'Profit ($)')).map(({ label, value, text }) => (
             <div key={label} className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-800/60">
               <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
               <p className={['text-sm font-semibold mt-0.5', value == null || value >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'].join(' ')}>
@@ -487,11 +559,11 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
         {kind === 'gold' && (priceGoldNum ?? 0) > 0 && (!isEdit || goldTx?.inventory_gold != null) && (
           <p className="text-xs text-gray-500 dark:text-gray-400 -mt-1">
             {isEdit
-              ? 'Changing Price (G) updates your Golds stash by the difference.'
+              ? 'Gold changes go through Add Gold or Sell, which also update your Golds stash.'
               : <>{(priceGoldNum ?? 0).toLocaleString()} G will be added to your Golds stash in Rucoy → Summary.</>}
           </p>
         )}
-        {!hasRates && (
+        {!isCash && !hasRates && (
           <p className="text-xs text-gray-400 dark:text-gray-500 -mt-1">
             Rates are optional — leave them blank and it will show as <span className="font-semibold text-amber-600 dark:text-amber-400">Awaiting pricing</span> until you fill them in.
           </p>
@@ -505,6 +577,7 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
             {isEdit ? 'Save Changes' : kind === 'account' ? 'Add Account' : 'Add Gold'}
           </Button>
         </div>
+      </div>
       </div>
     </Modal>
   )

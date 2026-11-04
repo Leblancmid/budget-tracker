@@ -41,6 +41,12 @@ class StoreAccountPaymentRequest extends FormRequest
             $account = $this->route('rucoyAccount');
             $gold    = (float) $this->input('gold');
 
+            if ($account->isCash()) {
+                $v->errors()->add('method', 'This is a cash deal: its price and cost are entered as cash in Edit Account.');
+
+                return;
+            }
+
             // Can't pay more gold than the agreed cost still owed
             if ($account->cost !== null) {
                 $owed = (float) $account->cost - (float) $account->payments()->sum('gold');

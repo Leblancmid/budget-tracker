@@ -22,10 +22,15 @@ class RucoyAccount extends Model
         'ring-green', 'ring-purple', 'ring-blue', 'ring-gold',
     ];
 
+    public const DEAL_TYPES = ['gold', 'cash'];
+
     protected $fillable = [
         'description', 'email', 'avatar', 'price', 'cost', 'payment_status', 'payment_date',
+        'deal_type', 'price_cash', 'cost_cash', 'cash_currency',
         'level', 'melee', 'distance', 'magic', 'defense', 'accessories', 'screenshot', 'show_price', 'listed_at',
     ];
+
+    protected $attributes = ['deal_type' => 'gold'];
 
     protected $appends = ['profit'];
 
@@ -41,9 +46,17 @@ class RucoyAccount extends Model
             'defense'     => 'integer',
             'accessories' => 'array',
             'show_price'  => 'boolean',
+            'price_cash'  => 'float',
+            'cost_cash'   => 'float',
             'listed_at'   => 'datetime',
             'archived_at' => 'datetime',
         ];
+    }
+
+    /** Priced in cash (₱ or $) instead of gold. */
+    public function isCash(): bool
+    {
+        return $this->deal_type === 'cash';
     }
 
     public function payments(): HasMany

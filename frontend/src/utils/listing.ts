@@ -1,4 +1,5 @@
 import { accessoriesFor } from './accessories'
+import { formatCash } from './cash'
 import type { RucoyAccount } from '@/types'
 
 /** How an account is marketed: its highest attack skill. */
@@ -147,6 +148,14 @@ export function wrapText(text: string, maxWidth: number, measure: (s: string) =>
   return lines
 }
 
+type PricedAccount = Pick<RucoyAccount, 'price' | 'deal_type' | 'price_cash' | 'cash_currency'>
+
+/** The asking price as buyers see it: "700KK" for gold deals, "₱8,000" / "$150" for cash deals. */
+export function listingPrice(a: PricedAccount): string | null {
+  if (a.deal_type === 'cash') return a.price_cash ? formatCash(a.price_cash, a.cash_currency) : null
+  return a.price ? formatGoldShort(a.price) : null
+}
+
 export interface CaptionOptions {
   headline: string
   link: string
@@ -155,11 +164,11 @@ export interface CaptionOptions {
 
 /** Text to paste with the image: one line per account, then promos and the link. */
 export function listingCaption(
-  accounts: Pick<RucoyAccount, 'level' | 'melee' | 'distance' | 'magic' | 'description' | 'email' | 'price' | 'show_price' | 'accessories'>[],
+  accounts: Pick<RucoyAccount, 'level' | 'melee' | 'distance' | 'magic' | 'description' | 'email' | 'price' | 'show_price' | 'accessories' | 'deal_type' | 'price_cash' | 'cash_currency'>[],
   { headline, link, promos }: CaptionOptions,
 ): string {
   const lines = accounts.map((a) => {
-    const price = a.show_price && a.price ? formatGoldShort(a.price) : 'DM for price'
+    const price = (a.show_price && listingPrice(a)) || 'DM for price'
     const extras = accessoriesFor(a.accessories).map((x) => x.label)
     return `• ${listingTitle(a)}${extras.length ? ` + ${extras.join(', ')}` : ''} — ${price}`
   })

@@ -303,6 +303,11 @@ export interface RucoyAccount {
   distance: number | null
   magic: number | null
   defense: number | null
+  /** Priced in gold (price/cost in G) or cash (price_cash/cost_cash in cash_currency) */
+  deal_type: 'gold' | 'cash'
+  price_cash: number | null
+  cost_cash: number | null
+  cash_currency: 'PHP' | 'USD' | null
   /** Accessory keys (see utils/accessories.ts) */
   accessories: string[] | null
   /** Payments toward the cost, oldest first */

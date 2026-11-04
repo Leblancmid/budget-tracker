@@ -78,6 +78,10 @@ export interface AccountPayload {
   distance?: number | null
   magic?: number | null
   defense?: number | null
+  deal_type?: 'gold' | 'cash'
+  price_cash?: number | null
+  cost_cash?: number | null
+  cash_currency?: 'PHP' | 'USD' | null
   /** Accessory keys; an empty list clears them */
   accessories?: string[]
   /** A new screenshot to upload */
@@ -101,6 +105,10 @@ function buildAccountForm(data: AccountPayload, method?: 'PUT'): FormData {
   if (data.payment_date !== undefined) fd.append('payment_date', data.payment_date ?? '')
   // '' reaches Laravel as null, which clears a stat that was removed
   for (const key of LISTING_NUMBERS) {
+    if (data[key] !== undefined) fd.append(key, data[key] != null ? String(data[key]) : '')
+  }
+  if (data.deal_type) fd.append('deal_type', data.deal_type)
+  for (const key of ['price_cash', 'cost_cash', 'cash_currency'] as const) {
     if (data[key] !== undefined) fd.append(key, data[key] != null ? String(data[key]) : '')
   }
   if (data.accessories !== undefined) {

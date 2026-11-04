@@ -9,6 +9,7 @@ use App\Models\BusinessTransaction;
 use App\Models\Gold;
 use App\Models\GoldLog;
 use App\Models\RucoyAccount;
+use App\Services\BusinessTransactionService;
 use App\Services\GoldInventory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,6 +18,8 @@ use Illuminate\Support\Facades\Storage;
 
 class RucoyAccountController extends Controller
 {
+    public function __construct(private readonly BusinessTransactionService $transactions) {}
+
     public function index(): JsonResponse
     {
         return response()->json(RucoyAccount::active()->with('payments')->latest()->get()->map(fn ($a) => $this->transform($a)));
@@ -108,6 +111,12 @@ class RucoyAccountController extends Controller
 
         $rucoyAccount->update($data);
 
+        // Re-price its Sales row (cash amounts, or the unpaid part of a gold cost, may have changed)
+        $tx = BusinessTransaction::where('type', 'account')->where('account_id', $rucoyAccount->id)->first();
+        if ($tx) {
+            $this->transactions->update($tx, []);
+        }
+
         return response()->json($this->transform($rucoyAccount->fresh()));
     }
 
@@ -129,9 +138,18 @@ class RucoyAccountController extends Controller
         return 'Sold: ' . $account->description;
     }
 
-    /** No accessories is stored as null; duplicates are dropped. */
+    /** No accessories is stored as null; duplicates are dropped. A deal is gold or cash, never both. */
     private function normalizeAccessories(array $data): array
     {
+        if (($data['deal_type'] ?? null) === 'cash') {
+            $data['price'] = null;
+            $data['cost']  = null;
+        } elseif (($data['deal_type'] ?? null) === 'gold') {
+            $data['price_cash']    = null;
+            $data['cost_cash']     = null;
+            $data['cash_currency'] = null;
+        }
+
         if (array_key_exists('accessories', $data)) {
             $data['accessories'] = $data['accessories'] ? array_values(array_unique($data['accessories'])) : null;
         }

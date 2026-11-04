@@ -13,7 +13,7 @@ import { toast } from '@/lib/toast'
 import { errorMessage } from '@/utils/api'
 import type { RucoyAccount } from '@/types'
 import {
-  daysListed, DEFAULT_CROP, formatGoldShort, isNewListing, listingCaption, sameOriginPath, sortForListing,
+  daysListed, DEFAULT_CROP, isNewListing, listingPrice, listingCaption, sameOriginPath, sortForListing,
   type CropInsets,
 } from '@/utils/listing'
 import { accessoriesFor } from '@/utils/accessories'
@@ -87,7 +87,7 @@ export default function ListingKit() {
     return [{
       image,
       isNew: isNewListing(a.listed_at, nowMs, settings.newForDays),
-      priceLabel: a.show_price && a.price ? formatGoldShort(a.price) : null,
+      priceLabel: a.show_price ? listingPrice(a) : null,
       accessories: accessoriesFor(a.accessories).flatMap((x) => icons.get(x.src) ?? []),
     }]
   }), [included, images, icons, urls, nowMs, settings.newForDays])

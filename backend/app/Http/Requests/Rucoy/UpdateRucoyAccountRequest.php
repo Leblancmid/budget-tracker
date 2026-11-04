@@ -3,7 +3,9 @@
 namespace App\Http\Requests\Rucoy;
 
 use App\Http\Requests\Rucoy\Concerns\ValidatesListing;
+use App\Models\RucoyAccount;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class UpdateRucoyAccountRequest extends FormRequest
 {
@@ -12,6 +14,17 @@ class UpdateRucoyAccountRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
+    }
+
+    /** An account paid with gold payments can't become a cash deal (remove the payments first). */
+    public function after(): array
+    {
+        return [function (Validator $v) {
+            $account = $this->route('rucoyAccount');
+            if ($this->input('deal_type') === 'cash' && $account instanceof RucoyAccount && $account->payments()->exists()) {
+                $v->errors()->add('deal_type', 'This account has gold payments. Remove them with Pay before switching it to cash.');
+            }
+        }];
     }
 
     public function rules(): array

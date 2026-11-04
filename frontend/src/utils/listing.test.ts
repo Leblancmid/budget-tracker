@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { RucoyAccount } from '@/types'
 import {
   accountBuild, coverCrop, cropRegion, daysListed, formatGoldShort, isNewListing, listingCaption,
-  listingLayout, listingTitle, promoTiles, sameOriginPath, screenshotError, sortForListing, wrapText,
+  listingLayout, listingPrice, listingTitle, promoTiles, sameOriginPath, screenshotError, sortForListing, wrapText,
   DEFAULT_CROP, GAP, TILE_H, TILE_W,
 } from './listing'
 
@@ -172,5 +172,19 @@ describe('screenshotError', () => {
     expect(screenshotError({ type: 'image/png', size: 1_000_000 })).toBeNull()
     expect(screenshotError({ type: 'application/pdf', size: 10 })).toMatch(/PNG/)
     expect(screenshotError({ type: 'image/jpeg', size: 6 * 1024 * 1024 })).toMatch(/5 MB/)
+  })
+})
+
+describe('listingPrice', () => {
+  it('shows gold deals in gold shorthand and cash deals in their currency', () => {
+    expect(listingPrice(account({ deal_type: 'gold', price: 700_000_000 }))).toBe('700KK')
+    expect(listingPrice(account({ deal_type: 'cash', price: null, price_cash: 8000, cash_currency: 'PHP' }))).toBe('₱8,000')
+    expect(listingPrice(account({ deal_type: 'cash', price_cash: 150, cash_currency: 'USD' }))).toBe('$150')
+    expect(listingPrice(account({ deal_type: 'cash', price_cash: null }))).toBeNull()
+  })
+
+  it('puts the cash price in the caption', () => {
+    expect(listingCaption([account({ deal_type: 'cash', price_cash: 8000, cash_currency: 'PHP' })], { headline: '', link: '', promos: [] }))
+      .toBe('• Lv 618 Melee — ₱8,000')
   })
 })

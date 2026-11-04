@@ -353,6 +353,20 @@ class BusinessTransactionService
                 ? (float) $tx->cost_php_rate
                 : $pricePhpRate;
 
+            // Cash deal: the ₱ values come from the cash amounts (USD × its ₱ rate), never gold rates
+            if ($account->isCash()) {
+                $toPhp = fn ($cash, ?float $rate) => $cash === null ? null
+                    : ($account->cash_currency === 'USD' ? ($rate ? round((float) $cash * $rate, 2) : null) : round((float) $cash, 2));
+                $tx->price_rate = null;
+                $tx->cost_rate  = null;
+                $tx->price_php  = $toPhp($account->price_cash, $pricePhpRate);
+                $tx->cost_php   = $toPhp($account->cost_cash, $costPhpRate);
+                $this->refreshProfit($tx);
+                $tx->save();
+
+                return;
+            }
+
             $pricePhp = $tx->price_php !== null
                 ? (float) $tx->price_php
                 : (($account->price !== null && $tx->price_rate && $pricePhpRate)

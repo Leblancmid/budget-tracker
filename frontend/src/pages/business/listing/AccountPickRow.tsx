@@ -1,6 +1,6 @@
 import { ImageOff } from 'lucide-react'
 import type { RucoyAccount } from '@/types'
-import { daysListed, formatGoldShort, listingTitle, sameOriginPath } from '@/utils/listing'
+import { daysListed, listingPrice, listingTitle, sameOriginPath } from '@/utils/listing'
 
 /** One account in the Listing Kit: include it, show/hide its price, see how long it's been listed. */
 export function AccountPickRow({ a, included, isNew, nowMs, savingPrice, onToggleInclude, onToggleShowPrice }: {
@@ -41,7 +41,7 @@ export function AccountPickRow({ a, included, isNew, nowMs, savingPrice, onToggl
         </p>
         <p className="truncate text-xs text-gray-500 dark:text-gray-400">
           {hasShot
-            ? <>{a.price ? formatGoldShort(a.price) : 'No price'}{days != null && <> · listed {days === 0 ? 'today' : `${days}d ago`}</>}</>
+            ? <>{listingPrice(a) ?? 'No price'}{days != null && <> · listed {days === 0 ? 'today' : `${days}d ago`}</>}</>
             : 'Add a screenshot in Sales → Edit to include it'}
         </p>
       </div>
@@ -50,7 +50,7 @@ export function AccountPickRow({ a, included, isNew, nowMs, savingPrice, onToggl
         <input
           type="checkbox"
           checked={a.show_price}
-          disabled={savingPrice || !a.price}
+          disabled={savingPrice || !listingPrice(a)}
           onChange={onToggleShowPrice}
           className="h-3.5 w-3.5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 disabled:opacity-40"
         />

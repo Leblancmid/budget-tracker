@@ -1,5 +1,6 @@
 import { Calendar, CalendarClock, Coins, HandCoins, Pencil, RotateCcw, Trash2, User, Wallet } from 'lucide-react'
 import { ProgressBar } from '@/components/ui/ProgressBar'
+import { formatCash } from '@/utils/cash'
 import { formatDate } from '@/utils/format'
 import type { BusinessTransaction, RucoyAccount } from '@/types'
 import { ProfitPhpBar } from './ProfitPhpBar'
@@ -17,7 +18,16 @@ export function AccountCard({ a, tx, onEdit, onArchive, onDelete, onConvertToGol
   archived?: boolean
   onUnarchive?: () => void
 }) {
-  const profitPositive = (a.profit ?? 0) >= 0
+  const isCash = a.deal_type === 'cash'
+  const stats = isCash
+    ? {
+        price: a.price_cash,
+        cost: a.cost_cash,
+        profit: a.price_cash != null && a.cost_cash != null ? a.price_cash - a.cost_cash : null,
+        format: (v: number) => formatCash(v, a.cash_currency),
+      }
+    : { price: a.price, cost: a.cost, profit: a.profit, format: fmtGold }
+  const profitPositive = (stats.profit ?? 0) >= 0
 
   return (
     <div className={[
@@ -77,7 +87,7 @@ export function AccountCard({ a, tx, onEdit, onArchive, onDelete, onConvertToGol
                 <HandCoins size={12} />
                 Sell
               </button>
-              {onPay && (
+              {onPay && !isCash && (
                 <button
                   onClick={onPay}
                   title="Pay with gold trades or cash"
@@ -87,14 +97,14 @@ export function AccountCard({ a, tx, onEdit, onArchive, onDelete, onConvertToGol
                   Pay
                 </button>
               )}
-              <button
+              {!isCash && <button
                 onClick={onConvertToGold}
                 title="Convert to gold trade"
                 className="mr-1 flex items-center gap-1 rounded-lg border border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-900/20 px-2.5 py-1 text-[11px] font-semibold text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
               >
                 <Coins size={12} />
                 To Gold
-              </button>
+              </button>}
               <button
                 onClick={onEdit}
                 className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
@@ -114,18 +124,18 @@ export function AccountCard({ a, tx, onEdit, onArchive, onDelete, onConvertToGol
         </div>
       </div>
 
-      {/* Stats row (gold) */}
-      {(a.price != null || a.cost != null || a.profit != null) && (
+      {/* Stats row: gold (G) or cash (₱ / $) */}
+      {(stats.price != null || stats.cost != null) && (
         <div className="mx-4 mb-2 grid grid-cols-3 divide-x divide-gray-100 dark:divide-gray-800 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/30 overflow-hidden">
           {[
-            { label: 'Price',  value: a.price,  color: 'text-indigo-600 dark:text-indigo-400' },
-            { label: 'Cost',   value: a.cost,   color: 'text-gray-600 dark:text-gray-400' },
-            { label: 'Profit', value: a.profit, color: profitPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400' },
+            { label: 'Price',  value: stats.price,  color: 'text-indigo-600 dark:text-indigo-400' },
+            { label: 'Cost',   value: stats.cost,   color: 'text-gray-600 dark:text-gray-400' },
+            { label: 'Profit', value: stats.profit, color: profitPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400' },
           ].map(({ label, value, color }) => (
             <div key={label} className="flex flex-col items-center py-2.5 px-1">
               <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide">{label}</span>
               <span className={['text-xs font-bold mt-0.5', value != null ? color : 'text-gray-300 dark:text-gray-600'].join(' ')}>
-                {value != null ? fmtGold(value) : '—'}
+                {value != null ? stats.format(value) : '—'}
               </span>
             </div>
           ))}

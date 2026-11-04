@@ -13,6 +13,11 @@ trait ValidatesListing
         $stat = ['nullable', 'integer', 'min:0', 'max:9999'];
 
         return [
+            // Gold deal (price/cost in G) or cash deal (price_cash/cost_cash in PHP or USD)
+            'deal_type'         => ['sometimes', Rule::in(RucoyAccount::DEAL_TYPES)],
+            'price_cash'        => ['nullable', 'numeric', 'min:0', 'max:9999999999'],
+            'cost_cash'         => ['nullable', 'numeric', 'min:0', 'max:9999999999'],
+            'cash_currency'     => ['nullable', 'required_if:deal_type,cash', Rule::in(['PHP', 'USD'])],
             'level'             => ['nullable', 'integer', 'min:1', 'max:9999'],
             'melee'             => $stat,
             'distance'          => $stat,

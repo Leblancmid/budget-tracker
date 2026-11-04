@@ -107,13 +107,19 @@ function buildAccountForm(data: AccountPayload, method?: 'PUT'): FormData {
   return fd
 }
 
+/**
+ * The shared client defaults to JSON, and axios turns FormData into JSON under that header,
+ * which silently drops files. Multipart keeps them; the browser adds the boundary itself.
+ */
+export const MULTIPART = { headers: { 'Content-Type': 'multipart/form-data' } } as const
+
 export const rucoyAccountsApi = {
   getAll: () => api.get<RucoyAccount[]>('/rucoy/accounts').then((r) => r.data),
   getArchived: () => api.get<RucoyAccount[]>('/rucoy/accounts/archived').then((r) => r.data),
   create: (data: AccountPayload) =>
-    api.post<RucoyAccount>('/rucoy/accounts', buildAccountForm(data)).then((r) => r.data),
+    api.post<RucoyAccount>('/rucoy/accounts', buildAccountForm(data), MULTIPART).then((r) => r.data),
   update: (id: number, data: AccountPayload) =>
-    api.post<RucoyAccount>(`/rucoy/accounts/${id}`, buildAccountForm(data, 'PUT')).then((r) => r.data),
+    api.post<RucoyAccount>(`/rucoy/accounts/${id}`, buildAccountForm(data, 'PUT'), MULTIPART).then((r) => r.data),
   archive: (id: number) =>
     api.post<RucoyAccount>(`/rucoy/accounts/${id}/archive`).then((r) => r.data),
   unarchive: (id: number) =>

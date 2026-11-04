@@ -16,6 +16,9 @@ use Illuminate\Http\Request;
 
 class BusinessTransactionController extends Controller
 {
+    /** The wallet payments a gold trade lists (what paid for its bought gold) */
+    private const WALLET_ENTRIES = 'walletEntries:id,business_transaction_id,account,amount,date';
+
     public function __construct(private readonly BusinessTransactionService $transactions) {}
 
     public function summary(Request $request): JsonResponse
@@ -40,7 +43,7 @@ class BusinessTransactionController extends Controller
     {
         MiddlemanFeeTrade::get(); // make sure the pinned Middleman Fee trade exists
 
-        return response()->json(BusinessTransaction::active()->latest('date')->latest('id')->get());
+        return response()->json(BusinessTransaction::active()->with(self::WALLET_ENTRIES)->latest('date')->latest('id')->get());
     }
 
     public function archived(): JsonResponse
@@ -72,14 +75,14 @@ class BusinessTransactionController extends Controller
     {
         $tx = $this->transactions->create($request->validated(), $request->boolean('add_to_inventory'));
 
-        return response()->json($tx->fresh(), 201);
+        return response()->json($tx->fresh()->load(self::WALLET_ENTRIES), 201);
     }
 
     public function update(UpdateBusinessTransactionRequest $request, BusinessTransaction $businessTransaction): JsonResponse
     {
         $this->transactions->update($businessTransaction, $request->validated());
 
-        return response()->json($businessTransaction->fresh());
+        return response()->json($businessTransaction->fresh()->load(self::WALLET_ENTRIES));
     }
 
     public function destroy(BusinessTransaction $businessTransaction): JsonResponse
@@ -129,16 +132,17 @@ class BusinessTransactionController extends Controller
         $validated = $request->validated();
         $addPrice  = (float) ($validated['price_gold'] ?? 0);
         $addCost   = (float) ($validated['cost_gold'] ?? 0);
+        $addCostPhp = (float) ($validated['cost_php'] ?? 0);
 
         if ($businessTransaction->type !== 'gold' || $businessTransaction->archived_at !== null) {
             return response()->json(['message' => 'Gold can only be added to pending gold trades.'], 422);
         }
-        if ($addPrice <= 0 && $addCost <= 0) {
+        if ($addPrice <= 0 && $addCost <= 0 && $addCostPhp <= 0) {
             return response()->json(['errors' => ['price_gold' => ['Enter gold to add to the price or cost.']]], 422);
         }
 
-        $this->transactions->addGold($businessTransaction, $addPrice, $addCost, trim((string) ($validated['description'] ?? '')));
+        $this->transactions->addGold($businessTransaction, $addPrice, $addCost, trim((string) ($validated['description'] ?? '')), $validated['balance_account'] ?? null, $addCostPhp);
 
-        return response()->json($businessTransaction->fresh());
+        return response()->json($businessTransaction->fresh()->load(self::WALLET_ENTRIES));
     }
 }

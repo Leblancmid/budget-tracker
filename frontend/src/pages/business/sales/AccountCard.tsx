@@ -1,7 +1,8 @@
 import { Calendar, CalendarClock, Coins, HandCoins, Pencil, RotateCcw, Trash2, User, Wallet } from 'lucide-react'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { formatCash } from '@/utils/cash'
-import { formatDate } from '@/utils/format'
+import { formatCurrency, formatDate } from '@/utils/format'
+import { costPaidInPhp } from '@/utils/goldTrade'
 import type { BusinessTransaction, RucoyAccount } from '@/types'
 import { ProfitPhpBar } from './ProfitPhpBar'
 import { fmtGold, PAYMENT_STATUS_STYLES } from './salesUtils'
@@ -27,6 +28,8 @@ export function AccountCard({ a, tx, onEdit, onArchive, onDelete, onConvertToGol
         format: (v: number) => formatCash(v, a.cash_currency),
       }
     : { price: a.price, cost: a.cost, profit: a.profit, format: fmtGold }
+  // Bought with money (no gold paid out): its cost is the ₱ paid
+  const phpCost = !isCash && costPaidInPhp(a.cost, tx?.cost_php)
   const profitPositive = (stats.profit ?? 0) >= 0
 
   return (
@@ -87,7 +90,7 @@ export function AccountCard({ a, tx, onEdit, onArchive, onDelete, onConvertToGol
                 <HandCoins size={12} />
                 Sell
               </button>
-              {onPay && !isCash && (
+              {onPay && !isCash && !phpCost && (
                 <button
                   onClick={onPay}
                   title="Pay with gold trades or cash"
@@ -130,12 +133,17 @@ export function AccountCard({ a, tx, onEdit, onArchive, onDelete, onConvertToGol
           {[
             { label: 'Price',  value: stats.price,  color: 'text-indigo-600 dark:text-indigo-400' },
             { label: 'Cost',   value: stats.cost,   color: 'text-gray-600 dark:text-gray-400' },
-            { label: 'Profit', value: stats.profit, color: profitPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400' },
+            { label: 'Profit', value: stats.profit, color: (phpCost ? Number(tx!.profit_php ?? 0) >= 0 : profitPositive) ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400' },
           ].map(({ label, value, color }) => (
             <div key={label} className="flex flex-col items-center py-2.5 px-1">
               <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide">{label}</span>
               <span className={['text-xs font-bold mt-0.5', value != null ? color : 'text-gray-300 dark:text-gray-600'].join(' ')}>
-                {value != null ? stats.format(value) : '—'}
+                {phpCost && label === 'Cost'
+                  ? formatCurrency(Number(tx!.cost_php))
+                  // Paid in cash: gold minus cash isn't a profit, so show the ₱ profit
+                  : phpCost && label === 'Profit'
+                  ? (tx!.profit_php != null ? formatCurrency(Number(tx!.profit_php)) : '—')
+                  : value != null ? stats.format(value) : '—'}
               </span>
             </div>
           ))}

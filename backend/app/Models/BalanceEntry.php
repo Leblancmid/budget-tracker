@@ -8,6 +8,7 @@ class BalanceEntry extends Model
 {
     protected $fillable = [
         'transaction_id',
+        'business_transaction_id',
         'account',
         'type',
         'description',

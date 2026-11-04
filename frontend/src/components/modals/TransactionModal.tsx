@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
-import { ArrowDownLeft, ArrowUpRight, Briefcase, Ban, StickyNote, User } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, Briefcase, StickyNote, User } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import type { BalanceAccountConfig, Category, Transaction, TransactionScope } from '@/types'
 import { formatWithCommas, handleAmountInput, todayISO } from '@/utils/format'
-import { colorOf, fmtPhp, iconOf } from '@/utils/balanceAccounts'
+import { fmtPhp } from '@/utils/balanceAccounts'
 import { categoryIcon } from '@/utils/categoryIcons'
 import { flattenApiErrors } from '@/utils/api'
-import { Amt } from '@/components/ui/Amt'
+import { WalletPicker } from './WalletPicker'
 import { readString, removeItem, STORAGE_KEYS, writeString } from '@/lib/storage'
 
 interface TransactionModalProps {
@@ -92,8 +92,6 @@ export function TransactionModal({ open, onClose, onSubmit, categories, transact
     const saved = parseFloat(transaction.amount)
     return current - (transaction.type === 'income' ? saved : -saved)
   }
-  const balanceBefore = linked ? balanceWithout(linked) : 0
-  const balanceAfter  = balanceBefore + (isIncome ? form.amount : -form.amount)
 
   const validate = () => {
     const errs: typeof errors = {}
@@ -232,77 +230,14 @@ export function TransactionModal({ open, onClose, onSubmit, categories, transact
 
         {/* Balance account */}
         {balanceAccounts.length > 0 && (
-          <div>
-            <div className="mb-1.5 flex items-baseline justify-between gap-2">
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{isIncome ? 'Add to account' : 'Pay from account'}</p>
-              <span className="text-[11px] text-gray-400 dark:text-gray-500">Updates your Balance</span>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              <button
-                type="button"
-                onClick={() => set('balance_account', null)}
-                className={[
-                  'flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors',
-                  !form.balance_account
-                    ? 'border-gray-400 bg-gray-100 text-gray-700 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-200'
-                    : 'border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800',
-                ].join(' ')}
-              >
-                <Ban size={12} /> None
-              </button>
-              {balanceAccounts.map((a) => {
-                const c = colorOf(a.color)
-                const Icon = iconOf(a.icon)
-                const selected = form.balance_account === a.code
-                return (
-                  <button
-                    key={a.code}
-                    type="button"
-                    onClick={() => set('balance_account', a.code)}
-                    className={[
-                      'flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors',
-                      selected ? ['border-transparent ring-2', c.ring, c.soft, c.text].join(' ') : 'border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800',
-                    ].join(' ')}
-                  >
-                    <span className={['flex h-5 w-5 items-center justify-center rounded-md', c.iconTile].join(' ')}><Icon size={11} /></span>
-                    <span className="flex flex-col items-start leading-tight">
-                      <span>{a.name}</span>
-                      <span className={['text-[10px] font-medium', balanceWithout(a) < 0 ? 'text-red-500' : 'opacity-70'].join(' ')}>
-                        <Amt value={fmtPhp(balanceWithout(a))} />
-                      </span>
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
-
-            {/* Selected account: balance before → after */}
-            {linked && (() => {
-              const c = colorOf(linked.color)
-              const short = !isIncome && balanceAfter < 0
-              return (
-                <div className={['mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg px-3 py-2 text-xs', c.soft].join(' ')}>
-                  <span className="font-semibold text-gray-700 dark:text-gray-200">{linked.name}</span>
-                  <span className="text-gray-500 dark:text-gray-400">
-                    <Amt value={fmtPhp(balanceBefore)} />
-                    {form.amount > 0 && (
-                      <>
-                        {' → '}
-                        <b className={short ? 'text-red-600 dark:text-red-400' : isIncome ? 'text-emerald-600 dark:text-emerald-400' : c.text}>
-                          <Amt value={fmtPhp(balanceAfter)} />
-                        </b>
-                      </>
-                    )}
-                  </span>
-                  {short && (
-                    <span className="ml-auto font-semibold text-red-600 dark:text-red-400">
-                      Not enough — short by <Amt value={fmtPhp(-balanceAfter)} />
-                    </span>
-                  )}
-                </div>
-              )
-            })()}
-          </div>
+          <WalletPicker
+            label={isIncome ? 'Add to account' : 'Pay from account'}
+            accounts={balanceAccounts}
+            value={form.balance_account}
+            onChange={(code) => set('balance_account', code)}
+            balanceOf={balanceWithout}
+            changeFor={() => (isIncome ? form.amount : -form.amount)}
+          />
         )}
 
         {/* Date + description */}

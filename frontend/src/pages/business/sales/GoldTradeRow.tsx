@@ -4,6 +4,7 @@ import { ProgressBar } from '@/components/ui/ProgressBar'
 import { formatCurrency, formatDate } from '@/utils/format'
 import type { BusinessTransaction } from '@/types'
 import { CUR_LABEL, txProfitPhp } from './salesUtils'
+import { costPaidInPhp } from '@/utils/goldTrade'
 
 export function GoldTradeRow({ tx, archived = false, onEdit, onSell, onAddGold, onDelete, onUnarchive, totalReceived }: {
   tx: BusinessTransaction
@@ -67,8 +68,18 @@ export function GoldTradeRow({ tx, archived = false, onEdit, onSell, onAddGold, 
         {/* Gold price / cost, with received / paid progress */}
         <div className="hidden sm:flex flex-col items-end gap-1 text-right">
           <GoldAmountLine label="Price" total={tx.price_gold} done={tx.price_gold_received} doneLabel="Received" color="text-emerald-600 dark:text-emerald-400" />
-          <GoldAmountLine label="Cost"  total={tx.cost_gold}  done={tx.cost_gold_paid}      doneLabel="Paid"     color="text-red-500 dark:text-red-400" />
-          {tx.price_gold != null && tx.cost_gold != null && <GoldProfit price={tx.price_gold} cost={tx.cost_gold} />}
+          {costPaidInPhp(tx.cost_gold, tx.cost_php)
+            // Bought with money: the cost is the ₱ paid
+            ? <span className="text-xs font-semibold text-red-500 dark:text-red-400">Cost: <Amt value={formatCurrency(Number(tx.cost_php))} /></span>
+            : <GoldAmountLine label="Cost"  total={tx.cost_gold}  done={tx.cost_gold_paid}      doneLabel="Paid"     color="text-red-500 dark:text-red-400" />}
+          {costPaidInPhp(tx.cost_gold, tx.cost_php)
+            // Paid in cash: gold minus cash isn't a profit, so show the ₱ profit
+            ? (
+              <span className={['text-xs font-semibold', (profit ?? 0) >= 0 ? 'text-indigo-500 dark:text-indigo-400' : 'text-red-500 dark:text-red-400'].join(' ')}>
+                Profit: {profit != null ? <Amt value={formatCurrency(profit)} /> : '—'}
+              </span>
+            )
+            : tx.price_gold != null && tx.cost_gold != null && <GoldProfit price={tx.price_gold} cost={tx.cost_gold} />}
         </div>
 
         {/* PHP profit / status */}

@@ -14,6 +14,10 @@ export const STORAGE_KEYS = {
   amountsHidden:       'amounts_hidden',
   sidebarCollapsed:    'sidebar_collapsed',
   lastBalanceAccount:  'tx_last_balance_account',
+  /** Wallet last used to pay for bought gold (Add Gold) */
+  lastGoldWallet:      'gold_last_wallet',
+  /** Account / gold cost entered as G × rates or as the ₱ paid */
+  costEntryMode:       'cost_entry_mode',
   /** Gold → ₱ rates on Master → Overview (also used by the sidebar net worth) */
   masterUsdRate:       'master_account_usd_rate',
   masterPhpRate:       'master_account_php_rate',

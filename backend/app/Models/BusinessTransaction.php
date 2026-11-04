@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\Archivable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class BusinessTransaction extends Model
 {
@@ -26,6 +27,49 @@ class BusinessTransaction extends Model
             'date'          => 'date:Y-m-d',
             'archived_at'   => 'datetime',
         ];
+    }
+
+    /** Balance wallet payments for the gold bought on this trade (deducted from Balance). */
+    public function walletEntries(): HasMany
+    {
+        return $this->hasMany(BalanceEntry::class);
+    }
+
+    /**
+     * Gold bought with money ("₱ paid"): no gold went out (Cost 0 G), the cost is the ₱ paid.
+     * Its cost follows the price gold, e.g. selling half the gold takes half the ₱ cost.
+     */
+    public function costPaidInPhp(): bool
+    {
+        return (float) ($this->cost_gold ?? 0) == 0 && (float) ($this->cost_php ?? 0) > 0;
+    }
+
+    /** The gold a wallet payment buys: the cost gold, or the price gold when the cost was paid in ₱. */
+    public function boughtGold(): float
+    {
+        return (float) ($this->cost_gold ?? 0) > 0 ? (float) $this->cost_gold : (float) ($this->price_gold ?? 0);
+    }
+
+    /**
+     * What buying $gold of this trade's cost gold costs in a wallet's currency, at the trade's
+     * cost rates: G / 1M × cost rate = $, × the cost ₱ rate for a peso wallet. Null without rates.
+     */
+    public function walletCost(float $gold, string $currency, ?float $costPhp = null): ?float
+    {
+        // The ₱ actually paid wins for a peso wallet
+        if ($currency === 'PHP' && $costPhp !== null && $costPhp > 0) {
+            return round($costPhp, 2);
+        }
+        if ($gold <= 0 || ! $this->cost_rate) {
+            return null;
+        }
+        $usd = $gold / 1_000_000 * (float) $this->cost_rate;
+        if ($currency === 'USD') {
+            return round($usd, 2);
+        }
+        $phpRate = $this->cost_php_rate ?? $this->php_rate;
+
+        return $phpRate ? round($usd * (float) $phpRate, 2) : null;
     }
 
     /** App-managed rows (e.g. the pinned Middleman Fee trade) can't be deleted or archived. */

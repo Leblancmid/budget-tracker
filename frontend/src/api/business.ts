@@ -26,6 +26,8 @@ export interface BusinessTransactionPayload {
   cost_php?: number | null
   /** New gold trades only: also put the Price (G) into the Golds inventory */
   add_to_inventory?: boolean
+  /** New gold trades only: Balance wallet the bought gold was paid from (its cost is deducted there) */
+  balance_account?: string | null
 }
 
 export interface BusinessSummary { income: number; expense: number; profit: number; month: number; year: number }
@@ -51,7 +53,7 @@ export const businessTransactionsApi = {
       `/business/transactions/${id}/sell`, { amount, deduct_inventory: deductInventory, description: description || null },
     ).then((r) => r.data),
   /** Add gold onto a gold trade's price/cost; price gold also goes into the Golds inventory. */
-  addGold:   (id: number, data: { price_gold: number; cost_gold: number; description?: string }) =>
+  addGold:   (id: number, data: { price_gold: number; cost_gold: number; cost_php?: number; description?: string; balance_account?: string | null }) =>
     api.post<BusinessTransaction>(`/business/transactions/${id}/add-gold`, { ...data, description: data.description || null })
       .then((r) => r.data),
 }

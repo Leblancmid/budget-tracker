@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/Input'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import type { AccountPayload } from '@/api/rucoy'
 import type { BusinessTransactionPayload } from '@/api/business'
-import type { AccountPaymentStatus, BusinessTransaction, RucoyAccount } from '@/types'
+import type { AccountPaymentStatus, BalanceAccountConfig, BusinessTransaction, RucoyAccount } from '@/types'
 import { formatWithCommas, handleAmountInput, todayISO } from '@/utils/format'
 import { flattenApiErrors } from '@/utils/api'
 import { screenshotError } from '@/utils/listing'
@@ -15,6 +15,11 @@ import { accountCostPhp } from '@/utils/accountCost'
 import { cashToPhp, type CashCurrency } from '@/utils/cash'
 import { CashPricing } from './CashPricing'
 import { AccessoryPicker } from './AccessoryPicker'
+import { WalletPicker } from './WalletPicker'
+import { costPaidInPhp, goldWalletCost } from '@/utils/goldTrade'
+import { Amt } from '@/components/ui/Amt'
+import { fmtIn } from '@/utils/balanceAccounts'
+import { readString, removeItem, STORAGE_KEYS, writeString } from '@/lib/storage'
 
 export type RucoyTxKind = 'account' | 'gold'
 
@@ -33,6 +38,8 @@ interface RucoyTransactionModalProps {
   goldTx?: BusinessTransaction | null
   onSubmitAccount: (account: AccountPayload, pricing: AccountPricingPayload | null) => Promise<void>
   onSubmitGold: (data: BusinessTransactionPayload) => Promise<void>
+  /** Balance wallets new gold can be paid from (its cost is deducted there) */
+  wallets?: BalanceAccountConfig[]
 }
 
 type StatKey = 'level' | 'melee' | 'distance' | 'magic' | 'defense'
@@ -49,6 +56,8 @@ const EMPTY_STATS = Object.fromEntries(STAT_FIELDS.map(({ key }) => [key, ''])) 
 
 const num = (v: string | null | undefined) => (v != null && v !== '' ? String(parseFloat(v)) : '')
 const round2 = (v: number) => Math.round(v * 100) / 100
+
+type CostMode = 'formula' | 'php'
 const fmtUSD = (v: number | null) =>
   v != null ? `$${v.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'
 const fmtPHP = (v: number | null) =>
@@ -57,7 +66,9 @@ const fmtPHP = (v: number | null) =>
 const inputCls = 'block w-full rounded-lg border border-gray-300 hover:border-gray-400 bg-white px-2.5 py-2 text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 dark:border-gray-600 dark:hover:border-gray-500 transition-colors'
 const readonlyCls = 'rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-2 text-xs sm:text-sm font-semibold dark:border-gray-700 dark:bg-gray-800/60 truncate'
 
-export function RucoyTransactionModal({ open, onClose, kind, account, accountTx, goldTx, onSubmitAccount, onSubmitGold }: RucoyTransactionModalProps) {
+const NO_WALLETS: BalanceAccountConfig[] = []
+
+export function RucoyTransactionModal({ open, onClose, kind, account, accountTx, goldTx, onSubmitAccount, onSubmitGold, wallets = NO_WALLETS }: RucoyTransactionModalProps) {
   const isEdit = kind === 'account' ? !!account : !!goldTx
 
   // Account-only fields
@@ -85,11 +96,16 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
   const [costRate, setCostRate]         = useState('')
   const [pricePhpRate, setPricePhpRate] = useState('')
   const [costPhpRate, setCostPhpRate]   = useState('')
+  // Cost as G × rate × PHP rate, or just the cost rate and the ₱ actually paid (no gold paid out)
+  const [costMode, setCostMode]         = useState<CostMode>('formula')
+  const [costPhpPaid, setCostPhpPaid]   = useState('')
   const [date, setDate]                 = useState(todayISO())
 
   // Gold-only: how much of the price has been received / cost has been paid so far
   const [receivedGold, setReceivedGold] = useState('')
   const [paidGold, setPaidGold]         = useState('')
+  // New gold only: the Balance wallet the bought gold was paid from
+  const [wallet, setWallet]             = useState<string | null>(null)
 
   const [errors, setErrors]   = useState<Partial<Record<string, string>>>({})
   const [loading, setLoading] = useState(false)
@@ -121,10 +137,18 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
     setCostRate(num(tx?.cost_rate))
     setPricePhpRate(num(tx?.php_rate))
     setCostPhpRate(num(tx?.cost_php_rate) || num(tx?.php_rate))
+    setCostPhpPaid(num(tx?.cost_php))
+    // Editing opens the way it was saved; new ones the way you last chose
+    const storedCostGold = kind === 'account' ? account?.cost : goldTx?.cost_gold
+    setCostMode(tx
+      ? (costPaidInPhp(storedCostGold, tx.cost_php) ? 'php' : 'formula')
+      : (readString(STORAGE_KEYS.costEntryMode) === 'php' ? 'php' : 'formula'))
     setDate(tx?.date ?? todayISO())
     setReceivedGold(num(goldTx?.price_gold_received))
     setPaidGold(num(goldTx?.cost_gold_paid))
-  }, [open, kind, account, accountTx, goldTx])
+    const last = readString(STORAGE_KEYS.lastGoldWallet)
+    setWallet(kind === 'gold' && !goldTx && wallets.some((w) => w.code === last) ? last : null)
+  }, [open, kind, account, accountTx, goldTx]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Formula: G / 1M × rate = $  →  $ × PHP rate = ₱
   // '' = not entered; 0 is a valid amount (e.g. gold that cost nothing)
@@ -147,21 +171,48 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
   const isCash = kind === 'account' && dealType === 'cash'
   const cashNum = (v: string) => (v !== '' && Number.isFinite(parseFloat(v)) ? parseFloat(v) : null)
 
+  const phpPaid = costMode === 'php' && !isCash && !paid
   const priceUsd = isCash ? (currency === 'USD' ? cashNum(priceCash) : null) : toUsd(priceGoldNum, priceRate)
-  const costUsd  = isCash ? (currency === 'USD' ? cashNum(costCash) : null) : paid ? null : toUsd(costGoldNum, costRate)
+  const costUsd  = isCash ? (currency === 'USD' ? cashNum(costCash) : null) : paid || phpPaid ? null : toUsd(costGoldNum, costRate)
   const profitUsd = priceUsd != null && costUsd != null ? priceUsd - costUsd : null
   const pricePhp = isCash ? cashToPhp(priceCash, currency, pricePhpRate) : toPhp(priceGoldNum, priceUsd, pricePhpRate)
+  // ₱ paid (gold pricing without payments): Cost (₱) is typed and no gold was paid out
+  const costPhpPaidNum = cashNum(costPhpPaid)
+  const effCostPhpRate = phpPaid ? '' : costPhpRate
+  const costGoldOut = phpPaid ? 0 : costGoldNum
   const costPhp  = isCash
     ? cashToPhp(costCash, currency, costPhpRate)
     : paid
     ? accountCostPhp(paid, costGoldNum, parseFloat(costRate) || null, parseFloat(costPhpRate) || null)
+    : phpPaid
+    ? costPhpPaidNum
     : toPhp(costGoldNum, costUsd, costPhpRate)
   const profitPhp = pricePhp != null && costPhp != null ? pricePhp - costPhp : null
 
   const receivedGoldNum = receivedGold !== '' ? parseFloat(receivedGold) : null
   const paidGoldNum     = paidGold     !== '' ? parseFloat(paidGold)     : null
 
-  const hasRates = [priceRate, costRate, pricePhpRate, costPhpRate].some((v) => v !== '')
+  const hasRates = [priceRate, costRate, pricePhpRate, effCostPhpRate].some((v) => v !== '') || (phpPaid && costPhpPaid !== '')
+
+  // Paying for new gold from a wallet: its cost in the wallet's currency ($ or ₱)
+  const payWallets = kind === 'gold' && !isEdit ? wallets.filter((w) => !w.hidden_at) : NO_WALLETS
+  const payWallet  = payWallets.find((w) => w.code === wallet) ?? null
+  // A peso wallet pays the Cost (₱); a dollar wallet the gold bought × cost rate
+  // (₱ paid: the gold bought is the price gold, as no gold was paid out)
+  const boughtGold = phpPaid ? priceGoldNum : costGoldNum
+  const walletCost = (w: BalanceAccountConfig) => w.currency === 'PHP'
+    ? (phpPaid
+        ? (costPhp != null && costPhp > 0 ? round2(costPhp) : null)
+        : boughtGold && boughtGold > 0 && costPhp != null && parseFloat(costRate) ? round2(costPhp) : null)
+    : goldWalletCost(boughtGold, costRate, null, 'USD')
+
+  // Switching keeps the numbers: the ₱ paid becomes the formula's result and vice versa
+  const switchCostMode = (mode: CostMode) => {
+    if (mode === costMode) return
+    if (mode === 'php') setCostPhpPaid(costPhp != null ? String(round2(costPhp)) : '')
+    setCostMode(mode)
+    writeString(STORAGE_KEYS.costEntryMode, mode)
+  }
 
   const buildPricing = (type: 'account' | 'gold'): AccountPricingPayload => {
     // amount is required (> 0) by the API; profit drives it, with a floor for pending/negative trades
@@ -176,7 +227,7 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
       cost_rate:     isCash ? null : parseFloat(costRate)  || null,
       // Cash in pesos needs no rate; dollars keep each side's ₱ rate
       php_rate:      isCash && currency === 'PHP' ? null : parseFloat(pricePhpRate) || null,
-      cost_php_rate: isCash && currency === 'PHP' ? null : parseFloat(costPhpRate)  || null,
+      cost_php_rate: isCash && currency === 'PHP' ? null : parseFloat(isCash ? costPhpRate : effCostPhpRate) || null,
       price_php:     pricePhp != null ? round2(pricePhp) : null,
       cost_php:      costPhp  != null ? round2(costPhp)  : null,
     }
@@ -199,12 +250,18 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
       }
     } else {
       if (priceGoldNum == null) errs.price_gold = 'Price (G) is required.'
-      if (costGoldNum == null)  errs.cost_gold  = 'Cost (G) is required.'
+      if (costGoldNum == null && !phpPaid) errs.cost_gold = 'Cost (G) is required.'
       if (!date) errs.date = 'Date is required.'
       if (receivedGoldNum != null && priceGoldNum != null && receivedGoldNum > priceGoldNum)
         errs.price_gold_received = 'Received cannot be more than the price.'
-      if (paidGoldNum != null && costGoldNum != null && paidGoldNum > costGoldNum)
+      if (!phpPaid && paidGoldNum != null && costGoldNum != null && paidGoldNum > costGoldNum)
         errs.cost_gold_paid = 'Paid cannot be more than the cost.'
+      if (payWallet && walletCost(payWallet) == null)
+        errs.balance_account = phpPaid
+          ? (payWallet.currency === 'PHP' ? 'Enter the Cost (₱) you paid.' : 'Enter the Price (G) and Cost Rate to pay from a dollar wallet.')
+          : !(costGoldNum && costGoldNum > 0)
+          ? 'Enter the Cost (G) you bought to pay for it from a wallet.'
+          : payWallet.currency === 'PHP' ? 'Enter the Cost Rate and PHP Rate to pay from a wallet.' : 'Enter the Cost Rate to pay from a wallet.'
     }
     setErrors(errs)
     return Object.keys(errs).length === 0
@@ -221,7 +278,7 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
             description:    description,
             deal_type:      dealType,
             price:          isCash ? null : priceGoldNum,
-            cost:           isCash ? null : costGoldNum,
+            cost:           isCash ? null : costGoldOut,
             price_cash:     isCash ? cashNum(priceCash) : null,
             cost_cash:      isCash ? cashNum(costCash) : null,
             cash_currency:  isCash ? currency : null,
@@ -239,10 +296,15 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
         await onSubmitGold({
           ...buildPricing('gold'),
           price_gold:          priceGoldNum,
-          cost_gold:           costGoldNum,
+          cost_gold:           costGoldOut,
           price_gold_received: receivedGoldNum,
-          cost_gold_paid:      paidGoldNum,
+          cost_gold_paid:      phpPaid ? null : paidGoldNum,
+          ...(isEdit ? {} : { balance_account: payWallet?.code ?? null }),
         })
+        if (!isEdit) {
+          if (payWallet) writeString(STORAGE_KEYS.lastGoldWallet, payWallet.code)
+          else removeItem(STORAGE_KEYS.lastGoldWallet)
+        }
       }
       onClose()
     } catch (err: unknown) {
@@ -438,8 +500,48 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
         )}
 
         {/* Formula rows: G × rate = $ × PHP rate = ₱ */}
-        {!isCash && formulaRows.map((row) => (
+        {!isCash && formulaRows.map((row) => {
+          const typedPhp = row.key === 'cost' && phpPaid
+          return (
           <div key={row.key}>
+            {/* Cost: full formula, or the ₱ actually paid */}
+            {row.key === 'cost' && !paid && !lockGold && (
+              <div className="mb-2 flex items-center justify-end gap-2">
+                <span className="text-[11px] text-gray-400 dark:text-gray-500">Enter cost as</span>
+                <div className="flex gap-0.5 rounded-lg bg-gray-100 p-0.5 dark:bg-gray-800" role="radiogroup" aria-label="Enter cost as">
+                  {([['formula', 'G × rates'], ['php', '₱ paid']] as const).map(([mode, label]) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      role="radio"
+                      aria-checked={costMode === mode}
+                      onClick={() => switchCostMode(mode)}
+                      className={[
+                        'rounded-md px-2 py-0.5 text-[11px] font-semibold',
+                        costMode === mode
+                          ? 'bg-white text-red-600 shadow-sm ring-1 ring-inset ring-red-200 dark:bg-gray-950 dark:text-red-400 dark:ring-red-500/40'
+                          : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200',
+                      ].join(' ')}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {typedPhp ? (
+              // ₱ paid: just the cost rate and the pesos paid, no gold went out
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label htmlFor="cost-rate-php" className="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Cost Rate ($)</label>
+                  <input id="cost-rate-php" type="text" inputMode="decimal" value={costRate} onChange={(e) => handleAmountInput(e.target.value, setCostRate)} placeholder="0.17" className={inputCls} />
+                </div>
+                <div>
+                  <label htmlFor="cost-php-paid" className="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Cost (₱)</label>
+                  <input id="cost-php-paid" type="text" inputMode="decimal" value={formatWithCommas(costPhpPaid)} onChange={(e) => handleAmountInput(e.target.value, setCostPhpPaid)} placeholder="0.00" className={[inputCls, 'font-semibold', row.color].join(' ')} />
+                </div>
+              </div>
+            ) : (
             <div className="flex items-end gap-1.5 sm:gap-2">
               <div className="flex-[1.3] min-w-0">
                 <p className="mb-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 truncate">{row.labels[0]}</p>
@@ -475,13 +577,17 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
                 <div className={[readonlyCls, row.color].join(' ')}>{fmtPHP(row.php)}</div>
               </div>
             </div>
+            )}
             {row.goldError && <p className="mt-1 text-xs text-red-500">{row.goldError}</p>}
-            {lockGold && row.key === 'cost' && (
+            {typedPhp && (
+              <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">Paid in money, not gold: Cost shows as ₱ and no gold is counted as paid out.</p>
+            )}
+            {lockGold && row.key === 'cost' && !typedPhp && (
               <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">Price (G) and Cost (G) are locked: use Add Gold or Sell on the trade to change the gold.</p>
             )}
 
             {/* Account: paid so far, from its payments (managed with Pay on the account card) */}
-            {kind === 'account' && row.key === 'cost' && account && (
+            {kind === 'account' && row.key === 'cost' && account && !typedPhp && (
               <div className="mt-2 rounded-lg border border-dashed border-gray-200 dark:border-gray-700 px-3 py-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-xs font-medium text-gray-500 dark:text-gray-400 w-24 shrink-0">Paid so far</span>
@@ -499,7 +605,7 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
             )}
 
             {/* Gold only: partial received / paid tracking */}
-            {kind === 'gold' && (() => {
+            {kind === 'gold' && !typedPhp && (() => {
               const p   = row.progress
               const pct = p.total ? ((p.num ?? 0) / p.total) * 100 : 0
               return (
@@ -535,7 +641,8 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
               )
             })()}
           </div>
-        ))}
+          )
+        })}
 
         {/* Profit ($) | Profit (₱) */}
         <div className="grid grid-cols-2 gap-3">
@@ -551,6 +658,35 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
             </div>
           ))}
         </div>
+
+        {/* New gold: which wallet paid for it */}
+        {payWallets.length > 0 && (
+          <WalletPicker
+            label="Pay from account"
+            accounts={payWallets}
+            value={wallet}
+            onChange={(code) => { setWallet(code); setErrors((e) => ({ ...e, balance_account: undefined })) }}
+            changeFor={(w) => { const c = walletCost(w); return c != null ? -c : null }}
+            error={errors.balance_account}
+          />
+        )}
+
+        {/* Edited gold: the wallets it was paid from */}
+        {kind === 'gold' && isEdit && (goldTx?.wallet_entries?.length ?? 0) > 0 && (
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Paid from{' '}
+            {goldTx!.wallet_entries!.map((e, i) => {
+              const w = wallets.find((x) => x.code === e.account)
+              return (
+                <span key={e.id}>
+                  {i > 0 && ', '}
+                  <b className="text-gray-700 dark:text-gray-200">{w?.name ?? e.account}</b> <Amt value={fmtIn(w, parseFloat(e.amount))} />
+                </span>
+              )
+            })}
+            . Change it in Balance if needed.
+          </p>
+        )}
 
         {kind === 'gold' && (
           <Input label="Date" type="date" value={date} onChange={(e) => setDate(e.target.value)} error={errors.date} />

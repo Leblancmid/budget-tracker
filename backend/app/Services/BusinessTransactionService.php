@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\BalanceAccount;
+use App\Models\BalanceEntry;
 use App\Models\BusinessTransaction;
 use App\Models\MiddlemanFee;
 use App\Models\RucoyAccount;
@@ -13,11 +15,20 @@ class BusinessTransactionService
 {
     public function create(array $data, bool $addToInventory): BusinessTransaction
     {
+        $wallet = $data['balance_account'] ?? null;
+        unset($data['balance_account']);
         $data = $this->withoutMissingColumns($data);
 
-        return DB::transaction(function () use ($data, $addToInventory) {
+        return DB::transaction(function () use ($data, $addToInventory, $wallet) {
             $tx = BusinessTransaction::create($data);
             $this->computePhpValues($tx);
+
+            // Bought gold paid from a Balance wallet: deduct its cost there
+            if ($wallet && $tx->type === 'gold') {
+                // A peso wallet pays the trade's Cost (₱) itself (it may be the ₱ actually paid, typed in)
+                $costPhp = $tx->cost_php !== null && (float) $tx->cost_php > 0 ? (float) $tx->cost_php : null;
+                $this->payFromWallet($tx, $tx->boughtGold(), $wallet, $tx->date->format('Y-m-d'), '', $costPhp);
+            }
 
             // New gold trades from the Add Gold dialog put their price gold into the Golds inventory
             if ($addToInventory && $tx->type === 'gold' && ! $tx->isSystem() && $this->tracksInventory()) {
@@ -50,6 +61,11 @@ class BusinessTransactionService
             $inv = (float) ($tx->inventory_gold ?? 0);
             if ($inv != 0 && $tx->archived_at === null) {
                 GoldInventory::record(-$inv, 'Removed: ' . ($tx->description ?: 'Gold trade'));
+            }
+            // Deleting a pending trade undoes it, so the wallets it was paid from get the money back.
+            // A sold trade is history: its payments stay in Balance.
+            if ($tx->archived_at === null) {
+                $tx->walletEntries()->delete();
             }
             $tx->delete();
         });
@@ -89,7 +105,8 @@ class BusinessTransactionService
                 // → 1,000 / 500), never more than the cost there is; ₱ follows each side's own rate.
                 $costTotal = $tx->cost_gold !== null ? (float) $tx->cost_gold : null;
                 $soldCost  = $costTotal !== null ? min($sell, $costTotal) : null;
-                $costShare = $costTotal ? $soldCost / $costTotal : 0;
+                // Cost paid in ₱ (0 G): the ₱ cost goes with the gold sold
+                $costShare = $tx->costPaidInPhp() ? $f : ($costTotal ? $soldCost / $costTotal : 0);
 
                 $sold->price_gold  = $sell;
                 $sold->cost_gold   = $soldCost;
@@ -138,9 +155,17 @@ class BusinessTransactionService
      * also goes into the Golds inventory; on the permanent Middleman Fee trade it is recorded as
      * a middleman fee instead.
      */
-    public function addGold(BusinessTransaction $tx, float $addPrice, float $addCost, string $note): void
+    public function addGold(BusinessTransaction $tx, float $addPrice, float $addCost, string $note, ?string $wallet = null, float $addCostPhp = 0): void
     {
-        DB::transaction(function () use ($tx, $addPrice, $addCost, $note) {
+        DB::transaction(function () use ($tx, $addPrice, $addCost, $note, $wallet, $addCostPhp) {
+            // Cost paid in ₱: more gold bought costs more ₱ (typed), never cost gold
+            $phpPaid = $tx->costPaidInPhp();
+
+            // The added cost is bought at the trade's cost rates (which adding gold never changes)
+            if ($wallet && ($addCost > 0 || $addCostPhp > 0)) {
+                $this->payFromWallet($tx, $addCost > 0 ? $addCost : $addPrice, $wallet, now('Asia/Manila')->toDateString(), $note, $addCostPhp > 0 ? $addCostPhp : null);
+            }
+
             $label = $note !== '' ? $note : ($tx->description ?: 'Gold trade');
 
             if ($tx->isSystem() && $addPrice > 0) {
@@ -154,7 +179,7 @@ class BusinessTransactionService
                 GoldInventory::record($addPrice, $label);
             }
 
-            if ($addPrice > 0 || $addCost > 0) {
+            if ($addPrice > 0 || $addCost > 0 || $addCostPhp > 0) {
                 $oldPrice    = (float) $tx->price_gold;
                 $oldCost     = (float) $tx->cost_gold;
                 $oldPricePhp = $tx->price_php;
@@ -174,6 +199,9 @@ class BusinessTransactionService
                 }
                 if ($tx->cost_php === null && $oldCostPhp !== null && $oldCost > 0) {
                     $tx->cost_php = round((float) $oldCostPhp * ($tx->cost_gold / $oldCost), 2);
+                }
+                if ($phpPaid) {
+                    $tx->cost_php = round((float) $oldCostPhp + $addCostPhp, 2);
                 }
                 if ($tx->price_php !== null && $tx->cost_php !== null) {
                     $tx->profit_php = round((float) $tx->price_php - (float) $tx->cost_php, 2);
@@ -198,7 +226,7 @@ class BusinessTransactionService
         $f         = $total > 0 ? min($gold / $total, 1) : 0;
         $costTotal = $tx->cost_gold !== null ? (float) $tx->cost_gold : null;
         $takenCost = $costTotal !== null ? min($gold, $costTotal) : null;
-        $costShare = $costTotal ? $takenCost / $costTotal : 0;
+        $costShare = $tx->costPaidInPhp() ? $f : ($costTotal ? $takenCost / $costTotal : 0);
         $hasProgress = SchemaColumns::has('business_transactions', 'price_gold_received');
 
         $taken = [
@@ -292,6 +320,24 @@ class BusinessTransactionService
         $tx->save();
 
         return $tx;
+    }
+
+    /** Deduct the cost of $gold bought on a gold trade from a Balance wallet, in the wallet's currency. */
+    private function payFromWallet(BusinessTransaction $tx, float $gold, string $code, string $date, string $note = '', ?float $costPhp = null): BalanceEntry
+    {
+        $wallet = BalanceAccount::where('code', $code)->firstOrFail();
+        $amount = $tx->walletCost($gold, $wallet->currency, $costPhp);
+        if ($amount === null) {
+            throw new \LogicException('This gold trade has no cost rates to pay from a wallet.');
+        }
+
+        return $tx->walletEntries()->create([
+            'account'     => $wallet->code,
+            'type'        => 'sell', // deducts from the wallet
+            'amount'      => $amount,
+            'date'        => $date,
+            'description' => 'Bought ' . number_format($gold) . ' G: ' . ($note !== '' ? $note : ($tx->description ?: 'Gold trade')),
+        ]);
     }
 
     private function refreshProfit(BusinessTransaction $tx): void

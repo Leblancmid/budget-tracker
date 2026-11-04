@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { BusinessTransaction } from '@/types'
-import { goldTopUp } from './goldTrade'
+import { costPaidInPhp, goldTopUp, goldWalletCost } from './goldTrade'
 
 const trade = (overrides: Partial<BusinessTransaction> = {}) => ({
   type: 'gold',
@@ -36,5 +36,34 @@ describe('goldTopUp', () => {
     const r = goldTopUp(trade({ price_php: null, cost_php: null, price_rate: null, cost_rate: null, php_rate: null }), 1, 0)
     expect(r.pricePhp).toBeNull()
     expect(r.payload.amount).toBe(0.01)
+  })
+})
+
+describe('goldWalletCost', () => {
+  it('prices bought gold in the wallet currency, like the server', () => {
+    // 540KK × 0.17 $/M × 63.4 ₱/$
+    expect(goldWalletCost(540_000_000, '0.17', '63.4', 'USD')).toBe(91.8)
+    expect(goldWalletCost(540_000_000, 0.17, 63.4, 'PHP')).toBe(5820.12)
+  })
+
+  it('is unknown without gold or rates', () => {
+    expect(goldWalletCost(0, 0.17, 63.4, 'PHP')).toBeNull()
+    expect(goldWalletCost(1_000_000, null, 63.4, 'USD')).toBeNull()
+    expect(goldWalletCost(1_000_000, 0.17, '', 'PHP')).toBeNull()
+    expect(goldWalletCost(1_000_000, 0.17, null, 'USD')).toBe(0.17)
+  })
+})
+
+describe('costPaidInPhp', () => {
+  it('is gold bought with money: no cost gold, a ₱ cost', () => {
+    expect(costPaidInPhp('0', '5830.00')).toBe(true)
+    expect(costPaidInPhp(null, 5830)).toBe(true)
+    expect(costPaidInPhp('540000000', '5820.12')).toBe(false)
+    expect(costPaidInPhp('0', '0')).toBe(false)
+  })
+
+  it('tops up a peso-paid trade by the extra pesos', () => {
+    const tx = trade({ price_gold: '540000000', cost_gold: '0', cost_php: '5830.00' })
+    expect(goldTopUp(tx, 100_000_000, 0, 1000).costPhp).toBe(6830)
   })
 })

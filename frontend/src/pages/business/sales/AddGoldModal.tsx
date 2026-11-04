@@ -8,41 +8,59 @@ import { businessTransactionsApi } from '@/api/business'
 import { toast } from '@/lib/toast'
 import { errorMessage } from '@/utils/api'
 import { formatCurrency, formatWithCommas, handleAmountInput } from '@/utils/format'
-import { goldTopUp } from '@/utils/goldTrade'
-import type { BusinessTransaction } from '@/types'
+import { costPaidInPhp, goldTopUp, goldWalletCost } from '@/utils/goldTrade'
+import { WalletPicker } from '@/components/modals/WalletPicker'
+import type { BalanceAccountConfig, BusinessTransaction } from '@/types'
 
 /**
  * Top up a pending gold trade: added G goes onto its total price / cost, and the ₱ values
  * are recalculated from the trade's own rates. Mount it only while open so it starts empty.
  */
-export function AddGoldModal({ target, onClose, onAdded }: {
+export function AddGoldModal({ target, wallets = [], onClose, onAdded }: {
   target: BusinessTransaction
+  /** Balance wallets the added cost gold can be paid from */
+  wallets?: BalanceAccountConfig[]
   onClose: () => void
-  /** Called after the gold is added, before the modal closes */
-  onAdded: (tx: BusinessTransaction) => void
+  /** Called after the gold is added (paid = a wallet was charged), before the modal closes */
+  onAdded: (tx: BusinessTransaction, paid: boolean) => void
 }) {
   const [addPrice, setAddPrice] = useState('')
   const [addCost, setAddCost]   = useState('')
   const [addDesc, setAddDesc]   = useState('')
   const [error, setError]       = useState<string | null>(null)
   const [adding, setAdding]     = useState(false)
+  const [wallet, setWallet]     = useState<string | null>(null)
 
-  const preview = goldTopUp(target, parseFloat(addPrice) || 0, parseFloat(addCost) || 0)
+  // Cost paid in ₱: the cost grows by the extra ₱ paid, not by cost gold
+  const phpCost    = costPaidInPhp(target.cost_gold, target.cost_php)
+  const addPriceG  = parseFloat(addPrice) || 0
+  const addCostNum = parseFloat(addCost) || 0
+  const preview = goldTopUp(target, addPriceG, phpCost ? 0 : addCostNum, phpCost ? addCostNum : 0)
   const isMiddlemanFee = target.system_key === 'middleman_fee'
+  // Bought more gold: pay the added cost from a wallet at the trade's own cost rates (or the ₱ paid)
+  const payWallets = isMiddlemanFee ? [] : wallets.filter((w) => !w.hidden_at)
+  const payWallet  = payWallets.find((w) => w.code === wallet) ?? null
+  const walletCost = (w: BalanceAccountConfig) => phpCost
+    ? (w.currency === 'PHP' ? (addCostNum > 0 ? addCostNum : null) : addCostNum > 0 ? goldWalletCost(addPriceG, target.cost_rate, null, 'USD') : null)
+    : goldWalletCost(addCostNum, target.cost_rate, target.cost_php_rate ?? target.php_rate, w.currency)
 
   const handleAdd = async () => {
     const p = preview
-    if (p.newPrice === p.oldPrice && p.newCost === p.oldCost) { setError('Enter gold to add to the price or cost.'); return }
+    if (p.newPrice === p.oldPrice && p.newCost === p.oldCost && !(phpCost && addCostNum > 0)) { setError('Enter gold to add to the price or cost.'); return }
+    if (payWallet && !(addCostNum > 0)) { setError(`Enter what you paid in Add to Cost ${phpCost ? '(₱)' : '(G)'} to pay for it from a wallet.`); return }
+    if (payWallet && walletCost(payWallet) == null) { setError("Set this trade's cost rates in Edit before paying from a wallet."); return }
     setAdding(true)
     try {
       // The API adds the price gold to the Golds inventory (as a middleman fee on the Middleman Fee trade)
       await businessTransactionsApi.addGold(target.id, {
         price_gold:  p.newPrice - p.oldPrice,
         cost_gold:   p.newCost - p.oldCost,
+        ...(phpCost ? { cost_php: addCostNum } : {}),
         description: addDesc.trim(),
+        balance_account: payWallet?.code ?? null,
       })
-      onAdded(target)
-      toast.success(`Gold added — now ${p.newPrice.toLocaleString()} G price · ${p.newCost.toLocaleString()} G cost.`)
+      onAdded(target, !!payWallet)
+      toast.success(`Gold added — now ${p.newPrice.toLocaleString()} G price · ${phpCost ? formatCurrency(p.costPhp ?? 0) : `${p.newCost.toLocaleString()} G`} cost.${payWallet ? ` Cost deducted from ${payWallet.name}.` : ''}`)
       onClose()
     } catch (err: unknown) {
       setError(errorMessage(err, 'Failed to add gold.'))
@@ -67,8 +85,10 @@ export function AddGoldModal({ target, onClose, onAdded }: {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {[
             { key: 'price', label: 'Add to Price (G)', current: preview.oldPrice, next: preview.newPrice, value: addPrice, onChange: setAddPrice, textCls: 'text-emerald-600 dark:text-emerald-400' },
-            { key: 'cost',  label: 'Add to Cost (G)',  current: preview.oldCost,  next: preview.newCost,  value: addCost,  onChange: setAddCost,  textCls: 'text-red-500 dark:text-red-400' },
-          ].map((f) => (
+            phpCost
+              ? { key: 'cost', label: 'Add to Cost (₱)', current: Number(target.cost_php ?? 0), next: preview.costPhp ?? 0, value: addCost, onChange: setAddCost, textCls: 'text-red-500 dark:text-red-400', unit: '₱' }
+              : { key: 'cost', label: 'Add to Cost (G)', current: preview.oldCost, next: preview.newCost, value: addCost, onChange: setAddCost, textCls: 'text-red-500 dark:text-red-400' },
+          ].map((f: { key: string; label: string; current: number; next: number; value: string; onChange: (v: string) => void; textCls: string; unit?: string }) => (
             <div key={f.key}>
               <p className="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">{f.label}</p>
               <div className="relative">
@@ -84,8 +104,8 @@ export function AddGoldModal({ target, onClose, onAdded }: {
                 />
               </div>
               <p className="mt-1.5 text-[11px] text-gray-400 dark:text-gray-500">
-                {f.current.toLocaleString()} G
-                {f.next !== f.current && <> → <span className={['font-semibold', f.textCls].join(' ')}>{f.next.toLocaleString()} G</span></>}
+                {f.unit ? <Amt value={formatCurrency(f.current)} /> : <>{f.current.toLocaleString()} G</>}
+                {f.next !== f.current && <> → <span className={['font-semibold', f.textCls].join(' ')}>{f.unit ? <Amt value={formatCurrency(f.next)} /> : <>{f.next.toLocaleString()} G</>}</span></>}
               </p>
             </div>
           ))}
@@ -123,6 +143,16 @@ export function AddGoldModal({ target, onClose, onAdded }: {
         </div>
         {preview.pricePhp == null && (
           <p className="-mt-2 text-xs text-amber-600 dark:text-amber-400">No rates set yet — only the G totals change until you set rates in Edit.</p>
+        )}
+
+        {payWallets.length > 0 && (
+          <WalletPicker
+            label="Pay for the added cost from"
+            accounts={payWallets}
+            value={wallet}
+            onChange={(code) => { setWallet(code); setError(null) }}
+            changeFor={(w) => { const c = walletCost(w); return c != null ? -c : null }}
+          />
         )}
 
         {error && <p className="-mt-1 text-xs text-red-500">{error}</p>}

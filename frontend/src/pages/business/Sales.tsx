@@ -149,7 +149,12 @@ export default function Sales() {
     } else {
       // The trade's Price (G) also goes into the Golds inventory (Rucoy → Summary)
       await createBizTx({ ...data, add_to_inventory: true })
-      toast.success(data.price_gold ? `Gold trade added — ${Number(data.price_gold).toLocaleString()} G added to your stash.` : 'Gold trade added.')
+      const paidFrom = wallets.find((w) => w.code === data.balance_account)
+      if (paidFrom) refetchWallets()
+      toast.success([
+        data.price_gold ? `Gold trade added — ${Number(data.price_gold).toLocaleString()} G added to your stash.` : 'Gold trade added.',
+        paidFrom ? `Cost deducted from ${paidFrom.name}.` : '',
+      ].filter(Boolean).join(' '))
     }
   }
 
@@ -158,6 +163,7 @@ export default function Sales() {
     setDeletingPending(true)
     try {
       await removeBizTx(deletePendingTarget.id)
+      if (deletePendingTarget.wallet_entries?.length) refetchWallets() // its wallet payments are refunded
       toast.success('Transaction removed.')
     } catch {
       toast.error('Failed to remove transaction.')
@@ -727,6 +733,7 @@ export default function Sales() {
         goldTx={editingGold}
         onSubmitAccount={handleAccountSubmit}
         onSubmitGold={handleGoldSubmit}
+        wallets={wallets}
       />
 
       {showTxModal && (
@@ -755,8 +762,9 @@ export default function Sales() {
       {addGoldTarget && (
         <AddGoldModal
           target={addGoldTarget}
+          wallets={wallets}
           onClose={() => setAddGoldTarget(null)}
-          onAdded={(tx) => { refetchBizTxs(); if (tx.system_key === 'middleman_fee') refetchMmFees() }}
+          onAdded={(tx, paid) => { refetchBizTxs(); if (paid) refetchWallets(); if (tx.system_key === 'middleman_fee') refetchMmFees() }}
         />
       )}
 

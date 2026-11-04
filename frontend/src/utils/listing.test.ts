@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import type { RucoyAccount } from '@/types'
 import {
-  accountBuild, coverCrop, daysListed, formatGoldShort, isNewListing, listingCaption,
-  listingLayout, listingTitle, sameOriginPath, screenshotError, sortForListing, FOOTER_H, GAP, TILE_H, TILE_W,
+  accountBuild, coverCrop, cropRegion, daysListed, formatGoldShort, isNewListing, listingCaption,
+  listingLayout, listingTitle, promoTiles, sameOriginPath, screenshotError, sortForListing, wrapText,
+  DEFAULT_CROP, GAP, TILE_H, TILE_W,
 } from './listing'
 
 const account = (overrides: Partial<RucoyAccount> = {}) => ({
@@ -65,23 +66,61 @@ describe('listingTitle / sortForListing', () => {
 })
 
 describe('listingLayout', () => {
-  it('lays tiles out in a grid with a footer band', () => {
-    const l = listingLayout(5, 3, true)
+  it('lays tiles out in a grid', () => {
+    const l = listingLayout(5, 3)
     expect(l.width).toBe(3 * TILE_W + 4 * GAP)
-    expect(l.height).toBe(2 * TILE_H + 3 * GAP + FOOTER_H)
+    expect(l.height).toBe(2 * TILE_H + 3 * GAP)
     expect(l.tiles[4]).toEqual({ x: GAP + TILE_W + GAP, y: GAP + TILE_H + GAP, w: TILE_W, h: TILE_H })
-    expect(l.footer?.y).toBe(2 * TILE_H + 3 * GAP)
   })
 
   it('never makes more columns than tiles', () => {
-    expect(listingLayout(2, 3, false).width).toBe(2 * TILE_W + 3 * GAP)
-    expect(listingLayout(2, 3, false).footer).toBeNull()
+    expect(listingLayout(2, 3).width).toBe(2 * TILE_W + 3 * GAP)
+  })
+})
+
+describe('cropRegion', () => {
+  it('cuts each edge by its percentage', () => {
+    expect(cropRegion(1000, 500, { top: 20, right: 10, bottom: 0, left: 30 })).toEqual({ x: 300, y: 100, w: 600, h: 400 })
+  })
+
+  it('keeps the default to the stats panel (wider than tall, like the Canva tiles)', () => {
+    const r = cropRegion(2400, 1080, DEFAULT_CROP)
+    expect(r.w / r.h).toBeGreaterThan(1.4)
+    expect(r.w / r.h).toBeLessThan(1.7)
+  })
+
+  it('never leaves an empty region', () => {
+    const r = cropRegion(1000, 500, { top: 60, right: 60, bottom: 60, left: 60 })
+    expect(r.w).toBeGreaterThan(0)
+    expect(r.h).toBeGreaterThan(0)
+    expect(r.x + r.w).toBeLessThanOrEqual(1000)
   })
 })
 
 describe('coverCrop', () => {
-  it('crops the sides of a wider image', () => {
-    expect(coverCrop(2000, 1000, 300, 200)).toEqual({ x: 250, y: 0, w: 1500, h: 1000 })
+  it('fills the tile from the middle of the region', () => {
+    expect(coverCrop({ x: 0, y: 0, w: 2000, h: 1000 }, 300, 200)).toEqual({ x: 250, y: 0, w: 1500, h: 1000 })
+    expect(coverCrop({ x: 100, y: 50, w: 300, h: 200 }, 300, 200)).toEqual({ x: 100, y: 50, w: 300, h: 200 })
+  })
+})
+
+describe('promoTiles', () => {
+  it('goes down the first column on tiles without a price, like the Canva layout', () => {
+    // 3 columns; tiles 0 and 3 start each row, tile 1 has a price
+    expect(promoTiles(2, 3, [false, true, false, false, false, true])).toEqual([0, 3])
+  })
+
+  it('falls back to other free tiles, then priced ones', () => {
+    expect(promoTiles(3, 3, [true, false, false])).toEqual([1, 2, 0])
+    expect(promoTiles(5, 3, [false, false])).toEqual([0, 1])
+  })
+})
+
+describe('wrapText', () => {
+  const measure = (s: string) => s.length * 10
+  it('wraps on words to fit the width', () => {
+    expect(wrapText('BUY 700 - 800 ACCOUNT', 140, measure)).toEqual(['BUY 700 - 800', 'ACCOUNT'])
+    expect(wrapText('SELL GOLD', 140, measure)).toEqual(['SELL GOLD'])
   })
 })
 

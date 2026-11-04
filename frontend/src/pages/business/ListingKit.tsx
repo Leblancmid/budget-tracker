@@ -13,18 +13,29 @@ import { toast } from '@/lib/toast'
 import { errorMessage } from '@/utils/api'
 import type { RucoyAccount } from '@/types'
 import {
-  daysListed, formatGoldShort, isNewListing, listingCaption, sameOriginPath, sortForListing,
+  daysListed, DEFAULT_CROP, formatGoldShort, isNewListing, listingCaption, sameOriginPath, sortForListing,
+  type CropInsets,
 } from '@/utils/listing'
 import { AccountPickRow } from './listing/AccountPickRow'
-import { canvasToBlob, drawListing, type ListingTile } from './listing/drawListing'
+import { canvasToBlob, drawListing, pngUnder, type ListingTile } from './listing/drawListing'
 
 interface KitSettings {
   columns: number
   newForDays: number
   headline: string
   promos: string
+  /** Website link for the caption */
   link: string
+  /** How much of each screenshot edge to cut, to keep just the stats panel */
+  crop: CropInsets
 }
+
+const CROP_SIDES: { key: keyof CropInsets; label: string }[] = [
+  { key: 'top', label: 'Top' },
+  { key: 'bottom', label: 'Bottom' },
+  { key: 'left', label: 'Left' },
+  { key: 'right', label: 'Right' },
+]
 
 const DEFAULTS: KitSettings = {
   columns: 3,
@@ -32,13 +43,14 @@ const DEFAULTS: KitSettings = {
   headline: 'Rucoy accounts for sale',
   promos: 'SELL GOLD\nBUY 700 - 800 ACCOUNT',
   link: 'https://leblancmid.vercel.app/',
+  crop: DEFAULT_CROP,
 }
 
 const NO_ACCOUNTS: RucoyAccount[] = []
 
 /**
  * Builds the image posted in Discord / WhatsApp straight from the accounts for sale:
- * screenshots in a grid, NEW ribbons, optional prices, promos and the website link.
+ * screenshots cropped to the stats panel, NEW ribbons, optional prices and promo tags.
  */
 export default function ListingKit() {
   const { accounts, loading, error, refetch, update } = useRucoyAccounts()
@@ -74,9 +86,9 @@ export default function ListingKit() {
   // Paint the canvas (an external system) whenever what's on it changes
   useEffect(() => {
     if (canvasRef.current && tiles.length) {
-      drawListing(canvasRef.current, tiles, { columns: settings.columns, promos, link: settings.link })
+      drawListing(canvasRef.current, tiles, { columns: settings.columns, promos, crop: settings.crop })
     }
-  }, [tiles, settings.columns, settings.link, promos])
+  }, [tiles, settings.columns, settings.crop, promos])
 
   // Measurement: how long sold accounts took to sell
   const avgDaysToSell = useMemo(() => {
@@ -107,9 +119,11 @@ export default function ListingKit() {
   const copyImage = async () => {
     if (!canvasRef.current) return
     try {
-      const blob = await canvasToBlob(canvasRef.current)
+      const { blob, scale } = await pngUnder(canvasRef.current)
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
-      toast.success('Image copied — paste it into Discord with Ctrl+V.')
+      toast.success(scale < 1
+        ? `Image copied at ${Math.round(scale * 100)}% size to fit Discord’s 10 MB limit. Use Download for full size.`
+        : 'Image copied — paste it into Discord with Ctrl+V.')
     } catch {
       toast.error('Your browser blocked copying the image. Use Download instead.')
     }
@@ -227,7 +241,36 @@ export default function ListingKit() {
                   className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
                 />
               </div>
-              <Input label="Website link" value={settings.link} onChange={(e) => patch({ link: e.target.value })} />
+              <div>
+                <div className="mb-1.5 flex items-center justify-between">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Crop screenshots (%)</p>
+                  <button
+                    type="button"
+                    onClick={() => patch({ crop: DEFAULT_CROP })}
+                    className="text-xs font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
+                  >
+                    Reset
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                  {CROP_SIDES.map(({ key, label }) => (
+                    <label key={key} className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+                      <span className="w-12 shrink-0">{label}</span>
+                      <input
+                        type="range"
+                        min={0}
+                        max={60}
+                        value={settings.crop[key]}
+                        onChange={(e) => patch({ crop: { ...settings.crop, [key]: Number(e.target.value) } })}
+                        className="min-w-0 flex-1 accent-indigo-600"
+                      />
+                      <span className="w-7 text-right tabular-nums">{settings.crop[key]}</span>
+                    </label>
+                  ))}
+                </div>
+                <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">Keeps just the stats panel and the account name. Adjust once if your screenshots are framed differently.</p>
+              </div>
+              <Input label="Website link (caption)" value={settings.link} onChange={(e) => patch({ link: e.target.value })} />
               <Input label="Caption headline" value={settings.headline} onChange={(e) => patch({ headline: e.target.value })} />
             </Card>
 

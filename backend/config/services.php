@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    // Where `php artisan screenshots:pull` downloads missing account screenshots from
+    'screenshots' => [
+        'source_url' => env('SCREENSHOT_SOURCE_URL'),
+    ],
+
 ];

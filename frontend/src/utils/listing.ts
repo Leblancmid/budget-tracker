@@ -61,21 +61,18 @@ export interface ListingLayout {
   width: number
   height: number
   tiles: Rect[]
-  /** Band under the grid for promo pills and the website link (null when there's nothing to show) */
-  footer: Rect | null
 }
 
-export const TILE_W = 640
-export const TILE_H = 427 // in-game stats screenshots are ~3:2
-export const GAP = 8
-export const FOOTER_H = 120
+// Large tiles so buyers can click the image in Discord and zoom in on the stats.
+// The aspect matches the cropped stats panel (~1.55:1), like the Canva version.
+export const TILE_W = 1000
+export const TILE_H = 645
+export const GAP = 10
 
-/** Grid of `count` tiles in `columns` columns, plus an optional footer band. */
-export function listingLayout(count: number, columns: number, withFooter: boolean): ListingLayout {
+/** Grid of `count` tiles in `columns` columns. */
+export function listingLayout(count: number, columns: number): ListingLayout {
   const cols = Math.max(1, Math.min(columns, Math.max(count, 1)))
   const rows = Math.max(1, Math.ceil(count / cols))
-  const width = cols * TILE_W + (cols + 1) * GAP
-  const gridH = rows * TILE_H + (rows + 1) * GAP
 
   const tiles = Array.from({ length: count }, (_, i) => ({
     x: GAP + (i % cols) * (TILE_W + GAP),
@@ -84,16 +81,67 @@ export function listingLayout(count: number, columns: number, withFooter: boolea
     h: TILE_H,
   }))
 
-  const footer = withFooter ? { x: 0, y: gridH, w: width, h: FOOTER_H } : null
-  return { width, height: gridH + (footer ? FOOTER_H : 0), tiles, footer }
+  return { width: cols * TILE_W + (cols + 1) * GAP, height: rows * TILE_H + (rows + 1) * GAP, tiles }
 }
 
-/** Source crop that fills a tile without stretching (CSS object-fit: cover). */
-export function coverCrop(srcW: number, srcH: number, dstW: number, dstH: number): Rect {
-  const scale = Math.max(dstW / srcW, dstH / srcH)
+/** How much of each screenshot edge to cut off, in % of its width/height. */
+export interface CropInsets { top: number; right: number; bottom: number; left: number }
+
+/**
+ * Default: just the Stats panel. Cuts the menu buttons at the top and the labels on the
+ * left, keeping the tail of Exp/HP/MP/Speed/Gold plus Level, Melee, Distance, Magic, Defense.
+ */
+export const DEFAULT_CROP: CropInsets = { top: 21, right: 10, bottom: 0, left: 35 }
+
+/** The part of a screenshot left after cutting `insets` off its edges (never empty). */
+export function cropRegion(srcW: number, srcH: number, insets: CropInsets): Rect {
+  const pct = (v: number) => Math.min(Math.max(v, 0), 95) / 100
+  const left = pct(insets.left), right = pct(insets.right)
+  const top = pct(insets.top), bottom = pct(insets.bottom)
+  const w = Math.max(srcW * (1 - left - right), srcW * 0.05)
+  const h = Math.max(srcH * (1 - top - bottom), srcH * 0.05)
+  return { x: Math.min(srcW * left, srcW - w), y: Math.min(srcH * top, srcH - h), w, h }
+}
+
+/** Part of `region` that fills a tile without stretching (CSS object-fit: cover), centred. */
+export function coverCrop(region: Rect, dstW: number, dstH: number): Rect {
+  const scale = Math.max(dstW / region.w, dstH / region.h)
   const w = dstW / scale
   const h = dstH / scale
-  return { x: (srcW - w) / 2, y: (srcH - h) / 2, w, h }
+  return { x: region.x + (region.w - w) / 2, y: region.y + (region.h - h) / 2, w, h }
+}
+
+/**
+ * Which tile each promo tag goes on: down the first column (like the Canva layout),
+ * then any other tile without a price tag, then any tile left.
+ */
+export function promoTiles(promoCount: number, columns: number, hasPrice: boolean[]): number[] {
+  const n = hasPrice.length
+  const firstColumn = Array.from({ length: Math.ceil(n / Math.max(columns, 1)) }, (_, r) => r * columns).filter((i) => i < n)
+  const order = [
+    ...firstColumn.filter((i) => !hasPrice[i]),
+    ...Array.from({ length: n }, (_, i) => i).filter((i) => !hasPrice[i] && !firstColumn.includes(i)),
+    ...firstColumn.filter((i) => hasPrice[i]),
+    ...Array.from({ length: n }, (_, i) => i).filter((i) => hasPrice[i] && !firstColumn.includes(i)),
+  ]
+  return order.slice(0, promoCount)
+}
+
+/** Split text into lines no wider than `maxWidth` (a single long word stays on its own line). */
+export function wrapText(text: string, maxWidth: number, measure: (s: string) => number): string[] {
+  const lines: string[] = []
+  let line = ''
+  for (const word of text.split(/\s+/).filter(Boolean)) {
+    const next = line ? `${line} ${word}` : word
+    if (line && measure(next) > maxWidth) {
+      lines.push(line)
+      line = word
+    } else {
+      line = next
+    }
+  }
+  if (line) lines.push(line)
+  return lines
 }
 
 export interface CaptionOptions {

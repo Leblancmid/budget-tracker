@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Master\StoreBalanceEntryRequest;
 use App\Http\Requests\Master\UpdateBalanceEntryRequest;
 use App\Models\BalanceEntry;
+use App\Models\BalanceTransfer;
+use App\Services\BalanceTransferService;
 use Illuminate\Http\JsonResponse;
 
 class BalanceEntryController extends Controller
@@ -25,6 +27,9 @@ class BalanceEntryController extends Controller
         if ($balanceEntry->transaction_id) {
             return $this->ownedByTransaction();
         }
+        if ($balanceEntry->balance_transfer_id) {
+            return response()->json(['message' => 'This is part of a transfer. Undo the transfer and make it again.'], 422);
+        }
         $balanceEntry->update($request->validated());
 
         return response()->json($balanceEntry->fresh());
@@ -34,6 +39,12 @@ class BalanceEntryController extends Controller
     {
         if ($balanceEntry->transaction_id) {
             return $this->ownedByTransaction();
+        }
+        // Part of a transfer: undo the whole transfer, so neither side is left behind
+        if ($balanceEntry->balance_transfer_id && ($transfer = BalanceTransfer::find($balanceEntry->balance_transfer_id))) {
+            app(BalanceTransferService::class)->delete($transfer);
+
+            return response()->json(['message' => 'Transfer undone.']);
         }
         $balanceEntry->delete();
 

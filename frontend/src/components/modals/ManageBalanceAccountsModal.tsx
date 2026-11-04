@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { toast } from '@/lib/toast'
 import { flattenApiErrors } from '@/utils/api'
-import { ACCOUNT_COLORS, ACCOUNT_ICONS, colorOf, iconOf } from '@/utils/balanceAccounts'
+import { ACCOUNT_COLORS, ACCOUNT_ICONS, colorOf, dailyInterest, fmtIn, iconOf } from '@/utils/balanceAccounts'
+import { handleAmountInput } from '@/utils/format'
 import type { BalanceAccountPayload } from '@/api/master'
 import type { BalanceAccountConfig, BalanceCurrency } from '@/types'
 
@@ -21,7 +22,7 @@ interface ManageBalanceAccountsModalProps {
   onDelete:  (id: number) => Promise<unknown>
 }
 
-const BLANK: BalanceAccountPayload = { name: '', currency: 'PHP', color: 'blue', icon: 'wallet' }
+const BLANK: BalanceAccountPayload = { name: '', currency: 'PHP', color: 'blue', icon: 'wallet', interest_rate: null, interest_tax: 20 }
 
 export function ManageBalanceAccountsModal({ open, onClose, accounts, startWithNew, onCreate, onUpdate, onReorder, onDelete }: ManageBalanceAccountsModalProps) {
   // null = list view; 'new' = create form; account = edit form
@@ -44,7 +45,7 @@ export function ManageBalanceAccountsModal({ open, onClose, accounts, startWithN
     setEditing(target)
     setForm(target === 'new'
       ? BLANK
-      : { name: target.name, currency: target.currency, color: target.color, icon: target.icon })
+      : { name: target.name, currency: target.currency, color: target.color, icon: target.icon, interest_rate: target.interest_rate ?? null, interest_tax: target.interest_tax ?? 20 })
   }
 
   const save = async () => {
@@ -135,7 +136,7 @@ export function ManageBalanceAccountsModal({ open, onClose, accounts, startWithN
                       {hidden && <span className="ml-2 text-[10px] font-semibold uppercase text-gray-400">Hidden</span>}
                     </p>
                     <p className="text-[11px] text-gray-400 dark:text-gray-500">
-                      {a.currency} · {a.entry_count} entr{a.entry_count === 1 ? 'y' : 'ies'}
+                      {a.currency} · {a.entry_count} entr{a.entry_count === 1 ? 'y' : 'ies'}{a.interest_rate ? ` · ${a.interest_rate}% a year` : ''}
                     </p>
                   </div>
 
@@ -253,6 +254,34 @@ export function ManageBalanceAccountsModal({ open, onClose, accounts, startWithN
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Interest: optional, depends on the bank */}
+          <div className="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Interest <span className="font-normal text-gray-400">(optional)</span></p>
+            <p className="mb-2 text-[11px] text-gray-500 dark:text-gray-400">For banks that pay interest daily, like Maribank. Leave blank if this account doesn't earn any.</p>
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                label="Rate (% a year)"
+                inputMode="decimal"
+                value={form.interest_rate != null ? String(form.interest_rate) : ''}
+                onChange={(e) => handleAmountInput(e.target.value, (v) => setForm((f) => ({ ...f, interest_rate: v === '' ? null : Number(v) })))}
+                placeholder="e.g. 3.25"
+                error={errors.interest_rate}
+              />
+              <Input
+                label="Tax withheld (%)"
+                inputMode="decimal"
+                value={String(form.interest_tax ?? 20)}
+                onChange={(e) => handleAmountInput(e.target.value, (v) => setForm((f) => ({ ...f, interest_tax: v === '' ? 0 : Number(v) })))}
+                error={errors.interest_tax}
+              />
+            </div>
+            {!!form.interest_rate && editing !== 'new' && editing && (
+              <p className="mt-2 text-xs text-emerald-600 dark:text-emerald-400">
+                ≈ +{fmtIn({ currency: form.currency }, dailyInterest(editing.balance ?? 0, form.interest_rate, form.interest_tax ?? 20))} a day on the current balance, added automatically each day.
+              </p>
+            )}
           </div>
 
           <div className="flex items-center justify-between gap-3 pt-1">

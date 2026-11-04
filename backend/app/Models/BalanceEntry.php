@@ -9,6 +9,8 @@ class BalanceEntry extends Model
     protected $fillable = [
         'transaction_id',
         'business_transaction_id',
+        'balance_transfer_id',
+        'kind',
         'account',
         'type',
         'description',

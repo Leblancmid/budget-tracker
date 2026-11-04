@@ -124,7 +124,9 @@ export function TransactionModal({ open, onClose, onSubmit, categories, transact
     setForm((p) => ({ ...p, [key]: value }))
 
   return (
-    <Modal open={open} onClose={onClose} title={transaction ? 'Edit Transaction' : 'New Transaction'} size="lg">
+    <Modal open={open} onClose={onClose} title={transaction ? 'Edit Transaction' : 'New Transaction'} size="4xl">
+      {/* Landscape: what it is on the left, where the money goes and when on the right; stacks on phones */}
+      <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
       <div className="flex flex-col gap-5">
 
         {/* Expense / Income */}
@@ -155,7 +157,7 @@ export function TransactionModal({ open, onClose, onSubmit, categories, transact
             'flex items-center gap-2 rounded-xl border-2 px-4 py-3 transition-colors',
             errors.amount ? 'border-red-400' : isIncome ? 'border-emerald-200 focus-within:border-emerald-400 dark:border-emerald-900/60' : 'border-red-200 focus-within:border-red-400 dark:border-red-900/60',
           ].join(' ')}>
-            <span className={['text-2xl font-bold', isIncome ? 'text-emerald-500' : 'text-red-500'].join(' ')}>{isIncome ? '+' : '−'}₱</span>
+            <span className={['shrink-0 whitespace-nowrap text-2xl font-bold', isIncome ? 'text-emerald-500' : 'text-red-500'].join(' ')}>{isIncome ? '+' : '−'}₱</span>
             <input
               type="text"
               inputMode="decimal"
@@ -227,7 +229,9 @@ export function TransactionModal({ open, onClose, onSubmit, categories, transact
           )}
           {errors.category_id && <p className="mt-1 text-xs text-red-500">{errors.category_id}</p>}
         </div>
+      </div>
 
+      <div className="flex flex-col gap-5">
         {/* Balance account */}
         {balanceAccounts.length > 0 && (
           <WalletPicker
@@ -280,12 +284,13 @@ export function TransactionModal({ open, onClose, onSubmit, categories, transact
           </div>
         )}
 
-        <div className="flex justify-end gap-3">
+        <div className="mt-auto flex justify-end gap-3">
           <Button variant="secondary" onClick={onClose} disabled={loading}>Cancel</Button>
           <Button onClick={handleSubmit} loading={loading}>
             {transaction ? 'Save Changes' : isIncome ? 'Add Income' : 'Add Expense'}
           </Button>
         </div>
+      </div>
       </div>
     </Modal>
   )

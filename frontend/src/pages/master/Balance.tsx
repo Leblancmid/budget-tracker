@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
-import { Eye, EyeOff, Plus, Search, Settings2, Wallet } from 'lucide-react'
+import { ArrowLeftRight, Eye, EyeOff, Plus, Search, Settings2, Wallet } from 'lucide-react'
 
 import { useBalanceEntries } from '@/hooks/useBalanceEntries'
 import { useBalanceAccounts } from '@/hooks/useBalanceAccounts'
 import { BalanceModal } from '@/components/modals/BalanceModal'
 import { ManageBalanceAccountsModal } from '@/components/modals/ManageBalanceAccountsModal'
+import { TransferModal } from '@/components/modals/TransferModal'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Pagination } from '@/components/ui/Pagination'
@@ -26,7 +27,7 @@ const PER_PAGE = 10
 const getSavedRate = () => readNumber(STORAGE_KEYS.balancePhpRate, 58)
 
 export default function Balance() {
-  const { entries, loading, create, update, remove } = useBalanceEntries()
+  const { entries, loading, create, update, remove, refetch: refetchEntries } = useBalanceEntries()
   const {
     accounts, loading: accountsLoading, refetch: refetchAccounts,
     create: createAccount, update: updateAccount, reorder: reorderAccounts, remove: removeAccount,
@@ -43,6 +44,7 @@ export default function Balance() {
   const [deleteLoading, setDeleteLoading] = useState(false)
 
   const [manageOpen,     setManageOpen]     = useState(false)
+  const [transferOpen,   setTransferOpen]   = useState(false)
   const [manageStartNew, setManageStartNew] = useState(false)
   const [showHidden,     setShowHidden]     = useState(false)
 
@@ -104,8 +106,15 @@ export default function Balance() {
     if (!deleteTarget) return
     setDeleteLoading(true)
     try {
-      await remove(deleteTarget.id)
-      toast.success('Entry deleted.')
+      if (deleteTarget.balance_transfer_id) {
+        // Removing one side undoes the whole transfer (both sides and the fee)
+        await remove(deleteTarget.id)
+        await refetchEntries()
+        toast.success('Transfer undone.')
+      } else {
+        await remove(deleteTarget.id)
+        toast.success('Entry deleted.')
+      }
       setDeleteTarget(null)
     } catch {
       toast.error('Failed to delete entry.')
@@ -157,6 +166,9 @@ export default function Balance() {
                 {showHidden ? 'Hide hidden' : `Show hidden (${hiddenCount})`}
               </button>
             )}
+            <Button size="sm" icon={<ArrowLeftRight className="h-3.5 w-3.5" />} onClick={() => setTransferOpen(true)} disabled={accounts.length < 2}>
+              Transfer
+            </Button>
             <Button size="sm" variant="secondary" icon={<Settings2 className="h-3.5 w-3.5" />} onClick={() => openManage(false)}>
               Manage
             </Button>
@@ -320,6 +332,15 @@ export default function Balance() {
         defaultType={defaultType}
       />
 
+      {transferOpen && (
+        <TransferModal
+          accounts={accounts.filter((a) => !a.hidden_at)}
+          balanceOf={(a) => stats.get(a.code)?.balance ?? 0}
+          onClose={() => setTransferOpen(false)}
+          onDone={() => Promise.all([refetchEntries(), refetchAccounts()])}
+        />
+      )}
+
       <ManageBalanceAccountsModal
         open={manageOpen}
         onClose={() => setManageOpen(false)}
@@ -336,10 +357,13 @@ export default function Balance() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
         loading={deleteLoading}
-        title="Delete Entry"
-        message={`Delete this ${deleteTarget?.type} of ${
-          deleteTarget ? fmtIn(accountByCode.get(deleteTarget.account), parseFloat(deleteTarget.amount)) : ''
-        } from ${deleteTarget ? (accountByCode.get(deleteTarget.account)?.name ?? deleteTarget.account) : ''}? This cannot be undone.`}
+        title={deleteTarget?.balance_transfer_id ? 'Undo Transfer' : 'Delete Entry'}
+        confirmLabel={deleteTarget?.balance_transfer_id ? 'Undo transfer' : undefined}
+        message={deleteTarget?.balance_transfer_id
+          ? 'Undo this transfer? The money goes back to the account it came from, and the fee (if any) is refunded. Both sides are removed from the history.'
+          : `Delete this ${deleteTarget?.type} of ${
+              deleteTarget ? fmtIn(accountByCode.get(deleteTarget.account), parseFloat(deleteTarget.amount)) : ''
+            } from ${deleteTarget ? (accountByCode.get(deleteTarget.account)?.name ?? deleteTarget.account) : ''}? This cannot be undone.`}
       />
     </div>
   )

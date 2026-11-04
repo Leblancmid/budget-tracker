@@ -134,6 +134,11 @@ export interface BalanceAccountConfig {
   entry_count: number
   /** Current balance (adds − sells) in the account's currency */
   balance?: number
+  /** Optional interest: % a year, credited daily after interest_tax % is withheld */
+  interest_rate?: number | null
+  interest_tax?: number
+  /** Last day interest was credited for */
+  interest_credited_through?: string | null
   created_at: string
   updated_at: string
 }
@@ -143,6 +148,10 @@ export interface BalanceEntry {
   id: number
   /** Set when the entry was created by a daily transaction (edit it there) */
   transaction_id?: number | null
+  /** Set when it's one side (or the fee) of a transfer; removing it undoes the whole transfer */
+  balance_transfer_id?: number | null
+  /** 'interest' for daily interest credits */
+  kind?: 'interest' | null
   account: BalanceAccount
   type: BalanceEntryType
   amount: string

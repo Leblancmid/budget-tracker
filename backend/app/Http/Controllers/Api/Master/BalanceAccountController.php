@@ -8,6 +8,7 @@ use App\Http\Requests\Master\StoreBalanceAccountRequest;
 use App\Http\Requests\Master\UpdateBalanceAccountRequest;
 use App\Models\BalanceAccount;
 use App\Models\BalanceEntry;
+use App\Services\BalanceInterest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
 
@@ -32,6 +33,9 @@ class BalanceAccountController extends Controller
     {
         $data = $request->validated();
 
+        if ((float) ($data['interest_rate'] ?? 0) > 0) {
+            $data['interest_credited_through'] = now(BalanceInterest::ZONE)->subDay()->toDateString();
+        }
         $account = BalanceAccount::create([
             ...$data,
             'code'       => $this->uniqueCode($data['name']),
@@ -48,6 +52,18 @@ class BalanceAccountController extends Controller
         if (array_key_exists('hidden', $data)) {
             $data['hidden_at'] = $data['hidden'] ? ($balanceAccount->hidden_at ?? now()) : null;
             unset($data['hidden']);
+        }
+
+        // Interest switched on: it starts earning today (credited tomorrow); switched off: forget the date
+        if (array_key_exists('interest_rate', $data)) {
+            $on  = (float) ($data['interest_rate'] ?? 0) > 0;
+            $was = (float) ($balanceAccount->interest_rate ?? 0) > 0;
+            if ($on && ! $was) {
+                $data['interest_credited_through'] = now(BalanceInterest::ZONE)->subDay()->toDateString();
+            } elseif (! $on) {
+                $data['interest_rate']             = null;
+                $data['interest_credited_through'] = null;
+            }
         }
 
         // The code is the link to existing entries, so it never changes on rename

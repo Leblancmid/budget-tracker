@@ -54,6 +54,16 @@ export const ACCOUNT_ICONS: Record<string, { label: string; Icon: LucideIcon }> 
 
 export const iconOf = (key: string): LucideIcon => (ACCOUNT_ICONS[key] ?? ACCOUNT_ICONS.wallet).Icon
 
+/**
+ * Interest one day earns on a balance: balance × rate% ÷ 365, minus the withheld tax %.
+ * Same as the server's daily credit (rounded to the cent).
+ */
+export function dailyInterest(balance: number, ratePct: number | null | undefined, taxPct = 20): number {
+  if (!ratePct || ratePct <= 0 || balance <= 0) return 0
+  const keep = 1 - Math.min(Math.max(taxPct, 0), 100) / 100
+  return Math.round(((balance * ratePct) / 100 / 365) * keep * 100) / 100
+}
+
 export const fmtUsd = (n: number) => `$${n.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 export const fmtPhp = (n: number) => `₱${n.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 export const fmtIn  = (account: Pick<BalanceAccountConfig, 'currency'> | undefined, n: number) =>

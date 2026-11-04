@@ -7,7 +7,7 @@ import { Amt } from '@/components/ui/Amt'
  * Pick the Balance wallet money comes out of (or goes into), with each wallet's balance,
  * and the chosen one's balance before → after. Used by expenses/income and bought gold.
  */
-export function WalletPicker({ label, accounts, value, onChange, balanceOf = (a) => a.balance ?? 0, changeFor, error, noneLabel = 'None' }: {
+export function WalletPicker({ label, accounts, value, onChange, balanceOf = (a) => a.balance ?? 0, changeFor, error, noneLabel = 'None', allowNone = true }: {
   label: string
   accounts: BalanceAccountConfig[]
   /** Selected wallet code; null = none; undefined = nothing picked yet */
@@ -20,6 +20,8 @@ export function WalletPicker({ label, accounts, value, onChange, balanceOf = (a)
   error?: string
   /** Label of the "no wallet" choice */
   noneLabel?: string
+  /** Offer the "no wallet" choice (off for transfers, which always need both sides) */
+  allowNone?: boolean
 }) {
   const linked = accounts.find((a) => a.code === value)
   const chip = 'flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors'
@@ -32,15 +34,17 @@ export function WalletPicker({ label, accounts, value, onChange, balanceOf = (a)
         <span className="text-[11px] text-gray-400 dark:text-gray-500">Updates your Balance</span>
       </div>
       <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label={label}>
-        <button
-          type="button"
-          role="radio"
-          aria-checked={value === null}
-          onClick={() => onChange(null)}
-          className={[chip, value === null ? 'border-gray-400 bg-gray-100 text-gray-700 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-200' : idle].join(' ')}
-        >
-          <Ban size={12} /> {noneLabel}
-        </button>
+        {allowNone && (
+          <button
+            type="button"
+            role="radio"
+            aria-checked={value === null}
+            onClick={() => onChange(null)}
+            className={[chip, value === null ? 'border-gray-400 bg-gray-100 text-gray-700 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-200' : idle].join(' ')}
+          >
+            <Ban size={12} /> {noneLabel}
+          </button>
+        )}
         {accounts.map((a) => {
           const c = colorOf(a.color)
           const Icon = iconOf(a.icon)

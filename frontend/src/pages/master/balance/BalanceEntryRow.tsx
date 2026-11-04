@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ExternalLink, Pencil, Receipt, Trash2 } from 'lucide-react'
+import { ArrowLeftRight, ExternalLink, Pencil, Percent, Receipt, Trash2, Undo2 } from 'lucide-react'
 import { Amt } from '@/components/ui/Amt'
 import { formatDate } from '@/utils/format'
 import { colorOf, fmtIn, fmtPhp, iconOf } from '@/utils/balanceAccounts'
@@ -36,6 +36,16 @@ export function BalanceEntryRow({ entry: e, account: a, phpRate, onEdit, onDelet
               <Receipt size={9} /> From Transactions
             </span>
           )}
+          {e.balance_transfer_id && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 dark:bg-sky-900/30 px-1.5 py-0.5 text-[10px] font-semibold text-sky-600 dark:text-sky-300">
+              <ArrowLeftRight size={9} /> Transfer
+            </span>
+          )}
+          {e.kind === 'interest' && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-900/30 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-300">
+              <Percent size={9} /> Interest
+            </span>
+          )}
         </p>
       </div>
       {e.transaction_id ? (
@@ -44,6 +54,12 @@ export function BalanceEntryRow({ entry: e, account: a, phpRate, onEdit, onDelet
           className="md:opacity-0 md:group-hover:opacity-100 transition-opacity flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/20">
           Edit in Transactions <ExternalLink size={11} />
         </Link>
+      ) : e.balance_transfer_id ? (
+        // One side of a transfer: editing would unbalance it, so it can only be undone as a whole
+        <button onClick={onDelete} title="Undo the whole transfer" aria-label="Undo transfer"
+          className="md:opacity-0 md:group-hover:opacity-100 transition-opacity flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-gray-500 hover:bg-amber-50 hover:text-amber-600 dark:text-gray-400 dark:hover:bg-amber-900/20 dark:hover:text-amber-400">
+          <Undo2 size={12} /> Undo transfer
+        </button>
       ) : (
         <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
           <button onClick={onEdit} title="Edit" aria-label="Edit"

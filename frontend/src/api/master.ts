@@ -25,6 +25,26 @@ export interface BalanceAccountPayload {
   currency: BalanceCurrency
   color: string
   icon: string
+  /** % a year, credited daily; null = no interest */
+  interest_rate?: number | null
+  /** % withheld as tax from the interest */
+  interest_tax?: number
+}
+
+export interface BalanceTransferPayload {
+  from_account: string
+  to_account: string
+  amount: number
+  /** Only across currencies: what arrived, in the receiving account's currency */
+  received?: number | null
+  fee?: number | null
+  date: string
+  note?: string | null
+}
+
+export const balanceTransfersApi = {
+  create: (data: BalanceTransferPayload) => api.post<{ id: number }>('/master/balance-transfers', data).then((r) => r.data),
+  delete: (id: number) => api.delete<{ message: string }>(`/master/balance-transfers/${id}`).then((r) => r.data),
 }
 
 export const balanceAccountsApi = {

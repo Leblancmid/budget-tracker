@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\LogController;
 use App\Http\Controllers\Api\Master\BalanceAccountController;
 use App\Http\Controllers\Api\Master\BalanceEntryController;
+use App\Http\Controllers\Api\Master\BalanceTransferController;
 use App\Http\Controllers\Api\Master\MasterDashboardController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\Rucoy\AccountPaymentController;
@@ -50,6 +51,7 @@ Route::prefix('v1')->group(function () {
             Route::prefix('master')->name('master.')->group(function () {
                 Route::get('dashboard', [MasterDashboardController::class, 'index'])->name('dashboard');
                 Route::apiResource('balance-entries', BalanceEntryController::class)->except(['show']);
+                Route::apiResource('balance-transfers', BalanceTransferController::class)->only(['store', 'destroy']);
                 Route::post('balance-accounts/reorder', [BalanceAccountController::class, 'reorder'])->name('balance-accounts.reorder');
                 Route::apiResource('balance-accounts', BalanceAccountController::class)->except(['show']);
             });

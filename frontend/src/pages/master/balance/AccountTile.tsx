@@ -1,7 +1,7 @@
 import { Minus, Plus } from 'lucide-react'
 import { Amt } from '@/components/ui/Amt'
 import { formatDate } from '@/utils/format'
-import { colorOf, fmtIn, fmtPhp, iconOf } from '@/utils/balanceAccounts'
+import { colorOf, dailyInterest, fmtIn, fmtPhp, iconOf } from '@/utils/balanceAccounts'
 import type { BalanceAccountConfig, BalanceEntryType } from '@/types'
 import { formatShare, type AccountStats } from './balanceStats'
 
@@ -61,6 +61,12 @@ export function AccountTile({ account: a, stats: s, share, phpRate, active, onTo
           </p>
           {a.currency === 'USD' && (
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">≈ <Amt value={fmtPhp(bal * phpRate)} /></p>
+          )}
+          {!!a.interest_rate && (
+            <p className="mt-1 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+              title={`${a.interest_rate}% a year, credited daily after ${a.interest_tax ?? 20}% tax`}>
+              {a.interest_rate}% a year · +<Amt value={fmtIn(a, dailyInterest(bal, a.interest_rate, a.interest_tax ?? 20))} />/day
+            </p>
           )}
         </div>
 

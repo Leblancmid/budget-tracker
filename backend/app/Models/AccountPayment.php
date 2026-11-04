@@ -34,6 +34,20 @@ class AccountPayment extends Model
         return $this->belongsTo(RucoyAccount::class, 'account_id');
     }
 
+    /** One line for the Logs page, e.g. "Paid for Leblanc 657 Dist: 540,000,000 G from .17$ binance". */
+    public function summary(): string
+    {
+        $account = $this->account?->description ?: ($this->account?->email ?? 'account');
+        $how = match (true) {
+            $this->method === 'gold_trade' => 'from ' . ($this->taken['trade']['description'] ?? 'a gold trade'),
+            $this->balance_account !== null => 'cash from ' . $this->balance_account,
+            $this->cash_amount !== null     => 'paid outside Balance',
+            default                         => 'already paid',
+        };
+
+        return 'Paid for ' . $account . ': ' . number_format($this->gold) . ' G ' . $how;
+    }
+
     public function sourceTrade(): BelongsTo
     {
         return $this->belongsTo(BusinessTransaction::class, 'source_trade_id');

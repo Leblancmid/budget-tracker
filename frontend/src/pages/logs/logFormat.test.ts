@@ -35,6 +35,8 @@ describe('log formatting', () => {
     expect(eventOf(entry({ type: 'edited' }))).toBe('edited')
     expect(eventOf(entry({ type: 'archived' }))).toBe('archived')
     expect(eventOf(entry({ type: 'sell' }))).toBe('created')
+    expect(eventOf(entry({ type: 'payment' }))).toBe('created')
+    expect(eventOf(entry({ type: 'removed' }))).toBe('removed')
     expect(detectDevice('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0)')).toBe('mobile')
     expect(detectDevice('Mozilla/5.0 (Windows NT 10.0)')).toBe('desktop')
     expect(detectDevice(null)).toBeNull()

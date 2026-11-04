@@ -2,12 +2,14 @@
 
 namespace App\Providers;
 
+use App\Models\AccountPayment;
 use App\Models\BalanceEntry;
 use App\Models\BusinessTransaction;
 use App\Models\GoldLog;
 use App\Models\MiddlemanFee;
 use App\Models\Trade;
 use App\Models\Transaction;
+use App\Observers\AccountPaymentObserver;
 use App\Observers\BalanceEntryObserver;
 use App\Observers\BusinessTransactionObserver;
 use App\Observers\GoldLogObserver;
@@ -28,5 +30,6 @@ class AppServiceProvider extends ServiceProvider
         GoldLog::observe(GoldLogObserver::class);
         Trade::observe(TradeObserver::class);
         MiddlemanFee::observe(MiddlemanFeeObserver::class);
+        AccountPayment::observe(AccountPaymentObserver::class);
     }
 }

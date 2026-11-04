@@ -9,6 +9,7 @@ use App\Models\MiddlemanFee;
 use App\Models\RucoyAccount;
 use App\Support\SchemaColumns;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 /** Creating, changing and selling business transactions (Sales), and their effect on the gold stash. */
 class BusinessTransactionService
@@ -143,11 +144,62 @@ class BusinessTransactionService
             }
 
             if ($deductInventory) {
-                GoldInventory::deduct($sell, $note !== '' ? $note : 'Sold: ' . ($tx->description ?: 'Gold trade'));
+                $log = GoldInventory::deduct($sell, $note !== '' ? $note : 'Sold: ' . ($tx->description ?: 'Gold trade'));
+                // Lets Undo in the gold history put the sale back on the trade, not just the stash
+                $log->undo = ['kind' => 'trade_sale', 'sold_id' => $sold->id, 'remaining_id' => $remaining?->id, 'gold' => $sell];
+                $log->save();
             }
 
             return [$sold, $remaining];
         });
+    }
+
+    /**
+     * Undo a sale: the sold part goes back onto the pending trade it came from (gold, ₱ and
+     * received/paid progress), or a fully sold trade is pending again. The month's sold profit
+     * drops by it. The stash is put back by the caller, as for any history entry.
+     *
+     * @param  array{sold_id: int, remaining_id: ?int}  $plan
+     */
+    public function undoSale(array $plan): BusinessTransaction
+    {
+        $sold = BusinessTransaction::find($plan['sold_id'] ?? null);
+        if (! $sold || $sold->archived_at === null) {
+            throw ValidationException::withMessages(['undo' => 'This sale was already undone or its trade was removed.']);
+        }
+
+        $rest = ! empty($plan['remaining_id']) ? BusinessTransaction::find($plan['remaining_id']) : null;
+
+        if ($rest && $rest->archived_at === null) {
+            // Partial sale: merge the sold piece back into what's left of the trade
+            $plus = fn ($a, $b) => $a === null && $b === null ? null : (float) ($a ?? 0) + (float) ($b ?? 0);
+            $rest->price_gold = $plus($rest->price_gold, $sold->price_gold);
+            $rest->cost_gold  = $plus($rest->cost_gold, $sold->cost_gold);
+            $rest->price_php  = $rest->price_php !== null || $sold->price_php !== null ? round($plus($rest->price_php, $sold->price_php), 2) : null;
+            $rest->cost_php   = $rest->cost_php !== null || $sold->cost_php !== null ? round($plus($rest->cost_php, $sold->cost_php), 2) : null;
+            if (SchemaColumns::has('business_transactions', 'price_gold_received')) {
+                $rest->price_gold_received = $plus($rest->price_gold_received, $sold->price_gold_received);
+                $rest->cost_gold_paid      = $plus($rest->cost_gold_paid, $sold->cost_gold_paid);
+            }
+            // The gold is back in the stash, so the trade tracks it again
+            if ($rest->inventory_gold !== null) {
+                $rest->inventory_gold = (float) $rest->inventory_gold + (float) $sold->price_gold;
+            }
+            $this->refreshProfit($rest);
+            $rest->save();
+            $sold->delete();
+
+            return $rest;
+        }
+
+        // Fully sold (or what was left is gone): the sold trade is pending again
+        $sold->archived_at = null;
+        if ($sold->inventory_gold === null && $this->tracksInventory()) {
+            $sold->inventory_gold = (float) $sold->price_gold;
+        }
+        $sold->save();
+
+        return $sold;
     }
 
     /**

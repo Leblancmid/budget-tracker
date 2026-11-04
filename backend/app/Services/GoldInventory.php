@@ -28,7 +28,7 @@ class GoldInventory
      * Deduct gold from the inventory, largest entries first. Any shortfall is
      * recorded as a negative entry so the inventory total stays accurate.
      */
-    public static function deduct(float $amount, ?string $description = null): void
+    public static function deduct(float $amount, ?string $description = null): GoldLog
     {
         $remaining = $amount;
         foreach (Gold::orderByDesc('amount')->get() as $gold) {
@@ -45,7 +45,7 @@ class GoldInventory
             Gold::create(['amount' => -$remaining, 'description' => null]);
         }
 
-        GoldLog::create([
+        return GoldLog::create([
             'type'        => 'sell',
             'amount'      => $amount,
             'description' => $description,

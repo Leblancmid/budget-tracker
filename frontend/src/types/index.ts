@@ -350,6 +350,8 @@ export interface GoldLog {
   amount: string
   description: string | null
   cancelled_at: string | null
+  /** What Undo reverses beyond the stash: a gold trade sale goes back onto its trade */
+  undo?: { kind: 'trade_sale'; sold_id: number; remaining_id: number | null; gold: number } | null
   created_at: string
   updated_at: string
 }

@@ -1,4 +1,4 @@
-import { Archive, Monitor, Pencil, Smartphone, User } from 'lucide-react'
+import { Archive, Monitor, Pencil, Smartphone, Trash2, User } from 'lucide-react'
 import { Amt } from '@/components/ui/Amt'
 import type { LogEntry } from '@/api/logs'
 import { ChangeList } from './ChangeList'
@@ -21,8 +21,8 @@ export function LogRow({ entry: e }: { entry: LogEntry }) {
       <div className="relative">
         <span className={['flex h-9 w-9 shrink-0 items-center justify-center rounded-xl', s.tile].join(' ')}><s.Icon size={15} /></span>
         {ev !== 'created' && (
-          <span className={['absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full ring-2 ring-white dark:ring-gray-900', ev === 'edited' ? 'bg-indigo-500' : 'bg-amber-500'].join(' ')}>
-            {ev === 'edited' ? <Pencil size={8} className="text-white" /> : <Archive size={8} className="text-white" />}
+          <span className={['absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full ring-2 ring-white dark:ring-gray-900', ev === 'edited' ? 'bg-indigo-500' : ev === 'removed' ? 'bg-red-500' : 'bg-amber-500'].join(' ')}>
+            {ev === 'edited' ? <Pencil size={8} className="text-white" /> : ev === 'removed' ? <Trash2 size={8} className="text-white" /> : <Archive size={8} className="text-white" />}
           </span>
         )}
       </div>

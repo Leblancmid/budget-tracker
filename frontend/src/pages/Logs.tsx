@@ -56,7 +56,7 @@ export default function Logs() {
   }, [byUser, activeEvent])
 
   const eventCounts = useMemo(() => {
-    const c: Record<EventKey, number> = { all: 0, created: 0, edited: 0, archived: 0 }
+    const c: Record<EventKey, number> = { all: 0, created: 0, edited: 0, archived: 0, removed: 0 }
     for (const e of byUser) {
       if (activeModule !== 'all' && e.module !== activeModule) continue
       c.all++

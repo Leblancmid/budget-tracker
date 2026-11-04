@@ -9,6 +9,7 @@ use App\Http\Requests\Rucoy\StoreGoldRequest;
 use App\Http\Requests\Rucoy\UpdateGoldRequest;
 use App\Models\Gold;
 use App\Models\GoldLog;
+use App\Services\BusinessTransactionService;
 use App\Services\GoldInventory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -42,14 +43,21 @@ class GoldController extends Controller
         return response()->json(GoldLog::latest()->get());
     }
 
-    /** Cancel a history entry: undo its effect on the stash and keep the line, marked cancelled. */
-    public function cancelLog(GoldLog $goldLog): JsonResponse
+    /**
+     * Undo a history entry: reverse its effect on the stash and keep the line, marked undone.
+     * A gold trade sale is undone completely: the sold gold goes back onto its trade too.
+     */
+    public function cancelLog(GoldLog $goldLog, BusinessTransactionService $transactions): JsonResponse
     {
         if ($goldLog->cancelled_at) {
-            return response()->json(['message' => 'This entry is already cancelled.'], 422);
+            return response()->json(['message' => 'This entry is already undone.'], 422);
         }
 
-        DB::transaction(function () use ($goldLog) {
+        DB::transaction(function () use ($goldLog, $transactions) {
+            if (($goldLog->undo['kind'] ?? null) === 'trade_sale') {
+                $transactions->undoSale($goldLog->undo);
+            }
+
             $amount = (float) $goldLog->amount;
             // add / fee put gold in (amount may be negative for removals); sell took gold out
             $effect = $goldLog->type === 'sell' ? -abs($amount) : $amount;
@@ -57,7 +65,7 @@ class GoldController extends Controller
             if ($effect != 0) {
                 Gold::create([
                     'amount'      => -$effect,
-                    'description' => 'Cancelled: ' . ($goldLog->description ?: ucfirst($goldLog->type)),
+                    'description' => 'Undone: ' . ($goldLog->description ?: ucfirst($goldLog->type)),
                 ]);
             }
             $goldLog->cancelled_at = now();

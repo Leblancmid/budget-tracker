@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\AccountPayment;
 use App\Models\ActivityLog;
 use App\Models\BalanceAccount;
 use App\Models\BalanceEntry;
@@ -21,11 +22,11 @@ class LogController extends Controller
         $allActivityLogs = ActivityLog::with('user:id,name,email')->get();
 
         // created events → keyed for IP/device merge into original table rows
-        $activityMap = $allActivityLogs->whereIn('type', ['income', 'expense', 'gold', 'fee', 'add', 'sell', 'buy', 'kks', 'pending', 'completed', 'cancelled'])
+        $activityMap = $allActivityLogs->whereIn('type', ['income', 'expense', 'gold', 'fee', 'add', 'sell', 'buy', 'kks', 'pending', 'completed', 'cancelled', 'payment'])
             ->keyBy(fn ($l) => $l->loggable_type . '|' . $l->loggable_id);
 
-        // archived and edited events → standalone log entries
-        $standaloneEvents = $allActivityLogs->whereIn('type', ['archived', 'edited']);
+        // archived, edited and removed events → standalone log entries
+        $standaloneEvents = $allActivityLogs->whereIn('type', ['archived', 'edited', 'removed']);
 
         $logs = collect();
 
@@ -42,6 +43,14 @@ class LogController extends Controller
                 $log    = $activityMap->get(BusinessTransaction::class . '|' . $t->id);
                 $amount = $t->profit_php ?? $t->price_php ?? $t->cost_php ?? $t->amount;
                 $logs->push($this->entry('business', $t->type, $t->description, $amount, $t->date, $t->created_at, $log));
+            });
+
+        // Payments toward an account's cost (gold from a trade, cash, already paid): a ₱ cost
+        AccountPayment::with('account:id,description,email')
+            ->orderBy('created_at', 'desc')->limit(500)->get()
+            ->each(function ($p) use (&$logs, $activityMap) {
+                $log = $activityMap->get(AccountPayment::class . '|' . $p->id);
+                $logs->push($this->entry('business', 'payment', $p->summary(), $p->cost_php !== null ? -$p->cost_php : null, $p->date?->format('Y-m-d'), $p->created_at, $log));
             });
 
         Saving::select('id', 'type', 'description', 'amount', 'date', 'created_at')

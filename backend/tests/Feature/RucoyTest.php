@@ -56,7 +56,7 @@ class RucoyTest extends TestCase
         $sell = GoldLog::where('type', 'sell')->where('description', 'sold')->firstOrFail();
         $this->postJson("/api/v1/rucoy/gold-logs/{$sell->id}/cancel")->assertOk()->assertJsonPath('id', $sell->id);
         $this->assertEquals(800, $this->stash());
-        $this->assertDatabaseHas('golds', ['description' => 'Cancelled: sold', 'amount' => 300]);
+        $this->assertDatabaseHas('golds', ['description' => 'Undone: sold', 'amount' => 300]);
         $this->postJson("/api/v1/rucoy/gold-logs/{$sell->id}/cancel")->assertStatus(422);
 
         $this->getJson('/api/v1/rucoy/gold-logs')->assertOk()->assertJsonCount(5);

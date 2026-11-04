@@ -1,11 +1,11 @@
-import { Archive, ArrowLeftRight, Briefcase, Coins, Landmark, Pencil, PiggyBank, Plus, Wallet, type LucideIcon } from 'lucide-react'
+import { Archive, ArrowLeftRight, Briefcase, Coins, Landmark, Pencil, PiggyBank, Plus, Trash2, Wallet, type LucideIcon } from 'lucide-react'
 import type { LogEntry } from '@/api/logs'
 
 export const PER_PAGE = 30
 
 export type ModuleKey = LogEntry['module'] | 'all'
 export type UserFilterKey = 'all' | number
-export type EventKey = 'all' | 'created' | 'edited' | 'archived'
+export type EventKey = 'all' | 'created' | 'edited' | 'archived' | 'removed'
 
 export const MODULE_STYLES: Record<LogEntry['module'], { Icon: LucideIcon; tile: string; badge: string; bar: string; label: string }> = {
   daily:    { Icon: Wallet,         tile: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-300',    badge: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300',    bar: 'bg-indigo-400',  label: 'Daily' },
@@ -24,9 +24,11 @@ export const TYPE_LABEL: Record<string, string> = {
   account: 'Account', gold: 'Gold',
   kks: 'KKS', cash: 'Cash',
   archived: 'Sold / archived', edited: 'Edited',
+  payment: 'Payment', removed: 'Removed',
 }
 
-export const eventOf = (e: LogEntry): Exclude<EventKey, 'all'> => (e.type === 'edited' ? 'edited' : e.type === 'archived' ? 'archived' : 'created')
+export const eventOf = (e: LogEntry): Exclude<EventKey, 'all'> =>
+  e.type === 'edited' ? 'edited' : e.type === 'archived' ? 'archived' : e.type === 'removed' ? 'removed' : 'created'
 
 export type ValueKind = 'gold' | 'php' | 'usd' | 'rate' | 'date' | 'text'
 
@@ -141,6 +143,7 @@ export const EVENT_FILTERS = [
   { key: 'created',  label: 'Created',         Icon: Plus },
   { key: 'edited',   label: 'Edited',          Icon: Pencil },
   { key: 'archived', label: 'Sold / archived', Icon: Archive },
+  { key: 'removed',  label: 'Removed',         Icon: Trash2 },
 ] as const
 
 export interface LogSummary {

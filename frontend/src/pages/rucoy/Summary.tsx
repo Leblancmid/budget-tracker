@@ -10,6 +10,8 @@ import { useGoldLogs } from '@/hooks/useGoldLogs'
 import { useRucoyDashboard } from '@/hooks/useRucoyDashboard'
 import { useTrades } from '@/hooks/useTrades'
 import { toast } from '@/lib/toast'
+import type { GoldLog } from '@/types'
+import { errorMessage } from '@/utils/api'
 import { formatDateLong, paginateLocally } from '@/utils/format'
 import { exportCsv } from '@/utils/csv'
 import { CorrectStashModal } from './summary/CorrectStashModal'
@@ -75,18 +77,18 @@ export default function RucoySummary() {
     return out
   }, [paginatedEntries])
 
-  const [cancelTarget, setCancelTarget] = useState<number | null>(null)
+  const [cancelTarget, setCancelTarget] = useState<GoldLog | null>(null)
   const [cancelling, setCancelling]     = useState(false)
 
   const handleCancelLog = async () => {
     if (!cancelTarget) return
     setCancelling(true)
     try {
-      await cancelLog(cancelTarget)
+      await cancelLog(cancelTarget.id)
       await refetchGolds()
-      toast.success('Entry cancelled.')
-    } catch {
-      toast.error('Failed to cancel entry.')
+      toast.success(cancelTarget.undo?.kind === 'trade_sale' ? 'Sale undone: the gold is back on its trade and in your stash.' : 'Entry undone.')
+    } catch (err) {
+      toast.error(errorMessage(err, 'Failed to undo the entry.'))
     } finally {
       setCancelling(false)
       setCancelTarget(null)
@@ -246,9 +248,11 @@ export default function RucoySummary() {
         onClose={() => setCancelTarget(null)}
         onConfirm={handleCancelLog}
         loading={cancelling}
-        title="Cancel Entry"
-        message="Cancel this entry? Its gold is reversed in your stash (put back for a sale, taken out for an add), and the line stays in the history marked as cancelled."
-        confirmLabel="Cancel Entry"
+        title={cancelTarget?.undo?.kind === 'trade_sale' ? 'Undo Sale' : 'Undo Entry'}
+        message={cancelTarget?.undo?.kind === 'trade_sale'
+          ? `Undo this sale? The ${Number(cancelTarget.undo.gold).toLocaleString()} G goes back onto its gold trade exactly as before (same rates, ₱ and progress), back into your stash, and out of this month's sold profit.`
+          : "Undo this entry? Its gold is reversed in your stash (put back for a sale, taken out for an add). The line stays in the history marked as undone."}
+        confirmLabel="Undo"
       />
     </div>
   )

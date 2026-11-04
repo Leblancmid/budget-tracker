@@ -49,7 +49,7 @@ abstract class ActivityLogObserver
         return $model->amount;
     }
 
-    private function attributes(Model $model): array
+    protected function attributes(Model $model): array
     {
         return [
             'user_id'       => auth()->id(),

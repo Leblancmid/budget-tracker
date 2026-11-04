@@ -20,9 +20,17 @@ export function blendedPhpPerMillion(paid: { gold: number; php: number }): numbe
   return paid.gold > 0 ? paid.php / (paid.gold / 1_000_000) : null
 }
 
-/** ₱ that taking `gold` out of a trade carries over: its cost ₱ by the share of cost gold taken. */
-export function tradeShareCostPhp(trade: { cost_gold: number | null; cost_php: number | null }, gold: number): number | null {
-  if (trade.cost_php == null || !trade.cost_gold) return null
+/**
+ * ₱ that taking `gold` out of a trade carries over: its cost ₱ by the share of cost gold taken.
+ * Gold bought with ₱ (no cost gold): by the share of the price gold taken, like the server.
+ */
+export function tradeShareCostPhp(trade: { price_gold?: number | null; cost_gold: number | null; cost_php: number | null }, gold: number): number | null {
+  if (trade.cost_php == null) return null
+  if (!trade.cost_gold) {
+    const price = trade.price_gold ?? 0
+    if (trade.cost_php === 0) return 0 // free gold (e.g. middleman fees)
+    return price > 0 ? round2(trade.cost_php * Math.min(gold / price, 1)) : null
+  }
   const taken = Math.min(gold, trade.cost_gold)
   return round2(trade.cost_php * (taken / trade.cost_gold))
 }

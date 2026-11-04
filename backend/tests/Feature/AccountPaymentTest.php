@@ -131,6 +131,19 @@ class AccountPaymentTest extends TestCase
         $this->assertSame(0, AccountPayment::count());
     }
 
+    public function test_only_received_gold_can_pay(): void
+    {
+        // A buyer owes 501KK but has only sent 80K so far
+        $owed = $this->goldTrade(501_000_000, 0.17, 58);
+        $owed->update(['price_gold_received' => 80_000]);
+        $account = $this->account();
+
+        $this->payWithGold($account, $owed, 100_000)
+            ->assertStatus(422)->assertJsonValidationErrors(['gold']);
+        $this->assertStringContainsString('80,000 G', $this->payWithGold($account, $owed, 100_000)->json('errors.gold.0'));
+        $this->payWithGold($account, $owed, 80_000)->assertCreated();
+    }
+
     public function test_partially_used_trade_gets_its_gold_back(): void
     {
         $b = $this->goldTrade(600_000_000, 0.1777, 62.53);

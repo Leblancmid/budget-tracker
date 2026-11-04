@@ -59,8 +59,11 @@ class StoreAccountPaymentRequest extends FormRequest
                 $trade = BusinessTransaction::find($this->input('source_trade_id'));
                 if (! $trade || $trade->type !== 'gold' || $trade->archived_at !== null) {
                     $v->errors()->add('source_trade_id', 'Pick a pending gold trade.');
-                } elseif ($gold > (float) $trade->price_gold) {
-                    $v->errors()->add('gold', 'That trade only has ' . number_format((float) $trade->price_gold) . ' G.');
+                } elseif ($gold > $trade->usableGold()) {
+                    // Only gold already received can pay: a buyer's unpaid gold isn't yours yet
+                    $v->errors()->add('gold', $trade->usableGold() < (float) $trade->price_gold
+                        ? 'Only ' . number_format($trade->usableGold()) . ' G of that trade has been received so far.'
+                        : 'That trade only has ' . number_format((float) $trade->price_gold) . ' G.');
                 } elseif ($trade->cost_php === null) {
                     $v->errors()->add('source_trade_id', 'This trade has no cost rates yet, so its cost in ₱ is unknown. Add them in Edit Gold first.');
                 }

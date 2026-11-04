@@ -12,6 +12,8 @@ import { toast } from '@/lib/toast'
 import { flattenApiErrors, errorMessage } from '@/utils/api'
 import { blendedPhpPerMillion, tradeShareCostPhp } from '@/utils/accountCost'
 import { formatWithCommas, handleAmountInput, todayManila } from '@/utils/format'
+import { usableGold } from '@/utils/goldTrade'
+import { TradePicker } from './TradePicker'
 import type { AccountPayment, AccountPaymentMethod, BalanceAccountConfig, BusinessTransaction, RucoyAccount } from '@/types'
 
 const php = (n: number) => `₱${n.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -74,12 +76,13 @@ export function AccountPaymentsModal({ open, onClose, account, goldTrades, walle
     [goldTrades],
   )
   const trade = trades.find((t) => String(t.id) === tradeId) ?? null
-  const tradeGold = trade ? Number(trade.price_gold) : 0
+  // Only gold already received can pay (a buyer may still owe part of a trade)
+  const tradeGold = trade ? usableGold(trade) : 0
   const walletCfg = wallets.find((w) => w.code === wallet) ?? null
   const goldNum = gold !== '' ? Number(gold) : null
 
   const previewPhp = method === 'gold_trade'
-    ? (trade && goldNum ? tradeShareCostPhp({ cost_gold: Number(trade.cost_gold), cost_php: trade.cost_php != null ? Number(trade.cost_php) : null }, goldNum) : null)
+    ? (trade && goldNum ? tradeShareCostPhp({ price_gold: Number(trade.price_gold), cost_gold: Number(trade.cost_gold), cost_php: trade.cost_php != null ? Number(trade.cost_php) : null }, goldNum) : null)
     : (cash !== '' && walletCfg ? Number(cash) * (walletCfg.currency === 'PHP' ? 1 : Number(phpRate) || 0) : null)
 
   const maxGold = method === 'gold_trade' && trade
@@ -92,7 +95,9 @@ export function AccountPaymentsModal({ open, onClose, account, goldTrades, walle
     else if (left != null && goldNum > left) e.gold = `Only ${g(left)} is left to pay.`
     if (method === 'gold_trade') {
       if (!trade) e.source_trade_id = 'Pick a gold trade.'
-      else if (goldNum && goldNum > tradeGold) e.gold = `That trade only has ${g(tradeGold)}.`
+      else if (goldNum && goldNum > tradeGold) e.gold = tradeGold < Number(trade.price_gold)
+        ? `Only ${g(tradeGold)} of that trade has been received so far.`
+        : `That trade only has ${g(tradeGold)}.`
       else if (trade.cost_php == null) e.source_trade_id = 'This trade has no cost rates yet. Add them in Edit Gold first.'
     } else {
       if (!walletCfg) e.balance_account = 'Pick a wallet.'
@@ -151,7 +156,9 @@ export function AccountPaymentsModal({ open, onClose, account, goldTrades, walle
 
   return (
     <>
-      <Modal open={open} onClose={onClose} title={`Payments · ${account?.description || account?.email || ''}`} size="2xl">
+      <Modal open={open} onClose={onClose} title={`Payments · ${account?.description || account?.email || ''}`} size={left !== 0 ? '6xl' : '2xl'}>
+        {/* Wide screens: what's paid on the left, adding a payment on the right (no scrolling) */}
+        <div className={left !== 0 ? 'grid grid-cols-1 gap-5 lg:grid-cols-[2fr_3fr]' : 'flex flex-col gap-5'}>
         <div className="flex flex-col gap-5">
 
           {/* Paid so far */}
@@ -209,6 +216,8 @@ export function AccountPaymentsModal({ open, onClose, account, goldTrades, walle
             </p>
           )}
 
+        </div>
+
           {/* Add a payment */}
           {left !== 0 && (
             <div className="flex flex-col gap-3 rounded-xl border border-gray-200 p-4 dark:border-gray-700">
@@ -224,16 +233,11 @@ export function AccountPaymentsModal({ open, onClose, account, goldTrades, walle
 
               {method === 'gold_trade' ? (
                 trades.length ? (
-                  <Select
-                    label="Gold trade"
-                    value={tradeId}
-                    onChange={(e) => setTradeId(e.target.value)}
-                    placeholder="Pick the gold you paid with"
+                  <TradePicker
+                    trades={trades}
+                    value={trade?.id ?? null}
+                    onChange={(id) => { setTradeId(String(id)); setErrors((e) => ({ ...e, source_trade_id: undefined, gold: undefined })) }}
                     error={errors.source_trade_id}
-                    options={trades.map((t) => ({
-                      value: t.id,
-                      label: `${t.description || 'Gold trade'} · ${g(Number(t.price_gold))}${t.cost_rate ? ` @ ${Number(t.cost_rate)} × ${Number(t.cost_php_rate ?? t.php_rate)}` : ' · no cost rates'}`,
-                    }))}
                   />
                 ) : (
                   <p className="text-sm text-gray-500 dark:text-gray-400">No pending gold trades. Add the gold you bought in Sales → Add Transaction → Gold first.</p>

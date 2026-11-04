@@ -27,6 +27,11 @@ describe('tradeShareCostPhp', () => {
     expect(tradeShareCostPhp({ cost_gold: 600_000_000, cost_php: 6666.95 }, 460_000_000)).toBe(5111.33)
     expect(tradeShareCostPhp({ cost_gold: 600_000_000, cost_php: null }, 1)).toBeNull()
   })
+
+  it('shares a ₱-paid cost by the price gold taken', () => {
+    expect(tradeShareCostPhp({ price_gold: 540_000_000, cost_gold: 0, cost_php: 5830 }, 270_000_000)).toBe(2915)
+    expect(tradeShareCostPhp({ price_gold: 24_000_000, cost_gold: 0, cost_php: 0 }, 1_000_000)).toBe(0)
+  })
 })
 
 describe('blendedPhpPerMillion', () => {

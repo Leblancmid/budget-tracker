@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { BusinessTransaction } from '@/types'
-import { costPaidInPhp, goldTopUp, goldWalletCost } from './goldTrade'
+import { costPaidInPhp, goldTopUp, goldWalletCost, usableGold } from './goldTrade'
 
 const trade = (overrides: Partial<BusinessTransaction> = {}) => ({
   type: 'gold',
@@ -65,5 +65,14 @@ describe('costPaidInPhp', () => {
   it('tops up a peso-paid trade by the extra pesos', () => {
     const tx = trade({ price_gold: '540000000', cost_gold: '0', cost_php: '5830.00' })
     expect(goldTopUp(tx, 100_000_000, 0, 1000).costPhp).toBe(6830)
+  })
+})
+
+describe('usableGold', () => {
+  it('is only the gold received when a buyer is still paying', () => {
+    expect(usableGold(trade({ price_gold: '501000000', price_gold_received: '80000' }))).toBe(80_000)
+    expect(usableGold(trade({ price_gold: '540000000', price_gold_received: null }))).toBe(540_000_000)
+    expect(usableGold(trade({ price_gold: '100', price_gold_received: '500' }))).toBe(100)
+    expect(usableGold(trade({ price_gold: '24000000', price_gold_received: '0', system_key: 'middleman_fee' }))).toBe(24_000_000)
   })
 })

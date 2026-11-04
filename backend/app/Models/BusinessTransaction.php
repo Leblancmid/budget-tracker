@@ -44,6 +44,18 @@ class BusinessTransaction extends Model
         return (float) ($this->cost_gold ?? 0) == 0 && (float) ($this->cost_php ?? 0) > 0;
     }
 
+    /**
+     * Gold of this trade actually in hand to pay with: what's been received when that's tracked
+     * (a buyer still paying you in parts), otherwise the whole price gold.
+     */
+    public function usableGold(): float
+    {
+        $price = (float) ($this->price_gold ?? 0);
+
+        // Middleman fees are always already in the stash; that trade doesn't track "received"
+        return $this->price_gold_received !== null && ! $this->isSystem() ? min((float) $this->price_gold_received, $price) : $price;
+    }
+
     /** The gold a wallet payment buys: the cost gold, or the price gold when the cost was paid in ₱. */
     public function boughtGold(): float
     {

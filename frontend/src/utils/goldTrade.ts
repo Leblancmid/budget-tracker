@@ -79,3 +79,13 @@ export function goldWalletCost(
 export function costPaidInPhp(costGold: number | string | null | undefined, costPhp: number | string | null | undefined): boolean {
   return Number(costGold ?? 0) === 0 && Number(costPhp ?? 0) > 0
 }
+
+/**
+ * Gold of a trade actually in hand to pay with: what's been received when that's tracked
+ * (a buyer still paying you in parts), otherwise the whole price gold. Same as the server.
+ */
+export function usableGold(tx: Pick<BusinessTransaction, 'price_gold' | 'price_gold_received' | 'system_key'>): number {
+  const price = Number(tx.price_gold ?? 0)
+  // Middleman fees are always already in the stash; that trade doesn't track "received"
+  return tx.price_gold_received != null && !tx.system_key ? Math.min(Number(tx.price_gold_received), price) : price
+}

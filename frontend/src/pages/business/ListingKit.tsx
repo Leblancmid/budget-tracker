@@ -145,7 +145,7 @@ export default function ListingKit() {
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = `accounts-for-sale-${new Date(nowMs).toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' })}.jpg`
+      link.download = 'Leblanc.jpg'
       link.click()
       URL.revokeObjectURL(url)
     } catch (err) {

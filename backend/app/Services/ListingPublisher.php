@@ -111,6 +111,11 @@ class ListingPublisher
         if (! $this->configured()) {
             throw new RuntimeException('Publishing is off: set LISTING_SITE_PATH in the backend .env to the Leblanc repo folder.');
         }
+        // Get changes pushed from another computer first (e.g. site edits made on your PC),
+        // so this push isn't rejected
+        if ($this->hasUpstream()) {
+            $this->git(['pull', '--rebase', '--autostash'], 120);
+        }
         $built = $this->build();
 
         // Images: copy the current screenshots, remove ones of accounts no longer listed
@@ -153,6 +158,18 @@ class ListingPublisher
         }
 
         return ['count' => count($json), 'changed' => $changed || $staged, 'pushed' => $pushed, 'commit' => $commit];
+    }
+
+    /** The repo tracks a GitHub branch (false for a local-only repo). */
+    private function hasUpstream(): bool
+    {
+        try {
+            $this->git(['rev-parse', '--abbrev-ref', '@{u}']);
+
+            return true;
+        } catch (RuntimeException) {
+            return false;
+        }
     }
 
     /** Local commits not pushed yet (e.g. a push that failed last time). */

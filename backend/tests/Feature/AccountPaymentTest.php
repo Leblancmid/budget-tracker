@@ -158,6 +158,45 @@ class AccountPaymentTest extends TestCase
         $this->assertEquals(600_000_000, $this->stash());
     }
 
+    public function test_cash_paid_outside_balance_is_recorded_without_touching_it(): void
+    {
+        $account = $this->account();
+
+        $id = $this->postJson("/api/v1/rucoy/accounts/{$account->id}/payments", [
+            'method' => 'cash', 'balance_account' => null, 'cash_amount' => 6000, 'gold' => 600_000_000, 'date' => '2026-11-04', 'note' => 'already paid',
+        ])->assertCreated()->assertJsonPath('cost_php', 6000)->assertJsonPath('currency', 'PHP')->json('id');
+
+        $this->assertDatabaseCount('balance_entries', 0);
+        $this->assertDatabaseCount('transactions', 0);
+        $this->assertEquals(6000 + 400_000_000 / 1_000_000 * 0.2 * 60, $this->accountCostPhp($account));
+
+        $this->deleteJson("/api/v1/rucoy/accounts/{$account->id}/payments/{$id}")->assertOk();
+        $this->assertDatabaseCount('account_payments', 0);
+    }
+
+    public function test_already_paid_without_an_amount_uses_the_edit_account_rates(): void
+    {
+        // Paid before payments existed: 1B at the typed 0.2 × 60 = ₱12,000, profit unchanged
+        $account = $this->account();
+        $this->postJson("/api/v1/rucoy/accounts/{$account->id}/payments", [
+            'method' => 'cash', 'balance_account' => null, 'gold' => 1_000_000_000, 'date' => '2026-11-04', 'note' => 'already paid',
+        ])->assertCreated()->assertJsonPath('cost_php', 12000)->assertJsonPath('cash_amount', null);
+
+        $this->assertEquals(12000, $this->accountCostPhp($account));
+        $this->assertDatabaseCount('balance_entries', 0);
+
+        // No rates to value it with: the amount is needed
+        $bare = RucoyAccount::create(['description' => 'Old', 'email' => 'old@example.com', 'cost' => 500_000_000]);
+        $this->postJson("/api/v1/rucoy/accounts/{$bare->id}/payments", [
+            'method' => 'cash', 'balance_account' => null, 'gold' => 500_000_000, 'date' => '2026-11-04',
+        ])->assertStatus(422)->assertJsonValidationErrors(['cash_amount']);
+
+        // A wallet always needs the amount
+        $this->postJson("/api/v1/rucoy/accounts/{$account->id}/payments", [
+            'method' => 'cash', 'balance_account' => 'MAYA', 'gold' => 1, 'date' => '2026-11-04',
+        ])->assertStatus(422);
+    }
+
     public function test_cash_from_a_wallet_is_deducted_and_restored(): void
     {
         $account = $this->account();

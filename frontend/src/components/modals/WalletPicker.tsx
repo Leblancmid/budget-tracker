@@ -7,17 +7,19 @@ import { Amt } from '@/components/ui/Amt'
  * Pick the Balance wallet money comes out of (or goes into), with each wallet's balance,
  * and the chosen one's balance before → after. Used by expenses/income and bought gold.
  */
-export function WalletPicker({ label, accounts, value, onChange, balanceOf = (a) => a.balance ?? 0, changeFor, error }: {
+export function WalletPicker({ label, accounts, value, onChange, balanceOf = (a) => a.balance ?? 0, changeFor, error, noneLabel = 'None' }: {
   label: string
   accounts: BalanceAccountConfig[]
-  /** Selected wallet code; null = none */
-  value: string | null
+  /** Selected wallet code; null = none; undefined = nothing picked yet */
+  value: string | null | undefined
   onChange: (code: string | null) => void
   /** A wallet's balance before this change (e.g. without the record being edited) */
   balanceOf?: (a: BalanceAccountConfig) => number
   /** Signed change to a wallet in its own currency (− = paid out); null = not known yet */
   changeFor: (a: BalanceAccountConfig) => number | null
   error?: string
+  /** Label of the "no wallet" choice */
+  noneLabel?: string
 }) {
   const linked = accounts.find((a) => a.code === value)
   const chip = 'flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors'
@@ -33,11 +35,11 @@ export function WalletPicker({ label, accounts, value, onChange, balanceOf = (a)
         <button
           type="button"
           role="radio"
-          aria-checked={!value}
+          aria-checked={value === null}
           onClick={() => onChange(null)}
-          className={[chip, !value ? 'border-gray-400 bg-gray-100 text-gray-700 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-200' : idle].join(' ')}
+          className={[chip, value === null ? 'border-gray-400 bg-gray-100 text-gray-700 dark:border-gray-500 dark:bg-gray-800 dark:text-gray-200' : idle].join(' ')}
         >
-          <Ban size={12} /> None
+          <Ban size={12} /> {noneLabel}
         </button>
         {accounts.map((a) => {
           const c = colorOf(a.color)

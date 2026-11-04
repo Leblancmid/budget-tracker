@@ -37,6 +37,21 @@ class AccountPaymentService
                     'cost_rate'       => $trade->cost_rate,
                     'cost_php_rate'   => $trade->cost_php_rate ?? $trade->php_rate,
                 ];
+            } elseif (empty($data['balance_account'])) {
+                // Paid outside the app (e.g. already paid before payments existed): Balance untouched.
+                // With an amount it's the ₱ paid; without one it's valued at the Edit Account cost rates.
+                if (isset($data['cash_amount']) && $data['cash_amount'] !== '' && (float) $data['cash_amount'] > 0) {
+                    $cash    = round((float) $data['cash_amount'], 2);
+                    $values += ['cash_amount' => $cash, 'currency' => 'PHP', 'cost_php' => $cash];
+                } else {
+                    [$rate, $phpRate] = AccountCost::typedRates($account);
+                    $values += [
+                        'currency'      => 'PHP',
+                        'cost_rate'     => $rate,
+                        'cost_php_rate' => $phpRate,
+                        'cost_php'      => AccountCost::atTypedRates($account, $gold),
+                    ];
+                }
             } else {
                 $wallet = BalanceAccount::where('code', $data['balance_account'])->firstOrFail();
                 $cash   = round((float) $data['cash_amount'], 2);

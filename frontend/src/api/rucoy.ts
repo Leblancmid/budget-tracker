@@ -134,8 +134,10 @@ export interface AccountPaymentPayload {
   date: string
   note?: string | null
   source_trade_id?: number
-  balance_account?: string
-  cash_amount?: number
+  /** Cash: the wallet it was deducted from; null = paid outside Balance (₱, nothing deducted) */
+  balance_account?: string | null
+  /** null with no wallet = already paid, valued at the Edit Account cost rates */
+  cash_amount?: number | null
   php_rate?: number | null
 }
 

@@ -33,6 +33,27 @@ class AccountCost
     }
 
     /**
+     * The cost rates typed in Edit Account ($ per 1M, ₱ per $), from its pricing transaction.
+     *
+     * @return array{0: ?float, 1: ?float}
+     */
+    public static function typedRates(RucoyAccount $account): array
+    {
+        $tx = BusinessTransaction::where('type', 'account')->where('account_id', $account->id)->first();
+        $phpRate = $tx?->cost_php_rate ?? $tx?->php_rate;
+
+        return [$tx?->cost_rate ? (float) $tx->cost_rate : null, $phpRate ? (float) $phpRate : null];
+    }
+
+    /** ₱ value of $gold at the account's typed cost rates; null without rates. */
+    public static function atTypedRates(RucoyAccount $account, float $gold): ?float
+    {
+        [$rate, $phpRate] = self::typedRates($account);
+
+        return $rate && $phpRate ? round($gold / 1_000_000 * $rate * $phpRate, 2) : null;
+    }
+
+    /**
      * Bring the account's pricing transaction (Sales) in line with its payments: ₱ cost, profit.
      * Creates the transaction if the account has none yet, so the paid cost shows straight away.
      */

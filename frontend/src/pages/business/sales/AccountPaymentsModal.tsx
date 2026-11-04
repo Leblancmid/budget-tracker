@@ -3,7 +3,6 @@ import { Coins, Trash2, Wallet } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { accountPaymentsApi } from '@/api/rucoy'
@@ -14,6 +13,7 @@ import { blendedPhpPerMillion, tradeShareCostPhp } from '@/utils/accountCost'
 import { formatWithCommas, handleAmountInput, todayManila } from '@/utils/format'
 import { usableGold } from '@/utils/goldTrade'
 import { TradePicker } from './TradePicker'
+import { WalletPicker } from '@/components/modals/WalletPicker'
 import type { AccountPayment, AccountPaymentMethod, BalanceAccountConfig, BusinessTransaction, RucoyAccount } from '@/types'
 
 const php = (n: number) => `₱${n.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -22,8 +22,10 @@ const g = (n: number) => `${n.toLocaleString()} G`
 /** Short sentence for what a payment was. */
 function describePayment(p: AccountPayment): string {
   if (p.method === 'cash') {
+    // Already paid, no amount: valued at the Edit Account rates
+    if (p.cash_amount == null) return `Already paid${p.cost_rate ? ` · at ${p.cost_rate} × ${p.cost_php_rate}` : ''}`
     const amount = p.currency === 'PHP' ? php(p.cash_amount ?? 0) : `${p.currency} ${(p.cash_amount ?? 0).toLocaleString()}`
-    return `Cash · ${p.balance_account} ${amount}${p.cost_php_rate ? ` × ${p.cost_php_rate}` : ''}`
+    return `Cash · ${p.balance_account ?? 'paid outside Balance'} ${amount}${p.cost_php_rate ? ` × ${p.cost_php_rate}` : ''}`
   }
   const name = p.taken?.trade?.description || 'Gold trade'
   return `Gold · ${name}${p.cost_rate ? ` @ ${p.cost_rate} × ${p.cost_php_rate}` : ''}`
@@ -45,7 +47,8 @@ export function AccountPaymentsModal({ open, onClose, account, goldTrades, walle
 }) {
   const [method, setMethod]       = useState<AccountPaymentMethod>('gold_trade')
   const [tradeId, setTradeId]     = useState('')
-  const [wallet, setWallet]       = useState('')
+  // Wallet the cash came from; null = paid outside Balance; undefined = not picked yet
+  const [wallet, setWallet]       = useState<string | null | undefined>(undefined)
   const [gold, setGold]           = useState('')
   const [cash, setCash]           = useState('')
   const [phpRate, setPhpRate]     = useState(() => String(readNumber(STORAGE_KEYS.balancePhpRate, 58)))
@@ -61,7 +64,7 @@ export function AccountPaymentsModal({ open, onClose, account, goldTrades, walle
   const current = open ? account?.id ?? null : null
   if (current !== openedFor) {
     setOpenedFor(current)
-    setTradeId(''); setWallet(''); setGold(''); setCash(''); setNote(''); setErrors({}); setDate(todayManila())
+    setTradeId(''); setWallet(undefined); setGold(''); setCash(''); setNote(''); setErrors({}); setDate(todayManila())
   }
 
   const payments = account?.payments ?? []
@@ -81,9 +84,18 @@ export function AccountPaymentsModal({ open, onClose, account, goldTrades, walle
   const walletCfg = wallets.find((w) => w.code === wallet) ?? null
   const goldNum = gold !== '' ? Number(gold) : null
 
+  // Already paid outside the app with no amount: valued at the Edit Account cost rates (like the server)
+  const accountTx = goldTrades.find((t) => t.type === 'account' && t.account_id === account?.id) ?? null
+  const typedRate = accountTx?.cost_rate ? Number(accountTx.cost_rate) : null
+  const typedPhpRate = Number(accountTx?.cost_php_rate ?? accountTx?.php_rate) || null
+  const atTypedRates = goldNum && typedRate && typedPhpRate ? Math.round((goldNum / 1_000_000) * typedRate * typedPhpRate * 100) / 100 : null
+  const noAmount = !(Number(cash) > 0)
+
   const previewPhp = method === 'gold_trade'
     ? (trade && goldNum ? tradeShareCostPhp({ price_gold: Number(trade.price_gold), cost_gold: Number(trade.cost_gold), cost_php: trade.cost_php != null ? Number(trade.cost_php) : null }, goldNum) : null)
-    : (cash !== '' && walletCfg ? Number(cash) * (walletCfg.currency === 'PHP' ? 1 : Number(phpRate) || 0) : null)
+    : wallet === null && noAmount
+    ? atTypedRates
+    : (!noAmount && wallet !== undefined ? Number(cash) * (walletCfg && walletCfg.currency !== 'PHP' ? Number(phpRate) || 0 : 1) : null)
 
   const maxGold = method === 'gold_trade' && trade
     ? (left != null ? Math.min(tradeGold, left) : tradeGold)
@@ -100,8 +112,9 @@ export function AccountPaymentsModal({ open, onClose, account, goldTrades, walle
         : `That trade only has ${g(tradeGold)}.`
       else if (trade.cost_php == null) e.source_trade_id = 'This trade has no cost rates yet. Add them in Edit Gold first.'
     } else {
-      if (!walletCfg) e.balance_account = 'Pick a wallet.'
-      if (!(Number(cash) > 0)) e.cash_amount = 'Enter the amount paid.'
+      if (wallet === undefined) e.balance_account = 'Pick where the money came from.'
+      if (noAmount && wallet !== null) e.cash_amount = 'Enter the amount paid.'
+      else if (noAmount && atTypedRates == null && goldNum) e.cash_amount = 'Enter what you paid, or set the cost rates in Edit Account to use them.'
       if (walletCfg && walletCfg.currency !== 'PHP' && !(Number(phpRate) > 0)) e.php_rate = 'Enter the ₱ rate.'
     }
     if (!date) e.date = 'Pick a date.'
@@ -120,7 +133,7 @@ export function AccountPaymentsModal({ open, onClose, account, goldTrades, walle
         note: note.trim() || null,
         ...(method === 'gold_trade'
           ? { source_trade_id: trade!.id }
-          : { balance_account: wallet, cash_amount: Number(cash), php_rate: walletCfg?.currency === 'PHP' ? null : Number(phpRate) }),
+          : { balance_account: wallet ?? null, cash_amount: noAmount ? null : Number(cash), php_rate: walletCfg && walletCfg.currency !== 'PHP' ? Number(phpRate) : null }),
       })
       toast.success(`Payment added: ${g(goldNum!)}.`)
       setGold(''); setCash(''); setNote(''); setTradeId(''); setErrors({})
@@ -243,28 +256,50 @@ export function AccountPaymentsModal({ open, onClose, account, goldTrades, walle
                   <p className="text-sm text-gray-500 dark:text-gray-400">No pending gold trades. Add the gold you bought in Sales → Add Transaction → Gold first.</p>
                 )
               ) : (
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <Select
-                    label="Wallet"
+                <div className="flex flex-col gap-3">
+                  <WalletPicker
+                    label="Paid from"
+                    accounts={wallets.filter((w) => !w.hidden_at)}
                     value={wallet}
-                    onChange={(e) => setWallet(e.target.value)}
-                    placeholder="Pick a wallet"
+                    onChange={(code) => { setWallet(code); setErrors((x) => ({ ...x, balance_account: undefined })) }}
+                    changeFor={() => (Number(cash) > 0 ? -Number(cash) : null)}
+                    noneLabel="Not from Balance"
                     error={errors.balance_account}
-                    options={wallets.filter((w) => !w.hidden_at).map((w) => ({
-                      value: w.code,
-                      label: `${w.name} (${w.currency})${w.balance != null ? ` · ${w.currency === 'PHP' ? php(w.balance) : `$${w.balance.toLocaleString()}`}` : ''}`,
-                    }))}
                   />
-                  <Input
-                    label={`Amount paid${walletCfg ? ` (${walletCfg.currency})` : ''}`}
-                    inputMode="decimal"
-                    value={formatWithCommas(cash)}
-                    onChange={(e) => handleAmountInput(e.target.value, setCash)}
-                    error={errors.cash_amount}
-                  />
-                  {walletCfg && walletCfg.currency !== 'PHP' && (
-                    <Input label="₱ rate" inputMode="decimal" value={phpRate} onChange={(e) => handleAmountInput(e.target.value, setPhpRate)} error={errors.php_rate} />
+                  {wallet === null && (
+                    <p className="-mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      For money already paid outside the app: nothing is deducted. Don't know the amount? Leave it blank to use the
+                      cost rates in Edit Account{typedRate && typedPhpRate ? ` (${typedRate} × ${typedPhpRate})` : ' (none set yet)'}.
+                    </p>
                   )}
+
+                  {/* Amount, in the wallet's currency; dollars convert at the ₱ rate */}
+                  <div>
+                    <label htmlFor="pay-cash" className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Amount paid</label>
+                    <div className="flex items-stretch gap-2">
+                      <div className={['flex flex-1 items-center gap-1.5 rounded-lg border bg-white px-3 dark:bg-gray-800', errors.cash_amount ? 'border-red-400' : 'border-gray-300 focus-within:ring-2 focus-within:ring-indigo-500 dark:border-gray-600'].join(' ')}>
+                        <span className="text-lg font-bold text-red-500">{walletCfg?.currency === 'USD' ? '$' : '₱'}</span>
+                        <input
+                          id="pay-cash"
+                          type="text"
+                          inputMode="decimal"
+                          value={formatWithCommas(cash)}
+                          onChange={(e) => handleAmountInput(e.target.value, (v) => { setCash(v); setErrors((x) => ({ ...x, cash_amount: undefined })) })}
+                          placeholder={wallet === null ? 'Optional: blank uses Edit Account rates' : '0.00'}
+                          className="w-full bg-transparent py-2 text-lg font-bold text-gray-900 placeholder:text-gray-300 focus:outline-none dark:text-gray-100 dark:placeholder:text-gray-600"
+                        />
+                      </div>
+                      {walletCfg && walletCfg.currency !== 'PHP' && (
+                        <>
+                          <span className="self-center text-sm text-gray-400">×</span>
+                          <div className="w-28">
+                            <Input aria-label="₱ rate" title="₱ per $" inputMode="decimal" value={phpRate} onChange={(e) => handleAmountInput(e.target.value, setPhpRate)} error={errors.php_rate} placeholder="₱ rate" />
+                          </div>
+                        </>
+                      )}
+                    </div>
+                    {errors.cash_amount && <p className="mt-1 text-xs text-red-500">{errors.cash_amount}</p>}
+                  </div>
                 </div>
               )}
 

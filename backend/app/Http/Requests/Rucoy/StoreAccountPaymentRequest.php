@@ -6,6 +6,7 @@ use App\Models\AccountPayment;
 use App\Models\BalanceAccount;
 use App\Models\BusinessTransaction;
 use App\Models\RucoyAccount;
+use App\Services\AccountCost;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -25,8 +26,10 @@ class StoreAccountPaymentRequest extends FormRequest
             'date'            => ['required', 'date_format:Y-m-d'],
             'note'            => ['nullable', 'string', 'max:255'],
             'source_trade_id' => ['required_if:method,gold_trade', 'nullable', 'integer'],
-            'balance_account' => ['required_if:method,cash', 'nullable', 'string', 'max:50'],
-            'cash_amount'     => ['required_if:method,cash', 'nullable', 'numeric', 'min:0.01', 'max:99999999'],
+            // Empty for cash paid outside Balance (in ₱, nothing deducted)
+            'balance_account' => ['nullable', 'string', 'max:50'],
+            // Optional only when paid outside Balance: then the Edit Account cost rates value it
+            'cash_amount'     => ['nullable', 'numeric', 'min:0.01', 'max:99999999'],
             'php_rate'        => ['nullable', 'numeric', 'min:0.0001', 'max:100000'],
         ];
     }
@@ -67,7 +70,15 @@ class StoreAccountPaymentRequest extends FormRequest
                 } elseif ($trade->cost_php === null) {
                     $v->errors()->add('source_trade_id', 'This trade has no cost rates yet, so its cost in ₱ is unknown. Add them in Edit Gold first.');
                 }
+            } elseif (! $this->filled('balance_account')) {
+                // Already paid outside the app with no amount: needs the Edit Account cost rates to value it
+                if (! $this->filled('cash_amount') && AccountCost::atTypedRates($account, $gold) === null) {
+                    $v->errors()->add('cash_amount', 'Enter what you paid, or set the cost rates in Edit Account to use them.');
+                }
             } else {
+                if (! $this->filled('cash_amount')) {
+                    $v->errors()->add('cash_amount', 'Enter the amount paid.');
+                }
                 $wallet = BalanceAccount::where('code', $this->input('balance_account'))->first();
                 if (! $wallet) {
                     $v->errors()->add('balance_account', 'Pick a Balance wallet.');

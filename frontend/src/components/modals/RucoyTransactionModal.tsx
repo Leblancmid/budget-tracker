@@ -502,6 +502,11 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
         {/* Formula rows: G × rate = $ × PHP rate = ₱ */}
         {!isCash && formulaRows.map((row) => {
           const typedPhp = row.key === 'cost' && phpPaid
+          // Account with payments: Pay decides the cost. Cost (G) is fixed; once fully paid the rates aren't used either
+          const payLocked  = kind === 'account' && row.key === 'cost' && !!paid
+          const ratesFixed = payLocked && costGoldNum != null && paid!.gold >= costGoldNum
+          const goldLocked = lockGold || payLocked
+          const lockedCls  = readonlyCls + ' w-full text-gray-700 dark:text-gray-200 cursor-not-allowed'
           return (
           <div key={row.key}>
             {/* Cost: full formula, or the ₱ actually paid */}
@@ -550,16 +555,16 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
                   inputMode="decimal"
                   value={formatWithCommas(row.gold)}
                   onChange={(e) => handleAmountInput(e.target.value, row.onGold)}
-                  readOnly={lockGold}
-                  title={lockGold ? 'Use Add Gold or Sell to change the gold' : undefined}
+                  readOnly={goldLocked}
+                  title={lockGold ? 'Use Add Gold or Sell to change the gold' : payLocked ? 'Fixed by the payments: remove them with Pay to change it' : undefined}
                   placeholder="0"
-                  className={[lockGold ? readonlyCls + ' w-full text-gray-700 dark:text-gray-200 cursor-not-allowed' : inputCls, row.goldError ? 'border-red-400 dark:border-red-500' : ''].join(' ')}
+                  className={[goldLocked ? lockedCls : inputCls, row.goldError ? 'border-red-400 dark:border-red-500' : ''].join(' ')}
                 />
               </div>
               <span className="pb-2 text-gray-400 dark:text-gray-500 text-xs sm:text-sm font-medium shrink-0">×</span>
               <div className="flex-1 min-w-0">
                 <p className="mb-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 truncate">{row.labels[1]}</p>
-                <input type="text" inputMode="decimal" value={row.rate} onChange={(e) => handleAmountInput(e.target.value, row.onRate)} placeholder="0.25" className={inputCls} />
+                <input type="text" inputMode="decimal" value={row.rate} onChange={(e) => handleAmountInput(e.target.value, row.onRate)} placeholder="0.25" readOnly={ratesFixed} title={ratesFixed ? 'Fully paid: the cost comes from the payments' : undefined} className={ratesFixed ? lockedCls : inputCls} />
               </div>
               <span className="pb-2 text-gray-400 dark:text-gray-500 text-xs sm:text-sm font-medium shrink-0">=</span>
               <div className="flex-1 min-w-0">
@@ -569,7 +574,7 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
               <span className="pb-2 text-gray-400 dark:text-gray-500 text-xs sm:text-sm font-medium shrink-0">×</span>
               <div className="flex-1 min-w-0">
                 <p className="mb-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 truncate">{row.labels[3]}</p>
-                <input type="text" inputMode="decimal" value={row.phpRate} onChange={(e) => handleAmountInput(e.target.value, row.onPhpRate)} placeholder="58.5" className={inputCls} />
+                <input type="text" inputMode="decimal" value={row.phpRate} onChange={(e) => handleAmountInput(e.target.value, row.onPhpRate)} placeholder="58.5" readOnly={ratesFixed} title={ratesFixed ? 'Fully paid: the cost comes from the payments' : undefined} className={ratesFixed ? lockedCls : inputCls} />
               </div>
               <span className="pb-2 text-gray-400 dark:text-gray-500 text-xs sm:text-sm font-medium shrink-0">=</span>
               <div className="flex-[1.2] min-w-0">
@@ -598,7 +603,13 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
                 </div>
                 <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
                   {paid
-                    ? <>Cost (₱) is exact: {fmtPHP(paid.php)} paid at each payment's own rate{costGoldNum != null && costGoldNum > paid.gold ? ', plus the unpaid gold at the rates above' : ''}. Add or remove payments with <span className="font-semibold">Pay</span> on the account card.</>
+                    ? <>
+                        Cost (₱) is exact: {fmtPHP(paid.php)} paid at each payment's own rate
+                        {costGoldNum != null && costGoldNum > paid.gold
+                          ? <>, plus the unpaid {(costGoldNum - paid.gold).toLocaleString()} G at the Cost Rate and PHP Rate above (they only value that part)</>
+                          : <> (fully paid, so the rates aren't used)</>}
+                        . Cost (G) is fixed by the payments; add or remove them with <span className="font-semibold">Pay</span> on the account card.
+                      </>
                     : <>Paying in parts or at different rates? Use <span className="font-semibold">Pay</span> on the account card to add each payment.</>}
                 </p>
               </div>

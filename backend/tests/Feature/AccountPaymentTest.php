@@ -251,6 +251,21 @@ class AccountPaymentTest extends TestCase
         $this->postJson("/api/v1/rucoy/accounts/{$account->id}/payments", [])->assertForbidden();
     }
 
+    public function test_account_cost_gold_is_fixed_once_it_has_payments(): void
+    {
+        $account = $this->account();
+        // No payments yet: still editable
+        $this->putJson("/api/v1/rucoy/accounts/{$account->id}", ['cost' => 900_000_000])->assertOk();
+
+        $a = $this->goldTrade(540_000_000, 0.17, 63.4);
+        $this->payWithGold($account, $a, 100_000_000)->assertCreated();
+
+        $this->putJson("/api/v1/rucoy/accounts/{$account->id}", ['cost' => 1_000_000_000])
+            ->assertStatus(422)->assertJsonValidationErrors(['cost']);
+        // Same value and other fields are fine
+        $this->putJson("/api/v1/rucoy/accounts/{$account->id}", ['cost' => 900_000_000, 'description' => 'Renamed'])->assertOk();
+    }
+
     public function test_gold_trade_price_and_cost_are_locked_on_edit(): void
     {
         $trade = $this->goldTrade(540_000_000, 0.17, 63.4);

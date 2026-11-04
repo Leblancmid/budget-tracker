@@ -16,13 +16,23 @@ class UpdateRucoyAccountRequest extends FormRequest
         return true;
     }
 
-    /** An account paid with gold payments can't become a cash deal (remove the payments first). */
+    /**
+     * Once an account has payments, Pay decides its cost: it can't become a cash deal and its
+     * Cost (G), the total the payments fill, is fixed (remove the payments first to change it).
+     * Re-sending the same value is fine.
+     */
     public function after(): array
     {
         return [function (Validator $v) {
             $account = $this->route('rucoyAccount');
-            if ($this->input('deal_type') === 'cash' && $account instanceof RucoyAccount && $account->payments()->exists()) {
+            if (! $account instanceof RucoyAccount || ! $account->payments()->exists()) {
+                return;
+            }
+            if ($this->input('deal_type') === 'cash') {
                 $v->errors()->add('deal_type', 'This account has gold payments. Remove them with Pay before switching it to cash.');
+            }
+            if ($this->has('cost') && (float) $this->input('cost') !== (float) $account->cost) {
+                $v->errors()->add('cost', 'This account has payments, so its Cost (G) is fixed. Remove them with Pay to change it.');
             }
         }];
     }

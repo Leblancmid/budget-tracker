@@ -78,6 +78,8 @@ export default function MasterDashboard() {
 
   const goldStash    = stats?.gold_stash ?? 0
   const accountCostG = stats?.total_price ?? 0
+  // Accounts bought with cash have a ₱ cost instead of a gold one
+  const accountCashPhp = stats?.accounts_cash_cost_php ?? 0
   const kksGold      = stats?.kks_gold ?? 0
   const balPhp       = stats?.balance_php_total ?? 0
   const balUsd       = stats?.balance_usd_total ?? 0
@@ -86,7 +88,7 @@ export default function MasterDashboard() {
     { key: 'php',     label: 'PHP balance',      php: balPhp,                  color: '#8b5cf6', Icon: Landmark },
     { key: 'usd',     label: 'USD balance',      php: balUsd * phpRate,        color: '#0ea5e9', Icon: DollarSign },
     { key: 'gold',    label: 'Gold stash',       php: goldToPhp(goldStash),    color: '#f59e0b', Icon: Coins },
-    { key: 'account', label: 'Listed accounts',  php: goldToPhp(accountCostG), color: '#14b8a6', Icon: User },
+    { key: 'account', label: 'Listed accounts',  php: goldToPhp(accountCostG) + accountCashPhp, color: '#14b8a6', Icon: User },
   ]
   // Same formula as before: gold + account cost + USD accounts→PHP + PHP accounts
   const netWorth = parts.reduce((s, p) => s + p.php, 0)
@@ -125,7 +127,9 @@ export default function MasterDashboard() {
     },
     {
       ...parts[3], to: '/business/transactions', title: 'Listed accounts', sub: `${stats?.account_count ?? 0} accounts, at cost`,
-      main: `${accountCostG.toLocaleString()} G`, secondary: `≈ ${formatCurrency(goldToPhp(accountCostG))} · ${fmtUsd(goldToUsd(accountCostG))}`, tile: 'bg-teal-100 text-teal-600 dark:bg-teal-900/40 dark:text-teal-400',
+      main: `${accountCostG.toLocaleString()} G`, secondary: accountCashPhp > 0
+        ? `≈ ${formatCurrency(goldToPhp(accountCostG))} + ${formatCurrency(accountCashPhp)} paid in cash`
+        : `≈ ${formatCurrency(goldToPhp(accountCostG))} · ${fmtUsd(goldToUsd(accountCostG))}`, tile: 'bg-teal-100 text-teal-600 dark:bg-teal-900/40 dark:text-teal-400',
     },
   ]
 

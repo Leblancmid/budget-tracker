@@ -157,6 +157,8 @@ export interface MasterDashboardStats {
   monthly_profit:    number
   gold_stash:        number
   total_price:       number
+  /** ₱ cost of listed accounts whose cost isn't in gold (bought with cash, cash deals) */
+  accounts_cash_cost_php?: number
   balance_usd_total: number
   balance_php_total: number
   business_profit?: number

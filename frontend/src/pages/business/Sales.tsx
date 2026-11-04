@@ -422,12 +422,14 @@ export default function Sales() {
 
   // Listed (unsold) accounts: G totals, plus ₱ totals for those with rates set
   const totals = useMemo((): ListedTotals => {
-    let price = 0, cost = 0, profit = 0, pricePhp = 0, costPhp = 0, profitPhp = 0
+    let price = 0, cost = 0, profit = 0, pricePhp = 0, costPhp = 0, profitPhp = 0, cashCostPhp = 0
     for (const a of accounts) {
       if (a.price  != null) price  += a.price
       if (a.cost   != null) cost   += a.cost
       if (a.profit != null) profit += a.profit
       const tx = txByAccount.get(a.id)
+      // Bought with cash (no gold cost): its cost is only in ₱
+      if (!a.cost && tx?.cost_php) cashCostPhp += parseFloat(tx.cost_php)
       const p  = txProfitPhp(tx)
       if (tx && p != null) {
         pricePhp  += parseFloat(tx.price_php ?? '0')
@@ -435,7 +437,7 @@ export default function Sales() {
         profitPhp += p
       }
     }
-    return { price, cost, profit, pricePhp, costPhp, profitPhp }
+    return { price, cost, profit, pricePhp, costPhp, profitPhp, cashCostPhp }
   }, [accounts, txByAccount])
 
   return (

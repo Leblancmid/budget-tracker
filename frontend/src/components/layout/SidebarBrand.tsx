@@ -40,7 +40,7 @@ export function SidebarBrand({ collapsed, onNavigate }: { collapsed: boolean; on
           // Same rates the Master → Overview page uses (and saves)
           const { usdRate, phpRate } = savedGoldRates()
           const toPhp = (g: number) => goldToPhp(g, usdRate, phpRate)
-          const net = s.balance_php_total + s.balance_usd_total * phpRate + toPhp(s.gold_stash) + toPhp(s.total_price)
+          const net = s.balance_php_total + s.balance_usd_total * phpRate + toPhp(s.gold_stash) + toPhp(s.total_price) + (s.accounts_cash_cost_php ?? 0)
           if (!cancelled) setHeadline({ label: 'Net worth', value: net, delta: s.monthly_profit, deltaLabel: 'this month', to: '/master' })
         }
       } catch { /* the logo still shows */ }

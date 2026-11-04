@@ -38,6 +38,11 @@ class MasterDashboardController extends Controller
         // Rucoy
         $manualGold = (float) Gold::sum('amount');
         $totalPrice = (float) RucoyAccount::active()->sum('cost');
+        // Listed accounts whose cost isn't in gold (bought with cash, or cash deals): their ₱ cost,
+        // so net worth still counts what they're worth at cost
+        $cashCostPhp = (float) BusinessTransaction::where('type', 'account')
+            ->whereIn('account_id', RucoyAccount::active()->where(fn ($q) => $q->whereNull('cost')->orWhere('cost', 0))->select('id'))
+            ->sum('cost_php');
 
         // Balance — split USD vs PHP accounts
         $usdAccounts = BalanceAccount::codesFor('USD');
@@ -48,6 +53,7 @@ class MasterDashboardController extends Controller
             'monthly_profit'    => $monthlyProfit,
             'gold_stash'        => $manualGold,
             'total_price'       => $totalPrice,
+            'accounts_cash_cost_php' => round($cashCostPhp, 2),
             'balance_usd_total' => $this->balanceOf($usdAccounts),
             'balance_php_total' => $this->balanceOf($phpAccounts),
             // Breakdowns behind the profit figures above

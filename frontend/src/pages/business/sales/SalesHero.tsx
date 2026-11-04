@@ -12,6 +12,8 @@ export interface ListedTotals {
   pricePhp: number
   costPhp: number
   profitPhp: number
+  /** ₱ cost of accounts bought with cash (no gold cost), not in the G totals */
+  cashCostPhp: number
 }
 
 /** Hero banner — left: realized ₱ profit this month · right: listed accounts in G. */
@@ -74,7 +76,10 @@ export function SalesHero({ summary, totals, accountCount }: {
             <HeroStat Icon={DollarSign} label="Total Price" value={fmtGold(totals.price)} valueCls="text-indigo-300"
               sub={<Amt value={formatCurrency(totals.pricePhp)} />} />
             <HeroStat Icon={TrendingDown} label="Total Cost" value={fmtGold(totals.cost)} valueCls="text-slate-200"
-              sub={<Amt value={formatCurrency(totals.costPhp)} />} />
+              sub={<>
+                <Amt value={formatCurrency(totals.costPhp)} />
+                {totals.cashCostPhp > 0 && <> · incl. <Amt value={formatCurrency(totals.cashCostPhp)} /> paid in cash</>}
+              </>} />
           </div>
         </section>
       </div>

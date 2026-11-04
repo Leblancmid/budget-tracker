@@ -73,6 +73,21 @@ class CashDealTest extends TestCase
         $this->assertEquals(4000, (float) $tx->fresh()->profit_php);
     }
 
+    public function test_net_worth_counts_accounts_bought_with_cash_at_their_peso_cost(): void
+    {
+        // Cash deal (₱5,000) and a gold deal paid in ₱ (0 G cost, ₱5,700) count in ₱
+        $this->priceRow($this->cashAccount());
+        $peso = RucoyAccount::create(['description' => 'Lv 583', 'email' => 'p@example.com', 'price' => 700_000_000, 'cost' => 0]);
+        $this->priceRow($peso, ['cost_php' => 5700, 'cost_rate' => 0.19]);
+        // A gold-cost account is already counted in G, not here
+        $gold = RucoyAccount::create(['description' => 'Lv 621', 'email' => 'g@example.com', 'cost' => 1_000_000_000]);
+        $this->priceRow($gold, ['cost_php' => 12000]);
+
+        $this->getJson('/api/v1/master/dashboard')->assertOk()
+            ->assertJsonPath('accounts_cash_cost_php', 10700)
+            ->assertJsonPath('total_price', 1_000_000_000);
+    }
+
     public function test_cash_currency_is_required_and_validated(): void
     {
         $this->postJson('/api/v1/rucoy/accounts', ['description' => 'X', 'email' => 'x@example.com', 'deal_type' => 'cash'])

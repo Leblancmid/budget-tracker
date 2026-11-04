@@ -25,7 +25,7 @@ class ExportDatabase extends Command
         $filename = $database . '_' . now()->format('Y-m-d_H-i-s') . '.sql';
         $filepath = $backupDir . DIRECTORY_SEPARATOR . $filename;
 
-        $mysqldump = env('MYSQLDUMP_PATH', 'mysqldump');
+        $mysqldump = config('database.mysqldump_path');
 
         $passwordFlag = $password ? "-p\"{$password}\"" : '';
         $command = "\"{$mysqldump}\" -h {$host} -P {$port} -u {$username} {$passwordFlag} --single-transaction --routines {$database}";

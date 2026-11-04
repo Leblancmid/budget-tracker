@@ -19,6 +19,10 @@ return [
 
     'default' => env('DB_CONNECTION', 'sqlite'),
 
+    // mysqldump used by `php artisan db:export` (read here, not with env() in the command,
+    // because env() returns null once `php artisan optimize` has cached the config)
+    'mysqldump_path' => env('MYSQLDUMP_PATH', 'mysqldump'),
+
     /*
     |--------------------------------------------------------------------------
     | Database Connections

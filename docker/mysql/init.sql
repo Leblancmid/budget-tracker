@@ -1,2 +1,0 @@
-CREATE DATABASE IF NOT EXISTS `budget_tracker`;
-CREATE DATABASE IF NOT EXISTS `budget_tracker_db`;

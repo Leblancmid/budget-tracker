@@ -26,7 +26,7 @@ class StoreAccountPaymentRequest extends FormRequest
             'date'            => ['required', 'date_format:Y-m-d'],
             'note'            => ['nullable', 'string', 'max:255'],
             'source_trade_id' => ['required_if:method,gold_trade', 'nullable', 'integer'],
-            // Empty for cash paid outside Balance (in ₱, nothing deducted)
+            // Empty for cash paid outside Balance (in ₱, nothing deducts)
             'balance_account' => ['nullable', 'string', 'max:50'],
             // Optional only when paid outside Balance: then the Edit Account cost rates value it
             'cash_amount'     => ['nullable', 'numeric', 'min:0.01', 'max:99999999'],

@@ -12,3 +12,6 @@ desktop.ini
 
 # Database dumps (contain real data; backups go to backend/storage/app/backups)
 /*.sql
+
+# Last commit deploy.ps1 deployed on this machine
+/.deployed-commit

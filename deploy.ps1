@@ -74,7 +74,19 @@ Write-Host "Repo: $Root"
 Write-Host "PHP:  $Php"
 
 # -- 1. git pull --------------------------------------------------------------------
-$before = (git -C $Root rev-parse HEAD).Trim()
+# Compare against the commit this script last deployed (not just what this pull fetched),
+# so a manual `git pull` beforehand can't make it skip a needed build or install.
+$deployedFile = Join-Path $Root '.deployed-commit'
+$head = (git -C $Root rev-parse HEAD).Trim()
+$before = $head
+if (Test-Path $deployedFile) {
+    $recorded = (Get-Content $deployedFile -Raw).Trim()
+    git -C $Root cat-file -e "$recorded^{commit}" 2>$null
+    if ($LASTEXITCODE -eq 0) { $before = $recorded }
+} elseif (-not $Full) {
+    Write-Host "No record of a previous deploy: installing and building everything this time." -ForegroundColor Yellow
+    $Full = $true
+}
 if (-not $SkipPull) {
     Step 'Getting the latest code'
     $local = git -C $Root status --porcelain --untracked-files=no
@@ -86,8 +98,8 @@ if (-not $SkipPull) {
 }
 $after = (git -C $Root rev-parse HEAD).Trim()
 
-if ($before -eq $after -and -not $Full -and -not $SkipPull) {
-    Write-Host 'Already up to date: no new commits.' -ForegroundColor Yellow
+if ($before -eq $after -and -not $Full) {
+    Write-Host 'Nothing new since the last deploy.' -ForegroundColor Yellow
 }
 $changed = if ($before -ne $after) { @(git -C $Root diff --name-only $before $after) } else { @() }
 $changedUnder = { param([string]$Pattern) [bool]($changed | Where-Object { $_ -like $Pattern }) }
@@ -146,6 +158,9 @@ if ($needBuild) {
 # -- 5. Migrations, storage link, caches, checks ------------------------------------
 Step 'Migrations, caches and checks (after-deploy.ps1)'
 & (Join-Path $Backend 'deploy\windows\after-deploy.ps1') -Php $Php
+
+# Only reached when every step succeeded, so a failed deploy is retried in full next time.
+Set-Content -Path $deployedFile -Value $after -Encoding ascii
 
 $short = $after.Substring(0, 7)
 Write-Host "`nDeployed $short. Open the app and check it works." -ForegroundColor Green

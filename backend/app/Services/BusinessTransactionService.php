@@ -65,7 +65,7 @@ class BusinessTransactionService
             // Deleting a pending trade undoes it, so the wallets it was paid from get the money back.
             // A sold trade is history: its payments stay in Balance.
             if ($tx->archived_at === null) {
-                $tx->walletEntries()->delete();
+                $tx->walletEntries()->get()->each(fn (BalanceEntry $e) => WalletSpend::undo($e));
             }
             $tx->delete();
         });
@@ -331,13 +331,14 @@ class BusinessTransactionService
             throw new \LogicException('This gold trade has no cost rates to pay from a wallet.');
         }
 
-        return $tx->walletEntries()->create([
-            'account'     => $wallet->code,
-            'type'        => 'sell', // deducts from the wallet
-            'amount'      => $amount,
-            'date'        => $date,
-            'description' => 'Bought ' . number_format($gold) . ' G: ' . ($note !== '' ? $note : ($tx->description ?: 'Gold trade')),
-        ]);
+        // Peso wallets also show as a Business expense in Daily Expenses
+        return WalletSpend::record(
+            $wallet,
+            $amount,
+            $date,
+            'Bought ' . number_format($gold) . ' G: ' . ($note !== '' ? $note : ($tx->description ?: 'Gold trade')),
+            ['business_transaction_id' => $tx->id],
+        );
     }
 
     private function refreshProfit(BusinessTransaction $tx): void

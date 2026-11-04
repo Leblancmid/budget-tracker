@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\BalanceEntry;
 use App\Models\BusinessTransaction;
+use App\Models\Category;
+use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -175,5 +177,30 @@ class GoldWalletPaymentTest extends TestCase
         $gold = $this->buy()->json('id');
         $this->postJson("/api/v1/business/transactions/{$gold}/add-gold", ['cost_php' => 5])
             ->assertStatus(422)->assertJsonValidationErrors(['cost_php']);
+    }
+
+    public function test_peso_wallet_payments_show_as_business_expenses_in_daily(): void
+    {
+        $id = $this->buy(['balance_account' => 'MARIBANK'])->json('id');
+
+        $daily = Transaction::with('category')->sole();
+        $this->assertSame('business', $daily->scope);
+        $this->assertSame('expense', $daily->type);
+        $this->assertEquals(5820.12, (float) $daily->amount);
+        $this->assertSame('Rucoy', $daily->category->name);
+        // One Balance deduction, owned by the daily expense and linked to the trade
+        $this->assertEquals(-5820.12, $this->balance('MARIBANK'));
+        $this->assertSame($daily->id, BalanceEntry::sole()->transaction_id);
+        $this->getJson('/api/v1/transactions?scope=business')->assertOk()->assertJsonPath('data.0.id', $daily->id);
+
+        // A second purchase reuses the category; dollar wallets stay out of Daily (it's in ₱)
+        $this->buy(['balance_account' => 'MARIBANK']);
+        $this->buy(['balance_account' => 'BINANCE']);
+        $this->assertSame(2, Transaction::count());
+        $this->assertSame(1, Category::where('name', 'Rucoy')->count());
+
+        // Deleting the pending trade removes its daily expense too
+        $this->deleteJson("/api/v1/business/transactions/{$id}")->assertOk();
+        $this->assertSame(1, Transaction::count());
     }
 }

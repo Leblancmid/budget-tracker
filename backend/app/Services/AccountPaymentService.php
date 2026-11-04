@@ -41,13 +41,8 @@ class AccountPaymentService
                 $wallet = BalanceAccount::where('code', $data['balance_account'])->firstOrFail();
                 $cash   = round((float) $data['cash_amount'], 2);
                 $rate   = $wallet->currency === 'PHP' ? 1.0 : (float) $data['php_rate'];
-                $entry  = BalanceEntry::create([
-                    'account'     => $wallet->code,
-                    'type'        => 'sell', // deducts from the wallet
-                    'amount'      => $cash,
-                    'date'        => $data['date'],
-                    'description' => $label,
-                ]);
+                // Peso wallets also show as a Business expense in Daily Expenses
+                $entry  = WalletSpend::record($wallet, $cash, $data['date'], $label);
                 $values += [
                     'balance_entry_id' => $entry->id,
                     'balance_account'  => $wallet->code,
@@ -78,7 +73,10 @@ class AccountPaymentService
                 $this->transactions->returnGold($trade, $payment->taken, 'Returned: account payment removed (' . ($account->description ?: $account->email) . ')');
             }
             if ($payment->balance_entry_id) {
-                BalanceEntry::whereKey($payment->balance_entry_id)->delete();
+                $entry = BalanceEntry::find($payment->balance_entry_id);
+                if ($entry) {
+                    WalletSpend::undo($entry);
+                }
             }
 
             $payment->delete();

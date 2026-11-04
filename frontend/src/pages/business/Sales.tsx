@@ -433,11 +433,6 @@ export default function Sales() {
 
       <SalesHero summary={summary} totals={totals} accountCount={accounts.length} />
 
-      {/* ── Needs attention ─────────────────────────────────────────── */}
-      {!loading && (
-        <NeedsAttention counts={statusCounts} goldAwaiting={goldAwaiting} onShowStatus={showStatus} onShowGold={() => setTab('gold')} />
-      )}
-
       {/* ── Tabs + toolbar ──────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex items-center gap-1 rounded-xl bg-gray-100 dark:bg-gray-800 p-1">
@@ -519,6 +514,11 @@ export default function Sales() {
           <Button size="sm" icon={<Plus className="h-3.5 w-3.5" />} onClick={openAdd}>Add Transaction</Button>
         </div>
       </div>
+
+      {/* ── Needs attention (below the tabs so it never pushes them around) ── */}
+      {!loading && (
+        <NeedsAttention counts={statusCounts} goldAwaiting={goldAwaiting} onShowStatus={showStatus} onShowGold={() => setTab('gold')} />
+      )}
 
       {/* ── Accounts tab ────────────────────────────────────────────── */}
       {tab === 'accounts' && (

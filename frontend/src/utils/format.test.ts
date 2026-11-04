@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatDateLong, formatWithCommas, handleAmountInput, paginateLocally } from './format'
+import { formatDateLong, formatShortDate, formatWithCommas, handleAmountInput, paginateLocally } from './format'
 
 describe('handleAmountInput', () => {
   const accepted = (raw: string, allowDecimal = true) => {
@@ -44,6 +44,13 @@ describe('paginateLocally', () => {
   it('clamps an out-of-range page', () => {
     expect(paginateLocally(items, 9, 10).safePage).toBe(3)
     expect(paginateLocally([], 1, 10).meta).toMatchObject({ last_page: 1, from: null, to: null, total: 0 })
+  })
+})
+
+describe('formatShortDate', () => {
+  it('reads Y-m-d as a calendar date', () => {
+    expect(formatShortDate('2026-10-15')).toBe('Oct 15')
+    expect(formatShortDate('2026-01-01')).toBe('Jan 1')
   })
 })
 

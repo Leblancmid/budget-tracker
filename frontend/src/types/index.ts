@@ -3,6 +3,13 @@ export type TransactionType = 'income' | 'expense'
 /** personal = counts in Daily Expenses; business = tracked, but left out of Daily Expenses totals */
 export type TransactionScope = 'personal' | 'business'
 
+export interface CategoryHighest {
+  amount: number
+  description: string | null
+  /** Y-m-d */
+  date: string
+}
+
 export interface Category {
   id: number
   name: string
@@ -14,6 +21,10 @@ export interface Category {
   month_total?: number
   /** Personal all-time total */
   all_time_total?: number
+  /** Largest single Personal transaction in the requested month, if any */
+  month_highest?: CategoryHighest | null
+  /** Largest single Personal transaction ever, if any */
+  all_time_highest?: number | null
   created_at: string
   updated_at: string
 }

@@ -6,7 +6,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { CategoryModal, type CategoryFormData } from '@/components/modals/CategoryModal'
 import { toast } from '@/lib/toast'
 import { exportCsv } from '@/utils/csv'
-import { formatCurrency, MONTHS } from '@/utils/format'
+import { formatCurrency, formatShortDate, MONTHS } from '@/utils/format'
 import { CategoryIcon } from '@/components/ui/CategoryIcon'
 import { Amt } from '@/components/ui/Amt'
 import type { Category, TransactionType } from '@/types'
@@ -60,6 +60,8 @@ export function Categories() {
   const handleExport = () => exportCsv('categories', categories.map((c) => ({
     name: c.name, type: c.type, color: c.color, icon: c.icon, transactions: c.transactions_count ?? 0,
     this_month: c.month_total ?? 0, all_time: c.all_time_total ?? 0,
+    highest_this_month: c.month_highest?.amount ?? '', highest_this_month_description: c.month_highest?.description ?? '',
+    highest_all_time: c.all_time_highest ?? '',
   })))
 
   const byType = useMemo(() => ({
@@ -245,8 +247,12 @@ export function Categories() {
                   <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
                     <div className="h-full rounded-full transition-all duration-700" style={{ width: `${share * 100}%`, backgroundColor: cat.color }} />
                   </div>
+                  <HighestThisMonth category={cat} />
                   <p className="text-[11px] text-gray-400 dark:text-gray-500">
                     All-time <span className="font-semibold text-gray-600 dark:text-gray-300"><Amt value={formatCurrency(cat.all_time_total ?? 0)} /></span>
+                    {cat.all_time_highest != null && (
+                      <> · Highest <span className="font-semibold text-gray-600 dark:text-gray-300"><Amt value={formatCurrency(cat.all_time_highest)} /></span></>
+                    )}
                   </p>
                 </div>
               </div>
@@ -289,5 +295,31 @@ export function Categories() {
         }
       />
     </div>
+  )
+}
+
+/** The largest single transaction this month: "Highest spend ₱515.00 · Jollibee · Oct 15". */
+function HighestThisMonth({ category }: { category: Category }) {
+  const top   = category.month_highest
+  const label = category.type === 'income' ? 'Biggest income' : 'Highest spend'
+
+  if (!top) {
+    return (
+      <p className="rounded-lg bg-gray-50 dark:bg-gray-800/40 px-2.5 py-1.5 text-[11px] text-gray-400 dark:text-gray-500">
+        {label}: nothing this month
+      </p>
+    )
+  }
+
+  return (
+    <p
+      className="flex min-w-0 items-center gap-1.5 rounded-lg bg-gray-50 dark:bg-gray-800/40 px-2.5 py-1.5 text-[11px] text-gray-500 dark:text-gray-400"
+      title={`${label} this month: ${formatCurrency(top.amount)}${top.description ? ` — ${top.description}` : ''} on ${formatShortDate(top.date)}`}
+    >
+      <ArrowUpRight className="h-3 w-3 shrink-0" style={{ color: category.color }} />
+      <span className="shrink-0">{label}</span>
+      <span className="shrink-0 font-semibold text-gray-800 dark:text-gray-100"><Amt value={formatCurrency(top.amount)} /></span>
+      <span className="truncate">{top.description ? `· ${top.description} ` : ''}· {formatShortDate(top.date)}</span>
+    </p>
   )
 }

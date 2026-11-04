@@ -18,6 +18,12 @@ export const formatCurrency = (value: number | string) =>
 export const formatDate = (date: string) =>
   new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(date))
 
+/** "Oct 15" from a Y-m-d date, read as a calendar date (no timezone shift). */
+export function formatShortDate(ymd: string): string {
+  const [year, month, day] = ymd.slice(0, 10).split('-').map(Number)
+  return new Date(year, month - 1, day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
 export function paginateLocally<T>(items: T[], page: number, perPage: number) {
   const totalPages = Math.max(1, Math.ceil(items.length / perPage))
   const safePage   = Math.min(Math.max(1, page), totalPages)

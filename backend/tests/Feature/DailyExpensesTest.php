@@ -70,6 +70,26 @@ class DailyExpensesTest extends TestCase
         $this->deleteJson("/api/v1/categories/{$id}")->assertStatus(422);
     }
 
+    public function test_categories_report_their_highest_spend(): void
+    {
+        $food  = $this->category('expense');
+        $empty = Category::create(['user_id' => $this->user->id, 'name' => 'Empty', 'type' => 'expense']);
+        $tx = fn (array $a) => Transaction::create(['user_id' => $this->user->id, 'category_id' => $food->id, 'type' => 'expense', ...$a]);
+
+        $tx(['amount' => 120, 'description' => 'Coffee', 'date' => '2026-10-02']);
+        $tx(['amount' => 515, 'description' => 'Jollibee', 'date' => '2026-10-15']);
+        $tx(['amount' => 9000, 'description' => 'Office party', 'date' => '2026-10-20', 'scope' => 'business']); // not Daily Expenses
+        $tx(['amount' => 2000, 'description' => 'Birthday dinner', 'date' => '2026-09-30']);                    // another month
+        Transaction::create(['user_id' => User::factory()->create()->id, 'category_id' => $food->id, 'type' => 'expense', 'amount' => 7777, 'date' => '2026-10-10']);
+
+        $categories = collect($this->getJson('/api/v1/categories?month=10&year=2026')->assertOk()->json())->keyBy('id');
+
+        $this->assertEquals(['amount' => 515, 'description' => 'Jollibee', 'date' => '2026-10-15'], $categories[$food->id]['month_highest']);
+        $this->assertEquals(2000, $categories[$food->id]['all_time_highest']);
+        $this->assertNull($categories[$empty->id]['month_highest']);
+        $this->assertNull($categories[$empty->id]['all_time_highest']);
+    }
+
     public function test_transaction_keeps_its_balance_entry_in_sync(): void
     {
         $this->gcash();

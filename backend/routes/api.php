@@ -70,6 +70,7 @@ Route::prefix('v1')->group(function () {
                 // Accounts for sale → the Leblanc website (git push → Vercel)
                 Route::get('listing/publish', [ListingPublishController::class, 'preview'])->name('listing.preview');
                 Route::post('listing/publish', [ListingPublishController::class, 'publish'])->middleware('throttle:6,1')->name('listing.publish');
+                Route::get('website-stats', [ListingPublishController::class, 'stats'])->name('website-stats');
                 Route::apiResource('transactions', BusinessTransactionController::class)
                     ->except(['show'])
                     ->parameters(['transactions' => 'businessTransaction']);

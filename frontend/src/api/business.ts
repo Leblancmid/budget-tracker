@@ -21,7 +21,31 @@ export interface ListingPublishPreview {
 /** Accounts for sale → the Leblanc website (commit + push; Vercel redeploys) */
 export const listingPublishApi = {
   preview: () => api.get<ListingPublishPreview>('/business/listing/publish').then((r) => r.data),
-  publish: () => api.post<{ count: number; changed: boolean; pushed: boolean; commit: string | null }>('/business/listing/publish').then((r) => r.data),
+  publish: () => api.post<{ count: number; changed: boolean; pushed: boolean; commit: string | null; alerted: number | null }>('/business/listing/publish').then((r) => r.data),
+}
+
+export interface WebsiteStats {
+  /** LISTING_SITE_TOKEN is set */
+  configured: boolean
+  online: number
+  online_pages: { path: string | null; n: number }[]
+  today: { visitors: number; pageviews: number }
+  last7: { visitors: number; pageviews: number }
+  last30: { visitors: number; pageviews: number }
+  all_time: { unique_visitors: number; pageviews: number }
+  daily: { day: string; visitors: number; pageviews: number }[]
+  listing_views: { listing_id: string; account_id: number | null; name: string; sold: boolean | null; total: number; last7: number }[]
+  alerts: { id: number; name: string; method: 'discord' | 'whatsapp'; contact: string; category: string | null; min_level: number; max_level: number | null; created_at: number; expires_at: number }[]
+}
+
+/** Visitors of the Leblanc website (online now, visits, views per listing, "Notify me" requests) */
+export const websiteStatsApi = {
+  // "Not configured" answers with just { configured: false }: fill in empty numbers
+  get: (): Promise<WebsiteStats> => api.get<Partial<WebsiteStats> & { configured: boolean }>('/business/website-stats').then((r) => ({
+    online: 0, online_pages: [], today: { visitors: 0, pageviews: 0 }, last7: { visitors: 0, pageviews: 0 },
+    last30: { visitors: 0, pageviews: 0 }, all_time: { unique_visitors: 0, pageviews: 0 }, daily: [], listing_views: [], alerts: [],
+    ...r.data,
+  })),
 }
 
 /** Rule-based insights from your own numbers */

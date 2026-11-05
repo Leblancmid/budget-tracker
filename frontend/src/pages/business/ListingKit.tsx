@@ -19,6 +19,7 @@ import {
 import { accessoriesFor } from '@/utils/accessories'
 import { AccountPickRow } from './listing/AccountPickRow'
 import { PublishToWebsite } from './listing/PublishToWebsite'
+import { WebsiteStatsCard } from './listing/WebsiteStatsCard'
 import { canvasToBlob, drawListing, pngUnder, type ListingTile } from './listing/drawListing'
 
 interface KitSettings {
@@ -285,6 +286,7 @@ export default function ListingKit() {
             </Card>
 
             <PublishToWebsite />
+            <WebsiteStatsCard />
 
             {avgDaysToSell && (
               <Card className="flex items-center gap-3 p-4">

@@ -27,6 +27,8 @@ export function PublishToWebsite() {
       // Pushed counts even when nothing new was written (e.g. finishing a push that failed before)
       if (!r.changed && !r.pushed) toast.success('The website is already up to date.')
       else if (r.pushed) toast.success(`Published ${r.count} listing${r.count === 1 ? '' : 's'}. The website updates in about a minute.`)
+      // Buyers who asked to be notified about one of these: the list is in #inquiries
+      if (r.alerted) toast.success(`${r.alerted} buyer request${r.alerted === 1 ? '' : 's'} matched. See #inquiries for who to message.`)
       else toast.success(`Saved ${r.count} listings to the website repo. Push it to go live.`)
       setConfirming(false)
       await refetch()

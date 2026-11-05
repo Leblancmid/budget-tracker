@@ -104,7 +104,7 @@ class ListingPublisher
     /**
      * Write, commit and push.
      *
-     * @return array{count: int, changed: bool, pushed: bool, commit: ?string}
+     * @return array{count: int, changed: bool, pushed: bool, commit: ?string, alerted: ?int}
      */
     public function publish(): array
     {
@@ -157,7 +157,10 @@ class ListingPublisher
             $pushed = true;
         }
 
-        return ['count' => count($json), 'changed' => $changed || $staged, 'pushed' => $pushed, 'commit' => $commit];
+        // Buyers who asked to be notified: the website posts the matches to Discord (never blocks the publish)
+        $alerted = WebsiteStats::dispatchAlerts($json);
+
+        return ['count' => count($json), 'changed' => $changed || $staged, 'pushed' => $pushed, 'commit' => $commit, 'alerted' => $alerted];
     }
 
     /** The repo tracks a GitHub branch (false for a local-only repo). */

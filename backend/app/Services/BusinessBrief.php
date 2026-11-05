@@ -154,8 +154,25 @@ class BusinessBrief
             ->map(fn ($x) => self::insight('slow_listing:' . $x['a']->id, 'warn',
                 ($x['a']->description ?: 'An account') . ' has been listed ' . $x['days'] . ' days',
                 ($usual !== null ? sprintf('You usually sell in %.0f days. ', $usual) : '')
-                    . 'Consider a lower price, a fresh screenshot, or posting it again.', '/business/transactions'))
+                    . self::slowAdvice(WebsiteStats::viewsOf($x['a']->id), $x['days']), '/business/transactions'))
             ->values()->all();
+    }
+
+    /**
+     * What to do about a slow listing, using its website views when known: plenty of views but
+     * no sale usually means the price; few views means people aren't seeing it.
+     */
+    private static function slowAdvice(?int $views, int $days): string
+    {
+        if ($views === null) {
+            return 'Consider a lower price, a fresh screenshot, or posting it again.';
+        }
+        $perWeek = $views / max(1, $days / 7);
+        if ($views >= 10 && $perWeek >= 3) {
+            return "Viewed {$views} times on the website but not sold: the price is probably the problem.";
+        }
+
+        return "Only {$views} website view" . ($views === 1 ? '' : 's') . ': post it again or share the link more.';
     }
 
     /** Accounts whose payment date has passed and aren't fully paid. */

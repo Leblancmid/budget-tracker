@@ -33,6 +33,18 @@ class ListingPublishController extends Controller
         }
     }
 
+    /** Remove a buyer's "Notify me" request (bought already, changed their mind, spam). */
+    public function deleteAlert(int $alert): JsonResponse
+    {
+        try {
+            WebsiteStats::deleteAlert($alert);
+        } catch (RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 502);
+        }
+
+        return response()->json(['message' => 'Request removed.']);
+    }
+
     public function publish(ListingPublisher $publisher): JsonResponse
     {
         try {

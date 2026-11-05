@@ -46,6 +46,8 @@ export const websiteStatsApi = {
     last30: { visitors: 0, pageviews: 0 }, all_time: { unique_visitors: 0, pageviews: 0 }, daily: [], listing_views: [], alerts: [],
     ...r.data,
   })),
+  /** Remove a buyer's "Notify me" request */
+  deleteAlert: (id: number) => api.delete<{ message: string }>(`/business/website-alerts/${id}`).then((r) => r.data),
 }
 
 /** Rule-based insights from your own numbers */

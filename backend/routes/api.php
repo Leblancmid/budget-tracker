@@ -71,6 +71,7 @@ Route::prefix('v1')->group(function () {
                 Route::get('listing/publish', [ListingPublishController::class, 'preview'])->name('listing.preview');
                 Route::post('listing/publish', [ListingPublishController::class, 'publish'])->middleware('throttle:6,1')->name('listing.publish');
                 Route::get('website-stats', [ListingPublishController::class, 'stats'])->name('website-stats');
+                Route::delete('website-alerts/{alert}', [ListingPublishController::class, 'deleteAlert'])->whereNumber('alert')->name('website-alerts.destroy');
                 Route::apiResource('transactions', BusinessTransactionController::class)
                     ->except(['show'])
                     ->parameters(['transactions' => 'businessTransaction']);

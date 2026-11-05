@@ -72,6 +72,24 @@ class WebsiteStatsTest extends TestCase
         $this->assertNull(WebsiteStats::dispatchAlerts([]));
     }
 
+    public function test_a_notify_me_request_can_be_removed(): void
+    {
+        Http::fake([
+            'site.test/api/alerts/7'  => Http::response(['ok' => true]),
+            'site.test/api/alerts/8'  => Http::response(['message' => 'That request no longer exists.'], 404),
+            'site.test/api/alerts/9'  => Http::response(['message' => 'Not allowed.'], 401),
+        ]);
+
+        $this->deleteJson('/api/v1/business/website-alerts/7')->assertOk();
+        Http::assertSent(fn ($r) => $r->method() === 'DELETE' && $r->url() === 'https://site.test/api/alerts/7'
+            && $r->hasHeader('Authorization', 'Bearer ' . self::TOKEN));
+        $this->deleteJson('/api/v1/business/website-alerts/8')->assertOk();      // already gone: fine
+        $this->deleteJson('/api/v1/business/website-alerts/9')->assertStatus(502)->assertJsonPath('message', 'The website answered: Not allowed.');
+
+        Sanctum::actingAs(User::factory()->create(['role' => 'daily_only']));
+        $this->deleteJson('/api/v1/business/website-alerts/7')->assertForbidden();
+    }
+
     public function test_the_brief_uses_views_to_explain_a_slow_listing(): void
     {
         $sold = RucoyAccount::create(['description' => 'Sold one', 'email' => 's@x.com', 'listed_at' => now()->subDays(10)]);

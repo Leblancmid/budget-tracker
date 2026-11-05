@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
-import { BellRing, Eye, RefreshCw, Users } from 'lucide-react'
+import { BellRing, Eye, RefreshCw, Users, X } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { toast } from '@/lib/toast'
+import { errorMessage } from '@/utils/api'
 import { websiteStatsApi, type WebsiteStats } from '@/api/business'
 import { useAsyncData } from '@/hooks/useAsyncData'
 
@@ -14,8 +17,25 @@ const describeAlert = (a: WebsiteStats['alerts'][number]) =>
 
 /** Website visitors: online now, visits, views per account, and "Notify me" requests. */
 export function WebsiteStatsCard() {
-  const { data: stats, loading, error, refetch } = useAsyncData(websiteStatsApi.get, NONE)
+  const { data: stats, setData, loading, error, refetch } = useAsyncData(websiteStatsApi.get, NONE)
   const [showAllViews, setShowAllViews] = useState(false)
+  const [removeTarget, setRemoveTarget] = useState<WebsiteStats['alerts'][number] | null>(null)
+  const [removing, setRemoving]         = useState(false)
+
+  const removeAlert = async () => {
+    if (!removeTarget) return
+    setRemoving(true)
+    try {
+      await websiteStatsApi.deleteAlert(removeTarget.id)
+      setData((s) => (s ? { ...s, alerts: s.alerts.filter((a) => a.id !== removeTarget.id) } : s))
+      toast.success(`Removed ${removeTarget.name}'s request.`)
+      setRemoveTarget(null)
+    } catch (err) {
+      toast.error(errorMessage(err, 'Could not remove the request.'))
+    } finally {
+      setRemoving(false)
+    }
+  }
 
   // Keep "online now" fresh while this page is open and visible
   useEffect(() => {
@@ -140,15 +160,31 @@ export function WebsiteStatsCard() {
         ) : (
           <ul className="flex max-h-40 flex-col divide-y divide-gray-100 overflow-y-auto scrollbar-thin dark:divide-gray-800">
             {stats.alerts.map((a) => (
-              <li key={a.id} className="py-1 text-xs">
-                <span className="font-semibold text-gray-800 dark:text-gray-100">{a.name}</span>
-                <span className="text-gray-500 dark:text-gray-400"> wants {describeAlert(a)} · {a.method === 'whatsapp' ? 'WhatsApp' : 'Discord'} {a.contact}</span>
+              <li key={a.id} className="group flex items-start gap-2 py-1 text-xs">
+                <span className="min-w-0 flex-1">
+                  <span className="font-semibold text-gray-800 dark:text-gray-100">{a.name}</span>
+                  <span className="text-gray-500 dark:text-gray-400"> wants {describeAlert(a)} · {a.method === 'whatsapp' ? 'WhatsApp' : 'Discord'} {a.contact}</span>
+                </span>
+                <button onClick={() => setRemoveTarget(a)} title="Remove this request" aria-label={`Remove ${a.name}'s request`}
+                  className="shrink-0 rounded p-0.5 text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100">
+                  <X size={13} />
+                </button>
               </li>
             ))}
           </ul>
         )}
         <p className="mt-1 text-[11px] text-gray-400">When you publish a match, the list of who to message is posted in #inquiries.</p>
       </div>
+
+      <ConfirmDialog
+        open={!!removeTarget}
+        onClose={() => setRemoveTarget(null)}
+        onConfirm={removeAlert}
+        loading={removing}
+        title="Remove request"
+        confirmLabel="Remove"
+        message={removeTarget ? `Remove ${removeTarget.name}'s request (${describeAlert(removeTarget)})? You won't be told about matches for it anymore.` : ''}
+      />
     </Card>
   )
 }

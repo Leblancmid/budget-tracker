@@ -88,6 +88,25 @@ class WebsiteStats
         return $row ? $row['total'] : 0;
     }
 
+    /** Remove a buyer's "Notify me" request on the website. */
+    public static function deleteAlert(int $id): void
+    {
+        if (! self::configured()) {
+            throw new RuntimeException('Website stats are off: set LISTING_SITE_TOKEN in the backend .env.');
+        }
+        try {
+            $res = Http::withToken((string) config('listing.site_token'))->acceptJson()->timeout(8)
+                ->delete(config('listing.site_url') . '/api/alerts/' . $id);
+        } catch (ConnectionException) {
+            throw new RuntimeException("Couldn't reach the website.");
+        }
+        // Already gone is fine: the goal is that it's not there
+        if (! $res->successful() && $res->status() !== 404) {
+            throw new RuntimeException('The website answered: ' . ($res->json('message') ?? 'error ' . $res->status()));
+        }
+        Cache::forget('website_stats');
+    }
+
     /**
      * After a publish: tell the website what's listed, so it can post "Notify me" matches to
      * Discord. Returns how many requests matched, or null if it couldn't be done.

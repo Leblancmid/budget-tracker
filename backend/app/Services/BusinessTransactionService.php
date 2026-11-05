@@ -47,11 +47,21 @@ class BusinessTransactionService
 
         DB::transaction(function () use ($tx, $data) {
             $wasAccount = $tx->type === 'account';
+            $account    = $wasAccount && $tx->account_id ? RucoyAccount::find($tx->account_id) : null;
             $tx->update($data);
             $this->computePhpValues($tx);
-            // An account converted into a gold trade (To Gold): its gold goes into the stash too,
-            // like gold added with Add Gold
             if ($wasAccount && $tx->type === 'gold') {
+                // Paid with payments at different rates: keep the exact total spent, not Cost (G) × one rate
+                $paid = $account ? AccountCost::forGoldTrade(
+                    $account,
+                    $tx->cost_rate !== null ? (float) $tx->cost_rate : null,
+                    ($tx->cost_php_rate ?? $tx->php_rate) !== null ? (float) ($tx->cost_php_rate ?? $tx->php_rate) : null,
+                ) : null;
+                if ($paid) {
+                    $tx->fill($paid);
+                    $this->computePhpValues($tx);
+                }
+                // Its gold goes into the stash too, like gold added with Add Gold
                 $this->trackConverted($tx);
 
                 return;

@@ -24,6 +24,13 @@ class BackupOffsite extends Command
 
     public function handle(): int
     {
+        // Not set up yet (see docs/BACKUP.md): skip quietly instead of logging an error every day
+        if (! config('backup.r2.account_id')) {
+            $this->info('Off-site backup is not set up (BACKUP_R2_ACCOUNT_ID is empty); skipped.');
+
+            return self::SUCCESS;
+        }
+
         try {
             $password = (string) config('backup.password');
             BackupCrypto::checkPassword($password);

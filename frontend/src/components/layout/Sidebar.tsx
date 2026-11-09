@@ -84,6 +84,7 @@ const SECTIONS = [
       { to: '/business', label: 'Stats', end: true },
       { to: '/business/transactions', label: 'Sales', end: false },
       { to: '/business/listing', label: 'Listing Kit', end: false },
+      { to: '/business/leads', label: 'Leads', end: false },
     ],
   },
   {

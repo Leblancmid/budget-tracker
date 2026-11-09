@@ -20,6 +20,7 @@ import { accessoriesFor } from '@/utils/accessories'
 import { AccountPickRow } from './listing/AccountPickRow'
 import { PublishToWebsite } from './listing/PublishToWebsite'
 import { WebsiteStatsCard } from './listing/WebsiteStatsCard'
+import { GoldRatesCard } from './listing/GoldRatesCard'
 import { canvasToBlob, drawListing, pngUnder, type ListingTile } from './listing/drawListing'
 
 interface KitSettings {
@@ -286,6 +287,7 @@ export default function ListingKit() {
             </Card>
 
             <PublishToWebsite />
+            <GoldRatesCard />
             <WebsiteStatsCard />
 
             {avgDaysToSell && (

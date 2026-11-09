@@ -3,7 +3,10 @@
 namespace App\Http\Controllers\Api\Business;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Business\UpdateGoldRatesRequest;
 use App\Services\ListingPublisher;
+use App\Services\PriceGuide;
+use App\Services\WebsiteContent;
 use App\Services\WebsiteStats;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -31,6 +34,20 @@ class ListingPublishController extends Controller
         } catch (RuntimeException $e) {
             return response()->json(['message' => $e->getMessage()], 502);
         }
+    }
+
+    /** Gold rates for the website, with your recent sell / buy rates as a guide. */
+    public function goldRates(): JsonResponse
+    {
+        return response()->json(['gold' => WebsiteContent::gold(), 'guide' => PriceGuide::gold()]);
+    }
+
+    /** Save the gold rates; they go live on the next "Publish to website". */
+    public function updateGoldRates(UpdateGoldRatesRequest $request): JsonResponse
+    {
+        WebsiteContent::saveGold($request->validated());
+
+        return $this->goldRates();
     }
 
     /** Remove a buyer's "Notify me" request (bought already, changed their mind, spam). */

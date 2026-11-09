@@ -1,0 +1,24 @@
+<?php
+
+return [
+    /*
+    | Off-site backups to Cloudflare R2 (free up to 10 GB). Each database export is compressed
+    | and encrypted with BACKUP_PASSWORD before upload, so Cloudflare can't read it.
+    | Keep BACKUP_PASSWORD somewhere safe off this server (e.g. your phone's password manager):
+    | without it the backups can't be opened.
+    */
+    'r2' => [
+        'account_id' => env('BACKUP_R2_ACCOUNT_ID'),
+        'key'        => env('BACKUP_R2_ACCESS_KEY_ID'),
+        'secret'     => env('BACKUP_R2_SECRET_ACCESS_KEY'),
+        'bucket'     => env('BACKUP_R2_BUCKET', 'budget-backups'),
+    ],
+
+    'password' => env('BACKUP_PASSWORD'),
+
+    // How many backups to keep in R2 (one a day ≈ a month)
+    'keep' => (int) env('BACKUP_KEEP', 30),
+
+    // Folder (prefix) inside the bucket
+    'prefix' => 'budget/',
+];

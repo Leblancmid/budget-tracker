@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Console\Commands\BackupOffsite;
 use App\Models\BalanceAccount;
 use App\Models\BalanceEntry;
 use App\Models\BusinessTransaction;
@@ -9,6 +10,7 @@ use App\Models\Gold;
 use App\Models\RucoyAccount;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * The weekly brief: the last 7 days of the business compared with before, plus the things
@@ -48,6 +50,8 @@ class BusinessBrief
             ->push(self::awaitingPricing())
             ->merge(self::wallets($today))
             ->push(self::stash())
+            ->push(self::offsiteBackup($today))
+            ->push(self::waitingLeads())
             ->filter()->values();
 
         $order = ['bad' => 0, 'warn' => 1, 'good' => 2, 'info' => 3];
@@ -236,6 +240,46 @@ class BusinessBrief
         }
 
         return $out;
+    }
+
+    /** Website leads nobody has answered yet (when the website is connected). */
+    private static function waitingLeads(): ?array
+    {
+        if (! WebsiteStats::configured()) {
+            return null;
+        }
+        try {
+            $waiting = WebsiteStats::fetch()['leads_new'] ?? null;
+        } catch (\RuntimeException) {
+            return null;
+        }
+        $count = (int) ($waiting['count'] ?? 0);
+        if ($count === 0) {
+            return null;
+        }
+        $hours = isset($waiting['oldest']) ? (int) floor((now()->getTimestampMs() - (int) $waiting['oldest']) / 3_600_000) : 0;
+
+        return self::insight('leads', $hours >= 24 ? 'bad' : 'warn',
+            $count . ' website lead' . ($count === 1 ? '' : 's') . ' waiting for a reply',
+            ($hours >= 24 ? "The oldest has waited {$hours} hours. " : '') . 'Buyers and sellers go elsewhere fast: answer them, then mark them in Leads.',
+            '/business/leads');
+    }
+
+    /** Off-site backup (if set up) that hasn't succeeded in 2 days: your records exist only on this PC. */
+    private static function offsiteBackup(CarbonImmutable $today): ?array
+    {
+        if (! config('backup.r2.account_id')) {
+            return null;
+        }
+        $last = Cache::get(BackupOffsite::LAST_SUCCESS);
+        $days = $last ? (int) CarbonImmutable::parse($last)->diffInDays($today->utc()) : null;
+        if ($days !== null && $days < 2) {
+            return null;
+        }
+
+        return self::insight('backup', 'bad',
+            $days === null ? 'Off-site backup has never run' : "Off-site backup last worked {$days} days ago",
+            'Your records are only on this PC until it works again. Check storage/logs/laravel.log for "Off-site backup failed", or run php artisan backup:offsite.');
     }
 
     private static function stash(): ?array

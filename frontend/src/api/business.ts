@@ -50,6 +50,50 @@ export const websiteStatsApi = {
   deleteAlert: (id: number) => api.delete<{ message: string }>(`/business/website-alerts/${id}`).then((r) => r.data),
 }
 
+export type LeadStatus = 'new' | 'contacted' | 'won' | 'lost'
+
+export interface Lead {
+  id: number
+  type: 'account' | 'gold' | 'sell'
+  status: LeadStatus
+  name: string
+  method: 'discord' | 'whatsapp'
+  contact: string
+  listing_id: string | null
+  details: {
+    title?: string
+    message?: string | null
+    amount_kk?: number; payment?: string; currency?: string; per_kk?: number; total?: number
+    level?: number; category?: string; asking?: string | null
+    stats?: Partial<Record<'melee' | 'distance' | 'magic' | 'defense', number>>
+  }
+  created_at: number
+  updated_at: number
+  /** The listed account, if it's an "I want this" */
+  account_name: string | null
+  account_sold: boolean | null
+  /** Price guide for an account offered to you */
+  guide: { price_php: number | null; max_buy_php: number | null; max_buy_gold: number | null; sales: number } | null
+}
+
+/** Leads from the website (kept on the website's database) */
+export const leadsApi = {
+  getAll: () => api.get<{ configured: boolean; leads: Lead[] }>('/business/leads').then((r) => r.data),
+  setStatus: (id: number, status: LeadStatus) => api.patch<{ message: string }>(`/business/leads/${id}`, { status }).then((r) => r.data),
+}
+
+export interface WebsiteGoldRate { method: string; currency: 'USD' | 'PHP'; per_kk: number }
+export interface WebsiteGold {
+  gold: { rates: WebsiteGoldRate[]; min_order_kk: number | null; note: string | null }
+  guide: PriceGuide['gold']
+}
+
+/** Gold rates shown on the website (published with the listings) */
+export const websiteGoldApi = {
+  get: () => api.get<WebsiteGold>('/business/website-gold').then((r) => r.data),
+  save: (gold: WebsiteGold['gold']) => api.put<WebsiteGold>('/business/website-gold', gold).then((r) => r.data),
+}
+
 /** Rule-based insights from your own numbers */
 export const businessInsightsApi = {
   brief:      () => api.get<BusinessBrief>('/business/brief').then((r) => r.data),

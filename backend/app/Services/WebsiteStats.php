@@ -88,6 +88,67 @@ class WebsiteStats
         return $row ? $row['total'] : 0;
     }
 
+    public const LEAD_STATUSES = ['new', 'contacted', 'won', 'lost'];
+
+    /**
+     * Leads from the website ("I want this", gold orders, accounts offered to you), newest first,
+     * with what the app knows added: the account's name, and your price guide for offers.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function leads(): array
+    {
+        $rows = self::call('get', '/api/leads')['leads'] ?? [];
+        $ids  = collect($rows)->map(fn ($l) => preg_match('/^acc-(\d+)$/', (string) ($l['listing_id'] ?? ''), $m) ? (int) $m[1] : null)->filter();
+        $accounts = RucoyAccount::whereIn('id', $ids)->get()->keyBy('id');
+
+        return collect($rows)->map(function ($l) use ($accounts) {
+            $id = preg_match('/^acc-(\d+)$/', (string) ($l['listing_id'] ?? ''), $m) ? (int) $m[1] : null;
+            $a  = $id ? $accounts->get($id) : null;
+            $details = is_array($l['details'] ?? null) ? $l['details'] : [];
+
+            $guide = null;
+            if (($l['type'] ?? null) === 'sell' && ! empty($details['level'])) {
+                $class = strtolower((string) ($details['category'] ?? ''));
+                $g = PriceGuide::account((int) $details['level'], in_array($class, PriceGuide::CLASSES, true) ? $class : null);
+                $guide = ['price_php' => $g['price_php'], 'max_buy_php' => $g['max_buy_php'], 'max_buy_gold' => $g['max_buy_gold'], 'sales' => count($g['comparables'])];
+            }
+
+            return [
+                ...$l,
+                'details'      => $details,
+                'account_name' => $a ? ($a->description ?: $a->email) : null,
+                'account_sold' => $a ? $a->archived_at !== null : null,
+                'guide'        => $guide,
+            ];
+        })->values()->all();
+    }
+
+    public static function updateLead(int $id, string $status): void
+    {
+        self::call('patch', '/api/leads/' . $id, ['status' => $status]);
+        Cache::forget('website_stats');
+    }
+
+    /** One private API call to the website; throws a readable error. */
+    private static function call(string $method, string $path, array $data = []): array
+    {
+        if (! self::configured()) {
+            throw new RuntimeException('The website connection is off: set LISTING_SITE_TOKEN in the backend .env.');
+        }
+        try {
+            $res = Http::withToken((string) config('listing.site_token'))->acceptJson()->timeout(10)
+                ->{$method}(config('listing.site_url') . $path, $data);
+        } catch (ConnectionException) {
+            throw new RuntimeException("Couldn't reach the website.");
+        }
+        if (! $res->successful()) {
+            throw new RuntimeException('The website answered: ' . ($res->json('message') ?? 'error ' . $res->status()));
+        }
+
+        return $res->json() ?? [];
+    }
+
     /** Remove a buyer's "Notify me" request on the website. */
     public static function deleteAlert(int $id): void
     {

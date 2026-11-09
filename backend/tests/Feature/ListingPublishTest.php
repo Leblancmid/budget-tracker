@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\RucoyAccount;
 use App\Models\User;
+use App\Services\WebsiteContent;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
@@ -88,6 +89,24 @@ class ListingPublishTest extends TestCase
 
         // Nothing changed → no new commit
         $this->postJson('/api/v1/business/listing/publish')->assertOk()->assertJsonPath('changed', false)->assertJsonPath('commit', null);
+    }
+
+    public function test_gold_rates_and_trust_numbers_are_published_with_the_listings(): void
+    {
+        WebsiteContent::saveGold(['rates' => [['method' => 'Binance', 'currency' => 'USD', 'per_kk' => 0.195]], 'min_order_kk' => 100, 'note' => null]);
+        $sold = $this->account(['description' => 'Leblanc 600 Dist']);
+        $sold->forceFill(['archived_at' => now()])->save();
+        $this->account(['description' => 'Leblanc 700 Dist']);
+
+        $this->postJson('/api/v1/business/listing/publish')->assertOk();
+
+        $gold  = json_decode(File::get($this->site . '/src/data/gold.json'), true);
+        $stats = json_decode(File::get($this->site . '/src/data/site-stats.json'), true);
+        $this->assertSame(0.195, $gold['rates'][0]['per_kk']);
+        $this->assertSame(1, $stats['accounts_sold']);
+        $committed = (new Process(['git', 'show', '--name-only', '--format=', 'HEAD'], $this->site))->mustRun()->getOutput();
+        $this->assertStringContainsString('src/data/gold.json', $committed);
+        $this->assertStringContainsString('src/data/site-stats.json', $committed);
     }
 
     public function test_other_work_in_the_site_repo_is_never_committed(): void

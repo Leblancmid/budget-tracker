@@ -11,6 +11,10 @@ Artisan::command('inspire', function () {
 // Auto-export database daily at 2:00 AM
 Schedule::command('db:export --keep=2')->twiceDaily(2, 14);
 
+// Copy the newest export to Cloudflare R2, encrypted (off-site: survives losing this PC). 03:00 UTC = 11:00 Manila,
+// an hour after the 02:00 export.
+Schedule::command('backup:offsite')->dailyAt('03:00')->withoutOverlapping();
+
 // Daily interest on Balance accounts with a rate. Hourly is safe (each day is credited once)
 // and catches up quickly after the PC was off.
 Schedule::command('balance:interest')->hourly()->withoutOverlapping();

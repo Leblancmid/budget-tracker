@@ -22,6 +22,15 @@ class ListingPublisher
 
     public const IMAGES = 'public/listings';
 
+    /** Gold rates set in Listing Kit */
+    public const GOLD = 'src/data/gold.json';
+
+    /** Trust numbers from your sales */
+    public const STATS = 'src/data/site-stats.json';
+
+    /** Everything this app writes in the website repo (and the only paths it ever commits) */
+    private const PATHS = [self::JSON, self::IMAGES, self::GOLD, self::STATS];
+
     private const CATEGORY = ['melee' => 'Melee', 'distance' => 'Distance', 'magic' => 'Magic'];
 
     public function __construct(private ?string $sitePath = null)
@@ -138,16 +147,18 @@ class ListingPublisher
         }
 
         $json = array_map(fn ($l) => array_diff_key($l, ['_screenshot' => true]), $built['listings']);
-        File::put($this->sitePath . '/' . self::JSON, json_encode($json, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n");
+        $this->writeJson(self::JSON, $json);
+        $this->writeJson(self::GOLD, WebsiteContent::gold());
+        $this->writeJson(self::STATS, WebsiteContent::stats());
 
-        // Commit only the listing files, never anything else you're working on in that repo
-        $this->git(['add', '-A', '--', self::JSON, self::IMAGES]);
-        $changed = trim($this->git(['status', '--porcelain', '--', self::JSON, self::IMAGES])) !== '';
-        $staged  = trim($this->git(['diff', '--cached', '--name-only', '--', self::JSON, self::IMAGES])) !== '';
+        // Commit only these files, never anything else you're working on in that repo
+        $this->git(['add', '-A', '--', ...self::PATHS]);
+        $changed = trim($this->git(['status', '--porcelain', '--', ...self::PATHS])) !== '';
+        $staged  = trim($this->git(['diff', '--cached', '--name-only', '--', ...self::PATHS])) !== '';
         $commit  = null;
         if ($staged) {
             $count = count($json);
-            $this->git(['commit', '-m', "Update listings: {$count} for sale", '--', self::JSON, self::IMAGES]);
+            $this->git(['commit', '-m', "Update listings: {$count} for sale", '--', ...self::PATHS]);
             $commit = trim($this->git(['rev-parse', '--short', 'HEAD']));
         }
 
@@ -161,6 +172,12 @@ class ListingPublisher
         $alerted = WebsiteStats::dispatchAlerts($json);
 
         return ['count' => count($json), 'changed' => $changed || $staged, 'pushed' => $pushed, 'commit' => $commit, 'alerted' => $alerted];
+    }
+
+    private function writeJson(string $path, mixed $data): void
+    {
+        File::ensureDirectoryExists(dirname($this->sitePath . '/' . $path));
+        File::put($this->sitePath . '/' . $path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n");
     }
 
     /** The repo tracks a GitHub branch (false for a local-only repo). */

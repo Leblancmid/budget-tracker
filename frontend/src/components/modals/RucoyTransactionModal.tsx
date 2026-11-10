@@ -362,11 +362,12 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
   const title = `${isEdit ? 'Edit' : 'Add'} ${kind === 'account' ? 'Account' : 'Gold'}`
 
   return (
-    // Accounts have a lot to fill in: on wide screens, details + listing on the left and
-    // pricing on the right, so everything is visible without scrolling. Gold trades stay narrow.
-    <Modal open={open} onClose={onClose} title={title} size={kind === 'account' ? '6xl' : '2xl'}>
-      <div className={kind === 'account' ? 'grid grid-cols-1 gap-x-6 gap-y-4 lg:grid-cols-2' : 'flex flex-col gap-4'}>
-      <div className="flex flex-col gap-4">
+    // Landscape on wide screens, so everything is visible without scrolling.
+    // Account: details + listing on the left; pricing, then wallet / buttons on the right.
+    // Gold: description + pricing on the left; wallet, date and buttons on the right.
+    <Modal open={open} onClose={onClose} title={title} size="6xl">
+      <div className={['grid grid-cols-1 gap-x-6 gap-y-4 lg:grid-rows-[auto_1fr]', kind === 'account' ? 'lg:grid-cols-2' : 'lg:grid-cols-[3fr_2fr]'].join(' ')}>
+      <div className={['flex flex-col gap-4 lg:col-start-1', kind === 'account' ? 'lg:row-span-2' : ''].join(' ')}>
 
         <div className={kind === 'account' ? 'grid grid-cols-1 gap-3 sm:grid-cols-2' : ''}>
           <Input
@@ -461,8 +462,8 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
         )}
       </div>
 
-      {/* Pricing column (below the details on narrow screens) */}
-      <div className="flex flex-col gap-4">
+      {/* Pricing (below the details on narrow screens) */}
+      <div className={['flex flex-col gap-4', kind === 'account' ? 'lg:col-start-2' : 'lg:col-start-1'].join(' ')}>
 
         {/* Account: priced in gold or in cash */}
         {kind === 'account' && (
@@ -680,7 +681,10 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
             </div>
           ))}
         </div>
+      </div>
 
+      {/* Wallet, date and buttons: under the pricing (account) or in the right column (gold) */}
+      <div className={['flex flex-col gap-4 lg:col-start-2', kind === 'account' ? 'lg:row-start-2' : 'lg:row-start-1 lg:row-span-2'].join(' ')}>
         {/* New gold: which wallet paid for it */}
         {payWallets.length > 0 && (
           <WalletPicker
@@ -729,7 +733,7 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
 
         {errors.amount && <p className="text-xs text-red-500">{errors.amount}</p>}
 
-        <div className="flex justify-end gap-3 pt-1">
+        <div className="flex justify-end gap-3 pt-1 lg:mt-auto">
           <Button variant="secondary" onClick={onClose} disabled={loading}>Cancel</Button>
           <Button onClick={handleSubmit} loading={loading}>
             {isEdit ? 'Save Changes' : kind === 'account' ? 'Add Account' : 'Add Gold'}

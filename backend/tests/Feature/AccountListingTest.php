@@ -102,7 +102,7 @@ class AccountListingTest extends TestCase
         $this->assertSame(0, RucoyAccount::count());
     }
 
-    public function test_replacing_and_removing_a_screenshot_cleans_up_files(): void
+    public function test_replaced_and_removed_screenshots_are_kept_for_undo_then_cleaned_up(): void
     {
         $this->post('/api/v1/rucoy/accounts', [
             'description' => 'Lv 618 Melee',
@@ -113,7 +113,8 @@ class AccountListingTest extends TestCase
         $first   = $account->screenshot;
         $listed  = $account->listed_at;
 
-        // Replace: old file goes, new one stays; a partial update keeps other fields
+        // Replace: the new file is used; the old one is kept so Undo can bring it back.
+        // A partial update keeps other fields.
         $this->post("/api/v1/rucoy/accounts/{$account->id}", [
             '_method'    => 'PUT',
             'screenshot' => UploadedFile::fake()->image('b.png'),
@@ -121,22 +122,28 @@ class AccountListingTest extends TestCase
         ], ['Accept' => 'application/json'])->assertOk()->assertJsonPath('level', 700);
 
         $account->refresh();
-        Storage::disk('public')->assertMissing($first);
-        Storage::disk('public')->assertExists($account->screenshot);
+        Storage::disk('public')->assertExists([$first, $account->screenshot]);
         $this->assertSame('acc@example.com', $account->email);
         $this->assertTrue($account->listed_at->equalTo($listed));
 
-        // Remove
+        // Remove: cleared on the account, file kept
         $second = $account->screenshot;
         $this->putJson("/api/v1/rucoy/accounts/{$account->id}", ['remove_screenshot' => true])
             ->assertOk()->assertJsonPath('screenshot', null);
-        Storage::disk('public')->assertMissing($second);
+        Storage::disk('public')->assertExists($second);
 
-        // Deleting the account deletes its screenshot too
+        // Deleting the account keeps its screenshot too (an undo brings the account back whole)
         $this->post("/api/v1/rucoy/accounts/{$account->id}", ['_method' => 'PUT', 'screenshot' => UploadedFile::fake()->image('c.png')], ['Accept' => 'application/json'])->assertOk();
         $third = $account->fresh()->screenshot;
         $this->deleteJson("/api/v1/rucoy/accounts/{$account->id}")->assertOk();
-        Storage::disk('public')->assertMissing($third);
+        Storage::disk('public')->assertExists($third);
+
+        // Today nothing is old enough to clean up; after 90 days, files nothing uses are removed
+        $this->artisan('operations:prune')->assertSuccessful();
+        Storage::disk('public')->assertExists([$first, $second, $third]);
+        $this->travel(91)->days();
+        $this->artisan('operations:prune')->assertSuccessful();
+        Storage::disk('public')->assertMissing([$first, $second, $third]);
     }
 
     public function test_accessories_are_saved_cleared_and_validated(): void

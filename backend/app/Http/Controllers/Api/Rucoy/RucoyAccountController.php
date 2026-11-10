@@ -14,7 +14,6 @@ use App\Services\GoldInventory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 class RucoyAccountController extends Controller
 {
@@ -100,12 +99,10 @@ class RucoyAccountController extends Controller
 
     public function update(UpdateRucoyAccountRequest $request, RucoyAccount $rucoyAccount): JsonResponse
     {
-        $data = $this->withScreenshot($this->normalizeAccessories($request->validated()), $request, $rucoyAccount);
+        $data = $this->withScreenshot($this->normalizeAccessories($request->validated()), $request);
 
         if ($request->hasFile('avatar')) {
-            if ($rucoyAccount->avatar) {
-                Storage::disk('public')->delete($rucoyAccount->avatar);
-            }
+            // The old file stays (for Undo); operations:prune removes it once nothing uses it
             $data['avatar'] = $request->file('avatar')->store('avatars', 'public');
         }
 
@@ -122,12 +119,7 @@ class RucoyAccountController extends Controller
 
     public function destroy(RucoyAccount $rucoyAccount): JsonResponse
     {
-        foreach ([$rucoyAccount->avatar, $rucoyAccount->screenshot] as $file) {
-            if ($file) {
-                Storage::disk('public')->delete($file);
-            }
-        }
-
+        // Its images stay so Undo can bring the account back whole; operations:prune removes them later
         $rucoyAccount->delete();
 
         return response()->json(['message' => 'Account deleted.']);
@@ -158,18 +150,15 @@ class RucoyAccountController extends Controller
     }
 
     /**
-     * Store an uploaded screenshot (under a generated name) or clear it on request,
-     * removing the file it replaces. Returns the data to save.
+     * Store an uploaded screenshot (under a generated name) or clear it on request. The file it
+     * replaces stays for Undo; operations:prune removes it once nothing uses it. Returns the data to save.
      */
-    private function withScreenshot(array $data, Request $request, ?RucoyAccount $account = null): array
+    private function withScreenshot(array $data, Request $request): array
     {
         $remove = (bool) ($data['remove_screenshot'] ?? false);
         unset($data['remove_screenshot'], $data['screenshot']);
 
         if ($request->hasFile('screenshot') || $remove) {
-            if ($account?->screenshot) {
-                Storage::disk('public')->delete($account->screenshot);
-            }
             $data['screenshot'] = $request->hasFile('screenshot')
                 ? $request->file('screenshot')->store('screenshots', 'public')
                 : null;

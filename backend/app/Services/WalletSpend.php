@@ -56,7 +56,8 @@ class WalletSpend
         $transactionId = $entry->transaction_id;
         $entry->delete();
         if ($transactionId) {
-            Transaction::whereKey($transactionId)->delete();
+            // Through the model, so it's logged and can be undone
+            Transaction::find($transactionId)?->delete();
         }
     }
 }

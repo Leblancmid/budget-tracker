@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Journaled;
 use Illuminate\Database\Eloquent\Model;
 
 /** Legacy savings entries (replaced by Balance). Read-only: kept so their history still shows on the Logs page. */
 class Saving extends Model
 {
+    use Journaled;
+
     protected $fillable = [
         'mode_of_payment',
         'type',

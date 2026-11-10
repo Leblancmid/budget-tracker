@@ -24,3 +24,6 @@ Schedule::command('recurring:post')->hourly()->withoutOverlapping();
 
 // Remove login tokens that expired more than a day ago
 Schedule::command('sanctum:prune-expired --hours=24')->daily();
+
+// Undo history older than 90 days, and account images nothing uses any more
+Schedule::command('operations:prune')->dailyAt('04:00')->withoutOverlapping();

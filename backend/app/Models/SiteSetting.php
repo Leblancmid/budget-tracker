@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Journaled;
 use Illuminate\Database\Eloquent\Model;
 
 /** A website setting (key → JSON value), e.g. 'gold' → the gold rates shown on the site. */
 class SiteSetting extends Model
 {
+    use Journaled;
+
     protected $fillable = ['key', 'value'];
 
     protected function casts(): array

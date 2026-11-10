@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Journaled;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -9,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /** A daily transaction that repeats (rent, subscriptions, allowance), posted automatically when due. */
 class RecurringEntry extends Model
 {
+    use Journaled;
+
     public const FREQUENCIES = ['daily', 'weekly', 'monthly'];
 
     protected $fillable = [

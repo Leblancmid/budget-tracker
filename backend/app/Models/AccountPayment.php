@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Journaled;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /** One payment toward an account's cost: gold from a gold trade, or cash from a Balance wallet. */
 class AccountPayment extends Model
 {
+    use Journaled;
+
     public const METHODS = ['gold_trade', 'cash'];
 
     protected $fillable = [

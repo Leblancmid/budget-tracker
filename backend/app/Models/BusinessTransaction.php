@@ -3,13 +3,14 @@
 namespace App\Models;
 
 use App\Models\Concerns\Archivable;
+use App\Models\Concerns\Journaled;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class BusinessTransaction extends Model
 {
-    use Archivable;
+    use Archivable, Journaled;
 
     protected $fillable = ['system_key', 'type', 'action', 'account_id', 'price_rate', 'cost_rate', 'php_rate', 'cost_php_rate', 'price_gold', 'cost_gold', 'price_gold_received', 'cost_gold_paid', 'price_php', 'cost_php', 'profit_php', 'amount', 'description', 'date', 'notes', 'archived_at'];
 

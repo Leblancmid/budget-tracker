@@ -7,6 +7,7 @@ use App\Models\BalanceEntry;
 use App\Models\BusinessTransaction;
 use App\Models\MiddlemanFee;
 use App\Models\RucoyAccount;
+use App\Services\Undo\OperationRecorder;
 use App\Support\SchemaColumns;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -452,7 +453,8 @@ class BusinessTransactionService
             GoldInventory::record($delta, $verb . ': ' . ($tx->description ?: 'Gold trade'));
         }
         $tx->inventory_gold = (float) ($tx->price_gold ?? 0);
-        $tx->saveQuietly();
+        // Quiet (no "edited" log line for bookkeeping), but still in the undo journal
+        OperationRecorder::quietly($tx, fn () => $tx->saveQuietly());
     }
 
     /** Drop optional columns that older databases may not have yet. */

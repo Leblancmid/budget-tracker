@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Journaled;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class MiddlemanFee extends Model
 {
+    use Journaled;
+
     protected $fillable = ['trade_id', 'amount', 'description'];
 
     protected function casts(): array

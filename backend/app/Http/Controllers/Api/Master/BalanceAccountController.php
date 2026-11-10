@@ -92,8 +92,10 @@ class BalanceAccountController extends Controller
     /** Save a new order: { ids: [3, 1, 2, ...] } */
     public function reorder(ReorderBalanceAccountsRequest $request): JsonResponse
     {
+        // One model at a time (not a bulk update) so the new order can be undone
+        $accounts = BalanceAccount::whereIn('id', $request->validated('ids'))->get()->keyBy('id');
         foreach (array_values($request->validated('ids')) as $i => $id) {
-            BalanceAccount::whereKey($id)->update(['sort_order' => $i + 1]);
+            $accounts->get($id)?->update(['sort_order' => $i + 1]);
         }
 
         return $this->index();

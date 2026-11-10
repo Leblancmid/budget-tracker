@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Journaled;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Budget extends Model
 {
-    use HasFactory;
+    use HasFactory, Journaled;
 
     protected $fillable = ['user_id', 'category_id', 'amount', 'month', 'year'];
 

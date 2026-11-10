@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Journaled;
 use Illuminate\Database\Eloquent\Model;
 
 class BalanceEntry extends Model
 {
+    use Journaled;
+
     protected $fillable = [
         'transaction_id',
         'business_transaction_id',

@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Services\BalanceInterest;
+use App\Services\Undo\OperationRecorder;
 use Illuminate\Console\Command;
 
 class CreditBalanceInterest extends Command
@@ -13,7 +14,8 @@ class CreditBalanceInterest extends Command
 
     public function handle(): int
     {
-        $count = BalanceInterest::accrueAll();
+        // One undoable operation per run that credits something (Master File → Undo)
+        $count = OperationRecorder::run('Credited daily interest', fn () => BalanceInterest::accrueAll());
         $this->info($count ? "Credited {$count} day(s) of interest." : 'Interest is up to date.');
 
         return self::SUCCESS;

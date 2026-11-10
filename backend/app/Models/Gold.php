@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Journaled;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Gold extends Model
 {
-    use HasFactory;
+    use HasFactory, Journaled;
 
     protected $table = 'golds';
 

@@ -18,6 +18,7 @@ use App\Observers\MiddlemanFeeObserver;
 use App\Observers\RecurringEntryObserver;
 use App\Observers\TradeObserver;
 use App\Observers\TransactionObserver;
+use App\Services\Undo\OperationRecorder;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -34,5 +35,8 @@ class AppServiceProvider extends ServiceProvider
         MiddlemanFee::observe(MiddlemanFeeObserver::class);
         AccountPayment::observe(AccountPaymentObserver::class);
         RecurringEntry::observe(RecurringEntryObserver::class);
+
+        // The undo journal: every row each action creates, changes or deletes (Master File → Undo)
+        OperationRecorder::register();
     }
 }

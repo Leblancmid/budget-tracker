@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\Master\BalanceAccountController;
 use App\Http\Controllers\Api\Master\BalanceEntryController;
 use App\Http\Controllers\Api\Master\BalanceTransferController;
 use App\Http\Controllers\Api\Master\MasterDashboardController;
+use App\Http\Controllers\Api\Master\OperationController;
 use App\Http\Controllers\Api\RecurringEntryController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\Rucoy\AccountPaymentController;
@@ -57,6 +58,10 @@ Route::prefix('v1')->group(function () {
             // Master
             Route::prefix('master')->name('master.')->group(function () {
                 Route::get('dashboard', [MasterDashboardController::class, 'index'])->name('dashboard');
+                // Undo: everything done in the app, newest first
+                Route::get('operations', [OperationController::class, 'index'])->name('operations.index');
+                Route::post('operations/{operation}/undo', [OperationController::class, 'undo'])->name('operations.undo');
+                Route::post('operations/{operation}/redo', [OperationController::class, 'redo'])->name('operations.redo');
                 Route::apiResource('balance-entries', BalanceEntryController::class)->except(['show']);
                 Route::apiResource('balance-transfers', BalanceTransferController::class)->only(['store', 'destroy']);
                 Route::post('balance-accounts/{balanceAccount}/check', [BalanceAccountController::class, 'check'])->name('balance-accounts.check');

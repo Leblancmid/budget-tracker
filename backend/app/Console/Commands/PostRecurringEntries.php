@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Services\RecurringEntries;
+use App\Services\Undo\OperationRecorder;
 use Illuminate\Console\Command;
 
 class PostRecurringEntries extends Command
@@ -13,7 +14,8 @@ class PostRecurringEntries extends Command
 
     public function handle(): int
     {
-        $count = RecurringEntries::postDue();
+        // One undoable operation per run that posts something (Master File → Undo)
+        $count = OperationRecorder::run('Posted recurring entries', fn () => RecurringEntries::postDue());
         $this->info($count ? "Posted {$count} recurring transaction(s)." : 'Nothing due.');
 
         return self::SUCCESS;

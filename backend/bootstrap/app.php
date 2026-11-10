@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureAdmin;
+use App\Http\Middleware\RecordOperation;
 use App\Http\Middleware\SecureApiHeaders;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
@@ -22,6 +23,8 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleCors::class,
         ], append: [
             SecureApiHeaders::class,
+            // Each request that changes data becomes one undoable operation (Master File → Undo)
+            RecordOperation::class,
         ]);
 
         $middleware->alias(['admin' => EnsureAdmin::class]);

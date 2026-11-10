@@ -28,7 +28,7 @@ class MigrationsBaselineTest extends TestCase
 
     public function test_every_squashed_file_is_listed(): void
     {
-        $files = collect(glob(database_path('migrations/2026_11_10_*.php')))->map(fn ($f) => basename($f, '.php'))->all();
+        $files = collect(glob(database_path('migrations/2026_11_10_0000*.php')))->map(fn ($f) => basename($f, '.php'))->all();
         $this->assertSame(MigrationsBaseline::NEW, $files);
     }
 

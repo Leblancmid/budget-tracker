@@ -11,6 +11,7 @@ use App\Models\RucoyAccount;
 use App\Models\Trade;
 use App\Models\Transaction;
 use App\Services\BusinessProfit;
+use App\Services\MasterTrend;
 use Illuminate\Http\JsonResponse;
 
 class MasterDashboardController extends Controller
@@ -66,6 +67,12 @@ class MasterDashboardController extends Controller
             'balance_usd_accounts'    => count($usdAccounts),
             'balance_php_accounts'    => count($phpAccounts),
         ]);
+    }
+
+    /** The Overview charts: the last 12 months of profit and holdings. */
+    public function trend(): JsonResponse
+    {
+        return response()->json(['months' => MasterTrend::months(12)]);
     }
 
     /** Money added minus money taken out across the given balance accounts. */

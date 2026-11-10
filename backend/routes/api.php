@@ -58,6 +58,7 @@ Route::prefix('v1')->group(function () {
             // Master
             Route::prefix('master')->name('master.')->group(function () {
                 Route::get('dashboard', [MasterDashboardController::class, 'index'])->name('dashboard');
+                Route::get('dashboard/trend', [MasterDashboardController::class, 'trend'])->name('dashboard.trend');
                 // Undo: everything done in the app, newest first
                 Route::get('operations', [OperationController::class, 'index'])->name('operations.index');
                 Route::post('operations/{operation}/undo', [OperationController::class, 'undo'])->name('operations.undo');

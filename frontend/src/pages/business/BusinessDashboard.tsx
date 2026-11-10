@@ -67,9 +67,6 @@ export default function BusinessDashboard() {
         </div>
       </div>
 
-      {/* ── This week: what changed and what needs you ─────────────── */}
-      <WeeklyBrief />
-
       {/* ── Hero ───────────────────────────────────────────────────── */}
       {loading ? (
         <div className="h-48 rounded-2xl animate-pulse bg-gray-100 dark:bg-gray-800" />
@@ -154,6 +151,9 @@ export default function BusinessDashboard() {
           </div>
         </div>
       )}
+
+      {/* ── This week: what changed and what needs you (under the hero, as on Daily Expenses) ── */}
+      <WeeklyBrief />
 
       {/* ── Year chart ─────────────────────────────────────────────── */}
       <Card className="flex flex-col">

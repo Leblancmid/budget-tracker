@@ -1,25 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Clipboard, Download, FileText, Megaphone, Timer } from 'lucide-react'
+import { Clipboard, Download, FileText, Megaphone } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useRucoyAccounts } from '@/hooks/useRucoyAccounts'
-import { useAsyncData } from '@/hooks/useAsyncData'
 import { useLoadedImages } from '@/hooks/useLoadedImages'
-import { rucoyAccountsApi } from '@/api/rucoy'
 import { readJson, STORAGE_KEYS, writeJson } from '@/lib/storage'
 import { toast } from '@/lib/toast'
 import { errorMessage } from '@/utils/api'
 import type { RucoyAccount } from '@/types'
 import {
-  daysListed, DEFAULT_CROP, isNewListing, listingPrice, listingCaption, sameOriginPath, sortForListing,
+  DEFAULT_CROP, isNewListing, listingPrice, listingCaption, sameOriginPath, sortForListing,
   type CropInsets,
 } from '@/utils/listing'
 import { accessoriesFor } from '@/utils/accessories'
 import { AccountPickRow } from './listing/AccountPickRow'
 import { PublishToWebsite } from './listing/PublishToWebsite'
-import { WebsiteStatsCard } from './listing/WebsiteStatsCard'
 import { GoldRatesCard } from './listing/GoldRatesCard'
 import { canvasToBlob, drawListing, pngUnder, type ListingTile } from './listing/drawListing'
 
@@ -50,7 +47,6 @@ const DEFAULTS: KitSettings = {
   crop: DEFAULT_CROP,
 }
 
-const NO_ACCOUNTS: RucoyAccount[] = []
 
 /**
  * Builds the image posted in Discord / WhatsApp straight from the accounts for sale:
@@ -58,7 +54,6 @@ const NO_ACCOUNTS: RucoyAccount[] = []
  */
 export default function ListingKit() {
   const { accounts, loading, error, refetch, update } = useRucoyAccounts()
-  const sold = useAsyncData(rucoyAccountsApi.getArchived, NO_ACCOUNTS)
   const [settings, setSettings] = useState<KitSettings>(() => ({ ...DEFAULTS, ...readJson<Partial<KitSettings>>(STORAGE_KEYS.listingKit, {}) }))
   const [excluded, setExcluded] = useState<Set<number>>(() => new Set())
   const [savingPriceId, setSavingPriceId] = useState<number | null>(null)
@@ -101,14 +96,6 @@ export default function ListingKit() {
       drawListing(canvasRef.current, tiles, { columns: settings.columns, promos, crop: settings.crop })
     }
   }, [tiles, settings.columns, settings.crop, promos])
-
-  // Measurement: how long sold accounts took to sell
-  const avgDaysToSell = useMemo(() => {
-    const days = sold.data
-      .map((a) => (a.archived_at ? daysListed(a.listed_at, Date.parse(a.archived_at)) : null))
-      .filter((d): d is number => d != null)
-    return days.length ? { avg: days.reduce((s, d) => s + d, 0) / days.length, count: days.length } : null
-  }, [sold.data])
 
   const toggleInclude = (id: number) => setExcluded((prev) => {
     const next = new Set(prev)
@@ -288,18 +275,6 @@ export default function ListingKit() {
 
             <PublishToWebsite />
             <GoldRatesCard />
-            <WebsiteStatsCard />
-
-            {avgDaysToSell && (
-              <Card className="flex items-center gap-3 p-4">
-                <Timer className="h-5 w-5 shrink-0 text-teal-600 dark:text-teal-400" />
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Sold accounts took <span className="font-semibold text-gray-900 dark:text-gray-100">{avgDaysToSell.avg.toFixed(1)} days</span> on
-                  average to sell ({avgDaysToSell.count} sold).
-                  {avgDaysToSell.avg < 2 && ' They sell fast — you may have room to raise prices.'}
-                </p>
-              </Card>
-            )}
           </div>
 
           {/* Right: preview + actions */}

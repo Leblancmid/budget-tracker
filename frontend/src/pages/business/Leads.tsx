@@ -7,6 +7,8 @@ import { Amt } from '@/components/ui/Amt'
 import { leadsApi, type Lead, type LeadStatus } from '@/api/business'
 import { useAsyncData } from '@/hooks/useAsyncData'
 import { emitDataChanged } from '@/lib/dataEvents'
+import { WebsiteStatsCard } from './listing/WebsiteStatsCard'
+import { DaysToSellCard } from './listing/DaysToSellCard'
 import { toast } from '@/lib/toast'
 import { errorMessage } from '@/utils/api'
 import { formatCurrency, paginateLocally } from '@/utils/format'
@@ -117,6 +119,8 @@ export default function Leads() {
         ))}
       </div>
 
+      {/* Leads on the left; who's visiting the website beside them (underneath on phones) */}
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_22rem]">
       <Card>
         <div className="flex flex-wrap items-center gap-1 border-b border-gray-100 px-4 py-3 dark:border-gray-700/60">
           {FILTERS.map((f) => (
@@ -191,6 +195,12 @@ export default function Leads() {
           <div className="border-t border-gray-100 px-4 py-3 dark:border-gray-700/60"><Pagination meta={meta} onPageChange={setPage} /></div>
         )}
       </Card>
+
+      <div className="flex flex-col gap-5">
+        <WebsiteStatsCard />
+        <DaysToSellCard />
+      </div>
+      </div>
     </div>
   )
 }

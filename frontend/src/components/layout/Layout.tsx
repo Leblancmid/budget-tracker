@@ -21,7 +21,9 @@ export function Layout() {
   const tabs = sections.find((s) => s.id === currentId)?.tabs ?? []
   // Badges: website leads waiting for a reply, and a weekly brief (every Monday) not opened yet
   const leadsWaiting = useWaitingLeads(isAdmin)
-  const briefUnseen = useBriefUnseen() && isAdmin
+  const businessBrief = useBriefUnseen('business')
+  const dailyBrief = useBriefUnseen('daily')
+  const briefUnseen = { business: businessBrief && isAdmin, daily: dailyBrief }
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">

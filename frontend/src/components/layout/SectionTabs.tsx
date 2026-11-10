@@ -1,14 +1,14 @@
 import { useEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { locate, SECTION_STYLES, type NavTab } from '@/lib/navigation'
+import { locate, SECTION_STYLES, type NavTab, type SectionId } from '@/lib/navigation'
 
 interface SectionTabsProps {
   /** This user's tabs for the current section */
   tabs: NavTab[]
   /** Waiting website leads (shown on the Leads tab) */
   leadsWaiting: number
-  /** A weekly brief nobody has opened yet (shown on Business → Stats) */
-  briefUnseen: boolean
+  /** Sections with a weekly brief not opened yet this week (a dot on the tab that shows it) */
+  briefUnseen: Partial<Record<SectionId, boolean>>
 }
 
 /** The current section's pages as tabs under the header. Scrolls sideways on narrow screens. */
@@ -31,7 +31,8 @@ export function SectionTabs({ tabs, leadsWaiting, briefUnseen }: SectionTabsProp
         {tabs.map((tab) => {
           const active = current.to === tab.to
           const badge = tab.to === '/business/leads' ? leadsWaiting : 0
-          const dot = tab.to === '/business' && briefUnseen
+          // The brief lives on the section's first tab (Dashboard, Stats)
+          const dot = !!briefUnseen[section.id] && tab.to === section.tabs[0].to
           return (
             <Link
               key={tab.to}

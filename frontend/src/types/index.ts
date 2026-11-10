@@ -459,6 +459,26 @@ export interface BriefInsight {
   link: string | null
 }
 
+/** The Daily Expenses weekly brief (GET /dashboard/brief): the signed-in user's own spending */
+export interface DailyBrief {
+  from: string
+  to: string
+  /** Monday of the current week (Y-m-d) */
+  week: string
+  summary: {
+    spent: number
+    prev_spent: number
+    income: number
+    month_spent: number
+    /** Total of this month's budgets, null when none are set */
+    month_budget: number | null
+    /** What's left of the budgets per day until month end, null when none are set */
+    safe_per_day: number | null
+    days_left: number
+  }
+  insights: BriefInsight[]
+}
+
 export interface BusinessBrief {
   from: string
   to: string

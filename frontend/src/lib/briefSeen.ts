@@ -11,26 +11,31 @@ export function mondayOf(ymd: string): string {
   return date.toISOString().slice(0, 10) // a UTC calendar date here, not a local time
 }
 
+/** The two weekly briefs: Business (Stats) and Daily Expenses (Dashboard). */
+export type BriefKind = 'business' | 'daily'
+
+const KEYS = { business: STORAGE_KEYS.briefSeenWeek, daily: STORAGE_KEYS.briefSeenWeekDaily } as const
+
 const EVENT = 'app:brief-seen'
 
-/** Remember that this week's brief was opened (clears the sidebar dot). */
-export function markBriefSeen(week: string): void {
-  if (readString(STORAGE_KEYS.briefSeenWeek) === week) return
-  writeString(STORAGE_KEYS.briefSeenWeek, week)
+/** Remember that this week's brief was opened (clears its "new brief" dot). */
+export function markBriefSeen(week: string, kind: BriefKind = 'business'): void {
+  if (readString(KEYS[kind]) === week) return
+  writeString(KEYS[kind], week)
   window.dispatchEvent(new Event(EVENT))
 }
 
-const isUnseen = () => readString(STORAGE_KEYS.briefSeenWeek) !== mondayOf(todayManila())
+const isUnseen = (kind: BriefKind) => readString(KEYS[kind]) !== mondayOf(todayManila())
 
 /** True while this week's brief (Manila time) hasn't been opened yet. */
-export function useBriefUnseen(): boolean {
-  const [unseen, setUnseen] = useState(isUnseen)
+export function useBriefUnseen(kind: BriefKind = 'business'): boolean {
+  const [unseen, setUnseen] = useState(() => isUnseen(kind))
   useEffect(() => {
-    const update = () => setUnseen(isUnseen())
+    const update = () => setUnseen(isUnseen(kind))
     window.addEventListener(EVENT, update)
     // A new week can start while the app stays open
     const timer = window.setInterval(update, 60 * 60 * 1000)
     return () => { window.removeEventListener(EVENT, update); window.clearInterval(timer) }
-  }, [])
+  }, [kind])
   return unseen
 }

@@ -2,7 +2,7 @@ import { SidebarBrand } from './SidebarBrand'
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
-import { locate, SECTION_STYLES, type NavSection } from '@/lib/navigation'
+import { locate, SECTION_STYLES, type NavSection, type SectionId } from '@/lib/navigation'
 import { readString, STORAGE_KEYS, writeString } from '@/lib/storage'
 
 interface SidebarProps {
@@ -10,8 +10,8 @@ interface SidebarProps {
   sections: NavSection[]
   /** Waiting website leads (badge on Business) */
   leadsWaiting: number
-  /** A weekly brief nobody has opened yet (dot on Business) */
-  briefUnseen: boolean
+  /** Sections with a weekly brief not opened yet this week (a dot) */
+  briefUnseen: Partial<Record<SectionId, boolean>>
   mobileOpen?: boolean
   onClose?: () => void
 }
@@ -53,7 +53,7 @@ export function Sidebar({ sections, leadsWaiting, briefUnseen, mobileOpen = fals
           const c = SECTION_STYLES[section.id]
           const active = current === section.id
           const leads = section.id === 'business' ? leadsWaiting : 0
-          const dot = section.id === 'business' && briefUnseen
+          const dot = !!briefUnseen[section.id]
           const hint = [section.label, leads ? `${leads} lead${leads === 1 ? '' : 's'} waiting` : null, dot ? 'new weekly brief' : null].filter(Boolean).join(' · ')
 
           return (

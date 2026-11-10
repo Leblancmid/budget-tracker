@@ -28,6 +28,8 @@ export const STORAGE_KEYS = {
   listingKit:          'listing_kit',
   /** Monday (Y-m-d) of the last weekly brief opened, for the "new brief" dot */
   briefSeenWeek:       'brief_seen_week',
+  /** The same for the Daily Expenses brief */
+  briefSeenWeekDaily:  'brief_seen_week_daily',
 } as const
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS]

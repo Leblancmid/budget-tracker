@@ -9,6 +9,7 @@ import { MonthNav } from '@/components/ui/MonthNav'
 import { formatCurrency, formatDate, MONTHS } from '@/utils/format'
 import { CategoryIcon } from '@/components/ui/CategoryIcon'
 import { Amt } from '@/components/ui/Amt'
+import { DailyBrief } from './dashboard/DailyBrief'
 import type { Budget } from '@/types'
 
 const OTHER_COLOR = '#94a3b8'
@@ -185,6 +186,9 @@ export function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* ── Weekly brief ───────────────────────────────────────────── */}
+      <DailyBrief />
 
       {/* ── Spending + trend ───────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">

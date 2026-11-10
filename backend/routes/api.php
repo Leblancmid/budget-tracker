@@ -38,6 +38,7 @@ Route::prefix('v1')->group(function () {
         // Daily Expenses (every signed-in user, scoped to their own data)
         Route::get('reports/daily-expenses', [ReportController::class, 'dailyExpenses'])->name('reports.daily-expenses');
         Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('dashboard/brief', [DashboardController::class, 'brief'])->name('dashboard.brief');
         Route::apiResource('categories', CategoryController::class);
         Route::apiResource('transactions', TransactionController::class);
         Route::apiResource('budgets', BudgetController::class)->except(['show']);

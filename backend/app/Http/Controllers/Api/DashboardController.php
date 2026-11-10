@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Transaction;
+use App\Services\DailyBrief;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -76,5 +77,11 @@ class DashboardController extends Controller
             'expense_by_category' => $expenseByCategory,
             'monthly_trend'       => $monthlyTrend,
         ]);
+    }
+
+    /** The weekly brief for Daily Expenses: the signed-in user's own spending and budgets. */
+    public function brief(): JsonResponse
+    {
+        return response()->json(DailyBrief::build((int) auth()->id()));
     }
 }

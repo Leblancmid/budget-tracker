@@ -26,7 +26,9 @@ export function Layout() {
   const briefUnseen = { business: businessBrief && isAdmin, daily: dailyBrief }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
+    // Pinned to the screen: only <main> scrolls, never the page itself, so the header can't slide
+    // up under the phone's status bar
+    <div className="fixed inset-0 flex overflow-hidden bg-gray-50 dark:bg-gray-950">
 
       {/* Mobile backdrop */}
       {mobileOpen && (
@@ -47,7 +49,7 @@ export function Layout() {
       <div className="flex flex-1 flex-col overflow-hidden min-w-0">
         <Header onMenuClick={() => setMobileOpen((v) => !v)} />
         <SectionTabs tabs={tabs} leadsWaiting={leadsWaiting} briefUnseen={briefUnseen} />
-        <main className="flex-1 overflow-y-auto p-3 sm:p-6 scrollbar-thin">
+        <main className="flex-1 overflow-y-auto overscroll-contain p-3 sm:p-6 scrollbar-thin">
           {/* Keyed by page so a crash on one page clears when you navigate away */}
           <ErrorBoundary key={pathname}>
             <Suspense fallback={<PageLoading />}>

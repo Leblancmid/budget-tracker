@@ -11,22 +11,26 @@ vi.mock('@/lib/dataEvents', () => ({ emitDataChanged: vi.fn() }))
 
 const { default: api } = await import('@/api/axios')
 const { transactionsApi } = await import('@/api/transactions')
-const { discardEntry, newClientId, queueEntry, refreshPending, retryEntry, syncPending } = await import('./outbox')
+const { discardEntry, kindOf, newClientId, queueChange, queueEntry, refreshPending, retryEntry, syncPending } = await import('./outbox')
 const { clearStore } = await import('./localStore')
 
-/** What the fake server does with each POST */
-let server: (body: Record<string, unknown>) => 'ok' | 'offline' | 'invalid' | 'down'
+/** What the fake server does with each request */
+let server: (body: Record<string, unknown>, method: string, url: string) => 'ok' | 'offline' | 'invalid' | 'down' | 'gone'
 let posted: Record<string, unknown>[] = []
+/** Every request that got through, as "METHOD url" */
+let requests: string[] = []
 const adapter: AxiosAdapter = async (config: InternalAxiosRequestConfig) => {
   const body = JSON.parse(String(config.data ?? '{}'))
-  const outcome = server(body)
+  const method = (config.method ?? 'get').toUpperCase()
+  const outcome = server(body, method, config.url ?? '')
   if (outcome === 'offline') throw Object.assign(new Error('Network Error'), { config, isAxiosError: true })
   if (outcome !== 'ok') {
-    const status = outcome === 'invalid' ? 422 : 503
+    const status = outcome === 'invalid' ? 422 : outcome === 'gone' ? 404 : 503
     const data = outcome === 'invalid' ? { message: 'Validation failed.', errors: { category_id: ['The selected category is invalid.'] } } : { message: 'Down' }
     throw Object.assign(new Error('Request failed'), { config, isAxiosError: true, response: { status, data, headers: {}, config, statusText: '' } })
   }
-  posted.push(body)
+  requests.push(`${method} ${config.url}`)
+  if (method === 'POST') posted.push(body)
   return { data: { id: posted.length, ...body }, status: 201, statusText: 'Created', headers: {}, config } as AxiosResponse
 }
 api.defaults.adapter = adapter
@@ -38,6 +42,7 @@ describe('daily entries added offline', () => {
   beforeEach(async () => {
     userId = 7
     posted = []
+    requests = []
     server = () => 'ok'
     await clearStore('outbox')
     await refreshPending()
@@ -111,5 +116,57 @@ describe('daily entries added offline', () => {
     expect(await syncPending()).toEqual({ sent: 0, refused: 0 })
     userId = 7
     expect((await refreshPending()).map((e) => e.payload.description)).toEqual(['Mine'])
+  })
+  describe('edits and deletes of existing entries', () => {
+    const lunch = { id: 41, category_id: 1, category: { id: 1, name: 'Food' }, type: 'expense', scope: 'personal', amount: '250.00',
+      description: 'Lunch', date: '2026-11-09', notes: null, balance_entry: null, created_at: '', updated_at: '' } as unknown as import('@/types').Transaction
+
+    it('keeps an offline edit and sends it as an update when back online', async () => {
+      server = () => 'offline'
+      expect(await transactionsApi.updateOrQueue(41, entry('Lunch', 300))).toEqual({ queued: true })
+      server = () => 'ok'
+      expect(await syncPending()).toEqual({ sent: 1, refused: 0 })
+      expect(requests).toEqual(['PUT /transactions/41'])
+    })
+
+    it('editing the same entry again keeps one edit with the latest values', async () => {
+      await queueChange('update', 41, entry('Lunch', 300), 1)
+      await queueChange('update', 41, entry('Lunch with drinks', 320), 2)
+      const waiting = await refreshPending()
+      expect(waiting).toHaveLength(1)
+      expect(waiting[0].payload).toMatchObject({ description: 'Lunch with drinks', amount: 320 })
+    })
+
+    it("deleting drops the entry's waiting edits and sends only the delete", async () => {
+      await queueChange('update', 41, entry('Lunch', 300), 1)
+      server = () => 'offline'
+      expect(await transactionsApi.deleteOrQueue(lunch)).toEqual({ queued: true })
+      expect((await refreshPending()).map(kindOf)).toEqual(['delete'])
+      server = () => 'ok'
+      await syncPending()
+      expect(requests).toEqual(['DELETE /transactions/41'])
+    })
+
+    it('an entry already deleted elsewhere: the delete counts as done', async () => {
+      await queueChange('delete', 41, entry('Lunch'))
+      server = () => 'gone'
+      expect(await syncPending()).toEqual({ sent: 1, refused: 0 })
+      expect(await refreshPending()).toEqual([])
+    })
+
+    it('an edit to an entry deleted elsewhere is refused with the reason', async () => {
+      await queueChange('update', 41, entry('Lunch', 300))
+      server = () => 'gone'
+      expect(await syncPending()).toEqual({ sent: 0, refused: 1 })
+      expect((await refreshPending())[0].error).toBe('It was deleted somewhere else in the meantime.')
+    })
+
+    it('keeps the order: a new entry, then an edit, then a delete', async () => {
+      await queueEntry(entry('New'), newClientId(), 1)
+      await queueChange('update', 41, entry('Lunch', 300), 2)
+      await queueChange('delete', 42, entry('Old'), 3)
+      await syncPending()
+      expect(requests).toEqual(['POST /transactions', 'PUT /transactions/41', 'DELETE /transactions/42'])
+    })
   })
 })

@@ -30,15 +30,18 @@ export function useTransactions(initialFilters: TransactionFilters = {}) {
     return result
   }
 
-  const update = async (id: number, data: Parameters<typeof transactionsApi.update>[1]) => {
-    const tx = await transactionsApi.update(id, data)
-    await refetch()
-    return tx
+  /** Edit an entry; offline the edit waits on the device (`queued: true`) and is sent later. */
+  const update = async (id: number, data: Parameters<typeof transactionsApi.updateOrQueue>[1]) => {
+    const result = await transactionsApi.updateOrQueue(id, data)
+    if (!result.queued) await refetch()
+    return result
   }
 
-  const remove = async (id: number) => {
-    await transactionsApi.delete(id)
-    await refetch()
+  /** Delete an entry; offline the delete waits on the device (`queued: true`) and is sent later. */
+  const remove = async (tx: Transaction) => {
+    const result = await transactionsApi.deleteOrQueue(tx)
+    if (!result.queued) await refetch()
+    return result
   }
 
   return {

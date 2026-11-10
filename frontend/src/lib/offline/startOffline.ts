@@ -46,8 +46,8 @@ async function sendWaiting(): Promise<void> {
   try {
     if ((await refreshPending()).every((e) => e.error !== null)) return
     const { sent, refused } = await syncPending()
-    if (sent > 0) toast.success(`Back online: ${sent} entr${sent === 1 ? 'y' : 'ies'} added offline ${sent === 1 ? 'was' : 'were'} saved.`)
-    if (refused > 0) toast.error(`${refused} entr${refused === 1 ? 'y' : 'ies'} added offline couldn't be saved. See Transactions.`)
+    if (sent > 0) toast.success(`Back online: ${sent} change${sent === 1 ? '' : 's'} made offline ${sent === 1 ? 'was' : 'were'} saved.`)
+    if (refused > 0) toast.error(`${refused} change${refused === 1 ? '' : 's'} made offline couldn't be saved. See Transactions.`)
   } finally {
     sending = false
   }

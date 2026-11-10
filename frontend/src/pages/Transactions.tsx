@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ArrowDownLeft, ArrowUpRight, Briefcase, Download, Filter, Pencil, Plus, Repeat, Search, Trash2, TrendingUp, Wallet } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, Briefcase, CloudUpload, Download, Filter, Pencil, Plus, Repeat, Search, Trash2, TrendingUp, Wallet } from 'lucide-react'
 import { useTransactions } from '@/hooks/useTransactions'
 import { useCategories } from '@/hooks/useCategories'
 import { useDashboard } from '@/hooks/useDashboard'
@@ -14,6 +14,9 @@ import { Card } from '@/components/ui/Card'
 import { TransactionModal, type TransactionFormData } from '@/components/modals/TransactionModal'
 import { RecurringEntriesModal } from '@/components/modals/RecurringEntriesModal'
 import { PendingEntries } from '@/components/offline/PendingEntries'
+import { usePendingEntries } from '@/lib/offline/outbox'
+import { applyPending, type ListedTransaction } from '@/lib/offline/applyPending'
+import { errorMessage } from '@/utils/api'
 import { useDataChanged } from '@/lib/dataEvents'
 import { toast } from '@/lib/toast'
 import { formatCurrency, formatDate, formatTime, MONTHS } from '@/utils/format'
@@ -73,7 +76,11 @@ export function Transactions() {
   const handleSubmit = async (data: TransactionFormData) => {
     const payload = { ...data, balance_account: isAdmin ? data.balance_account : undefined }
     if (editTarget) {
-      await update(editTarget.id, payload)
+      const result = await update(editTarget.id, payload)
+      if (result.queued) {
+        toast.success("You're offline: the change is saved on this device. It'll be applied when you're back online.")
+        return
+      }
       toast.success('Transaction updated.')
     } else {
       const result = await create(payload)
@@ -91,13 +98,17 @@ export function Transactions() {
     if (!deleteTarget) return
     setDeleteLoading(true)
     try {
-      await remove(deleteTarget.id)
-      toast.success(deleteTarget.balance_entry ? 'Transaction deleted and its Balance entry reversed.' : 'Transaction deleted.')
+      const result = await remove(deleteTarget)
       setDeleteTarget(null)
+      if (result.queued) {
+        toast.success("You're offline: it's removed on this device and will be deleted when you're back online.")
+        return
+      }
+      toast.success(deleteTarget.balance_entry ? 'Transaction deleted and its Balance entry reversed.' : 'Transaction deleted.')
       refetchStats()
       refetchAccounts()
-    } catch {
-      toast.error('Failed to delete transaction.')
+    } catch (err) {
+      toast.error(errorMessage(err, 'Failed to delete transaction.'))
     } finally {
       setDeleteLoading(false)
     }
@@ -113,17 +124,21 @@ export function Transactions() {
 
   const hasFilters = !!(filters.search || filters.type || filters.scope || filters.balance_account || filters.category_id || filters.date_from || filters.date_to)
 
+  // Offline edits and deletes not sent yet: shown as they'll be
+  const pending = usePendingEntries()
+  const listed = useMemo(() => applyPending(transactions, pending, categories), [transactions, pending, categories])
+
   // Group the current page by day
   const groups = useMemo(() => {
-    const out: { date: string; items: Transaction[]; net: number }[] = []
-    for (const tx of transactions) {
+    const out: { date: string; items: ListedTransaction[]; net: number }[] = []
+    for (const tx of listed) {
       let g = out[out.length - 1]
       if (!g || g.date !== tx.date) { g = { date: tx.date, items: [], net: 0 }; out.push(g) }
       g.items.push(tx)
       if (tx.scope !== 'business') g.net += (tx.type === 'income' ? 1 : -1) * parseFloat(tx.amount)
     }
     return out
-  }, [transactions])
+  }, [listed])
 
   const income   = stats?.total_income ?? 0
   const expense  = stats?.total_expense ?? 0
@@ -336,6 +351,11 @@ export function Transactions() {
                             <span>{tx.category.name}</span>
                             <span>·</span>
                             <span>{formatTime(tx.created_at)}</span>
+                            {tx.waitingToSync && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300" title="Changed offline; sent when you're back online">
+                                <CloudUpload size={9} /> Waiting to sync
+                              </span>
+                            )}
                             {tx.recurring_entry_id && (
                               <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-600 dark:text-indigo-300" title="Added automatically by a recurring entry">
                                 <Repeat size={9} /> Recurring

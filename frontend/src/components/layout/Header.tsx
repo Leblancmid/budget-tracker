@@ -115,9 +115,9 @@ export function Header({ onMenuClick }: HeaderProps) {
         open={confirmLogout}
         onClose={() => setConfirmLogout(false)}
         onConfirm={() => { setConfirmLogout(false); void signOut() }}
-        title="Sign out with entries not synced?"
+        title="Sign out with changes not synced?"
         confirmLabel="Sign out"
-        message={`${pending.length} entr${pending.length === 1 ? 'y' : 'ies'} added offline ${pending.length === 1 ? 'hasn\'t' : 'haven\'t'} reached the server yet. ${pending.length === 1 ? 'It stays' : 'They stay'} on this device and ${pending.length === 1 ? 'is' : 'are'} sent the next time you sign in here.`}
+        message={`${pending.length} change${pending.length === 1 ? '' : 's'} made offline ${pending.length === 1 ? 'hasn\'t' : 'haven\'t'} reached the server yet. ${pending.length === 1 ? 'It stays' : 'They stay'} on this device and ${pending.length === 1 ? 'is' : 'are'} sent the next time you sign in here.`}
       />
     </header>
   )

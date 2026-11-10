@@ -23,7 +23,7 @@ export function OfflineBanner() {
         <span>
           <b>You're offline.</b>{' '}
           {showingSince !== null ? `Showing what was saved on this device (as of ${when(showingSince)}). ` : ''}
-          You can still add daily expenses and income; other changes need a connection.
+          You can still add, edit and delete daily expenses and income; other changes need a connection.
           {pending.length > 0 && <> <Link to="/transactions" className="font-semibold underline">{pending.length} waiting to sync</Link>.</>}
         </span>
       </div>
@@ -39,8 +39,8 @@ export function OfflineBanner() {
       <CloudUpload size={14} className="shrink-0" />
       <span>
         {refused > 0
-          ? <>{refused} entr{refused === 1 ? 'y' : 'ies'} added offline couldn't be saved. </>
-          : <>Sending {pending.length} entr{pending.length === 1 ? 'y' : 'ies'} added offline… </>}
+          ? <>{refused} change{refused === 1 ? '' : 's'} made offline couldn't be saved. </>
+          : <>Sending {pending.length} change{pending.length === 1 ? '' : 's'} made offline… </>}
         <Link to="/transactions" className="font-semibold underline">See Transactions</Link>
       </span>
     </div>

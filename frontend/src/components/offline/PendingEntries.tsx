@@ -3,15 +3,22 @@ import { AlertTriangle, CloudUpload, RotateCw, Trash2 } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Amt } from '@/components/ui/Amt'
-import { discardEntry, refreshPending, retryEntry, syncPending, usePendingEntries, type PendingEntry } from '@/lib/offline/outbox'
+import { discardEntry, kindOf, refreshPending, retryEntry, syncPending, usePendingEntries, type PendingEntry, type PendingKind } from '@/lib/offline/outbox'
 import { useOfflineStatus } from '@/lib/offline/offlineStatus'
 import { toast } from '@/lib/toast'
 import { formatCurrency, formatDate } from '@/utils/format'
 import type { Category } from '@/types'
 
+const KIND: Record<PendingKind, { label: string; tone: string }> = {
+  create: { label: 'New',    tone: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' },
+  update: { label: 'Edit',   tone: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300' },
+  delete: { label: 'Delete', tone: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300' },
+}
+
 /**
- * Daily entries added offline that haven't reached the server yet (Transactions page, above the
- * list). They're sent on their own when the connection is back; one the server refused shows why.
+ * Daily entries added, edited or deleted offline that haven't reached the server yet (Transactions
+ * page, above the list). They're sent on their own when the connection is back; a change the server
+ * refused shows why.
  */
 export function PendingEntries({ categories }: { categories: Category[] }) {
   const entries = usePendingEntries()
@@ -29,7 +36,7 @@ export function PendingEntries({ categories }: { categories: Category[] }) {
     setBusy(true)
     try {
       const { sent, refused } = entry ? await retryEntry(entry) : await syncPending()
-      if (sent > 0) toast.success(`${sent} offline entr${sent === 1 ? 'y' : 'ies'} added.`)
+      if (sent > 0) toast.success(`${sent} offline change${sent === 1 ? '' : 's'} saved.`)
       else if (refused > 0) toast.error('The server refused it. See the reason below.')
       else toast.error('Still can\'t reach the server. It\'ll try again when you\'re back online.')
     } finally {
@@ -45,7 +52,7 @@ export function PendingEntries({ categories }: { categories: Category[] }) {
           <div>
             <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Waiting to sync</p>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Added offline on this device. {waiting > 0 ? (offline ? 'They\'ll be added when you\'re back online.' : 'Sending…') : 'Fix or discard the ones below.'}
+              Made offline on this device. {waiting > 0 ? (offline ? 'They\'ll be saved when you\'re back online.' : 'Sending…') : 'Fix or discard the ones below.'}
             </p>
           </div>
         </div>
@@ -60,8 +67,9 @@ export function PendingEntries({ categories }: { categories: Category[] }) {
         {entries.map((e) => (
           <li key={e.client_id} className="flex items-start gap-3 px-5 py-3">
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-100">
-                {e.payload.description || categoryName(e.payload.category_id)}
+              <p className="flex items-center gap-1.5 text-sm font-medium text-gray-800 dark:text-gray-100">
+                <span className={['shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide', KIND[kindOf(e)].tone].join(' ')}>{KIND[kindOf(e)].label}</span>
+                <span className={['truncate', kindOf(e) === 'delete' ? 'line-through opacity-70' : ''].join(' ')}>{e.payload.description || categoryName(e.payload.category_id)}</span>
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">
                 {categoryName(e.payload.category_id)} · {formatDate(e.payload.date)}{e.payload.scope === 'business' ? ' · Business' : ''}
@@ -97,11 +105,11 @@ export function PendingEntries({ categories }: { categories: Category[] }) {
         onConfirm={async () => {
           if (discarding) await discardEntry(discarding)
           setDiscarding(null)
-          toast.success('Discarded. It was never added.')
+          toast.success('Discarded. The change was never made.')
         }}
-        title="Discard this entry?"
+        title="Discard this change?"
         confirmLabel="Discard"
-        message={discarding ? `${discarding.payload.description || categoryName(discarding.payload.category_id)} (${formatCurrency(discarding.payload.amount)}) was only saved on this device. Discarding it means it's never added.` : ''}
+        message={discarding ? `${discarding.payload.description || categoryName(discarding.payload.category_id)} (${formatCurrency(discarding.payload.amount)}) was only changed on this device. Discarding it means the change never happens.` : ''}
       />
     </Card>
   )

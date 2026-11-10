@@ -9,6 +9,7 @@ import { useWaitingLeads } from '@/hooks/useWaitingLeads'
 import { Sidebar } from './Sidebar'
 import { Header } from './Header'
 import { SectionTabs } from './SectionTabs'
+import { OfflineBanner } from './OfflineBanner'
 
 export function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -49,6 +50,7 @@ export function Layout() {
       <div className="flex flex-1 flex-col overflow-hidden min-w-0">
         <Header onMenuClick={() => setMobileOpen((v) => !v)} />
         <SectionTabs tabs={tabs} leadsWaiting={leadsWaiting} briefUnseen={briefUnseen} />
+        <OfflineBanner />
         <main className="flex-1 overflow-y-auto overscroll-contain p-3 sm:p-6 scrollbar-thin">
           {/* Keyed by page so a crash on one page clears when you navigate away */}
           <ErrorBoundary key={pathname}>

@@ -1,5 +1,6 @@
 import type { AuthUser } from '@/context/auth'
 import { readJson, readString, removeItem, STORAGE_KEYS, writeJson, writeString, type StorageArea } from './storage'
+import { clearResponses } from './offline/responseCache'
 
 export interface AuthSession {
   token: string
@@ -53,6 +54,8 @@ export function clearSession(): void {
     removeItem(STORAGE_KEYS.authUser, area)
     removeItem(STORAGE_KEYS.authExpiresAt, area)
   }
+  // Pages kept for offline viewing go too: nothing private stays on the device after logout
+  void clearResponses()
 }
 
 /** Email to pre-fill on the login page (set by a "Remember me" sign-in). */

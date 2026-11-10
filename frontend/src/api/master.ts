@@ -58,3 +58,44 @@ export const balanceAccountsApi = {
   check:   (id: number, actual: number, note?: string | null) =>
     api.post<{ difference: number; entry: BalanceEntry | null; account: BalanceAccountConfig }>(`/master/balance-accounts/${id}/check`, { actual, note }).then((r) => r.data),
 }
+
+/** One row an action changed, for people (Master File → Undo) */
+export interface OperationChange {
+  table: string
+  /** "sale", "gold stash entry", "wallet entry"… */
+  noun: string
+  action: 'created' | 'updated' | 'deleted'
+  name: string | null
+  amount: string | null
+  /** For changes: the fields that changed, before → after */
+  fields: { field: string; before: string | null; after: string | null }[]
+}
+
+/** One thing done in the app, undoable as a whole */
+export interface Operation {
+  id: number
+  label: string
+  /** Who did it ("Scheduler" for automatic jobs) */
+  user: string
+  created_at: string
+  undone_at: string | null
+  undone_by: string | null
+  changes: OperationChange[]
+}
+
+export interface OperationPage {
+  data: Operation[]
+  current_page: number
+  last_page: number
+  per_page: number
+  from: number | null
+  to: number | null
+  total: number
+}
+
+/** Master File → Undo: everything done in the app, newest first */
+export const operationsApi = {
+  list: (page: number) => api.get<OperationPage>('/master/operations', { params: { page } }).then((r) => r.data),
+  undo: (id: number) => api.post<{ message: string }>(`/master/operations/${id}/undo`).then((r) => r.data),
+  redo: (id: number) => api.post<{ message: string }>(`/master/operations/${id}/redo`).then((r) => r.data),
+}

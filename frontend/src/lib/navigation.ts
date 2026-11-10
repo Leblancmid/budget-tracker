@@ -71,6 +71,7 @@ export const NAV_SECTIONS: NavSection[] = [
     tabs: [
       { to: '/master', label: 'Overview', end: true },
       { to: '/logs', label: 'Logs' },
+      { to: '/master/undo', label: 'Undo' },
     ],
   },
 ]

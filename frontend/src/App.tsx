@@ -27,6 +27,7 @@ const Leads               = lazy(() => import('@/pages/business/Leads'))
 const DailyExpensesReport = lazy(() => import('@/pages/reports/DailyExpensesReport'))
 const BusinessReport      = lazy(() => import('@/pages/reports/BusinessReport'))
 const Logs                = lazy(() => import('@/pages/Logs'))
+const UndoHistory         = lazy(() => import('@/pages/master/UndoHistory'))
 
 /** Pages for admins only; daily-only users are sent to their dashboard. */
 function AdminRoute() {
@@ -74,6 +75,7 @@ export default function App() {
                     <Route path="/reports/business" element={<BusinessReport />} />
 
                     <Route path="/logs" element={<Logs />} />
+                    <Route path="/master/undo" element={<UndoHistory />} />
                   </Route>
                 </Route>
               </Route>

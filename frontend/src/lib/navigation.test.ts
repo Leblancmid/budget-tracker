@@ -23,6 +23,7 @@ describe('navigation', () => {
     expect(where('/rucoy/calculator')).toBe('Rucoy / Gold Calculator (Gold Calculator)')
     expect(where('/master')).toBe('Master File / Overview (Overview)')
     expect(where('/logs')).toBe('Master File / Logs (Logs)')
+    expect(where('/master/undo')).toBe('Master File / Undo (Undo)')
   })
 
   it('shows Categories under the Budgets tab but keeps its own title', () => {

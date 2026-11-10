@@ -5,8 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Recurring daily transactions (bills, allowances) posted automatically, and the last
- * bank check of each Balance account (the real balance it was matched to).
+ * Recurring daily transactions (bills, allowances), posted automatically by recurring:post.
  */
 return new class extends Migration
 {
@@ -28,28 +27,10 @@ return new class extends Migration
             $table->date('last_posted_on')->nullable();
             $table->timestamps();
         });
-
-        Schema::table('transactions', function (Blueprint $table) {
-            $table->foreignId('recurring_entry_id')->nullable()->after('category_id')
-                ->constrained('recurring_entries')->nullOnDelete();
-        });
-
-        Schema::table('balance_accounts', function (Blueprint $table) {
-            $table->date('checked_at')->nullable()->after('interest_credited_through');
-            $table->decimal('checked_balance', 14, 2)->nullable()->after('checked_at');
-        });
     }
 
     public function down(): void
     {
-        Schema::table('balance_accounts', function (Blueprint $table) {
-            $table->dropColumn(['checked_at', 'checked_balance']);
-        });
-
-        Schema::table('transactions', function (Blueprint $table) {
-            $table->dropConstrainedForeignId('recurring_entry_id');
-        });
-
         Schema::dropIfExists('recurring_entries');
     }
 };

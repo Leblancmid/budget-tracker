@@ -4,23 +4,24 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * Middleman fees earned, each linked to the KKS trade it came from.
+ */
 return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('balance_entries', function (Blueprint $table) {
+        Schema::create('middleman_fees', function (Blueprint $table) {
             $table->id();
-            $table->enum('account', ['PAYPAL', 'BINANCE']);
-            $table->enum('type', ['add', 'sell']);
+            $table->foreignId('trade_id')->nullable()->constrained('trades')->cascadeOnDelete();
             $table->decimal('amount', 15, 2);
             $table->string('description')->nullable();
-            $table->date('date');
             $table->timestamps();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('balance_entries');
+        Schema::dropIfExists('middleman_fees');
     }
 };

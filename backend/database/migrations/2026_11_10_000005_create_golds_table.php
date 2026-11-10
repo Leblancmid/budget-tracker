@@ -4,21 +4,23 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-/** Website settings edited in the app and published with the listings (e.g. gold rates). */
+/**
+ * The gold stash: each row is gold added (+) or taken out (−).
+ */
 return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('site_settings', function (Blueprint $table) {
+        Schema::create('golds', function (Blueprint $table) {
             $table->id();
-            $table->string('key', 50)->unique();
-            $table->json('value');
+            $table->decimal('amount', 20, 2);
+            $table->string('description')->nullable();
             $table->timestamps();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('site_settings');
+        Schema::dropIfExists('golds');
     }
 };

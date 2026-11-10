@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\AccountPayment;
 use App\Models\BusinessTransaction;
 use App\Models\Gold;
-use App\Models\GoldLog;
 use App\Models\RucoyAccount;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -78,22 +77,5 @@ class ConvertToGoldTest extends TestCase
         ])->assertCreated();
 
         $this->assertEquals(300_000_000, $this->stash());
-    }
-
-    public function test_the_repair_migration_tracks_trades_converted_before_the_fix(): void
-    {
-        $old = BusinessTransaction::create(['type' => 'gold', 'price_gold' => 450_000_000, 'cost_gold' => 400_000_000, 'amount' => 1,
-            'date' => '2026-11-04', 'description' => '9/100 Gcash', 'notes' => 'Converted from account: a@x.com']);
-        $migration = require database_path('migrations/2026_11_05_000002_track_gold_trades_converted_from_accounts.php');
-
-        $migration->up();
-        $migration->up(); // running twice is harmless
-        $this->assertEquals(450_000_000, $this->stash());
-        $this->assertEquals(450_000_000, $old->fresh()->inventory_gold);
-
-        $migration->down();
-        $this->assertEquals(0, $this->stash());
-        $this->assertNull($old->fresh()->inventory_gold);
-        $this->assertSame(2, GoldLog::count());
     }
 }

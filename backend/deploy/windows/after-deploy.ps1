@@ -4,7 +4,8 @@
     Run after a new version of the Budget Tracker backend is on the server (deploy.ps1 calls it).
 
 .DESCRIPTION
-    1. Applies new database migrations.
+    1. Applies new database migrations (after migrations:baseline, the one-time switch to the
+       squashed one-file-per-table migrations).
     2. Creates public\storage (the link that serves uploaded account screenshots) if it's missing.
     3. Caches config, routes, views and events (php artisan optimize), so Laravel doesn't
        re-read them on every request.
@@ -44,6 +45,10 @@ function Invoke-Artisan([string[]]$ArtisanArgs) {
 
 Push-Location $Backend
 try {
+    # One-time switch to the squashed migrations (one file per table): on a database that ran the
+    # old ones, records the new files as run so migrate doesn't try to create existing tables.
+    # Does nothing on a new database or once it has run.
+    Invoke-Artisan @('migrations:baseline')
     Invoke-Artisan @('migrate', '--force')
 
     # Uploaded screenshots are served through public\storage. It isn't in git, so a fresh

@@ -6,6 +6,8 @@ import { useTheme } from '@/context/theme'
 import { useAmountVisibility } from '@/context/amountVisibility'
 import { useAuth } from '@/context/auth'
 import { locate, SECTION_STYLES } from '@/lib/navigation'
+import { usePendingEntries } from '@/lib/offline/outbox'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 
 interface HeaderProps {
   onMenuClick?: () => void
@@ -35,10 +37,15 @@ export function Header({ onMenuClick }: HeaderProps) {
   // Browser tab shows the current page instead of a fixed app name
   useEffect(() => { document.title = `${meta.title} · ${meta.section}` }, [meta.title, meta.section])
 
-  const handleLogout = async () => {
+  const pending = usePendingEntries()
+  const [confirmLogout, setConfirmLogout] = useState(false)
+
+  const signOut = async () => {
     await logout()
     navigate('/login', { replace: true })
   }
+  // Entries added offline and not sent yet: say so before signing out
+  const handleLogout = () => (pending.length > 0 ? setConfirmLogout(true) : signOut())
 
   return (
     <header className="app-header flex shrink-0 items-center justify-between border-b border-gray-200 bg-white px-3 sm:px-6 dark:border-gray-700/60 dark:bg-gray-900">
@@ -104,6 +111,14 @@ export function Header({ onMenuClick }: HeaderProps) {
         </button>
       </div>
       {quickAdd && <QuickAddModal isAdmin={user?.role !== 'daily_only'} onClose={() => setQuickAdd(false)} />}
+      <ConfirmDialog
+        open={confirmLogout}
+        onClose={() => setConfirmLogout(false)}
+        onConfirm={() => { setConfirmLogout(false); void signOut() }}
+        title="Sign out with entries not synced?"
+        confirmLabel="Sign out"
+        message={`${pending.length} entr${pending.length === 1 ? 'y' : 'ies'} added offline ${pending.length === 1 ? 'hasn\'t' : 'haven\'t'} reached the server yet. ${pending.length === 1 ? 'It stays' : 'They stay'} on this device and ${pending.length === 1 ? 'is' : 'are'} sent the next time you sign in here.`}
+      />
     </header>
   )
 }

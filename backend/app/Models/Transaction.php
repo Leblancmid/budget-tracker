@@ -15,7 +15,7 @@ class Transaction extends Model
 
     public const SCOPES = ['personal', 'business'];
 
-    protected $fillable = ['user_id', 'category_id', 'recurring_entry_id', 'type', 'scope', 'amount', 'description', 'date', 'notes'];
+    protected $fillable = ['user_id', 'category_id', 'recurring_entry_id', 'client_id', 'type', 'scope', 'amount', 'description', 'date', 'notes'];
 
     protected function casts(): array
     {

@@ -5,9 +5,10 @@
  */
 
 const DB_NAME = 'budget-offline'
-const DB_VERSION = 1
-export type StoreName = 'responses'
-const STORES: StoreName[] = ['responses']
+const DB_VERSION = 2
+/** responses: pages saved for offline viewing; outbox: daily entries added offline, waiting to be sent */
+export type StoreName = 'responses' | 'outbox'
+const STORES: StoreName[] = ['responses', 'outbox']
 
 let dbPromise: Promise<IDBDatabase | null> | null = null
 const memory = new Map<StoreName, Map<string, unknown>>(STORES.map((s) => [s, new Map()]))

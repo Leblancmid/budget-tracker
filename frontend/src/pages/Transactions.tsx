@@ -13,6 +13,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Card } from '@/components/ui/Card'
 import { TransactionModal, type TransactionFormData } from '@/components/modals/TransactionModal'
 import { RecurringEntriesModal } from '@/components/modals/RecurringEntriesModal'
+import { PendingEntries } from '@/components/offline/PendingEntries'
 import { useDataChanged } from '@/lib/dataEvents'
 import { toast } from '@/lib/toast'
 import { formatCurrency, formatDate, formatTime, MONTHS } from '@/utils/format'
@@ -75,7 +76,11 @@ export function Transactions() {
       await update(editTarget.id, payload)
       toast.success('Transaction updated.')
     } else {
-      await create(payload)
+      const result = await create(payload)
+      if (result.queued) {
+        toast.success('You\'re offline: saved on this device. It\'ll be added when you\'re back online.')
+        return
+      }
       toast.success(data.scope === 'business' ? 'Business transaction added — not counted in Daily Expenses.' : 'Transaction added.')
     }
     refetchStats()
@@ -270,6 +275,9 @@ export function Transactions() {
           )}
         </div>
       </div>
+
+      {/* ── Added offline, not sent yet ────────────────────────────── */}
+      <PendingEntries categories={categories} />
 
       {/* ── List, grouped by day ───────────────────────────────────── */}
       <Card className="overflow-hidden">

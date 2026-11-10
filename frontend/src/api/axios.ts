@@ -66,6 +66,7 @@ api.interceptors.response.use(
         message: key
           ? 'You\'re offline, and this page hasn\'t been opened on this device yet.'
           : 'You\'re offline. This needs an internet connection.',
+        offline: true,
       }
       return Promise.reject(rejection)
     }
@@ -73,6 +74,7 @@ api.interceptors.response.use(
     const rejection: ApiError = {
       message: error.response?.data?.message ?? error.message ?? 'An unexpected error occurred.',
       errors:  error.response?.data?.errors,
+      status:  error.response?.status,
     }
     return Promise.reject(rejection)
   }

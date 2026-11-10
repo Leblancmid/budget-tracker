@@ -7,6 +7,7 @@ use App\Http\Requests\StoreTransactionRequest;
 use App\Http\Requests\UpdateTransactionRequest;
 use App\Models\Transaction;
 use App\Services\TransactionBalance;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -60,12 +61,25 @@ class TransactionController extends Controller
     {
         $data = $request->validated();
 
-        $transaction = DB::transaction(function () use ($data) {
-            $tx = Transaction::create(array_merge(collect($data)->except('balance_account')->all(), ['user_id' => auth()->id()]));
-            TransactionBalance::sync($tx, $data['balance_account'] ?? null);
+        // Sent again (an offline entry whose first send lost its answer): it's already saved
+        if ($existing = $this->alreadySaved($data['client_id'] ?? null)) {
+            return response()->json($this->present($existing));
+        }
 
-            return $tx;
-        });
+        try {
+            $transaction = DB::transaction(function () use ($data) {
+                $tx = Transaction::create(array_merge(collect($data)->except('balance_account')->all(), ['user_id' => auth()->id()]));
+                TransactionBalance::sync($tx, $data['balance_account'] ?? null);
+
+                return $tx;
+            });
+        } catch (UniqueConstraintViolationException $e) {
+            // The same entry arriving twice at once: the first one won
+            if ($existing = $this->alreadySaved($data['client_id'] ?? null)) {
+                return response()->json($this->present($existing));
+            }
+            throw $e;
+        }
 
         return response()->json($this->present($transaction), 201);
     }
@@ -102,6 +116,12 @@ class TransactionController extends Controller
         $transaction->delete();
 
         return response()->json(['message' => 'Transaction deleted successfully.']);
+    }
+
+    /** This user's entry with this offline id, if it was saved before. */
+    private function alreadySaved(?string $clientId): ?Transaction
+    {
+        return $clientId ? Transaction::where('user_id', auth()->id())->where('client_id', $clientId)->first() : null;
     }
 
     private function present(Transaction $tx): Transaction

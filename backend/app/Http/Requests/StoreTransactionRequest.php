@@ -24,6 +24,8 @@ class StoreTransactionRequest extends FormRequest
             'scope'           => ['sometimes', 'in:personal,business'],
             // Daily amounts are in ₱, so only PHP balance accounts can be linked
             'balance_account' => ['nullable', 'string', Rule::exists('balance_accounts', 'code')->where('currency', 'PHP')],
+            // Set by the phone for entries added offline, so a resend can't save twice
+            'client_id'       => ['nullable', 'uuid'],
         ];
     }
 }

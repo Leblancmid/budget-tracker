@@ -23,10 +23,11 @@ export function useTransactions(initialFilters: TransactionFilters = {}) {
     setFilters((prev) => ({ ...prev, page }))
   }
 
+  /** Add an entry; offline it waits on the device (`queued: true`) and is sent later. */
   const create = async (data: Parameters<typeof transactionsApi.create>[0]) => {
-    const tx = await transactionsApi.create(data)
-    await refetch()
-    return tx
+    const result = await transactionsApi.createOrQueue(data)
+    if (!result.queued) await refetch()
+    return result
   }
 
   const update = async (id: number, data: Parameters<typeof transactionsApi.update>[1]) => {

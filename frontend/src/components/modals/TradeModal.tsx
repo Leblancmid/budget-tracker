@@ -6,8 +6,12 @@ import type { TradePayload } from '@/api/rucoy'
 import type { Trade, TradeCurrency, TradePaymentMethod, TradeStatus } from '@/types'
 import { formatWithCommas, handleAmountInput } from '@/utils/format'
 import { flattenApiErrors } from '@/utils/api'
+import { formatGoldShort } from '@/utils/listing'
 
 const MM_FEE_OPTIONS = [1_000_000, 2_000_000]
+
+/** A preset fee, a custom amount typed in, or no fee */
+type MmChoice = number | 'custom' | null
 
 interface TradeModalProps {
   open: boolean
@@ -50,16 +54,25 @@ const EMPTY: TradeForm = {
 
 export function TradeModal({ open, onClose, onSubmit, trade }: TradeModalProps) {
   const [form, setForm] = useState<TradeForm>(EMPTY)
-  const [errors, setErrors] = useState<Partial<Record<keyof TradeForm, string>>>({})
+  const [errors, setErrors] = useState<Partial<Record<keyof TradeForm | 'middleman_fee', string>>>({})
   const [loading, setLoading] = useState(false)
-  const [mmFee, setMmFee] = useState<number | null>(null)
+  const [mmChoice, setMmChoice] = useState<MmChoice>(null)
+  const [mmCustom, setMmCustom] = useState('')
+  const mmFee = mmChoice === 'custom' ? (Number(mmCustom) > 0 ? Number(mmCustom) : null) : mmChoice
+
+  const chooseMm = (choice: MmChoice) => {
+    setMmChoice(mmChoice === choice ? null : choice)
+    setErrors((e) => ({ ...e, middleman_fee: undefined }))
+  }
 
   useEffect(() => {
     if (open) {
       setErrors({})
       if (trade) {
-        // Convert middleman_fee to number if it exists
-        setMmFee(trade.middleman_fee ? Number(trade.middleman_fee) : null)
+        // A fee that isn't one of the presets opens as a custom amount
+        const fee = trade.middleman_fee ? Number(trade.middleman_fee) : null
+        setMmChoice(fee === null ? null : MM_FEE_OPTIONS.includes(fee) ? fee : 'custom')
+        setMmCustom(fee !== null && !MM_FEE_OPTIONS.includes(fee) ? String(fee) : '')
         setForm({
           description:     trade.description ?? '',
           status:          trade.status,
@@ -69,7 +82,8 @@ export function TradeModal({ open, onClose, onSubmit, trade }: TradeModalProps) 
           completion_date: trade.completion_date ?? '',
         })
       } else {
-        setMmFee(null)
+        setMmChoice(null)
+        setMmCustom('')
         setForm(EMPTY)
       }
     }
@@ -82,6 +96,8 @@ export function TradeModal({ open, onClose, onSubmit, trade }: TradeModalProps) 
     const errs: typeof errors = {}
     if (!form.amount || isNaN(parseFloat(form.amount)) || parseFloat(form.amount) < 0)
       errs.amount = 'Enter a valid amount.'
+    if (form.status === 'kks' && mmChoice === 'custom' && mmFee === null)
+      errs.middleman_fee = 'Enter the fee, or untick Custom.'
     setErrors(errs)
     return Object.keys(errs).length === 0
   }
@@ -194,27 +210,49 @@ export function TradeModal({ open, onClose, onSubmit, trade }: TradeModalProps) 
         <div>
           <p className="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Middleman Fee</p>
           <div className="flex gap-2">
-            {MM_FEE_OPTIONS.map((opt) => (
+            {[...MM_FEE_OPTIONS, 'custom' as const].map((opt) => (
               <button
                 key={opt}
                 type="button"
-                onClick={() => setMmFee(mmFee === opt ? null : opt)}
+                onClick={() => chooseMm(opt)}
                 disabled={isCash}
+                aria-pressed={mmChoice === opt}
                 className={[
                   'flex-1 rounded-lg border py-2 text-sm font-semibold transition-colors',
-                  mmFee === opt
+                  mmChoice === opt
                     ? 'border-violet-500 bg-violet-50 text-violet-700 dark:bg-violet-900/20 dark:text-violet-400 dark:border-violet-700'
                     : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
                   isCash && 'opacity-50 cursor-not-allowed',
                 ].join(' ')}
               >
-                {opt.toLocaleString()} G
+                {opt === 'custom' ? 'Custom' : `${opt.toLocaleString()} G`}
               </button>
             ))}
           </div>
+          {mmChoice === 'custom' && !isCash && (
+            <input
+              type="text"
+              inputMode="numeric"
+              autoFocus
+              aria-label="Custom middleman fee in gold"
+              value={formatWithCommas(mmCustom, false)}
+              onChange={(e) => handleAmountInput(e.target.value, (v) => { setMmCustom(v); setErrors((er) => ({ ...er, middleman_fee: undefined })) }, false)}
+              placeholder="e.g. 3,000,000"
+              className={[
+                'mt-2 block w-full rounded-lg border bg-white px-3 py-2 text-sm text-gray-900',
+                'placeholder:text-gray-400 transition-colors',
+                'focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent',
+                'dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500',
+                errors.middleman_fee
+                  ? 'border-red-400 dark:border-red-500'
+                  : 'border-gray-300 hover:border-gray-400 dark:border-gray-600 dark:hover:border-gray-500',
+              ].join(' ')}
+            />
+          )}
+          {errors.middleman_fee && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.middleman_fee}</p>}
           {mmFee && !isCash && (
             <p className="mt-1 text-xs text-violet-600 dark:text-violet-400">
-              {mmFee.toLocaleString()} G fee will be logged in gold records.
+              {mmFee.toLocaleString()} G ({formatGoldShort(mmFee)}) fee will be logged in gold records.
             </p>
           )}
           {isCash && (

@@ -6,8 +6,8 @@ use App\Models\ActivityLog;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Writes an activity log entry when a model is created, and an "edited" entry with the
- * before/after value of each changed field when it's updated.
+ * Writes an activity log entry when a model is created, an "edited" entry with the before/after
+ * value of each changed field when it's updated, and a "removed" entry when it's deleted.
  */
 abstract class ActivityLogObserver
 {
@@ -32,6 +32,16 @@ abstract class ActivityLogObserver
         } elseif ($model->isDirty() && ! $this->onlyIgnoredFieldsChanged($model)) {
             ActivityLog::recordEdit($model, $this->attributes($model));
         }
+    }
+
+    /** Deleting keeps a "Removed" line (who, when, from which device), so it doesn't just vanish from the Logs. */
+    public function deleted(Model $model): void
+    {
+        ActivityLog::create([
+            ...$this->attributes($model),
+            'type'        => 'removed',
+            'description' => 'Removed: ' . ($this->description($model) ?? '#' . $model->getKey()),
+        ]);
     }
 
     protected function type(Model $model): ?string

@@ -79,6 +79,21 @@ class OfflineEntryTest extends TestCase
         $this->send(['client_id' => 'abc'])->assertUnprocessable()->assertJsonValidationErrors('client_id');
     }
 
+    public function test_a_deleted_entry_shows_on_the_logs_as_removed(): void
+    {
+        $id = $this->send()->assertCreated()->json('id');
+
+        // An offline delete arrives as an ordinary delete once the phone is back online
+        $this->deleteJson("/api/v1/transactions/{$id}")->assertOk();
+
+        $removed = collect($this->getJson('/api/v1/logs')->assertOk()->json('data'))->firstWhere('type', 'removed');
+        $this->assertNotNull($removed, 'The delete should be on the Logs page');
+        $this->assertSame('daily', $removed['module']);
+        $this->assertSame('Removed: Lunch', $removed['description']);
+        $this->assertEquals(250, $removed['amount']);
+        $this->assertSame($this->user->id, $removed['user_id']);
+    }
+
     public function test_an_entry_rejected_later_still_says_why(): void
     {
         // e.g. the category was deleted while the phone was offline

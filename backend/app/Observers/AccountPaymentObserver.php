@@ -3,7 +3,6 @@
 namespace App\Observers;
 
 use App\Models\AccountPayment;
-use App\Models\ActivityLog;
 use Illuminate\Database\Eloquent\Model;
 
 /** Account payments on the Logs page: who paid what (as a ₱ cost), and removals. */
@@ -30,14 +29,5 @@ class AccountPaymentObserver extends ActivityLogObserver
     {
         return $model->cost_php !== null ? -$model->cost_php : null;
     }
-
-    /** Removing a payment undoes it; keep a line so it doesn't vanish from the Logs. */
-    public function deleted(AccountPayment $payment): void
-    {
-        ActivityLog::create([
-            ...$this->attributes($payment),
-            'type'        => 'removed',
-            'description' => 'Removed: ' . $payment->summary(),
-        ]);
-    }
+    // Removing a payment leaves a "Removed: …" line (ActivityLogObserver::deleted)
 }

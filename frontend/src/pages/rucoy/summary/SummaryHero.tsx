@@ -19,10 +19,13 @@ export function SummaryHero({ totalGold, tradesGold, tradeCount, logCount, accou
   const negative    = overallGold < 0
 
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-700 to-slate-900 p-6 shadow-lg shadow-slate-900/30 dark:shadow-black/40">
-      <div className="absolute -top-8 -right-8 h-40 w-40 rounded-full bg-white/5" />
-      <div className="absolute -bottom-10 -left-6 h-32 w-32 rounded-full bg-white/[0.03]" />
-      <div className={['absolute -top-16 left-1/3 h-48 w-48 rounded-full blur-3xl', negative ? 'bg-red-500/10' : 'bg-amber-400/10'].join(' ')} />
+    <div className="relative rounded-2xl bg-gradient-to-br from-slate-700 to-slate-900 p-6 shadow-lg shadow-slate-900/30 dark:shadow-black/40">
+      {/* Only the decorations are clipped to the card, so the fee dropdown can open past its edge */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl" aria-hidden="true">
+        <div className="absolute -top-8 -right-8 h-40 w-40 rounded-full bg-white/5" />
+        <div className="absolute -bottom-10 -left-6 h-32 w-32 rounded-full bg-white/[0.03]" />
+        <div className={['absolute -top-16 left-1/3 h-48 w-48 rounded-full blur-3xl', negative ? 'bg-red-500/10' : 'bg-amber-400/10'].join(' ')} />
+      </div>
 
       <div className="relative flex flex-col gap-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -86,11 +89,18 @@ function MmFeeTile({ total, period, onPeriodChange }: { total: number; period: M
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
+    const onClick = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
     }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('mousedown', onClick)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onClick)
+      document.removeEventListener('keydown', onKey)
+    }
   }, [])
 
   return (

@@ -1,8 +1,10 @@
 import api from './axios'
-import type { BalanceAccountConfig, BalanceCurrency, BalanceEntry, MasterDashboardStats } from '@/types'
+import type { BalanceAccountConfig, BalanceCurrency, BalanceEntry, MasterDashboardStats, MasterTrendMonth } from '@/types'
 
 export const masterDashboardApi = {
   getStats: () => api.get<MasterDashboardStats>('/master/dashboard').then((r) => r.data),
+  /** The last 12 months, oldest first (the Overview charts) */
+  getTrend: () => api.get<{ months: MasterTrendMonth[] }>('/master/dashboard/trend').then((r) => r.data.months),
 }
 
 export interface BalanceEntryPayload {

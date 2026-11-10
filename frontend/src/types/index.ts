@@ -185,6 +185,20 @@ export interface MasterDashboardStats {
   balance_php_accounts?: number
 }
 
+/** One Manila month on Master → Overview: what was earned, and what was held at its end (raw ₱, $ and gold). */
+export interface MasterTrendMonth {
+  /** "2026-11" */
+  month: string
+  business_profit: number
+  daily_income: number
+  daily_expense: number
+  php_balance: number
+  usd_balance: number
+  gold_stash: number
+  account_gold: number
+  account_cash_php: number
+}
+
 // ── Business ─────────────────────────────────────────────────────────────────
 
 export type BusinessTransactionType = 'account' | 'gold' | 'expense'

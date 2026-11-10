@@ -54,6 +54,8 @@ export function Layout() {
               <Outlet />
             </Suspense>
           </ErrorBoundary>
+          {/* Room for the phone's home indicator when installed as an app */}
+          <div className="safe-bottom-space" aria-hidden="true" />
         </main>
       </div>
     </div>

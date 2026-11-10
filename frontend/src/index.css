@@ -19,6 +19,27 @@ body {
   color: #111827;
 }
 
+/*
+ * Installed on a phone ("Add to Home Screen"): the app draws under the status bar and the home
+ * indicator, so leave room for them. Every inset is 0 in a normal browser, so nothing changes there.
+ */
+.app-header {
+  position: relative;
+  padding-top: env(safe-area-inset-top);
+  height: calc(3.5rem + env(safe-area-inset-top));
+}
+/* A dark strip behind the status bar, so its white clock stays readable in light mode too */
+.app-header::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: env(safe-area-inset-top);
+  background: #111827;
+}
+.safe-top { padding-top: env(safe-area-inset-top); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+.safe-bottom-space { height: env(safe-area-inset-bottom); }
+
 /* Custom thin scrollbar */
 .scrollbar-thin {
   scrollbar-width: thin;

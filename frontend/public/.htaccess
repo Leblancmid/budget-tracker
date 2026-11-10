@@ -1,3 +1,6 @@
+# The installable-app manifest (Add to Home Screen)
+AddType application/manifest+json .webmanifest
+
 <IfModule mod_rewrite.c>
     Options -MultiViews -Indexes
     RewriteEngine On

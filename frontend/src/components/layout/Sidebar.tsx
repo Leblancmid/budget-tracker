@@ -32,7 +32,7 @@ export function Sidebar({ sections, leadsWaiting, briefUnseen, mobileOpen = fals
 
   return (
     <aside className={[
-      'flex h-full shrink-0 flex-col border-r border-gray-200 bg-white dark:border-gray-700/60 dark:bg-gray-900 overflow-y-auto scrollbar-thin overflow-x-hidden transition-all duration-200',
+      'safe-top safe-bottom flex h-full shrink-0 flex-col border-r border-gray-200 bg-white dark:border-gray-700/60 dark:bg-gray-900 overflow-y-auto scrollbar-thin overflow-x-hidden transition-all duration-200',
       // Mobile: fixed overlay drawer
       'fixed inset-y-0 left-0 z-50 md:relative md:translate-x-0',
       mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',

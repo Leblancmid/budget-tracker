@@ -41,7 +41,7 @@ export function Header({ onMenuClick }: HeaderProps) {
   }
 
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-6 dark:border-gray-700/60 dark:bg-gray-900">
+    <header className="app-header flex shrink-0 items-center justify-between border-b border-gray-200 bg-white px-3 sm:px-6 dark:border-gray-700/60 dark:bg-gray-900">
 
       {/* Hamburger — mobile only */}
       <button

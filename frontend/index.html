@@ -13,10 +13,12 @@
     <meta name="apple-mobile-web-app-title" content="Budget" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <!-- The app draws its own header behind the clock and battery -->
+    <!--
+      The app draws its own header behind the clock and battery, so that area always matches the
+      theme and switches with it. No theme-color on purpose: an installed iPhone app reads it once at
+      launch and paints a solid bar with it, which then ignores the theme switch.
+    -->
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <!-- The header's colour; kept in step with the theme (here and in ThemeProvider) -->
-    <meta name="theme-color" content="#ffffff" />
     <script>
       (function () {
         let dark = false
@@ -25,7 +27,6 @@
           dark = stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches)
         } catch (e) {}
         if (dark) document.documentElement.classList.add('dark')
-        document.querySelector('meta[name="theme-color"]').setAttribute('content', dark ? '#111827' : '#ffffff')
       })()
     </script>
   </head>

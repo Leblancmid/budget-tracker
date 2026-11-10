@@ -13,9 +13,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark')
-    // The phone's status bar area follows the header colour (white / gray-900) right away,
-    // not only after the app is reopened
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#111827' : '#ffffff')
     writeString(STORAGE_KEYS.theme, theme)
   }, [theme])
 

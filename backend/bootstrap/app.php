@@ -27,6 +27,11 @@ return Application::configure(basePath: dirname(__DIR__))
             RecordOperation::class,
         ]);
 
+        // Tailscale Serve (https://….ts.net) passes requests in from this same machine: believe its
+        // forwarded headers so links are https and each device keeps its own IP (login rate limit).
+        // Nobody else is trusted, so these headers can't be faked from outside.
+        $middleware->trustProxies(at: ['127.0.0.1', '::1']);
+
         $middleware->alias(['admin' => EnsureAdmin::class]);
 
         $middleware->validateCsrfTokens(except: ['api/*']);

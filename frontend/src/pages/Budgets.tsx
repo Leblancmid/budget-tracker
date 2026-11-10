@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { AlertTriangle, CalendarDays, CheckCircle2, Copy, Download, Gauge, Pencil, Plus, Target, Trash2, Wallet } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { AlertTriangle, CalendarDays, CheckCircle2, Copy, Download, Gauge, Pencil, Plus, Tags, Target, Trash2, Wallet } from 'lucide-react'
 import { useBudgets } from '@/hooks/useBudgets'
 import { useCategories } from '@/hooks/useCategories'
 import { budgetsApi } from '@/api/budgets'
@@ -132,7 +133,16 @@ export function Budgets() {
       {/* ── Toolbar ────────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <MonthNav month={month} year={year} onChange={changeMonth} />
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          {/* Categories are managed from here (they have no tab of their own) */}
+          <Link
+            to="/categories"
+            title="Add, rename or recolour categories"
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white"
+          >
+            <Tags className="h-4 w-4" />
+            <span className="hidden sm:inline">Categories</span>
+          </Link>
           <Button variant="secondary" icon={<Copy className="h-4 w-4" />} onClick={copyLastMonth} loading={copying} title={`Copy budgets from ${prevLabel}`}>
             <span className="hidden sm:inline">Copy {MONTHS[prev.getMonth()].slice(0, 3)}</span>
           </Button>

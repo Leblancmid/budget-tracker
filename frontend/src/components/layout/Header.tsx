@@ -5,33 +5,7 @@ import { QuickAddModal } from '@/components/modals/QuickAddModal'
 import { useTheme } from '@/context/theme'
 import { useAmountVisibility } from '@/context/amountVisibility'
 import { useAuth } from '@/context/auth'
-
-const PAGE_META: Record<string, { title: string; section: string }> = {
-  '/':                       { title: 'Dashboard',       section: 'Daily Expenses' },
-  '/transactions':            { title: 'Transactions',    section: 'Daily Expenses' },
-  '/categories':              { title: 'Categories',      section: 'Daily Expenses' },
-  '/budgets':                 { title: 'Budgets',         section: 'Daily Expenses' },
-  '/business':                { title: 'Stats',       section: 'Business'       },
-  '/rucoy':                   { title: 'Summary',         section: 'Rucoy'          },
-  '/rucoy/trades':            { title: 'Trades',          section: 'Rucoy'          },
-  '/business/transactions':   { title: 'Sales',               section: 'Business'       },
-  '/business/listing':        { title: 'Listing Kit',         section: 'Business'       },
-  '/business/leads':          { title: 'Leads',               section: 'Business'       },
-  '/rucoy/calculator':        { title: 'Gold Calculator', section: 'Rucoy'          },
-  '/master':                  { title: 'Overview',        section: 'Master File'    },
-  '/master/balance':          { title: 'Balance',         section: 'Daily Expenses' },
-  '/logs':                    { title: 'Logs',            section: 'Master File'    },
-  '/reports/daily-expenses':  { title: 'Daily Expenses',  section: 'Reports'        },
-  '/reports/business':        { title: 'Business',        section: 'Reports'        },
-}
-
-const SECTION_STYLES: Record<string, { badge: string }> = {
-  'Daily Expenses': { badge: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' },
-  'Business':       { badge: 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300'         },
-  'Rucoy':          { badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'     },
-  'Reports':        { badge: 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300'             },
-  'Master File':    { badge: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300' },
-}
+import { locate, SECTION_STYLES } from '@/lib/navigation'
 
 interface HeaderProps {
   onMenuClick?: () => void
@@ -54,8 +28,9 @@ export function Header({ onMenuClick }: HeaderProps) {
     return () => document.removeEventListener('keydown', onKey)
   }, [])
 
-  const meta    = PAGE_META[pathname] ?? { title: 'Dashboard', section: 'Daily Expenses' }
-  const styles  = SECTION_STYLES[meta.section] ?? SECTION_STYLES['Daily Expenses']
+  const where  = locate(pathname)
+  const meta   = { title: where.title, section: where.section.label }
+  const styles = SECTION_STYLES[where.section.id]
 
   // Browser tab shows the current page instead of a fixed app name
   useEffect(() => { document.title = `${meta.title} · ${meta.section}` }, [meta.title, meta.section])

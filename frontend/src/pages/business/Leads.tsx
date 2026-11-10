@@ -6,6 +6,7 @@ import { Pagination } from '@/components/ui/Pagination'
 import { Amt } from '@/components/ui/Amt'
 import { leadsApi, type Lead, type LeadStatus } from '@/api/business'
 import { useAsyncData } from '@/hooks/useAsyncData'
+import { emitDataChanged } from '@/lib/dataEvents'
 import { toast } from '@/lib/toast'
 import { errorMessage } from '@/utils/api'
 import { formatCurrency, paginateLocally } from '@/utils/format'
@@ -82,6 +83,7 @@ export default function Leads() {
       await leadsApi.setStatus(l.id, status)
       setData((d) => ({ ...d, leads: d.leads.map((x) => (x.id === l.id ? { ...x, status, updated_at: Date.now() } : x)) }))
       toast.success(`${l.name}: ${STATUS[status].label.toLowerCase()}.`)
+      emitDataChanged() // the waiting-leads badge updates right away
     } catch (err) {
       toast.error(errorMessage(err, 'Could not update the lead.'))
     } finally {

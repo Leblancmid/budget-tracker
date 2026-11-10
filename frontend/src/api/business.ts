@@ -36,12 +36,15 @@ export interface WebsiteStats {
   daily: { day: string; visitors: number; pageviews: number }[]
   listing_views: { listing_id: string; account_id: number | null; name: string; sold: boolean | null; total: number; last7: number }[]
   alerts: { id: number; name: string; method: 'discord' | 'whatsapp'; contact: string; category: string | null; min_level: number; max_level: number | null; created_at: number; expires_at: number }[]
+  /** Website leads still waiting for a reply (oldest = ms timestamp) */
+  leads_new?: { count: number; oldest: number | null }
 }
 
 /** Visitors of the Leblanc website (online now, visits, views per listing, "Notify me" requests) */
 export const websiteStatsApi = {
   // "Not configured" answers with just { configured: false }: fill in empty numbers
-  get: (): Promise<WebsiteStats> => api.get<Partial<WebsiteStats> & { configured: boolean }>('/business/website-stats').then((r) => ({
+  /** fresh: skip the server's 30-second cache (e.g. right after replying to a lead) */
+  get: (fresh = false): Promise<WebsiteStats> => api.get<Partial<WebsiteStats> & { configured: boolean }>('/business/website-stats', { params: fresh ? { fresh: 1 } : {} }).then((r) => ({
     online: 0, online_pages: [], today: { visitors: 0, pageviews: 0 }, last7: { visitors: 0, pageviews: 0 },
     last30: { visitors: 0, pageviews: 0 }, all_time: { unique_visitors: 0, pageviews: 0 }, daily: [], listing_views: [], alerts: [],
     ...r.data,

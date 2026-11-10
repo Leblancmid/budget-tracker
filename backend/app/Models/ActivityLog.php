@@ -40,6 +40,25 @@ class ActivityLog extends Model
     }
 
     /**
+     * Log something done that isn't a saved record: a sign-in, an undo, publishing listings…
+     * Who, from where and on what device come from the current request.
+     */
+    public static function note(string $module, string $type, string $description, ?Model $subject = null, ?int $userId = null, mixed $amount = null): self
+    {
+        return self::create([
+            'user_id'       => $userId ?? auth()->id(),
+            'loggable_type' => $subject ? $subject::class : 'system',
+            'loggable_id'   => $subject?->getKey() ?? 0,
+            'module'        => $module,
+            'type'          => $type,
+            'description'   => mb_strimwidth($description, 0, 255, '…'),
+            'amount'        => $amount,
+            'ip_address'    => request()->ip(),
+            'user_agent'    => request()->userAgent(),
+        ]);
+    }
+
+    /**
      * Record an "edited" entry for an updated model, including the before/after
      * value of every changed field. Call from an observer's `updated` hook.
      */

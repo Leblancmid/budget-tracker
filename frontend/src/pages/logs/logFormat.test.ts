@@ -1,11 +1,37 @@
 import { describe, expect, it } from 'vitest'
 import type { LogEntry } from '@/api/logs'
-import { detectDevice, eventOf, fieldMeta, formatAmount, formatValue, isPositiveEntry, summarizeLogs } from './logFormat'
+import { detectDevice, eventOf, fieldMeta, formatAmount, formatValue, isAbout, isDeniedAccess, isPositiveEntry, summarizeLogs } from './logFormat'
 
 const entry = (overrides: Partial<LogEntry>) => ({
   module: 'daily', type: 'income', description: null, amount: null, date: null, created_at: '2026-10-21T02:00:00Z',
   ip_address: null, user_agent: null, user_id: null, user_name: null, user_email: null, ...overrides,
 }) as LogEntry
+
+describe('sign-ins, undo and added records', () => {
+  it('files each under its event filter', () => {
+    expect(eventOf(entry({ module: 'access', type: 'signed_in' }))).toBe('access')
+    expect(eventOf(entry({ module: 'access', type: 'sign_in_failed' }))).toBe('access')
+    expect(eventOf(entry({ module: 'system', type: 'undone' }))).toBe('edited')
+    expect(eventOf(entry({ type: 'added' }))).toBe('created')
+  })
+
+  it('flags sign-ins that didn\'t get through', () => {
+    expect(isDeniedAccess(entry({ module: 'access', type: 'sign_in_failed' }))).toBe(true)
+    expect(isDeniedAccess(entry({ module: 'access', type: 'locked_out' }))).toBe(true)
+    expect(isDeniedAccess(entry({ module: 'access', type: 'signed_in' }))).toBe(false)
+  })
+
+  it('lists a failed sign-in with someone\'s email under that person, without saying they did it', () => {
+    const failed = entry({ module: 'access', type: 'sign_in_failed', user_id: null, about_user_id: 1 })
+    expect(isAbout(failed, 1)).toBe(true)
+    expect(isAbout(failed, 2)).toBe(false)
+    expect(isAbout(entry({ user_id: 2, about_user_id: 1 }), 1)).toBe(false)
+  })
+
+  it('shows an added record\'s amount (a budget) as neither income nor expense', () => {
+    expect(isPositiveEntry(entry({ type: 'added', amount: '5000' }))).toBe(true)
+  })
+})
 
 describe('log formatting', () => {
   it('formats values by kind', () => {

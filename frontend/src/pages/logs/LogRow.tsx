@@ -1,9 +1,9 @@
-import { Archive, Monitor, Pencil, Smartphone, Trash2, User } from 'lucide-react'
+import { Archive, LogIn, Monitor, Pencil, ShieldAlert, Smartphone, Trash2, User } from 'lucide-react'
 import { Amt } from '@/components/ui/Amt'
 import type { LogEntry } from '@/api/logs'
 import { ChangeList } from './ChangeList'
 import {
-  MODULE_STYLES, TYPE_LABEL, detectDevice, eventOf, formatAmount, formatDateTime, formatTimeOnly, isPositiveEntry, timeAgo,
+  MODULE_STYLES, TYPE_LABEL, detectDevice, eventOf, formatAmount, formatDateTime, formatTimeOnly, isDeniedAccess, isPositiveEntry, timeAgo,
 } from './logFormat'
 
 /** One entry on the timeline: time, module icon, details and amount (plus the diff for edits). */
@@ -21,8 +21,13 @@ export function LogRow({ entry: e }: { entry: LogEntry }) {
       <div className="relative">
         <span className={['flex h-9 w-9 shrink-0 items-center justify-center rounded-xl', s.tile].join(' ')}><s.Icon size={15} /></span>
         {ev !== 'created' && (
-          <span className={['absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full ring-2 ring-white dark:ring-gray-900', ev === 'edited' ? 'bg-indigo-500' : ev === 'removed' ? 'bg-red-500' : 'bg-amber-500'].join(' ')}>
-            {ev === 'edited' ? <Pencil size={8} className="text-white" /> : ev === 'removed' ? <Trash2 size={8} className="text-white" /> : <Archive size={8} className="text-white" />}
+          <span className={['absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full ring-2 ring-white dark:ring-gray-900',
+            ev === 'edited' ? 'bg-indigo-500' : ev === 'removed' || isDeniedAccess(e) ? 'bg-red-500' : ev === 'access' ? 'bg-sky-500' : 'bg-amber-500'].join(' ')}>
+            {ev === 'edited' ? <Pencil size={8} className="text-white" />
+              : ev === 'removed' ? <Trash2 size={8} className="text-white" />
+              : isDeniedAccess(e) ? <ShieldAlert size={8} className="text-white" />
+              : ev === 'access' ? <LogIn size={8} className="text-white" />
+              : <Archive size={8} className="text-white" />}
           </span>
         )}
       </div>
@@ -34,7 +39,7 @@ export function LogRow({ entry: e }: { entry: LogEntry }) {
             </p>
             <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] text-gray-400 dark:text-gray-500">
               <span className={['rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide', s.badge].join(' ')}>{s.label}</span>
-              <span className="font-semibold text-gray-500 dark:text-gray-400">{TYPE_LABEL[e.type] ?? e.type}</span>
+              <span className={['font-semibold', isDeniedAccess(e) ? 'text-red-500 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'].join(' ')}>{TYPE_LABEL[e.type] ?? e.type}</span>
               {e.account_name && <span>· {e.account_name}</span>}
               {e.user_name && <span className="flex items-center gap-0.5 text-blue-600 dark:text-blue-400"><User className="h-3 w-3" />{e.user_name}</span>}
               {device && (

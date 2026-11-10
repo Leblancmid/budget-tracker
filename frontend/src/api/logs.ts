@@ -1,7 +1,8 @@
 import api from './axios'
 
 export interface LogEntry {
-  module: 'daily' | 'business' | 'savings' | 'balance' | 'gold' | 'trade'
+  /** access: sign-ins and sign-outs; system: undo / redo */
+  module: 'daily' | 'business' | 'savings' | 'balance' | 'gold' | 'trade' | 'access' | 'system'
   type: string
   description: string | null
   amount: string | null
@@ -14,6 +15,8 @@ export interface LogEntry {
   user_id: number | null
   user_name: string | null
   user_email: string | null
+  /** Whose account it's about when nobody did it (a failed sign-in with their email) */
+  about_user_id?: number | null
   /** Balance entries: the account's currency and name */
   currency?: 'USD' | 'PHP'
   account_name?: string

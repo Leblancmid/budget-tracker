@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\ActivityLog;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -54,6 +55,9 @@ class LoginRequest extends FormRequest
 
         if (! $user || ! $valid) {
             RateLimiter::hit($this->throttleKey(), config('auth.login_throttle.decay_seconds'));
+            // The email tried (never the password). It's about that account but not that person's doing,
+            // since anyone can type an email: linked to the account, with nobody as the one who did it
+            ActivityLog::note('access', 'sign_in_failed', 'Failed sign-in: ' . $this->input('email') . ($user ? '' : ' (no such account)'), $user, userId: null);
 
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
@@ -72,6 +76,8 @@ class LoginRequest extends FormRequest
         }
 
         $seconds = RateLimiter::availableIn($this->throttleKey());
+        ActivityLog::note('access', 'locked_out', 'Blocked sign-in (too many attempts): ' . $this->input('email'),
+            User::where('email', $this->input('email'))->first(), userId: null);
 
         throw new HttpResponseException(response()->json([
             'message'     => "Too many login attempts. Try again in {$seconds} seconds.",

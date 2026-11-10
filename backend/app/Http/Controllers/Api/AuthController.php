@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\ActivityLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -21,6 +22,7 @@ class AuthController extends Controller
         $user->tokens()->where('expires_at', '<', now())->delete();
 
         $token = $user->createToken($this->deviceName($request), ['*'], $expires)->plainTextToken;
+        ActivityLog::note('access', 'signed_in', 'Signed in' . ($remember ? ' (remember me)' : ''), $user, $user->id);
 
         return response()->json([
             'token'      => $token,
@@ -38,6 +40,7 @@ class AuthController extends Controller
     public function logout(Request $request): JsonResponse
     {
         $request->user()?->currentAccessToken()?->delete();
+        ActivityLog::note('access', 'signed_out', 'Signed out', $request->user());
 
         return response()->json(['message' => 'Logged out.']);
     }
@@ -46,6 +49,7 @@ class AuthController extends Controller
     public function logoutAll(Request $request): JsonResponse
     {
         $request->user()?->tokens()->delete();
+        ActivityLog::note('access', 'signed_out_all', 'Signed out of all devices', $request->user());
 
         return response()->json(['message' => 'Logged out of all devices.']);
     }

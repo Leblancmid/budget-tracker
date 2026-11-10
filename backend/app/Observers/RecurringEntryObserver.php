@@ -15,6 +15,12 @@ class RecurringEntryObserver extends ActivityLogObserver
         return 'daily';
     }
 
+    /** A new recurring entry is its own "Added" line (it isn't listed from its table like daily entries) */
+    protected function type(Model $model): ?string
+    {
+        return 'added';
+    }
+
     protected function description(Model $model): ?string
     {
         return 'Recurring (' . $model->frequency . '): ' . ($model->description ?: 'no description');

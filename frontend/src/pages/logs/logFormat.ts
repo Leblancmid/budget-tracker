@@ -1,11 +1,11 @@
-import { Archive, ArrowLeftRight, Briefcase, Coins, Landmark, Pencil, PiggyBank, Plus, Trash2, Wallet, type LucideIcon } from 'lucide-react'
+import { Archive, ArrowLeftRight, Briefcase, Coins, Landmark, LogIn, Pencil, PiggyBank, Plus, Trash2, Undo2, Wallet, type LucideIcon } from 'lucide-react'
 import type { LogEntry } from '@/api/logs'
 
 export const PER_PAGE = 30
 
 export type ModuleKey = LogEntry['module'] | 'all'
 export type UserFilterKey = 'all' | number
-export type EventKey = 'all' | 'created' | 'edited' | 'archived' | 'removed'
+export type EventKey = 'all' | 'created' | 'edited' | 'archived' | 'removed' | 'access'
 
 export const MODULE_STYLES: Record<LogEntry['module'], { Icon: LucideIcon; tile: string; badge: string; bar: string; label: string }> = {
   daily:    { Icon: Wallet,         tile: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-300',    badge: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300',    bar: 'bg-indigo-400',  label: 'Daily' },
@@ -13,9 +13,11 @@ export const MODULE_STYLES: Record<LogEntry['module'], { Icon: LucideIcon; tile:
   savings:  { Icon: PiggyBank,      tile: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300', badge: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300', bar: 'bg-emerald-400', label: 'Savings' },
   balance:  { Icon: Landmark,       tile: 'bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-300',    badge: 'bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',    bar: 'bg-violet-400',  label: 'Balance' },
   gold:     { Icon: Coins,          tile: 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-300',        badge: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',        bar: 'bg-amber-400',   label: 'Gold' },
+  access:   { Icon: LogIn,          tile: 'bg-sky-100 text-sky-600 dark:bg-sky-900/40 dark:text-sky-300',               badge: 'bg-sky-50 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300',               bar: 'bg-sky-400',     label: 'Sign-ins' },
+  system:   { Icon: Undo2,          tile: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',           badge: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',           bar: 'bg-slate-400',   label: 'Undo' },
   trade:    { Icon: ArrowLeftRight, tile: 'bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-300',            badge: 'bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',            bar: 'bg-rose-400',    label: 'Trades' },
 }
-export const MODULE_ORDER: LogEntry['module'][] = ['daily', 'business', 'balance', 'gold', 'trade', 'savings']
+export const MODULE_ORDER: LogEntry['module'][] = ['daily', 'business', 'balance', 'gold', 'trade', 'savings', 'access', 'system']
 
 export const TYPE_LABEL: Record<string, string> = {
   income: 'Income', expense: 'Expense',
@@ -24,11 +26,26 @@ export const TYPE_LABEL: Record<string, string> = {
   account: 'Account', gold: 'Gold',
   kks: 'KKS', cash: 'Cash',
   archived: 'Sold / archived', edited: 'Edited',
-  payment: 'Payment', removed: 'Removed',
+  payment: 'Payment', removed: 'Removed', added: 'Added',
+  signed_in: 'Signed in', signed_out: 'Signed out', signed_out_all: 'Signed out everywhere',
+  sign_in_failed: 'Failed sign-in', locked_out: 'Locked out',
+  undone: 'Undone', redone: 'Redone', published: 'Published',
 }
 
+/** Done by this person, or about their account (a failed sign-in with their email) */
+export const isAbout = (e: LogEntry, userId: number) => e.user_id === userId || (e.user_id === null && e.about_user_id === userId)
+
+/** Sign-ins, sign-outs, failed sign-ins and lockouts */
+export const ACCESS_TYPES = ['signed_in', 'signed_out', 'signed_out_all', 'sign_in_failed', 'locked_out']
+/** A sign-in that didn't get through */
+export const isDeniedAccess = (e: LogEntry) => e.type === 'sign_in_failed' || e.type === 'locked_out'
+
 export const eventOf = (e: LogEntry): Exclude<EventKey, 'all'> =>
-  e.type === 'edited' ? 'edited' : e.type === 'archived' ? 'archived' : e.type === 'removed' ? 'removed' : 'created'
+  ACCESS_TYPES.includes(e.type) ? 'access'
+    : e.type === 'edited' || e.type === 'undone' || e.type === 'redone' ? 'edited'
+    : e.type === 'archived' ? 'archived'
+    : e.type === 'removed' ? 'removed'
+    : 'created'
 
 export type ValueKind = 'gold' | 'php' | 'usd' | 'rate' | 'date' | 'text'
 
@@ -92,6 +109,8 @@ export function formatValue(value: unknown, kind: ValueKind): string {
 }
 
 export function isPositiveEntry(e: LogEntry): boolean {
+  // A record added (a budget, an MM fee…) isn't money in or out
+  if (e.type === 'added')      return true
   if (e.module === 'daily')    return e.type === 'income'
   if (e.module === 'savings')  return e.type === 'deposit'
   if (e.module === 'balance')  return e.type === 'add'
@@ -144,6 +163,7 @@ export const EVENT_FILTERS = [
   { key: 'edited',   label: 'Edited',          Icon: Pencil },
   { key: 'archived', label: 'Sold / archived', Icon: Archive },
   { key: 'removed',  label: 'Removed',         Icon: Trash2 },
+  { key: 'access',   label: 'Sign-ins',        Icon: LogIn },
 ] as const
 
 export interface LogSummary {

@@ -10,7 +10,7 @@ import { LogRow } from './logs/LogRow'
 import { LogsHero } from './logs/LogsHero'
 import {
   EVENT_FILTERS, MODULE_ORDER, MODULE_STYLES, PER_PAGE, TYPE_LABEL, dayLabel, eventOf, summarizeLogs,
-  type EventKey, type ModuleKey, type UserFilterKey,
+  type EventKey, type ModuleKey, type UserFilterKey, isAbout,
 } from './logs/logFormat'
 
 export default function Logs() {
@@ -32,7 +32,8 @@ export default function Logs() {
   const [searchQuery, setSearchQuery]   = useState('')
   const [page, setPage]                 = useState(1)
 
-  const byUser = useMemo(() => (activeUser === 'all' ? entries : entries.filter((e) => e.user_id === activeUser)), [entries, activeUser])
+  // A person's entries: what they did, plus what's about their account (a failed sign-in with their email)
+  const byUser = useMemo(() => (activeUser === 'all' ? entries : entries.filter((e) => isAbout(e, activeUser))), [entries, activeUser])
 
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase()
@@ -56,7 +57,7 @@ export default function Logs() {
   }, [byUser, activeEvent])
 
   const eventCounts = useMemo(() => {
-    const c: Record<EventKey, number> = { all: 0, created: 0, edited: 0, archived: 0, removed: 0 }
+    const c: Record<EventKey, number> = { all: 0, created: 0, edited: 0, archived: 0, removed: 0, access: 0 }
     for (const e of byUser) {
       if (activeModule !== 'all' && e.module !== activeModule) continue
       c.all++
@@ -91,7 +92,7 @@ export default function Logs() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">Activity logs</h1>
-          <p className="text-xs text-gray-400 dark:text-gray-500">Every add, edit and sale across the app — with before → after for edits</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500">Every sign-in, add, edit, sale and removal across the app — with before → after for edits</p>
         </div>
         <button onClick={refetch} disabled={loading}
           className="flex items-center gap-1.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40 transition-colors">
@@ -155,7 +156,7 @@ export default function Logs() {
         {users.length > 0 && (
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="mr-1 flex items-center gap-1 text-[11px] font-semibold text-gray-400 dark:text-gray-500"><User size={12} /> User</span>
-            {[{ id: 'all' as const, name: 'Everyone', count: entries.length }, ...users.map((u) => ({ id: u.id, name: u.name, count: entries.filter((e) => e.user_id === u.id).length }))].map((u) => (
+            {[{ id: 'all' as const, name: 'Everyone', count: entries.length }, ...users.map((u) => ({ id: u.id, name: u.name, count: entries.filter((e) => isAbout(e, u.id)).length }))].map((u) => (
               <button key={String(u.id)} onClick={() => reset(() => setActiveUser(u.id))}
                 className={['rounded-full px-3 py-1 text-xs font-semibold transition-colors', activeUser === u.id ? 'bg-blue-600 text-white dark:bg-blue-500' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'].join(' ')}>
                 {u.name} <span className="opacity-60">{u.count}</span>

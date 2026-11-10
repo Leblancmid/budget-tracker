@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Business;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Business\UpdateLeadRequest;
+use App\Models\ActivityLog;
 use App\Services\WebsiteStats;
 use Illuminate\Http\JsonResponse;
 use RuntimeException;
@@ -30,6 +31,7 @@ class LeadController extends Controller
         } catch (RuntimeException $e) {
             return response()->json(['message' => $e->getMessage()], 502);
         }
+        ActivityLog::note('business', 'edited', "Lead #{$lead}: marked " . str_replace('_', ' ', $request->validated('status')));
 
         return response()->json(['message' => 'Updated.']);
     }

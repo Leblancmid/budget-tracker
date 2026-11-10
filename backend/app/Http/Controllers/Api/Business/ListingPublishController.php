@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Business;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Business\UpdateGoldRatesRequest;
+use App\Models\ActivityLog;
 use App\Services\ListingPublisher;
 use App\Services\PriceGuide;
 use App\Services\WebsiteContent;
@@ -58,6 +59,7 @@ class ListingPublishController extends Controller
         } catch (RuntimeException $e) {
             return response()->json(['message' => $e->getMessage()], 502);
         }
+        ActivityLog::note('business', 'removed', "Removed: website \"Notify me\" request #{$alert}");
 
         return response()->json(['message' => 'Request removed.']);
     }
@@ -65,9 +67,12 @@ class ListingPublishController extends Controller
     public function publish(ListingPublisher $publisher): JsonResponse
     {
         try {
-            return response()->json($publisher->publish());
+            $result = $publisher->publish();
         } catch (RuntimeException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }
+        ActivityLog::note('business', 'published', 'Published listings to the website');
+
+        return response()->json($result);
     }
 }

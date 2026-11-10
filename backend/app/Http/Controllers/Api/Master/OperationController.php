@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Master;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\Operation;
 use App\Models\OperationChange;
 use App\Services\Undo\OperationLabel;
@@ -46,6 +47,7 @@ class OperationController extends Controller
         } catch (RuntimeException $e) {
             return response()->json(['message' => $e->getMessage()], 409);
         }
+        ActivityLog::note('system', 'undone', 'Undid: ' . $operation->label, $operation);
 
         return response()->json(['message' => 'Undone: ' . $operation->label . '.']);
     }
@@ -62,6 +64,7 @@ class OperationController extends Controller
         } catch (RuntimeException $e) {
             return response()->json(['message' => $e->getMessage()], 409);
         }
+        ActivityLog::note('system', 'redone', 'Redid: ' . $operation->label, $operation);
 
         return response()->json(['message' => 'Done again: ' . $operation->label . '.']);
     }

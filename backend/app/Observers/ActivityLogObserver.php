@@ -17,12 +17,17 @@ abstract class ActivityLogObserver
     /** Log archiving (archived_at being set) as its own "archived" entry instead of an edit. */
     protected bool $logsArchive = false;
 
+    /** False when adding one is already logged by something else (e.g. an account's sale record). */
+    protected bool $logsCreate = true;
+
     /** Module shown on the Logs page, e.g. 'daily'. */
     abstract protected function module(): string;
 
     public function created(Model $model): void
     {
-        ActivityLog::create([...$this->attributes($model), 'type' => $this->type($model)]);
+        if ($this->logsCreate) {
+            ActivityLog::create([...$this->attributes($model), 'type' => $this->type($model)]);
+        }
     }
 
     public function updated(Model $model): void
@@ -30,7 +35,7 @@ abstract class ActivityLogObserver
         if ($this->logsArchive && $model->isDirty('archived_at') && $model->archived_at !== null) {
             ActivityLog::create([...$this->attributes($model), 'type' => 'archived']);
         } elseif ($model->isDirty() && ! $this->onlyIgnoredFieldsChanged($model)) {
-            ActivityLog::recordEdit($model, $this->attributes($model));
+            ActivityLog::recordEdit($model, $this->attributes($model), $this->ignoredOnEdit);
         }
     }
 

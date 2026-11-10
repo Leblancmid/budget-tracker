@@ -7,6 +7,7 @@ use App\Http\Requests\Master\CheckBalanceAccountRequest;
 use App\Http\Requests\Master\ReorderBalanceAccountsRequest;
 use App\Http\Requests\Master\StoreBalanceAccountRequest;
 use App\Http\Requests\Master\UpdateBalanceAccountRequest;
+use App\Models\ActivityLog;
 use App\Models\BalanceAccount;
 use App\Models\BalanceEntry;
 use App\Services\BalanceCheck;
@@ -97,6 +98,7 @@ class BalanceAccountController extends Controller
         foreach (array_values($request->validated('ids')) as $i => $id) {
             $accounts->get($id)?->update(['sort_order' => $i + 1]);
         }
+        ActivityLog::note('balance', 'edited', 'Reordered wallets');
 
         return $this->index();
     }

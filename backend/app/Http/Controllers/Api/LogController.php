@@ -12,21 +12,36 @@ use App\Models\GoldLog;
 use App\Models\Saving;
 use App\Models\Trade;
 use App\Models\Transaction;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 
 class LogController extends Controller
 {
+    /**
+     * "Added" logs of records listed from their own tables below (daily entries, sales, wallet
+     * entries…): they only give those rows who did it and from where, so aren't entries of their own.
+     */
+    private const MERGED_INTO_ROWS = ['income', 'expense', 'gold', 'account', 'cash', 'fee', 'add', 'sell', 'buy', 'kks', 'pending', 'completed', 'cancelled', 'payment'];
+
+    /** Logs that are entries of their own. */
+    private const STANDALONE = [
+        'archived', 'edited', 'removed', 'added',
+        'signed_in', 'signed_out', 'signed_out_all', 'sign_in_failed', 'locked_out',
+        'undone', 'redone', 'published',
+    ];
+
     public function index(): JsonResponse
     {
         $allActivityLogs = ActivityLog::with('user:id,name,email')->get();
 
         // created events → keyed for IP/device merge into original table rows
-        $activityMap = $allActivityLogs->whereIn('type', ['income', 'expense', 'gold', 'fee', 'add', 'sell', 'buy', 'kks', 'pending', 'completed', 'cancelled', 'payment'])
+        $activityMap = $allActivityLogs->whereIn('type', self::MERGED_INTO_ROWS)
             ->keyBy(fn ($l) => $l->loggable_type . '|' . $l->loggable_id);
 
-        // archived, edited and removed events → standalone log entries
-        $standaloneEvents = $allActivityLogs->whereIn('type', ['archived', 'edited', 'removed']);
+        // Everything else is its own entry: edits, sales, removals, records added (categories, wallets…),
+        // sign-ins, undo / redo, publishing
+        $standaloneEvents = $allActivityLogs->whereIn('type', self::STANDALONE);
 
         $logs = collect();
 
@@ -110,6 +125,8 @@ class LogController extends Controller
                 'user_id'     => $log->user_id,
                 'user_name'   => $log->user?->name,
                 'user_email'  => $log->user?->email,
+                // Whose account it's about when nobody did it (a failed sign-in with their email)
+                'about_user_id' => $log->user_id === null && $log->loggable_type === User::class ? $log->loggable_id : null,
             ]);
         });
 

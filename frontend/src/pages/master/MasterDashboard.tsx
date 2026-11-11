@@ -145,7 +145,8 @@ function Delta({ amount, pct, since }: { amount: number; pct: number | null; sin
   return (
     <span className="flex flex-wrap items-center gap-x-1">
       <span className={['inline-flex items-center gap-1 font-semibold', tone(amount)].join(' ')}>
-        <Icon size={12} /> <Amt value={`${up ? '+' : '−'}${compactPhp(Math.abs(amount))}`} />{pct !== null && ` (${Math.abs(pct).toFixed(1)}%)`}
+        {/* The % is hidden with the amounts: it shows how much the business moved */}
+        <Icon size={12} /> <Amt value={`${up ? '+' : '−'}${compactPhp(Math.abs(amount))}`} />{pct !== null && <> (<Amt value={`${Math.abs(pct).toFixed(1)}%`} />)</>}
       </span>
       {since}
     </span>

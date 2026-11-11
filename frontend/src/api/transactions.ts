@@ -7,6 +7,9 @@ import { isOfflineError } from '@/utils/api'
 export type DailySaveResult = { queued: false; transaction: Transaction } | { queued: true }
 export type DailyChangeResult = { queued: boolean }
 
+/** Daily entries keep their own offline copy (shown in the list straight away), not the general one */
+const OWN_OFFLINE = { offlineQueue: false } as const
+
 export interface TransactionPayload {
   category_id: number
   type: string
@@ -48,7 +51,7 @@ export const transactionsApi = {
   createOrQueue: async (data: TransactionPayload): Promise<DailySaveResult> => {
     const clientId = newClientId()
     try {
-      const { data: transaction } = await api.post<Transaction>('/transactions', { ...data, client_id: clientId })
+      const { data: transaction } = await api.post<Transaction>('/transactions', { ...data, client_id: clientId }, OWN_OFFLINE)
       return { queued: false, transaction }
     } catch (err) {
       if (!isOfflineError(err)) throw err
@@ -63,7 +66,7 @@ export const transactionsApi = {
   /** Edit a daily entry; without a connection the edit is kept on the device and sent later. */
   updateOrQueue: async (id: number, data: TransactionPayload): Promise<DailyChangeResult> => {
     try {
-      await api.put<Transaction>(`/transactions/${id}`, data)
+      await api.put<Transaction>(`/transactions/${id}`, data, OWN_OFFLINE)
       return { queued: false }
     } catch (err) {
       if (!isOfflineError(err)) throw err
@@ -78,7 +81,7 @@ export const transactionsApi = {
   /** Delete a daily entry; without a connection the delete is kept on the device and sent later. */
   deleteOrQueue: async (tx: Transaction): Promise<DailyChangeResult> => {
     try {
-      await api.delete(`/transactions/${tx.id}`)
+      await api.delete(`/transactions/${tx.id}`, OWN_OFFLINE)
       return { queued: false }
     } catch (err) {
       if (!isOfflineError(err)) throw err

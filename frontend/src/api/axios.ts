@@ -1,8 +1,20 @@
 import axios, { type AxiosRequestConfig, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
 import { clearSession, loadSession, sessionToken } from '@/lib/authSession'
+import { emitSavedOffline } from '@/lib/offline/offlineEvents'
 import { markOffline, markOnline } from '@/lib/offline/offlineStatus'
 import { responseKey, saveResponse, savedResponse } from '@/lib/offline/responseCache'
+import { muteErrorToasts, toast } from '@/lib/toast'
 import type { ApiError } from '@/utils/api'
+
+declare module 'axios' {
+  interface AxiosRequestConfig {
+    /**
+     * false: without a connection, fail instead of keeping the change for later (Daily Expenses
+     * keeps its own; the outbox's own sends must never be kept again)
+     */
+    offlineQueue?: boolean
+  }
+}
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL ?? '/api/v1',
@@ -27,6 +39,31 @@ export function offlineKey(config: AxiosRequestConfig): string | null {
 
 /** No answer from the server at all (offline, server unreachable, timed out), as opposed to an error reply. */
 export const isConnectionError = (error: { response?: unknown }) => !error.response
+
+// ── Changes made offline ─────────────────────────────────────────────────────────────────────────
+export interface OfflineWrite {
+  method: string
+  url: string
+  data: unknown
+}
+
+/** Changes that only make sense with a connection: signing in/out, undo/redo, publishing to the website. */
+const NEEDS_CONNECTION = [/^\/auth\//, /^\/master\/operations\//, /^\/business\/listing\/publish/]
+
+export const keepsOffline = (config: AxiosRequestConfig) =>
+  (config.method ?? 'get').toLowerCase() !== 'get'
+  && config.offlineQueue !== false
+  && !NEEDS_CONNECTION.some((p) => p.test(config.url ?? ''))
+
+let keepWrite: ((write: OfflineWrite) => Promise<unknown>) | null = null
+
+/** Where changes made offline are kept (the outbox registers itself). */
+export function onOfflineWrite(fn: (write: OfflineWrite) => Promise<unknown>): void {
+  keepWrite = fn
+}
+
+/** Shown when a change is kept on the device. */
+export const SAVED_OFFLINE_MESSAGE = 'You\'re offline: saved on this device. You\'ll be asked to approve sending it when you\'re back online.'
 
 api.interceptors.request.use((config) => {
   const token = sessionToken()
@@ -62,6 +99,21 @@ api.interceptors.response.use(
         return { data: saved.data, status: 200, statusText: 'Saved copy', headers: {}, config } satisfies AxiosResponse
       }
       markOffline()
+
+      // A change: kept on the device until you approve sending it. The form closes like after a
+      // save; the page's own "couldn't save" message is muted (this one says what happened).
+      if (config && keepWrite && keepsOffline(config)) {
+        try {
+          await keepWrite({ method: config.method ?? 'post', url: config.url ?? '', data: config.data })
+          toast.success(SAVED_OFFLINE_MESSAGE)
+          muteErrorToasts(1500)
+          emitSavedOffline()
+          return Promise.reject({ message: '', offline: true, queued: true } satisfies ApiError)
+        } catch (err) {
+          return Promise.reject({ message: (err as ApiError)?.message || 'Couldn\'t keep this change on the device.', offline: true } satisfies ApiError)
+        }
+      }
+
       const rejection: ApiError = {
         message: key
           ? 'You\'re offline, and this page hasn\'t been opened on this device yet.'

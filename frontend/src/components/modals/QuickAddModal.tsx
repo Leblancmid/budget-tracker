@@ -118,7 +118,7 @@ export function QuickAddModal({ isAdmin, onClose }: { isAdmin: boolean; onClose:
           ...(isAdmin ? { balance_account: result.wallet } : {}),
         })
         const what = `${result.type === 'income' ? 'Income' : 'Expense'} of ${formatCurrency(result.amount)}`
-        toast.success(saved.queued ? `You're offline: ${what.toLowerCase()} saved on this device. It'll be added when you're back online.` : `${what} added.`)
+        toast.success(saved.queued ? `You're offline: ${what.toLowerCase()} saved on this device. You'll approve sending it when you're back online.` : `${what} added.`)
       } else if (result.kind === 'transfer') {
         await balanceTransfersApi.create({ from_account: result.from, to_account: result.to, amount: result.amount, fee: result.fee, date: result.date, note: result.note })
         toast.success(`Moved ${formatCurrency(result.amount)} from ${walletByCode.get(result.from)?.name} to ${walletByCode.get(result.to)?.name}.`)

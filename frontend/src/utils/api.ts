@@ -6,6 +6,8 @@ export interface ApiError {
   status?: number
   /** No connection to the server (as opposed to the server answering with an error) */
   offline?: boolean
+  /** The change was kept on the device to send later (after you approve it) */
+  queued?: boolean
 }
 
 /** True when a rejected API call failed for lack of a connection. */

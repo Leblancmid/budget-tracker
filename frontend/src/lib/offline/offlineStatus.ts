@@ -21,9 +21,21 @@ function set(next: OfflineStatus): void {
   listeners.forEach((l) => l())
 }
 
+const reachedListeners = new Set<() => void>()
+let reachedOnce = false
+
 /** A request got through. */
 export function markOnline(): void {
+  const backFromOffline = status.offline || !reachedOnce
+  reachedOnce = true
   set(ONLINE)
+  if (backFromOffline) reachedListeners.forEach((l) => l())
+}
+
+/** Called when the server is reached for the first time, and each time again after being offline. */
+export function onServerReached(listener: () => void): () => void {
+  reachedListeners.add(listener)
+  return () => { reachedListeners.delete(listener) }
 }
 
 /** A request failed for lack of a connection; `savedAt` is when the copy shown instead was saved. */

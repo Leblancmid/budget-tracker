@@ -1,29 +1,43 @@
 import { useSyncExternalStore } from 'react'
-import api from '@/api/axios'
+import api, { onOfflineWrite, type OfflineWrite } from '@/api/axios'
 import type { TransactionPayload } from '@/api/transactions'
 import { loadSession } from '@/lib/authSession'
 import { emitDataChanged } from '@/lib/dataEvents'
 import { errorMessage, flattenApiErrors, isOfflineError, type ApiError } from '@/utils/api'
+import { describeRequest, nameOf } from './describeRequest'
 import { entries, removeItem, setItem } from './localStore'
+import type { SavedResponse } from './responseCache'
 
 /**
- * Daily entries (expenses and income) added, edited or deleted without a connection. Each change is
- * kept on the device and sent in the order it was made once the server can be reached.
- * - New entries carry an id made on the device, so one sent twice (the answer got lost) is saved once.
- * - Editing the same entry again replaces the waiting edit; deleting it drops its waiting edits.
+ * Changes made without a connection, kept on the device until you approve sending them.
+ * Nothing is sent on its own: when the connection is back the app asks first (SyncReviewDialog),
+ * and only the changes you approve are sent, in the order they were made.
+ * - Daily entries (create / update / delete) are kept with their values, so the Transactions list
+ *   can show them straight away (see applyPending).
+ * - Everything else (sales, accounts, gold, trades, wallets…) is kept as the request itself
+ *   ('request'), described in words for the review list.
+ * - Every change carries an id made on the device and is sent with it as the Idempotency-Key, so a
+ *   resend after a lost answer is done only once.
  */
-export type PendingKind = 'create' | 'update' | 'delete'
+export type PendingKind = 'create' | 'update' | 'delete' | 'request'
 
 export interface PendingEntry {
-  /** Id of this change (for a new entry, also the id the server saves it under) */
+  /** Id of this change, sent as its Idempotency-Key (for a new daily entry, also its client_id) */
   client_id: string
   user_id: number
   /** Stored before edits/deletes were supported: a missing kind means 'create' */
   kind?: PendingKind
-  /** The server's id of the entry being edited or deleted */
+  /** Daily entries: the server's id of the entry being edited or deleted */
   transaction_id?: number
-  /** The entry's values (new entry, or after the edit); for a delete, what's being deleted */
-  payload: TransactionPayload
+  /** Daily entries: the values (new entry, or after the edit); for a delete, what's being deleted */
+  payload?: TransactionPayload
+  /** Other changes: the request to send */
+  method?: string
+  url?: string
+  /** JSON text, or a form's fields (with any file) as [name, value] pairs */
+  body?: string | [string, string | Blob][] | null
+  /** What it does, in words ("Sell account “Leblanc 621 Dist”") */
+  label?: string
   /** When it was made on the device (ms) */
   created_at: number
   /** Why the server refused it (it stays until you try again or discard it); null while waiting */
@@ -36,6 +50,7 @@ export interface SyncResult {
 }
 
 export const kindOf = (e: PendingEntry): PendingKind => e.kind ?? 'create'
+export const isDailyEntry = (e: PendingEntry) => kindOf(e) !== 'request'
 
 /** A random id (UUID v4). getRandomValues also works on plain http, unlike crypto.randomUUID. */
 export function newClientId(): string {
@@ -76,54 +91,99 @@ function signedInUser(): number {
   return userId
 }
 
-/** Keep a new entry on the device to send later. */
-export async function queueEntry(payload: TransactionPayload, clientId = newClientId(), now = Date.now()): Promise<PendingEntry> {
-  const entry: PendingEntry = { client_id: clientId, user_id: signedInUser(), kind: 'create', payload, created_at: now, error: null }
+async function store(entry: PendingEntry): Promise<PendingEntry> {
   await setItem('outbox', keyOf(entry), entry)
   await refreshPending()
   return entry
 }
 
-/** Keep an edit (or delete) of an existing entry on the device to send later. */
+/** Keep a new daily entry on the device to send later. */
+export async function queueEntry(payload: TransactionPayload, clientId = newClientId(), now = Date.now()): Promise<PendingEntry> {
+  return store({ client_id: clientId, user_id: signedInUser(), kind: 'create', payload, created_at: now, error: null })
+}
+
+/** Keep an edit (or delete) of an existing daily entry on the device to send later. */
 export async function queueChange(kind: 'update' | 'delete', transactionId: number, payload: TransactionPayload, now = Date.now()): Promise<PendingEntry> {
   const userId = signedInUser()
-  const sameEntry = (await refreshPending()).filter((e) => e.transaction_id === transactionId && kindOf(e) !== 'create')
+  const sameEntry = (await refreshPending()).filter((e) => e.transaction_id === transactionId && (kindOf(e) === 'update' || kindOf(e) === 'delete'))
 
   // Edited again: one waiting edit with the latest values, at its original place in the queue
   const waitingEdit = sameEntry.find((e) => kindOf(e) === 'update' && e.error === null)
   if (kind === 'update' && waitingEdit) {
-    const merged = { ...waitingEdit, payload: { ...waitingEdit.payload, ...payload } }
-    await setItem('outbox', keyOf(merged), merged)
-    await refreshPending()
-    return merged
+    return store({ ...waitingEdit, payload: { ...waitingEdit.payload!, ...payload } })
   }
   // Deleted: its waiting edits no longer matter
   if (kind === 'delete') await Promise.all(sameEntry.map((e) => removeItem('outbox', keyOf(e))))
 
-  const entry: PendingEntry = { client_id: newClientId(), user_id: userId, kind, transaction_id: transactionId, payload, created_at: now, error: null }
-  await setItem('outbox', keyOf(entry), entry)
-  await refreshPending()
-  return entry
+  return store({ client_id: newClientId(), user_id: userId, kind, transaction_id: transactionId, payload, created_at: now, error: null })
 }
+
+/** The name of record #id from pages saved on the device under this path ("/business/transactions"). */
+async function savedName(basePath: string, id: number): Promise<string | null> {
+  const find = (value: unknown, depth: number): string | null => {
+    if (!value || typeof value !== 'object' || depth > 4) return null
+    if (Array.isArray(value)) {
+      for (const v of value) { const n = find(v, depth + 1); if (n) return n }
+      return null
+    }
+    const v = value as Record<string, unknown>
+    if (v.id === id) return nameOf(v)
+    for (const child of Object.values(v)) { const n = find(child, depth + 1); if (n) return n }
+    return null
+  }
+  for (const [key, saved] of await entries<SavedResponse>('responses')) {
+    if (!key.includes(basePath)) continue
+    const n = find(saved?.data, 0)
+    if (n) return n
+  }
+  return null
+}
+
+/** Keep any other change (a sale, an account, a wallet entry…) on the device to send later. */
+export async function queueRequest(write: OfflineWrite, now = Date.now()): Promise<PendingEntry> {
+  const userId = signedInUser()
+  const body = write.data instanceof FormData ? [...write.data.entries()] as [string, string | Blob][]
+    : typeof write.data === 'string' ? write.data
+    : write.data == null ? null : JSON.stringify(write.data)
+  // Its name for edits and deletes: "/business/transactions/12/sell" → sale #12 in the saved Sales pages
+  const id = write.url.match(/\/(\d+)/)?.[1]
+  const basePath = id ? write.url.slice(0, write.url.indexOf(`/${id}`)) : null
+  const name = id && basePath ? await savedName(basePath, Number(id)) : null
+  const label = describeRequest(write.method, write.url, body, () => name)
+  return store({ client_id: newClientId(), user_id: userId, kind: 'request', method: write.method.toUpperCase(), url: write.url, body, label, created_at: now, error: null })
+}
+// Every change made offline (outside Daily Expenses, which handles its own) is kept here
+onOfflineWrite(queueRequest)
 
 export async function discardEntry(entry: PendingEntry): Promise<void> {
   await removeItem('outbox', keyOf(entry))
   await refreshPending()
 }
 
-/** Send a refused change again (e.g. after fixing what was wrong on the server side). */
-export async function retryEntry(entry: PendingEntry): Promise<SyncResult> {
-  await setItem('outbox', keyOf(entry), { ...entry, error: null })
+/** Discard several at once (from the review window). */
+export async function discardEntries(chosen: PendingEntry[]): Promise<void> {
+  await Promise.all(chosen.map((e) => removeItem('outbox', keyOf(e))))
   await refreshPending()
-  return syncPending()
 }
 
-// ── Sending ──────────────────────────────────────────────────────────────────────────────────────
+// ── Sending (only what you approved) ─────────────────────────────────────────────────────────────
+function rebuild(body: PendingEntry['body']): unknown {
+  if (!Array.isArray(body)) return body ?? undefined
+  const form = new FormData()
+  for (const [name, value] of body) form.append(name, value)
+  return form
+}
+
 function send(entry: PendingEntry): Promise<unknown> {
+  const config = { offlineQueue: false, headers: { 'Idempotency-Key': entry.client_id } as Record<string, string> }
   switch (kindOf(entry)) {
-    case 'update': return api.put(`/transactions/${entry.transaction_id}`, entry.payload)
-    case 'delete': return api.delete(`/transactions/${entry.transaction_id}`)
-    default:       return api.post('/transactions', { ...entry.payload, client_id: entry.client_id })
+    case 'update': return api.put(`/transactions/${entry.transaction_id}`, entry.payload, config)
+    case 'delete': return api.delete(`/transactions/${entry.transaction_id}`, config)
+    case 'request': {
+      if (Array.isArray(entry.body)) config.headers['Content-Type'] = 'multipart/form-data'
+      return api.request({ ...config, method: entry.method, url: entry.url, data: rebuild(entry.body) })
+    }
+    default: return api.post('/transactions', { ...entry.payload, client_id: entry.client_id }, config)
   }
 }
 
@@ -137,17 +197,18 @@ function refusal(err: unknown): string {
 let running: Promise<SyncResult> | null = null
 
 /**
- * Send every waiting change, oldest first. Stops at the first one that can't get through (still
- * offline, or the server is having trouble) and tries again next time; a change the server refuses
- * (e.g. its category was deleted meanwhile) is marked with the reason and the rest carry on.
- * Deleting something that's already gone counts as done.
+ * Send the approved changes (`approved`: their client_ids), oldest first. Stops at the first one that
+ * can't get through (offline again, or the server is having trouble): the rest stay for next time.
+ * A change the server refuses (e.g. the account was sold meanwhile) is kept with the reason and the
+ * others carry on. Deleting something that's already gone counts as done.
  */
-export function syncPending(): Promise<SyncResult> {
+export function syncPending(approved: Iterable<string>): Promise<SyncResult> {
   if (running) return running
+  const chosen = new Set(approved)
   running = (async () => {
     const result: SyncResult = { sent: 0, refused: 0 }
     for (const entry of await refreshPending()) {
-      if (entry.error !== null) continue
+      if (!chosen.has(entry.client_id)) continue
       try {
         await send(entry)
         await removeItem('outbox', keyOf(entry))
@@ -156,7 +217,8 @@ export function syncPending(): Promise<SyncResult> {
         if (isOfflineError(err)) break
         const status = (err as ApiError).status ?? 0
         if (status >= 500 || status === 429 || status === 401) break
-        if (kindOf(entry) === 'delete' && status === 404) {
+        const method = kindOf(entry) === 'request' ? entry.method : kindOf(entry) === 'delete' ? 'DELETE' : ''
+        if (method === 'DELETE' && status === 404) {
           await removeItem('outbox', keyOf(entry))
           result.sent++
           continue

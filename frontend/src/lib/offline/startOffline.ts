@@ -1,8 +1,8 @@
-import { loadSession } from '@/lib/authSession'
 import { emitDataChanged } from '@/lib/dataEvents'
-import { toast } from '@/lib/toast'
-import { getOfflineStatus, markOffline, subscribeOfflineStatus } from './offlineStatus'
-import { refreshPending, syncPending } from './outbox'
+import { loadSession } from '@/lib/authSession'
+import { openSyncReview } from './offlineEvents'
+import { markOffline, onServerReached } from './offlineStatus'
+import { refreshPending } from './outbox'
 import { pruneResponses } from './responseCache'
 
 /**
@@ -11,7 +11,8 @@ import { pruneResponses } from './responseCache'
  *   it on https:// or localhost),
  * - old saved pages are dropped,
  * - the phone saying it lost / regained its connection updates the offline notice and refreshes the open page,
- * - daily entries added offline are sent whenever the server can be reached again.
+ * - changes made offline are never sent on their own: when the server can be reached again the
+ *   app asks you to review and approve them first (SyncReviewDialog).
  */
 export function startOffline(): void {
   if (import.meta.env.PROD && 'serviceWorker' in navigator && window.isSecureContext) {
@@ -21,34 +22,18 @@ export function startOffline(): void {
   }
 
   void pruneResponses()
+  void refreshPending()
 
   window.addEventListener('offline', () => markOffline())
-  // Back online: let the open page load fresh data (the next answer clears the offline notice)
-  window.addEventListener('online', () => { emitDataChanged(); void sendWaiting() })
+  // Back online: let the open page load fresh data (the answer clears the offline notice and asks about waiting changes)
+  window.addEventListener('online', () => emitDataChanged())
 
-  // Entries added offline: try when the app starts, comes back to the front, or gets through again
-  void sendWaiting()
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') void sendWaiting() })
-  let wasOffline = getOfflineStatus().offline
-  subscribeOfflineStatus(() => {
-    const { offline } = getOfflineStatus()
-    if (wasOffline && !offline) void sendWaiting()
-    wasOffline = offline
-  })
+  // Server reached (when the app opens, or again after being offline): ask about waiting changes
+  onServerReached(() => { void askAboutWaiting() })
 }
 
-let sending = false
-
-/** Send daily entries added offline, and say what happened. */
-async function sendWaiting(): Promise<void> {
-  if (sending || !loadSession()) return
-  sending = true
-  try {
-    if ((await refreshPending()).every((e) => e.error !== null)) return
-    const { sent, refused } = await syncPending()
-    if (sent > 0) toast.success(`Back online: ${sent} change${sent === 1 ? '' : 's'} made offline ${sent === 1 ? 'was' : 'were'} saved.`)
-    if (refused > 0) toast.error(`${refused} change${refused === 1 ? '' : 's'} made offline couldn't be saved. See Transactions.`)
-  } finally {
-    sending = false
-  }
+/** Open the review window if changes made offline are waiting. */
+async function askAboutWaiting(): Promise<void> {
+  if (!loadSession()) return
+  if ((await refreshPending()).length > 0) openSyncReview()
 }

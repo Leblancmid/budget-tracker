@@ -10,11 +10,11 @@ export type ListedTransaction = Transaction & { waitingToSync?: boolean }
  * sorts it (an edit can move an entry to another day).
  */
 export function applyPending(list: Transaction[], pending: PendingEntry[], categories: Category[]): ListedTransaction[] {
-  const changes = pending.filter((e) => kindOf(e) !== 'create' && e.error === null)
+  const changes = pending.filter((e) => (kindOf(e) === 'update' || kindOf(e) === 'delete') && e.error === null)
   if (changes.length === 0) return list
 
   const deleted = new Set(changes.filter((e) => kindOf(e) === 'delete').map((e) => e.transaction_id))
-  const edits = new Map(changes.filter((e) => kindOf(e) === 'update').map((e) => [e.transaction_id, e.payload]))
+  const edits = new Map(changes.filter((e) => kindOf(e) === 'update').map((e) => [e.transaction_id, e.payload!]))
 
   const shown = list.filter((tx) => !deleted.has(tx.id)).map((tx): ListedTransaction => {
     const p = edits.get(tx.id)

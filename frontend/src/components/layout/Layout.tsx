@@ -10,6 +10,7 @@ import { Sidebar } from './Sidebar'
 import { Header } from './Header'
 import { SectionTabs } from './SectionTabs'
 import { OfflineBanner } from './OfflineBanner'
+import { SyncReviewDialog } from '@/components/offline/SyncReviewDialog'
 
 export function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -51,6 +52,8 @@ export function Layout() {
         <Header onMenuClick={() => setMobileOpen((v) => !v)} />
         <SectionTabs tabs={tabs} leadsWaiting={leadsWaiting} briefUnseen={briefUnseen} />
         <OfflineBanner />
+        {/* Changes made offline: asks before sending any */}
+        <SyncReviewDialog />
         <main className="flex-1 overflow-y-auto overscroll-contain p-3 sm:p-6 scrollbar-thin">
           {/* Keyed by page so a crash on one page clears when you navigate away */}
           <ErrorBoundary key={pathname}>

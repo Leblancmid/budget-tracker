@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, useId } from 'react'
 import { X } from 'lucide-react'
+import { useSavedOffline } from '@/lib/offline/offlineEvents'
 
 interface ModalProps {
   open: boolean
@@ -7,12 +8,16 @@ interface ModalProps {
   title: string
   children: ReactNode
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '4xl' | '6xl'
+  /** Stay open when a change is saved offline (other modals close: the change is kept for later) */
+  keepOpenWhenSavedOffline?: boolean
 }
 
 const sizes = { sm: 'max-w-sm', md: 'max-w-md', lg: 'max-w-lg', xl: 'max-w-xl', '2xl': 'max-w-2xl', '4xl': 'max-w-4xl', '6xl': 'max-w-6xl' }
 
-export function Modal({ open, onClose, title, children, size = 'md' }: ModalProps) {
+export function Modal({ open, onClose, title, children, size = 'md', keepOpenWhenSavedOffline = false }: ModalProps) {
   const titleId = useId()
+  // Saved on this device to send later: like a successful save, the form is done
+  useSavedOffline(onClose, open && !keepOpenWhenSavedOffline)
 
   useEffect(() => {
     if (!open) return

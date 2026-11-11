@@ -18,8 +18,21 @@ export function setToastHandler(next: ToastHandler | null): void {
   handler = next
 }
 
+let errorsMutedUntil = 0
+
+/**
+ * Don't show error toasts for a moment. Used when a change is saved offline: the page's own
+ * "couldn't save" message would be wrong, the "saved on this device" one has already been shown.
+ */
+export function muteErrorToasts(ms: number): void {
+  errorsMutedUntil = Date.now() + ms
+}
+
 /** Show a toast from anywhere (no-op until <ToastContainer /> is mounted). */
 export const toast = {
   success: (message: string, opts?: ToastOptions) => handler?.(message, 'success', opts),
-  error:   (message: string, opts?: ToastOptions) => handler?.(message, 'error', opts),
+  error:   (message: string, opts?: ToastOptions) => {
+    if (Date.now() < errorsMutedUntil || !message) return
+    handler?.(message, 'error', opts)
+  },
 }

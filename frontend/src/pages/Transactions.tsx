@@ -78,14 +78,14 @@ export function Transactions() {
     if (editTarget) {
       const result = await update(editTarget.id, payload)
       if (result.queued) {
-        toast.success("You're offline: the change is saved on this device. It'll be applied when you're back online.")
+        toast.success("You're offline: the change is saved on this device. You'll approve sending it when you're back online.")
         return
       }
       toast.success('Transaction updated.')
     } else {
       const result = await create(payload)
       if (result.queued) {
-        toast.success('You\'re offline: saved on this device. It\'ll be added when you\'re back online.')
+        toast.success("You're offline: saved on this device. You'll approve sending it when you're back online.")
         return
       }
       toast.success(data.scope === 'business' ? 'Business transaction added — not counted in Daily Expenses.' : 'Transaction added.')
@@ -101,7 +101,7 @@ export function Transactions() {
       const result = await remove(deleteTarget)
       setDeleteTarget(null)
       if (result.queued) {
-        toast.success("You're offline: it's removed on this device and will be deleted when you're back online.")
+        toast.success("You're offline: it's removed on this device. You'll approve deleting it when you're back online.")
         return
       }
       toast.success(deleteTarget.balance_entry ? 'Transaction deleted and its Balance entry reversed.' : 'Transaction deleted.')
@@ -352,7 +352,7 @@ export function Transactions() {
                             <span>·</span>
                             <span>{formatTime(tx.created_at)}</span>
                             {tx.waitingToSync && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300" title="Changed offline; sent when you're back online">
+                              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300" title="Changed offline; sent after you approve it">
                                 <CloudUpload size={9} /> Waiting to sync
                               </span>
                             )}

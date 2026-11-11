@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureAdmin;
+use App\Http\Middleware\IdempotentRequests;
 use App\Http\Middleware\RecordOperation;
 use App\Http\Middleware\SecureApiHeaders;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -23,6 +24,8 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleCors::class,
         ], append: [
             SecureApiHeaders::class,
+            // A change sent again after a lost answer (offline changes) is done once
+            IdempotentRequests::class,
             // Each request that changes data becomes one undoable operation (Master File → Undo)
             RecordOperation::class,
         ]);

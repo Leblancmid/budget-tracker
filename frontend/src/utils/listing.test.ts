@@ -141,7 +141,7 @@ describe('listingCaption', () => {
   it('lists accounts, promos and the link', () => {
     const text = listingCaption(
       [account(), account({ level: 644, melee: 336, distance: 648, show_price: false })],
-      { headline: 'Rucoy accounts for sale', link: 'https://leblancmid.vercel.app/', promos: ['SELL GOLD'] },
+      { headline: 'Rucoy accounts for sale', link: 'https://leblancmid.pages.dev/', promos: ['SELL GOLD'] },
     )
     expect(text).toBe([
       'Rucoy accounts for sale',
@@ -151,7 +151,7 @@ describe('listingCaption', () => {
       '',
       '✅ SELL GOLD',
       '',
-      'More details: https://leblancmid.vercel.app/',
+      'More details: https://leblancmid.pages.dev/',
     ].join('\n'))
   })
 

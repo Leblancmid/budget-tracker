@@ -43,7 +43,7 @@ const DEFAULTS: KitSettings = {
   newForDays: 3,
   headline: 'Rucoy accounts for sale',
   promos: 'SELL GOLD\nBUY 700 - 800 ACCOUNT',
-  link: 'https://leblancmid.vercel.app/',
+  link: 'https://leblancmid.pages.dev/',
   crop: DEFAULT_CROP,
 }
 

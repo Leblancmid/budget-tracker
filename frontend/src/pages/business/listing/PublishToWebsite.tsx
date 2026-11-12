@@ -8,11 +8,11 @@ import { useAsyncData } from '@/hooks/useAsyncData'
 import { toast } from '@/lib/toast'
 import { errorMessage } from '@/utils/api'
 
-const SITE_URL = 'https://leblancmid.vercel.app'
+const SITE_URL = 'https://leblancmid.pages.dev'
 const NO_PREVIEW = null as ListingPublishPreview | null
 
 /**
- * Publish to website: the unsold accounts (with a screenshot) go to leblancmid.vercel.app.
+ * Publish to website: the unsold accounts (with a screenshot) go to leblancmid.pages.dev.
  * Sold ones drop off; prices show only where "Show price" is ticked.
  */
 export function PublishToWebsite() {

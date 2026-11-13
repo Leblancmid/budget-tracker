@@ -35,13 +35,14 @@ function Segmented<T extends string>({ value, options, onChange }: {
   onChange: (v: T) => void
 }) {
   return (
-    <div className="flex items-center gap-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-1">
+    // Phones: a full-width row with bigger buttons
+    <div className="flex w-full items-center gap-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-1 sm:w-auto">
       {options.map((o) => (
         <button
           key={o.value}
           onClick={() => onChange(o.value)}
           className={[
-            'rounded-md px-2.5 py-1 text-xs font-semibold transition-colors',
+            'flex-1 rounded-md px-2.5 py-2 text-xs font-semibold transition-colors sm:flex-none sm:py-1',
             value === o.value ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200',
           ].join(' ')}
         >
@@ -346,7 +347,15 @@ export function Transactions() {
                     const acct     = tx.balance_entry ? accountByCode.get(tx.balance_entry.account) : undefined
                     const AcctIcon = iconOf(acct?.icon ?? 'wallet')
                     return (
-                      <div key={tx.id} className="group flex items-center gap-3 px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+                      // Tapping (or Enter on) a row opens it for editing
+                      <div
+                        key={tx.id}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => openEdit(tx)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' && e.target === e.currentTarget) openEdit(tx) }}
+                        className="group flex cursor-pointer items-center gap-3 px-4 py-3 hover:bg-gray-50 focus:outline-none focus-visible:bg-gray-50 sm:px-5 dark:hover:bg-gray-800/40 dark:focus-visible:bg-gray-800/40 transition-colors"
+                      >
                         <CategoryIcon category={tx.category} />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{tx.description || tx.category.name}</p>
@@ -377,12 +386,12 @@ export function Transactions() {
                           </div>
                         </div>
                         <div className="flex items-center gap-1 pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-                          <button onClick={() => openEdit(tx)} title="Edit"
-                            className="rounded-lg p-1.5 text-gray-400 hover:bg-indigo-50 hover:text-indigo-600 transition-colors dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400">
+                          <button onClick={(e) => { e.stopPropagation(); openEdit(tx) }} title="Edit" aria-label="Edit"
+                            className="hidden rounded-lg p-1.5 sm:block text-gray-400 hover:bg-indigo-50 hover:text-indigo-600 transition-colors dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400">
                             <Pencil className="h-3.5 w-3.5" />
                           </button>
-                          <button onClick={() => setDeleteTarget(tx)} title="Delete"
-                            className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors dark:hover:bg-red-900/20 dark:hover:text-red-400">
+                          <button onClick={(e) => { e.stopPropagation(); setDeleteTarget(tx) }} title="Delete" aria-label="Delete"
+                            className="rounded-lg p-2.5 sm:p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors dark:hover:bg-red-900/20 dark:hover:text-red-400">
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         </div>

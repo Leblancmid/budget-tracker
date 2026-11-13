@@ -270,8 +270,10 @@ class BusinessBrief
     /** Off-site backup (if set up) that hasn't succeeded in 2 days: your records exist only on this PC. */
     private static function offsiteBackup(CarbonImmutable $today): ?array
     {
+        // Not set up at all: say so (once a week), rather than staying quiet about the biggest risk
         if (! config('backup.r2.account_id')) {
-            return null;
+            return self::insight('backup', 'warn', 'Off-site backup isn\'t set up',
+                'Your records exist only on this PC: if its drive fails, they\'re gone. Setting up Cloudflare R2 (free) takes about 15 minutes: see docs/BACKUP.md.');
         }
         $last = Cache::get(BackupOffsite::LAST_SUCCESS);
         $days = $last ? (int) CarbonImmutable::parse($last)->diffInDays($today->utc()) : null;
@@ -287,13 +289,15 @@ class BusinessBrief
     /** The monthly restore check failed, or hasn't run in over 40 days: the backups may not be usable. */
     private static function backupRestore(CarbonImmutable $today): ?array
     {
-        if (! config('backup.r2.account_id')) {
-            return null;
-        }
+        // A failed check matters whether it checked R2 or this PC's own exports
         $last = Cache::get(RestoreCheck::LAST_RESULT);
         if ($last && ! $last['ok']) {
             return self::insight('backup-restore', 'bad', 'The last backup check failed',
                 ($last['problems'][0] ?? 'The newest backup could not be restored.') . ' Run php artisan backup:verify to try again.');
+        }
+        // Without R2 the "set it up" warning already covers it
+        if (! config('backup.r2.account_id')) {
+            return null;
         }
         $days = $last ? (int) CarbonImmutable::parse($last['checked_at'])->diffInDays($today->utc()) : null;
         if ($days !== null && $days <= 40) {

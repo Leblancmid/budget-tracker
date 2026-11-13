@@ -9,7 +9,8 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Monthly: restores the newest off-site backup into a scratch database and checks it. If something
+ * Monthly: restores the newest off-site backup (or, without R2, the newest export on this PC) into
+ * a scratch database and checks it. If something
  * is wrong, admins get an alert (bell + phone) and the weekly brief says so.
  */
 class BackupVerify extends Command
@@ -21,9 +22,7 @@ class BackupVerify extends Command
     public function handle(): int
     {
         if (! config('backup.r2.account_id')) {
-            $this->info('Off-site backup is not set up; nothing to check.');
-
-            return self::SUCCESS;
+            $this->warn('Off-site backup isn\'t set up (see docs/BACKUP.md): checking the newest export on this PC instead.');
         }
 
         $this->line('Restoring the newest backup into a scratch database…');
@@ -34,7 +33,7 @@ class BackupVerify extends Command
         }
 
         if ($r['ok']) {
-            $this->info('Backup restores fine: ' . $r['file']);
+            $this->info('Backup restores fine: ' . $r['file'] . ($r['source'] === 'local' ? ' (on this PC; nothing is off-site yet)' : ''));
 
             return self::SUCCESS;
         }

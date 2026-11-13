@@ -144,9 +144,44 @@ class BackupVerifyTest extends TestCase
         $this->assertSame([], RestoreCheck::ageProblem('budget/budget_tracker_2026-11-12_02-00-00.sql.gz.enc', CarbonImmutable::parse('2026-11-13')));
     }
 
-    public function test_without_r2_it_skips_quietly(): void
+    /** A plain export in a temporary folder used as storage/app/backups */
+    private function localExport(array $rows, string $name, int $ageSeconds = 0): string
+    {
+        $dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'budget-backups-test';
+        if (! is_dir($dir)) {
+            mkdir($dir);
+        }
+        config(['backup.local_path' => $dir]);
+        $sql = collect($rows)->map(fn ($n, $t) => "CREATE TABLE `{$t}` (id INT);" . ($n ? "INSERT INTO `{$t}` VALUES " . implode(',', array_fill(0, $n, '(1)')) . ';' : ''))->implode("\n");
+        file_put_contents($path = $dir . DIRECTORY_SEPARATOR . $name, $sql);
+        touch($path, time() - $ageSeconds);
+
+        return $dir;
+    }
+
+    public function test_without_r2_it_checks_the_newest_export_on_this_pc(): void
     {
         config(['backup.r2.account_id' => null]);
-        $this->artisan('backup:verify')->expectsOutputToContain('not set up')->assertSuccessful();
+        $dir = $this->localExport(['users' => 1], 'budget_tracker_2026-11-10_02-00-00.sql', 3600);   // older and broken
+        $this->localExport($this->fullBackup(), 'budget_tracker_2026-11-13_02-00-00.sql');           // newest and good
+
+        $this->artisan('backup:verify')
+            ->expectsOutputToContain('checking the newest export on this PC')
+            ->expectsOutputToContain('nothing is off-site yet')
+            ->assertSuccessful();
+
+        $last = Cache::get(RestoreCheck::LAST_RESULT);
+        $this->assertSame(['local', 'budget_tracker_2026-11-13_02-00-00.sql', true], [$last['source'], $last['file'], $last['ok']]);
+        Http::assertNothingSent();
+        array_map('unlink', glob($dir . DIRECTORY_SEPARATOR . '*.sql'));
+    }
+
+    public function test_without_r2_or_any_export_it_says_so(): void
+    {
+        config(['backup.r2.account_id' => null, 'backup.local_path' => sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'no-such-budget-backups']);
+
+        $this->artisan('backup:verify')->assertFailed();
+
+        $this->assertStringContainsString('no database exports on this PC', Cache::get(RestoreCheck::LAST_RESULT)['problems'][0]);
     }
 }

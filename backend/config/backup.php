@@ -27,4 +27,6 @@ return [
     'verify_database' => env('BACKUP_VERIFY_DATABASE', 'budget_restore_check'),
     // The mysql client used to load it (default: next to mysqldump)
     'mysql_path' => env('MYSQL_PATH'),
+    // Where db:export writes (checked instead of R2 when off-site backup isn't set up)
+    'local_path' => storage_path('app/backups'),
 ];

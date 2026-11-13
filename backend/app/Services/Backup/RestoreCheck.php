@@ -34,29 +34,23 @@ class RestoreCheck
     public static ?Closure $loader = null;
 
     /**
-     * @return array{ok: bool, checked_at: string, file: ?string, problems: list<string>, tables: array<string, array{live: int, backup: ?int}>}
+     * Checks the newest off-site backup when R2 is set up, else the newest local export (so a PC
+     * without R2 still learns whether its own backups work).
+     *
+     * @return array{ok: bool, source: string, checked_at: string, file: ?string, problems: list<string>, tables: array<string, array{live: int, backup: ?int}>}
      */
     public static function run(): array
     {
-        $result = ['ok' => false, 'checked_at' => now()->toIso8601String(), 'file' => null, 'problems' => [], 'tables' => []];
+        $source = config('backup.r2.account_id') ? 'r2' : 'local';
+        $result = ['ok' => false, 'source' => $source, 'checked_at' => now()->toIso8601String(), 'file' => null, 'problems' => [], 'tables' => []];
         $scratch = (string) config('backup.verify_database');
 
         try {
             if ($scratch === '' || $scratch === config('database.connections.mysql.database')) {
                 throw new RuntimeException('The restore check needs its own scratch database (BACKUP_VERIFY_DATABASE), never the live one.');
             }
-            $password = (string) config('backup.password');
-            BackupCrypto::checkPassword($password);
-            $r2 = R2Client::fromConfig();
-
-            $objects = $r2->list((string) config('backup.prefix'));
-            if (! $objects) {
-                throw new RuntimeException('There are no backups in R2 yet.');
-            }
-            $newest = end($objects)['key'];
+            [$newest, $sql] = $source === 'r2' ? self::fromR2() : self::fromLocal();
             $result['file'] = $newest;
-
-            $sql = BackupCrypto::decrypt($r2->get($newest), $password);
             self::load($sql, $scratch);
 
             $result['tables'] = self::counts($scratch);
@@ -71,6 +65,37 @@ class RestoreCheck
         Cache::forever(self::LAST_RESULT, $result);
 
         return $result;
+    }
+
+    /** @return array{0: string, 1: string} [the newest backup's name, its SQL] */
+    private static function fromR2(): array
+    {
+        $password = (string) config('backup.password');
+        BackupCrypto::checkPassword($password);
+        $r2 = R2Client::fromConfig();
+
+        $objects = $r2->list((string) config('backup.prefix'));
+        if (! $objects) {
+            throw new RuntimeException('There are no backups in R2 yet.');
+        }
+        $newest = end($objects)['key'];
+
+        return [$newest, BackupCrypto::decrypt($r2->get($newest), $password)];
+    }
+
+    /** @return array{0: string, 1: string} the newest local export (made by db:export) and its SQL */
+    private static function fromLocal(): array
+    {
+        $dir = (string) config('backup.local_path');
+        $newest = collect(File::isDirectory($dir) ? File::files($dir) : [])
+            ->filter(fn ($f) => str_ends_with($f->getFilename(), '.sql') && $f->getSize() > 0)
+            ->sortByDesc(fn ($f) => $f->getMTime())
+            ->first();
+        if (! $newest) {
+            throw new RuntimeException('There are no database exports on this PC yet (php artisan db:export makes one).');
+        }
+
+        return [$newest->getFilename(), File::get($newest->getPathname())];
     }
 
     /**

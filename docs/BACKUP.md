@@ -49,6 +49,9 @@ A backup only counts if it can be restored. On the 1st of every month (13:00 Man
    there with about as many rows as now, and that the newest backup is at most 3 days old;
 4. drops the scratch database.
 
+Without R2 it checks the newest export on this PC (`storage/app/backups`) instead, so you still
+learn whether those restore; the weekly brief keeps reminding you to set up R2 until you do.
+
 If anything is wrong, admins get a "Backup check failed" alert (bell and phone) and the weekly brief
 says so. The brief also reminds you if no check has run in 40 days. Run it by hand any time with
 `php artisan backup:verify`: it prints each table's rows now and in the backup.

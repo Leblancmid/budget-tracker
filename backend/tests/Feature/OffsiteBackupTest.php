@@ -90,7 +90,7 @@ class OffsiteBackupTest extends TestCase
         $this->assertNotNull(Cache::get(BackupOffsite::LAST_SUCCESS));
     }
 
-    public function test_without_r2_set_up_the_backup_is_skipped_quietly(): void
+    public function test_without_r2_set_up_the_upload_is_skipped_but_the_brief_says_so(): void
     {
         config(['backup.r2.account_id' => null]);
         Http::fake();
@@ -98,7 +98,9 @@ class OffsiteBackupTest extends TestCase
         $this->artisan('backup:offsite')->assertSuccessful();
 
         Http::assertNothingSent();
-        $this->assertNull(collect(BusinessBrief::build()['insights'])->firstWhere('key', 'backup'));
+        $insight = collect(BusinessBrief::build()['insights'])->firstWhere('key', 'backup');
+        $this->assertSame('Off-site backup isn\'t set up', $insight['title']);
+        $this->assertSame('warn', $insight['level']);
     }
 
     public function test_a_failed_backup_shows_in_the_weekly_brief(): void

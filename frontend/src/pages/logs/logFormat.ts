@@ -91,8 +91,21 @@ export function fieldMeta(field: string, e: LogEntry): { label: string; kind: Va
   return FIELD_META[field] ?? { label: field.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()), kind: 'text' }
 }
 
+function parseJsonList(value: unknown): unknown[] | null {
+  if (typeof value !== 'string' || !value.startsWith('[')) return null
+  try {
+    const parsed: unknown = JSON.parse(value)
+    return Array.isArray(parsed) ? parsed : null
+  } catch {
+    return null
+  }
+}
+
 export function formatValue(value: unknown, kind: ValueKind): string {
   if (value === null || value === undefined || value === '') return '—'
+  // Lists (e.g. a user's modules, sometimes stored as JSON text): 'Daily, Trading' rather than '["daily","trading"]'
+  const list = Array.isArray(value) ? value : parseJsonList(value)
+  if (list) return list.length ? list.map((v) => { const t = String(v); return t.charAt(0).toUpperCase() + t.slice(1) }).join(', ') : '—'
   const n = Number(value)
   const money = (v: number) => v.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   switch (kind) {

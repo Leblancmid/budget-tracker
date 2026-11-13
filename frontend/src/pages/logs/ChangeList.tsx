@@ -14,14 +14,14 @@ export function ChangeList({ entry }: { entry: LogEntry }) {
         const b = formatValue(before, kind)
         const a = formatValue(after, kind)
         return (
-          <div key={field} className="grid grid-cols-[minmax(90px,140px)_1fr] sm:grid-cols-[160px_1fr] items-start gap-2 px-3 py-1.5 bg-gray-50/60 dark:bg-gray-800/30">
+          <div key={field} className="grid grid-cols-1 gap-0.5 sm:grid-cols-[160px_1fr] sm:gap-2 items-start px-3 py-1.5 bg-gray-50/60 dark:bg-gray-800/30">
             <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 truncate" title={label}>{label}</span>
             <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs min-w-0">
-              <span className="text-red-500/90 dark:text-red-400/90 line-through decoration-red-300/60 break-all">
+              <span className="text-red-500/90 dark:text-red-400/90 line-through decoration-red-300/60 break-words [overflow-wrap:anywhere]">
                 {isMoney && b !== '—' ? <Amt value={b} /> : b}
               </span>
               <span className="text-gray-300 dark:text-gray-600">→</span>
-              <span className="font-semibold text-emerald-600 dark:text-emerald-400 break-all">
+              <span className="font-semibold text-emerald-600 dark:text-emerald-400 break-words [overflow-wrap:anywhere]">
                 {isMoney && a !== '—' ? <Amt value={a} /> : a}
               </span>
             </span>

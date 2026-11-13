@@ -37,6 +37,9 @@ describe('log formatting', () => {
   it('formats values by kind', () => {
     expect(formatValue('1200000.4', 'gold')).toBe('1,200,000 G')
     expect(formatValue(1234.5, 'php')).toBe('₱1,234.50')
+    expect(formatValue(['daily', 'trading'], 'text')).toBe('Daily, Trading')
+    expect(formatValue([], 'text')).toBe('—')
+    expect(formatValue('["daily","master"]', 'text')).toBe('Daily, Master')
     expect(formatValue('12.5', 'usd')).toBe('$12.50')
     expect(formatValue('0.123456', 'rate')).toBe('0.1235')
     expect(formatValue('2026-10-01', 'date')).toBe('Oct 1, 2026')

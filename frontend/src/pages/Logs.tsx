@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { RefreshCw, ScrollText, Search, User, X } from 'lucide-react'
+import { RefreshCw, ScrollText, Search, SlidersHorizontal, User, X } from 'lucide-react'
 import { useLogs } from '@/hooks/useLogs'
 import { Card } from '@/components/ui/Card'
 import { Pagination } from '@/components/ui/Pagination'
@@ -35,6 +35,7 @@ export default function Logs() {
   const [activeEvent, setActiveEvent]   = useState<EventKey>('all')
   const [searchQuery, setSearchQuery]   = useState('')
   const [page, setPage]                 = useState(1)
+  const [filtersOpen, setFiltersOpen]   = useState(false)
 
   // A person's entries: what they did, plus what's about their account (a failed sign-in with their email)
   const byUser = useMemo(() => (activeUser === 'all' ? entries : entries.filter((e) => isAbout(e, activeUser))), [entries, activeUser])
@@ -88,6 +89,8 @@ export default function Logs() {
 
   const reset = (fn: () => void) => { fn(); setPage(1) }
   const hasFilters = activeModule !== 'all' || activeEvent !== 'all' || !!searchQuery.trim()
+  // Chips switched on (shown on the phone's Filters button while they're folded away)
+  const activeFilterCount = Number(activeModule !== 'all') + Number(activeEvent !== 'all') + Number(everyone && activeUser !== 'all')
 
   return (
     <div className="flex flex-col gap-5">
@@ -111,7 +114,7 @@ export default function Logs() {
                 type="button"
                 aria-pressed={days === p.days}
                 onClick={() => { setDays(p.days); setPage(1) }}
-                className={['rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors', days === p.days ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'].join(' ')}
+                className={['rounded-lg px-2.5 py-2 sm:py-1 text-xs font-semibold transition-colors', days === p.days ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'].join(' ')}
               >
                 {p.label}
               </button>
@@ -139,22 +142,34 @@ export default function Logs() {
 
       {/* ── Filters ────────────────────────────────────────────────── */}
       <Card className="flex flex-col gap-3 p-4">
-        <div className="relative">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-          <input
-            value={searchQuery}
-            onChange={(e) => reset(() => setSearchQuery(e.target.value))}
-            placeholder="Search description, type, user, account, amount or IP…"
-            className="w-full rounded-xl border border-gray-200 bg-white pl-9 pr-9 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-400/40 focus:border-indigo-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
-          />
-          {searchQuery && (
-            <button onClick={() => reset(() => setSearchQuery(''))} aria-label="Clear search" className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-gray-400 hover:text-gray-600"><X size={14} /></button>
-          )}
+        <div className="flex items-center gap-2">
+          <div className="relative min-w-0 flex-1">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <input
+              value={searchQuery}
+              onChange={(e) => reset(() => setSearchQuery(e.target.value))}
+              placeholder="Search description, type, user, account, amount or IP…"
+              className="w-full rounded-xl border border-gray-200 bg-white pl-9 pr-9 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-400/40 focus:border-indigo-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+            />
+            {searchQuery && (
+              <button onClick={() => reset(() => setSearchQuery(''))} aria-label="Clear search" className="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded text-gray-400 hover:text-gray-600"><X size={14} /></button>
+            )}
+          </div>
+          {/* Phones: the filter chips fold away behind this */}
+          <button
+            type="button"
+            onClick={() => setFiltersOpen((v) => !v)}
+            aria-expanded={filtersOpen}
+            className={['flex h-10 shrink-0 items-center gap-1.5 rounded-xl border px-3 text-sm font-semibold sm:hidden', activeFilterCount > 0 ? 'border-indigo-300 bg-indigo-50 text-indigo-700 dark:border-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300' : 'border-gray-200 bg-white text-gray-600 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300'].join(' ')}
+          >
+            <SlidersHorizontal size={14} />
+            Filters{activeFilterCount > 0 && <span className="rounded-full bg-indigo-600 px-1.5 text-[10px] font-bold leading-4 text-white">{activeFilterCount}</span>}
+          </button>
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className={['flex-wrap items-center gap-1.5', filtersOpen ? 'flex' : 'hidden sm:flex'].join(' ')}>
           <button onClick={() => reset(() => setActiveModule('all'))}
-            className={['rounded-full px-3 py-1 text-xs font-semibold transition-colors', activeModule === 'all' ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'].join(' ')}>
+            className={['rounded-full px-3 py-2 sm:py-1 text-xs font-semibold transition-colors', activeModule === 'all' ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'].join(' ')}>
             All modules <span className="opacity-60">{moduleCounts.all ?? 0}</span>
           </button>
           {MODULE_ORDER.filter((m) => (moduleCounts[m] ?? 0) > 0 || activeModule === m).map((m) => {
@@ -162,7 +177,7 @@ export default function Logs() {
             const on = activeModule === m
             return (
               <button key={m} onClick={() => reset(() => setActiveModule(on ? 'all' : m))}
-                className={['flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-colors', on ? s.badge + ' ring-1 ring-current/30' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'].join(' ')}>
+                className={['flex items-center gap-1.5 rounded-full px-3 py-2 sm:py-1 text-xs font-semibold transition-colors', on ? s.badge + ' ring-1 ring-current/30' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'].join(' ')}>
                 <s.Icon size={12} /> {s.label} <span className="opacity-60">{moduleCounts[m] ?? 0}</span>
               </button>
             )
@@ -172,18 +187,18 @@ export default function Logs() {
 
           {EVENT_FILTERS.map(({ key, label, Icon }) => (
             <button key={key} onClick={() => reset(() => setActiveEvent(key))}
-              className={['flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-colors', activeEvent === key ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'].join(' ')}>
+              className={['flex items-center gap-1.5 rounded-full px-3 py-2 sm:py-1 text-xs font-semibold transition-colors', activeEvent === key ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'].join(' ')}>
               {Icon && <Icon size={11} />} {label} <span className="opacity-60">{eventCounts[key]}</span>
             </button>
           ))}
         </div>
 
         {everyone && users.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className={['flex-wrap items-center gap-1.5', filtersOpen ? 'flex' : 'hidden sm:flex'].join(' ')}>
             <span className="mr-1 flex items-center gap-1 text-[11px] font-semibold text-gray-400 dark:text-gray-500"><User size={12} /> User</span>
             {[{ id: 'all' as const, name: 'Everyone', count: entries.length }, ...users.map((u) => ({ id: u.id, name: u.name, count: entries.filter((e) => isAbout(e, u.id)).length }))].map((u) => (
               <button key={String(u.id)} onClick={() => reset(() => setActiveUser(u.id))}
-                className={['rounded-full px-3 py-1 text-xs font-semibold transition-colors', activeUser === u.id ? 'bg-blue-600 text-white dark:bg-blue-500' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'].join(' ')}>
+                className={['rounded-full px-3 py-2 sm:py-1 text-xs font-semibold transition-colors', activeUser === u.id ? 'bg-blue-600 text-white dark:bg-blue-500' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'].join(' ')}>
                 {u.name} <span className="opacity-60">{u.count}</span>
               </button>
             ))}

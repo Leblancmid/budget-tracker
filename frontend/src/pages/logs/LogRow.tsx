@@ -14,8 +14,8 @@ export function LogRow({ entry: e }: { entry: LogEntry }) {
   const ev = eventOf(e)
 
   return (
-    <div className="flex gap-3 px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-      <div className="flex w-14 shrink-0 flex-col items-end pt-1 text-[11px] text-gray-400 dark:text-gray-500" title={formatDateTime(e.created_at)}>
+    <div className="flex gap-3 px-4 py-3 sm:px-5 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+      <div className="hidden w-14 shrink-0 flex-col items-end pt-1 sm:flex text-[11px] text-gray-400 dark:text-gray-500" title={formatDateTime(e.created_at)}>
         {formatTimeOnly(e.created_at)}
       </div>
       <div className="relative">

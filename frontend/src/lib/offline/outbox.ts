@@ -62,6 +62,14 @@ export function newClientId(): string {
 }
 
 /** Stored in the order they were made */
+let lastMadeAt = 0
+
+/** Date.now(), but never the same twice: changes made in the same millisecond keep their order. */
+export function madeAt(now = Date.now()): number {
+  lastMadeAt = Math.max(now, lastMadeAt + 1)
+  return lastMadeAt
+}
+
 const keyOf = (e: Pick<PendingEntry, 'created_at' | 'client_id'>) => `${String(e.created_at).padStart(15, '0')}|${e.client_id}`
 
 // ── The signed-in user's waiting changes, for the screens ───────────────────────────────────────
@@ -98,12 +106,12 @@ async function store(entry: PendingEntry): Promise<PendingEntry> {
 }
 
 /** Keep a new daily entry on the device to send later. */
-export async function queueEntry(payload: TransactionPayload, clientId = newClientId(), now = Date.now()): Promise<PendingEntry> {
+export async function queueEntry(payload: TransactionPayload, clientId = newClientId(), now = madeAt()): Promise<PendingEntry> {
   return store({ client_id: clientId, user_id: signedInUser(), kind: 'create', payload, created_at: now, error: null })
 }
 
 /** Keep an edit (or delete) of an existing daily entry on the device to send later. */
-export async function queueChange(kind: 'update' | 'delete', transactionId: number, payload: TransactionPayload, now = Date.now()): Promise<PendingEntry> {
+export async function queueChange(kind: 'update' | 'delete', transactionId: number, payload: TransactionPayload, now = madeAt()): Promise<PendingEntry> {
   const userId = signedInUser()
   const sameEntry = (await refreshPending()).filter((e) => e.transaction_id === transactionId && (kindOf(e) === 'update' || kindOf(e) === 'delete'))
 
@@ -140,7 +148,7 @@ async function savedName(basePath: string, id: number): Promise<string | null> {
 }
 
 /** Keep any other change (a sale, an account, a wallet entry…) on the device to send later. */
-export async function queueRequest(write: OfflineWrite, now = Date.now()): Promise<PendingEntry> {
+export async function queueRequest(write: OfflineWrite, now = madeAt()): Promise<PendingEntry> {
   const userId = signedInUser()
   const body = write.data instanceof FormData ? [...write.data.entries()] as [string, string | Blob][]
     : typeof write.data === 'string' ? write.data

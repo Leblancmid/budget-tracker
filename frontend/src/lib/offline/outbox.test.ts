@@ -11,7 +11,7 @@ vi.mock('@/lib/dataEvents', () => ({ emitDataChanged: vi.fn() }))
 
 const { default: api } = await import('@/api/axios')
 const { transactionsApi } = await import('@/api/transactions')
-const { discardEntry, kindOf, newClientId, queueChange, queueEntry, refreshPending, syncPending } = await import('./outbox')
+const { discardEntry, kindOf, madeAt, newClientId, queueChange, queueEntry, refreshPending, syncPending } = await import('./outbox')
 
 /** You approve everything waiting */
 const approveAll = async () => syncPending((await refreshPending()).map((e) => e.client_id))
@@ -88,7 +88,7 @@ describe('daily entries added offline', () => {
     server = (body) => (body.description === 'A' ? 'ok' : 'offline')
 
     expect(await approveAll()).toEqual({ sent: 1, refused: 0 })
-    expect((await refreshPending()).map((e) => e.payload.description)).toEqual(['B'])
+    expect((await refreshPending()).map((e) => e.payload?.description)).toEqual(['B'])
   })
 
   it('waits when the server is having trouble instead of giving up on the entry', async () => {
@@ -123,7 +123,7 @@ describe('daily entries added offline', () => {
     expect(await refreshPending()).toEqual([])
     expect(await approveAll()).toEqual({ sent: 0, refused: 0 })
     userId = 7
-    expect((await refreshPending()).map((e) => e.payload.description)).toEqual(['Mine'])
+    expect((await refreshPending()).map((e) => e.payload?.description)).toEqual(['Mine'])
   })
   describe('edits and deletes of existing entries', () => {
     const lunch = { id: 41, category_id: 1, category: { id: 1, name: 'Food' }, type: 'expense', scope: 'personal', amount: '250.00',
@@ -189,6 +189,12 @@ describe('daily entries added offline', () => {
       expect(posted.map((p) => p.description)).toEqual(['Dinner'])
       expect((await refreshPending()).map((e) => e.payload?.description)).toEqual(['Lunch'])
       void dinner
+    })
+
+    it('keeps the order of changes made in the same millisecond', () => {
+      const first = madeAt(1000)
+      const second = madeAt(1000)
+      expect(second).toBeGreaterThan(first)
     })
 
     it('sends every change with its own Idempotency-Key, so a resend is done once', async () => {

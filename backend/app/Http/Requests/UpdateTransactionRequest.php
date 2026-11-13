@@ -2,11 +2,14 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\DailyEntryAccess;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class UpdateTransactionRequest extends FormRequest
 {
+    use DailyEntryAccess;
+
     public function authorize(): bool
     {
         return true;
@@ -21,9 +24,7 @@ class UpdateTransactionRequest extends FormRequest
             'description' => ['nullable', 'string', 'max:255'],
             'date'        => ['sometimes', 'required', 'date'],
             'notes'       => ['nullable', 'string', 'max:1000'],
-            'scope'           => ['sometimes', 'in:personal,business'],
-            // Daily amounts are in ₱, so only PHP balance accounts can be linked
-            'balance_account' => ['nullable', 'string', Rule::exists('balance_accounts', 'code')->where('currency', 'PHP')],
+            ...$this->accessRules(),
         ];
     }
 }

@@ -58,22 +58,17 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('recurring-entries', RecurringEntryController::class)->except(['show'])
             ->parameters(['recurring-entries' => 'recurringEntry']);
 
-        // Everything below is admin-only: daily_only users get 403
+        // Users: admins only (add, edit, set a password, turn off / on; never deleted, see UserController)
         Route::middleware('admin')->group(function () {
-
-            // Logs
-            Route::get('logs', [LogController::class, 'index'])->name('logs.index');
-
-            // Users: add, edit, set a password, turn off / on (never deleted, see UserController)
             Route::apiResource('users', UserController::class)->only(['index', 'store', 'update']);
             Route::put('users/{user}/password', [UserController::class, 'updatePassword'])->middleware('throttle:10,1')->name('users.password');
             Route::post('users/{user}/deactivate', [UserController::class, 'deactivate'])->name('users.deactivate');
             Route::post('users/{user}/reactivate', [UserController::class, 'reactivate'])->name('users.reactivate');
+        });
 
-            // Business report
-            Route::get('reports/business', [ReportController::class, 'business'])->name('reports.business');
-
-            // Master
+        // Master File: the net worth overview, everyone's logs, and undo
+        Route::middleware('module:master')->group(function () {
+            Route::get('logs', [LogController::class, 'index'])->name('logs.index');
             Route::prefix('master')->name('master.')->group(function () {
                 Route::get('dashboard', [MasterDashboardController::class, 'index'])->name('dashboard');
                 Route::get('dashboard/trend', [MasterDashboardController::class, 'trend'])->name('dashboard.trend');
@@ -81,12 +76,26 @@ Route::prefix('v1')->group(function () {
                 Route::get('operations', [OperationController::class, 'index'])->name('operations.index');
                 Route::post('operations/{operation}/undo', [OperationController::class, 'undo'])->name('operations.undo');
                 Route::post('operations/{operation}/redo', [OperationController::class, 'redo'])->name('operations.redo');
+            });
+        });
+
+        // Wallets (the Balance page). Trading also reads the wallet list: sales are paid into wallets
+        Route::prefix('master')->name('master.')->group(function () {
+            Route::get('balance-accounts', [BalanceAccountController::class, 'index'])->middleware('module:wallets,trading')->name('balance-accounts.index');
+            Route::middleware('module:wallets')->group(function () {
                 Route::apiResource('balance-entries', BalanceEntryController::class)->except(['show']);
                 Route::apiResource('balance-transfers', BalanceTransferController::class)->only(['store', 'destroy']);
                 Route::post('balance-accounts/{balanceAccount}/check', [BalanceAccountController::class, 'check'])->name('balance-accounts.check');
                 Route::post('balance-accounts/reorder', [BalanceAccountController::class, 'reorder'])->name('balance-accounts.reorder');
-                Route::apiResource('balance-accounts', BalanceAccountController::class)->except(['show']);
+                Route::apiResource('balance-accounts', BalanceAccountController::class)->except(['index', 'show']);
             });
+        });
+
+        // Trading: Business and Rucoy (each screen uses the other's data), and the business report
+        Route::middleware('module:trading')->group(function () {
+
+            // Business report
+            Route::get('reports/business', [ReportController::class, 'business'])->name('reports.business');
 
             // Business
             Route::prefix('business')->name('business.')->group(function () {
@@ -155,6 +164,6 @@ Route::prefix('v1')->group(function () {
                     ->parameters(['accounts' => 'rucoyAccount']);
             });
 
-        }); // admin
+        }); // trading
     });
 });

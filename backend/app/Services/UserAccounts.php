@@ -26,12 +26,39 @@ class UserAccounts
             'name'           => $user->name,
             'email'          => $user->email,
             'role'           => $user->role,
+            'modules'        => $user->modules(),
             'avatar_url'     => $user->avatarUrl(),
             'deactivated_at' => $user->deactivated_at?->toIso8601String(),
             'created_at'     => $user->created_at?->toIso8601String(),
             'last_active_at' => $lastActive ? Carbon::parse($lastActive)->toIso8601String() : null,
             'is_self'        => $viewerId !== null && $viewerId === $user->id,
         ];
+    }
+
+    /**
+     * The role and modules to store from an add / edit form. Admins always get everything (stored
+     * empty). A pick that matches the role's preset is stored empty too, so it follows the role.
+     * Changing the role without picking modules goes back to that role's preset.
+     */
+    public static function access(array $data, ?User $existing = null): array
+    {
+        $role = $data['role'] ?? $existing?->role ?? 'daily_only';
+
+        if ($role === 'admin') {
+            return ['role' => $role, 'modules' => null];
+        }
+        if (array_key_exists('modules', $data)) {
+            // In the app's order, always with Daily Expenses
+            $picked = array_values(array_intersect(User::MODULES, [...($data['modules'] ?? []), 'daily']));
+            $preset = array_values(array_intersect(User::MODULES, User::PRESETS[$role]));
+
+            return ['role' => $role, 'modules' => $picked === $preset ? null : $picked];
+        }
+        if ($existing === null || $existing->role !== $role) {
+            return ['role' => $role, 'modules' => null];
+        }
+
+        return ['role' => $role];
     }
 
     /** Replace the profile picture. The stored name is generated, never the uploaded one. */

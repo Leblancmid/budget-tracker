@@ -7,14 +7,13 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Business, Rucoy, Master, logs and business reports are admin-only.
- * daily_only users can reach only their own Daily Expenses data.
+ * Admins only (user management). The rest of the app is opened per module: see EnsureModule.
  */
 class EnsureAdmin
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->user()?->role === 'daily_only') {
+        if (! $request->user()?->isAdmin()) {
             return response()->json(['message' => 'You are not allowed to access this.'], 403);
         }
 

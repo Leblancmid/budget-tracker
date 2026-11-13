@@ -23,6 +23,9 @@ class StoreUserRequest extends FormRequest
             'name'     => ['required', 'string', 'max:100'],
             'email'    => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
             'role'     => ['required', Rule::in(User::ROLES)],
+            // Optional: parts of the app beyond what the role gives (or fewer); Daily Expenses is always on
+            'modules'   => ['sometimes', 'nullable', 'array'],
+            'modules.*' => ['string', Rule::in(User::MODULES)],
             'password' => ['required', 'string', Password::defaults()],
         ];
     }

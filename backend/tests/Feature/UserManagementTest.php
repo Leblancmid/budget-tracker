@@ -49,7 +49,7 @@ class UserManagementTest extends TestCase
 
         $page = $this->getJson('/api/v1/users')->assertOk();
         $page->assertJsonPath('total', 14)->assertJsonPath('last_page', 2)->assertJsonCount(10, 'data')
-            ->assertJsonPath('counts', ['all' => 14, 'admin' => 1, 'daily_only' => 12, 'deactivated' => 1])
+            ->assertJsonPath('counts', ['all' => 14, 'admin' => 1, 'trader' => 0, 'daily_only' => 12, 'deactivated' => 1])
             ->assertJsonMissingPath('data.0.password');
         $this->assertSame('Ben', collect($this->getJson('/api/v1/users?page=2')->json('data'))->last()['name'], 'deactivated users are listed last');
 

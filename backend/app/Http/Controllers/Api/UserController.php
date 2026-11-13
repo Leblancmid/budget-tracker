@@ -42,6 +42,7 @@ class UserController extends Controller
             'counts' => [
                 'all'         => User::count(),
                 'admin'       => User::where('role', 'admin')->whereNull('deactivated_at')->count(),
+                'trader'      => User::where('role', 'trader')->whereNull('deactivated_at')->count(),
                 'daily_only'  => User::where('role', 'daily_only')->whereNull('deactivated_at')->count(),
                 'deactivated' => User::whereNotNull('deactivated_at')->count(),
             ],
@@ -50,14 +51,17 @@ class UserController extends Controller
 
     public function store(StoreUserRequest $request): JsonResponse
     {
-        $user = User::create($request->validated());
+        $data = $request->validated();
+        $user = User::create([...$data, ...UserAccounts::access($data)]);
 
         return response()->json(['user' => UserAccounts::present($user, $request->user()->id)], 201);
     }
 
     public function update(UpdateUserRequest $request, User $user): JsonResponse
     {
-        $user->fill($request->validated())->save();
+        $data = $request->validated();
+        $access = isset($data['role']) || array_key_exists('modules', $data) ? UserAccounts::access($data, $user) : [];
+        $user->fill([...$data, ...$access])->save();
         $user->loadMax('tokens', 'last_used_at');
 
         return response()->json(['user' => UserAccounts::present($user, $request->user()->id)]);

@@ -13,7 +13,22 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
-    public const ROLES = ['admin', 'daily_only'];
+    public const ROLES = ['admin', 'trader', 'daily_only'];
+
+    /**
+     * The parts of the app access is given for. Daily Expenses (your own entries) is everyone's.
+     * trading: Business and Rucoy together (each screen uses the other's data).
+     * wallets: the Balance page and linking entries to a wallet.
+     * master: Master File (net worth overview, logs of everyone's actions, undo).
+     */
+    public const MODULES = ['daily', 'trading', 'wallets', 'master'];
+
+    /** What each role gets unless an admin picks modules for that person. Admins always get everything. */
+    public const PRESETS = [
+        'admin'      => self::MODULES,
+        'trader'     => ['daily', 'trading'],
+        'daily_only' => ['daily'],
+    ];
 
     /** avatar_path and deactivated_at are set by UserAccounts only, never mass-assigned from a request. */
     protected $fillable = [
@@ -21,6 +36,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'modules',
     ];
 
     protected $hidden = [
@@ -34,12 +50,29 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'deactivated_at'    => 'datetime',
             'password'          => 'hashed',
+            'modules'           => 'array',
         ];
     }
 
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
+    }
+
+    /** The modules this person can open: everything for admins, else their own pick or their role's. */
+    public function modules(): array
+    {
+        if ($this->isAdmin()) {
+            return self::MODULES;
+        }
+        $chosen = $this->modules ?: (self::PRESETS[$this->role] ?? ['daily']);
+
+        return array_values(array_intersect(self::MODULES, array_unique([...$chosen, 'daily'])));
+    }
+
+    public function canUse(string $module): bool
+    {
+        return in_array($module, $this->modules(), true);
     }
 
     public function isActive(): bool

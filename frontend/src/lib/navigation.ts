@@ -1,12 +1,12 @@
 import type { Module } from '@/context/auth'
-import { Briefcase, CircleUserRound, FolderOpen, Gamepad2, Store, Wallet, type LucideIcon } from 'lucide-react'
+import { Briefcase, CircleUserRound, FolderOpen, Gamepad2, Landmark, Store, Wallet, type LucideIcon } from 'lucide-react'
 
 /**
  * The app's navigation in one place: the sidebar lists the sections, the tab bar under the header
  * lists the current section's tabs, and the header shows "Section / Tab". Page URLs never change.
  */
 
-export type SectionId = 'daily' | 'business' | 'storefront' | 'rucoy' | 'master' | 'account'
+export type SectionId = 'daily' | 'business' | 'storefront' | 'rucoy' | 'balance' | 'master' | 'account'
 
 export interface NavTab {
   to: string
@@ -47,7 +47,6 @@ export const NAV_SECTIONS: NavSection[] = [
       { to: '/', label: 'Dashboard', end: true },
       { to: '/transactions', label: 'Transactions' },
       { to: '/budgets', label: 'Budgets', alsoActiveOn: [{ path: '/categories', title: 'Categories' }] },
-      { to: '/master/balance', label: 'Balance', module: 'wallets' },
       { to: '/reports/daily-expenses', label: 'Report' },
     ],
   },
@@ -91,6 +90,18 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
+    // The business's wallets: given separately (the Wallets module)
+    id: 'balance',
+    group: 'Overview',
+    caption: 'Wallets & transfers',
+    label: 'Balance',
+    icon: Landmark,
+    module: 'wallets',
+    tabs: [
+      { to: '/master/balance', label: 'Wallets', end: true },
+    ],
+  },
+  {
     id: 'master',
     group: 'Overview',
     caption: 'Net worth, logs & undo',
@@ -125,7 +136,7 @@ export function tabMatches(tab: NavTab, pathname: string): boolean {
   return (tab.alsoActiveOn ?? []).some((p) => under(pathname, p.path))
 }
 
-/** The section and tab a URL belongs to. The most specific tab wins (e.g. /master/balance → Balance, not Overview). */
+/** The section and tab a URL belongs to. The most specific tab wins (e.g. /master/balance → Wallets, not Overview). */
 export function locate(pathname: string): { section: NavSection; tab: NavTab; title: string } {
   let best: { section: NavSection; tab: NavTab; length: number } | null = null
   for (const section of NAV_SECTIONS) {
@@ -173,6 +184,12 @@ export const SECTION_STYLES: Record<SectionId, { icon: string; iconBg: string; b
     iconBg: 'bg-amber-100 dark:bg-amber-900/40',
     badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
     tabActive: 'border-amber-500 text-amber-700 dark:border-amber-400 dark:text-amber-300',
+  },
+  balance: {
+    icon: 'text-emerald-600 dark:text-emerald-400',
+    iconBg: 'bg-emerald-100 dark:bg-emerald-900/40',
+    badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+    tabActive: 'border-emerald-500 text-emerald-700 dark:border-emerald-400 dark:text-emerald-300',
   },
   master: {
     icon: 'text-violet-600 dark:text-violet-400',

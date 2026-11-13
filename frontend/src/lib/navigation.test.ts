@@ -12,7 +12,7 @@ describe('navigation', () => {
     expect(where('/')).toBe('Daily Expenses / Dashboard (Dashboard)')
     expect(where('/transactions')).toBe('Daily Expenses / Transactions (Transactions)')
     expect(where('/budgets')).toBe('Daily Expenses / Budgets (Budgets)')
-    expect(where('/master/balance')).toBe('Daily Expenses / Balance (Balance)')
+    expect(where('/master/balance')).toBe('Balance / Wallets (Wallets)')
     expect(where('/reports/daily-expenses')).toBe('Daily Expenses / Report (Report)')
     expect(where('/business')).toBe('Business / Stats (Stats)')
     expect(where('/business/transactions')).toBe('Business / Sales (Sales)')
@@ -74,10 +74,10 @@ describe('navigation', () => {
 
   it('follows the modules picked for a person, and shows admins everything', () => {
     const custom = forUser({ role: 'daily_only', modules: ['daily', 'wallets', 'master'] })
-    expect(custom.map((s) => s.id)).toEqual(['daily', 'master', 'account'])
-    expect(custom[0].tabs.map((t) => t.label)).toContain('Balance')
+    expect(custom.map((s) => s.id)).toEqual(['daily', 'balance', 'master', 'account'])
+    expect(custom[0].tabs.map((t) => t.label)).not.toContain('Balance')
     const admin = forUser({ role: 'admin' })
-    expect(admin).toHaveLength(6)
+    expect(admin).toHaveLength(7)
     expect(admin.at(-1)?.tabs.map((t) => t.label)).toEqual(['Profile', 'Users'])
   })
 

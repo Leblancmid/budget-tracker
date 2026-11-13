@@ -27,3 +27,8 @@ Schedule::command('sanctum:prune-expired --hours=24')->daily();
 
 // Undo history older than 90 days, and account images nothing uses any more
 Schedule::command('operations:prune')->dailyAt('04:00')->withoutOverlapping();
+
+// Alerts (bell + phone): new website leads, checked every minute
+Schedule::command('leads:watch')->everyMinute()->withoutOverlapping();
+// Morning alerts at 09:00 Manila (01:00 UTC): trades and payments due, Monday's weekly brief
+Schedule::command('business:alerts')->dailyAt('01:00')->withoutOverlapping();

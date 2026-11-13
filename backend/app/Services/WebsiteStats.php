@@ -124,6 +124,12 @@ class WebsiteStats
         })->values()->all();
     }
 
+    /** The website's leads as they are (no price guide or account names): for watching for new ones. */
+    public static function rawLeads(): array
+    {
+        return self::call('get', '/api/leads')['leads'] ?? [];
+    }
+
     public static function updateLead(int $id, string $status): void
     {
         self::call('patch', '/api/leads/' . $id, ['status' => $status]);

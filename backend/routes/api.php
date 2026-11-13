@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\Rucoy\RucoyDashboardController;
 use App\Http\Controllers\Api\Rucoy\TradeController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\PushController;
 use App\Http\Controllers\Api\TransactionController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
@@ -53,6 +54,11 @@ Route::prefix('v1')->group(function () {
             Route::delete('avatar', [ProfileController::class, 'destroyAvatar'])->name('avatar.destroy');
             Route::put('password', [ProfileController::class, 'updatePassword'])->middleware('throttle:6,1')->name('password.update');
             Route::delete('sessions/{token}', [ProfileController::class, 'destroySession'])->whereNumber('token')->name('sessions.destroy');
+            // Phone alerts for this device
+            Route::get('push', [PushController::class, 'show'])->name('push.show');
+            Route::post('push', [PushController::class, 'store'])->middleware('throttle:10,1')->name('push.store');
+            Route::delete('push', [PushController::class, 'destroy'])->name('push.destroy');
+            Route::post('push/test', [PushController::class, 'test'])->middleware('throttle:5,1')->name('push.test');
         });
 
         // Daily Expenses (every signed-in user, scoped to their own data)

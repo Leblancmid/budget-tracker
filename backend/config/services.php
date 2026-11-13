@@ -40,4 +40,13 @@ return [
         'source_url' => env('SCREENSHOT_SOURCE_URL'),
     ],
 
+    // Phone alerts (web push). Make the keys with `php artisan push:keys`; empty = alerts off.
+    // On Windows PHP also needs the OPENSSL_CONF environment variable (push:keys says how).
+    'webpush' => [
+        'public_key'  => env('VAPID_PUBLIC_KEY'),
+        'private_key' => env('VAPID_PRIVATE_KEY'),
+        // Who the push services can contact about these alerts (a URL of this app is enough)
+        'subject'     => env('VAPID_SUBJECT', env('APP_URL', 'https://localhost')),
+    ],
+
 ];

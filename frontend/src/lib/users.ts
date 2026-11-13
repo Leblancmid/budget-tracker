@@ -50,8 +50,9 @@ export function timeAgo(iso: string | null | undefined, now = Date.now()): strin
 }
 
 /** One plain sentence about an account: "Active · seen 5 min ago", "Never signed in", "Deactivated". */
-export function userStatus(u: { deactivated_at: string | null; last_active_at: string | null }, now = Date.now()): { text: string; tone: 'active' | 'idle' | 'off' } {
+export function userStatus(u: { deactivated_at: string | null; last_active_at: string | null; must_change_password?: boolean }, now = Date.now()): { text: string; tone: 'active' | 'idle' | 'off' } {
   if (u.deactivated_at) return { text: 'Deactivated · can\'t sign in', tone: 'off' }
+  if (u.must_change_password) return { text: 'Has to choose a new password', tone: 'idle' }
   const seen = timeAgo(u.last_active_at, now)
   if (!seen) return { text: 'Never signed in', tone: 'idle' }
   return { text: `Active · seen ${seen}`, tone: 'active' }

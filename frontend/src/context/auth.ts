@@ -12,6 +12,8 @@ export interface AuthUser {
   role: UserRole
   /** What they can open (absent on logins saved before modules existed: see lib/access) */
   modules?: Module[]
+  /** Signed in with a password an admin chose: they choose their own before using the app */
+  must_change_password?: boolean
   /** Profile picture (absent on logins saved before profiles existed) */
   avatar_url?: string | null
   created_at?: string | null

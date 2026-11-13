@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 class UserObserver extends RecordLogObserver
 {
     protected array $ignoredOnEdit = [
-        'updated_at', 'created_at', 'password', 'remember_token', 'email_verified_at', 'avatar_path', 'deactivated_at',
+        'updated_at', 'created_at', 'password', 'remember_token', 'email_verified_at', 'avatar_path', 'deactivated_at', 'must_change_password',
     ];
 
     protected function module(): string

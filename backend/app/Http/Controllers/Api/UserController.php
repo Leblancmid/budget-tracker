@@ -53,6 +53,8 @@ class UserController extends Controller
     {
         $data = $request->validated();
         $user = User::create([...$data, ...UserAccounts::access($data)]);
+        // The first password is the admin's pick: the person replaces it at their first sign-in
+        $user->forceFill(['must_change_password' => true])->save();
 
         return response()->json(['user' => UserAccounts::present($user, $request->user()->id)], 201);
     }

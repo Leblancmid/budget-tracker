@@ -53,6 +53,7 @@ class User extends Authenticatable
             'deactivated_at'    => 'datetime',
             'password'          => 'hashed',
             'modules'           => 'array',
+            'must_change_password' => 'boolean',
         ];
     }
 

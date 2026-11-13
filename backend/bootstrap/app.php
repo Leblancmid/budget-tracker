@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsureAdmin;
 use App\Http\Middleware\EnsureModule;
+use App\Http\Middleware\EnsurePasswordChosen;
 use App\Http\Middleware\IdempotentRequests;
 use App\Http\Middleware\RecordOperation;
 use App\Http\Middleware\SecureApiHeaders;
@@ -36,7 +37,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Nobody else is trusted, so these headers can't be faked from outside.
         $middleware->trustProxies(at: ['127.0.0.1', '::1']);
 
-        $middleware->alias(['admin' => EnsureAdmin::class, 'module' => EnsureModule::class]);
+        $middleware->alias(['admin' => EnsureAdmin::class, 'module' => EnsureModule::class, 'password.chosen' => EnsurePasswordChosen::class]);
 
         $middleware->validateCsrfTokens(except: ['api/*']);
     })

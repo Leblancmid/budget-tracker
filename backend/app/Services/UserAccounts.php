@@ -29,6 +29,7 @@ class UserAccounts
             'modules'        => $user->modules(),
             'avatar_url'     => $user->avatarUrl(),
             'deactivated_at' => $user->deactivated_at?->toIso8601String(),
+            'must_change_password' => (bool) $user->must_change_password,
             'created_at'     => $user->created_at?->toIso8601String(),
             'last_active_at' => $lastActive ? Carbon::parse($lastActive)->toIso8601String() : null,
             'is_self'        => $viewerId !== null && $viewerId === $user->id,
@@ -87,10 +88,11 @@ class UserAccounts
      */
     public static function setPassword(User $user, string $password, ?int $keepTokenId = null): void
     {
-        $user->forceFill(['password' => $password])->save();
+        // A password someone else chose must be replaced by the person before they use the app
+        $own = auth()->id() === $user->id;
+        $user->forceFill(['password' => $password, 'must_change_password' => ! $own])->save();
         $user->tokens()->when($keepTokenId, fn ($q) => $q->where('id', '!=', $keepTokenId))->delete();
 
-        $own = auth()->id() === $user->id;
         ActivityLog::note('access', 'edited', $own ? 'Changed own password' : 'Set a new password for ' . $user->name, $user);
     }
 

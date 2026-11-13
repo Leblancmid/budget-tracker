@@ -115,7 +115,7 @@ export function UserModal({ user, onClose, onSaved }: {
               <div>
                 <PasswordField label="First password" value={form.password ?? ''} onChange={(v) => set('password', v)} error={errors.password} allowGenerate />
                 <div className="mt-2 flex items-center justify-between gap-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
-                  <span>Give this password to them in person or by message. They can change it from their profile.</span>
+                  <span>Give this password to them in person or by message. At their first sign-in they'll be asked to choose their own.</span>
                   <button type="button" onClick={() => void copyPassword()} className="inline-flex shrink-0 items-center gap-1 font-semibold hover:underline">
                     {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />} {copied ? 'Copied' : 'Copy'}
                   </button>
@@ -249,7 +249,7 @@ export function SetPasswordModal({ user, onClose }: { user: AccountUser; onClose
       <form onSubmit={submit} noValidate className="flex flex-col gap-4">
         <PasswordField label="New password" value={password} onChange={(v) => { setPassword(v); setError(undefined) }} error={error} allowGenerate autoFocus />
         <p className="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600 dark:bg-gray-800/50 dark:text-gray-400">
-          {user.name} will be signed out on every device and signs in again with this password.
+          {user.name} will be signed out on every device, signs in with this password, and is then asked to choose their own.
         </p>
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>

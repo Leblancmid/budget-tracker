@@ -22,7 +22,7 @@ export function RoleBadge({ role }: { role: UserRole }) {
 const DOT = { active: 'bg-emerald-500', idle: 'bg-gray-300 dark:bg-gray-600', off: 'bg-red-500' }
 
 /** The account's state as one sentence with a coloured dot: "Active · seen 5 min ago". */
-export function StatusLine({ user }: { user: { deactivated_at: string | null; last_active_at: string | null } }) {
+export function StatusLine({ user }: { user: { deactivated_at: string | null; last_active_at: string | null; must_change_password?: boolean } }) {
   const s = userStatus(user)
   return (
     <span className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">

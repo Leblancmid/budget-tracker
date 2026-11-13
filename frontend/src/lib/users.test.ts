@@ -32,6 +32,7 @@ describe('timeAgo and userStatus', () => {
   it('gives one sentence per account', () => {
     expect(userStatus({ deactivated_at: ago(1), last_active_at: ago(2) }, NOW)).toEqual({ text: 'Deactivated · can\'t sign in', tone: 'off' })
     expect(userStatus({ deactivated_at: null, last_active_at: null }, NOW)).toEqual({ text: 'Never signed in', tone: 'idle' })
+    expect(userStatus({ deactivated_at: null, last_active_at: ago(5), must_change_password: true }, NOW)).toEqual({ text: 'Has to choose a new password', tone: 'idle' })
     expect(userStatus({ deactivated_at: null, last_active_at: ago(5) }, NOW)).toEqual({ text: 'Active · seen 5 min ago', tone: 'active' })
   })
 })

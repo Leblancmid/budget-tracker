@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 
 export interface MenuItem {
   label: string
@@ -8,9 +9,16 @@ export interface MenuItem {
   hidden?: boolean
 }
 
+const GAP = 8
+const EDGE = 8
+
 /**
  * A small dropdown: the trigger opens it, Escape or a click outside closes it, and the arrow keys
  * move between items. Used for ⋯ (rare actions) and the account menu.
+ *
+ * The list is drawn on top of the page (in a portal), so a card that clips its contents (rounded
+ * corners with overflow hidden) can't cut it off. It opens upward when there's no room below, and
+ * closes when the page scrolls or resizes, since it no longer lines up with its button.
  */
 export function Menu({ trigger, label, items, header, align = 'right' }: {
   /** What the button shows */
@@ -23,17 +31,45 @@ export function Menu({ trigger, label, items, header, align = 'right' }: {
   align?: 'left' | 'right'
 }) {
   const [open, setOpen] = useState(false)
-  const root = useRef<HTMLDivElement>(null)
+  const [style, setStyle] = useState<CSSProperties>({ visibility: 'hidden' })
+  const button = useRef<HTMLButtonElement>(null)
+  const list = useRef<HTMLDivElement>(null)
   const shown = items.filter((i) => !i.hidden)
+
+  const close = (refocus = false) => {
+    setOpen(false)
+    setStyle({ visibility: 'hidden' })
+    if (refocus) button.current?.focus()
+  }
+
+  // Place the list next to its button once it's drawn (its height decides up or down)
+  useLayoutEffect(() => {
+    if (!open || !button.current || !list.current) return
+    const b = button.current.getBoundingClientRect()
+    const height = list.current.offsetHeight
+    const width = list.current.offsetWidth
+    const below = window.innerHeight - b.bottom
+    const up = below < height + GAP + EDGE && b.top > below
+    // Line up with the button's right (or left) edge, unless that would run off the screen
+    const fitsRight = b.right - width >= EDGE
+    const fitsLeft = b.left + width <= window.innerWidth - EDGE
+    const horizontal = (align === 'right' ? fitsRight || !fitsLeft : !fitsLeft && fitsRight)
+      ? { right: Math.max(EDGE, window.innerWidth - b.right) }
+      : { left: Math.max(EDGE, b.left) }
+    setStyle(up ? { ...horizontal, bottom: window.innerHeight - b.top + GAP } : { ...horizontal, top: b.bottom + GAP })
+  }, [open, align])
 
   useEffect(() => {
     if (!open) return
-    const onDown = (e: MouseEvent) => { if (!root.current?.contains(e.target as Node)) setOpen(false) }
+    const inside = (t: EventTarget | null) => button.current?.contains(t as Node) || list.current?.contains(t as Node)
+    const onDown = (e: MouseEvent) => { if (!inside(e.target)) close() }
+    const onMove = (e: Event) => { if (!inside(e.target)) close() }
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { setOpen(false); root.current?.querySelector<HTMLButtonElement>('[data-menu-trigger]')?.focus() }
+      if (e.key === 'Escape') close(true)
+      if (e.key === 'Tab') close()
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault()
-        const buttons = Array.from(root.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]') ?? [])
+        const buttons = Array.from(list.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]') ?? [])
         const at = buttons.indexOf(document.activeElement as HTMLButtonElement)
         const next = e.key === 'ArrowDown' ? (at + 1) % buttons.length : (at - 1 + buttons.length) % buttons.length
         buttons[next]?.focus()
@@ -41,33 +77,40 @@ export function Menu({ trigger, label, items, header, align = 'right' }: {
     }
     document.addEventListener('mousedown', onDown)
     document.addEventListener('keydown', onKey)
+    window.addEventListener('scroll', onMove, true)
+    window.addEventListener('resize', onMove)
     return () => {
       document.removeEventListener('mousedown', onDown)
       document.removeEventListener('keydown', onKey)
+      window.removeEventListener('scroll', onMove, true)
+      window.removeEventListener('resize', onMove)
     }
   }, [open])
 
   return (
-    <div ref={root} className="relative" onClick={(e) => e.stopPropagation()}>
+    // Clicks inside (including the list, which React still treats as a child) don't reach the row behind
+    <div className="relative" onClick={(e) => e.stopPropagation()}>
       <button
+        ref={button}
         type="button"
-        data-menu-trigger
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={label}
         title={label}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => (open ? close() : setOpen(true))}
         className="flex items-center rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
       >
         {trigger}
       </button>
-      {open && (
+      {open && createPortal(
         <div
+          ref={list}
           role="menu"
+          aria-label={label}
+          style={style}
           className={[
-            'absolute z-40 mt-2 min-w-52 origin-top overflow-hidden rounded-xl border border-gray-200 bg-white/95 p-1 shadow-lg shadow-gray-900/10 backdrop-blur',
+            'fixed z-[60] min-w-52 overflow-hidden rounded-xl border border-gray-200 bg-white/95 p-1 shadow-lg shadow-gray-900/10 backdrop-blur',
             'dark:border-gray-700 dark:bg-gray-900/95 dark:shadow-black/40',
-            align === 'right' ? 'right-0' : 'left-0',
           ].join(' ')}
         >
           {header && <div className="border-b border-gray-100 px-3 py-2.5 dark:border-gray-800">{header}</div>}
@@ -77,7 +120,7 @@ export function Menu({ trigger, label, items, header, align = 'right' }: {
                 key={item.label}
                 type="button"
                 role="menuitem"
-                onClick={() => { setOpen(false); item.onSelect() }}
+                onClick={() => { close(); item.onSelect() }}
                 className={[
                   'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors focus:outline-none',
                   item.danger
@@ -90,7 +133,8 @@ export function Menu({ trigger, label, items, header, align = 'right' }: {
               </button>
             ))}
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   )

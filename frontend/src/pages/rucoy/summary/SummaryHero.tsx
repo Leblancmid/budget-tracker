@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AlertCircle, ArrowLeftRight, ChevronDown, Coins, HandCoins, TrendingUp, Users } from 'lucide-react'
+import { Gold } from '@/components/ui/Gold'
 import { fmtG, MM_FEE_PERIOD_LABEL, MM_FEE_PERIODS, type MmFeePeriod } from './summaryUtils'
 
 /** Total gold banner: stash + gold in KKS trades, with the middleman fee for a chosen period. */
@@ -19,7 +20,7 @@ export function SummaryHero({ totalGold, tradesGold, tradeCount, logCount, accou
   const negative    = overallGold < 0
 
   return (
-    <div className="relative rounded-2xl bg-gradient-to-br from-slate-700 to-slate-900 p-6 shadow-lg shadow-slate-900/30 dark:shadow-black/40">
+    <div className="relative rounded-2xl bg-gradient-to-br from-slate-700 to-slate-900 p-4 sm:p-6 shadow-lg shadow-slate-900/30 dark:shadow-black/40">
       {/* Only the decorations are clipped to the card, so the fee dropdown can open past its edge */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl" aria-hidden="true">
         <div className="absolute -top-8 -right-8 h-40 w-40 rounded-full bg-white/5" />
@@ -37,7 +38,7 @@ export function SummaryHero({ totalGold, tradesGold, tradeCount, logCount, accou
               <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Total Gold</span>
             </div>
             <p className={['text-4xl font-bold', negative ? 'text-red-300' : 'text-amber-300'].join(' ')}>
-              {overallGold.toLocaleString()} <span className="text-xl font-semibold opacity-60">G</span>
+              <Gold value={overallGold} unit={false} /> <span className="text-xl font-semibold opacity-60">G</span>
             </p>
             <p className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
               <ArrowLeftRight className="h-3 w-3" />
@@ -53,27 +54,27 @@ export function SummaryHero({ totalGold, tradesGold, tradeCount, logCount, accou
               </span>
             )}
             {accountsToPay > 0 && (
-              <Link to="/business/transactions" className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-500/15 px-3 py-1 text-[11px] font-semibold text-amber-200 hover:bg-amber-500/25 transition-colors">
+              <Link to="/business/transactions" className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-500/15 px-3 py-2 sm:py-1 text-[11px] font-semibold text-amber-200 hover:bg-amber-500/25 transition-colors">
                 <Users size={12} /> {fmtG(accountsToPay)} to pay on unpaid accounts
               </Link>
             )}
           </div>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="rounded-xl bg-white/5 px-4 py-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+          <div className="rounded-xl bg-white/5 px-3 py-3 sm:px-4">
             <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500"><Coins size={11} /> Gold stash</p>
-            <p className={['text-base font-bold', totalGold < 0 ? 'text-red-300' : 'text-slate-100'].join(' ')}>{fmtG(totalGold)}</p>
+            <p className={['text-base font-bold', totalGold < 0 ? 'text-red-300' : 'text-slate-100'].join(' ')}><Gold value={totalGold} /></p>
             <p className="text-[10px] text-slate-500">In your inventory</p>
           </div>
-          <div className="rounded-xl bg-white/5 px-4 py-3">
+          <div className="rounded-xl bg-white/5 px-3 py-3 sm:px-4">
             <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500"><TrendingUp size={11} /> Trades gold</p>
-            <p className="text-base font-bold text-amber-200">{fmtG(tradesGold)}</p>
+            <p className="text-base font-bold text-amber-200"><Gold value={tradesGold} /></p>
             <p className="text-[10px] text-slate-500">Held in KKS trades</p>
           </div>
-          <div className="rounded-xl bg-white/5 px-4 py-3">
+          <div className="rounded-xl bg-white/5 px-3 py-3 sm:px-4">
             <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500"><Users size={11} /> Account cost</p>
-            <p className="text-base font-bold text-slate-100">{fmtG(accountCost)}</p>
+            <p className="text-base font-bold text-slate-100"><Gold value={accountCost} /></p>
             <p className="text-[10px] text-slate-500">Listed accounts</p>
           </div>
           <MmFeeTile total={mmFeeTotal} period={mmFeePeriod} onPeriodChange={onMmFeePeriodChange} />
@@ -104,10 +105,10 @@ function MmFeeTile({ total, period, onPeriodChange }: { total: number; period: M
   }, [])
 
   return (
-    <div className="relative rounded-xl bg-violet-500/10 px-4 py-3" ref={ref}>
+    <div className="relative rounded-xl bg-violet-500/10 px-3 py-3 sm:px-4" ref={ref}>
       <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="w-full text-left">
         <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-violet-300/80"><HandCoins size={11} /> Middleman fee</p>
-        <p className="text-base font-bold text-violet-200">{fmtG(total)}</p>
+        <p className="text-base font-bold text-violet-200"><Gold value={total} /></p>
         <p className="flex items-center gap-0.5 text-[10px] text-violet-300/70">{MM_FEE_PERIOD_LABEL[period]} <ChevronDown size={10} /></p>
       </button>
       {open && (

@@ -1,11 +1,12 @@
 import { Calendar, CalendarClock, Coins, HandCoins, Pencil, RotateCcw, Trash2, User, Wallet } from 'lucide-react'
+import { Gold } from '@/components/ui/Gold'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { formatCash } from '@/utils/cash'
 import { formatCurrency, formatDate } from '@/utils/format'
 import { costPaidInPhp } from '@/utils/goldTrade'
 import type { BusinessTransaction, RucoyAccount } from '@/types'
 import { ProfitPhpBar } from './ProfitPhpBar'
-import { fmtGold, PAYMENT_STATUS_STYLES } from './salesUtils'
+import { PAYMENT_STATUS_STYLES } from './salesUtils'
 
 export function AccountCard({ a, tx, onEdit, onArchive, onDelete, onConvertToGold, onPay, archived = false, onUnarchive }: {
   a: RucoyAccount
@@ -27,7 +28,8 @@ export function AccountCard({ a, tx, onEdit, onArchive, onDelete, onConvertToGol
         profit: a.price_cash != null && a.cost_cash != null ? a.price_cash - a.cost_cash : null,
         format: (v: number) => formatCash(v, a.cash_currency),
       }
-    : { price: a.price, cost: a.cost, profit: a.profit, format: fmtGold }
+    // Gold: short (1.2KKK G) on phones so the three columns fit
+    : { price: a.price, cost: a.cost, profit: a.profit, format: (v: number) => <Gold value={v} /> }
   // Bought with money (no gold paid out): its cost is the ₱ paid
   const phpCost = !isCash && costPaidInPhp(a.cost, tx?.cost_php)
   const profitPositive = (stats.profit ?? 0) >= 0
@@ -76,7 +78,7 @@ export function AccountCard({ a, tx, onEdit, onArchive, onDelete, onConvertToGol
           {archived ? (
             <button
               onClick={onUnarchive}
-              className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+              className="p-2.5 sm:p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
               title="Restore"
             >
               <RotateCcw size={13} />
@@ -86,7 +88,7 @@ export function AccountCard({ a, tx, onEdit, onArchive, onDelete, onConvertToGol
               <button
                 onClick={onArchive}
                 title="Mark as sold"
-                className="flex items-center gap-1 rounded-lg border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-900/20 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
+                className="flex items-center gap-1 rounded-lg border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-900/20 h-9 px-3 text-xs font-semibold sm:h-auto sm:px-2.5 sm:py-1 sm:text-[11px] text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
               >
                 <HandCoins size={12} />
                 Sell
@@ -95,7 +97,7 @@ export function AccountCard({ a, tx, onEdit, onArchive, onDelete, onConvertToGol
                 <button
                   onClick={onPay}
                   title="Pay with gold trades or cash"
-                  className="flex items-center gap-1 rounded-lg border border-sky-200 dark:border-sky-800/60 bg-sky-50 dark:bg-sky-900/20 px-2.5 py-1 text-[11px] font-semibold text-sky-700 dark:text-sky-400 hover:bg-sky-100 dark:hover:bg-sky-900/40 transition-colors"
+                  className="flex items-center gap-1 rounded-lg border border-sky-200 dark:border-sky-800/60 bg-sky-50 dark:bg-sky-900/20 h-9 px-3 text-xs font-semibold sm:h-auto sm:px-2.5 sm:py-1 sm:text-[11px] text-sky-700 dark:text-sky-400 hover:bg-sky-100 dark:hover:bg-sky-900/40 transition-colors"
                 >
                   <Wallet size={12} />
                   Pay
@@ -104,21 +106,21 @@ export function AccountCard({ a, tx, onEdit, onArchive, onDelete, onConvertToGol
               {!isCash && <button
                 onClick={onConvertToGold}
                 title="Convert to gold trade"
-                className="mr-1 flex items-center gap-1 rounded-lg border border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-900/20 px-2.5 py-1 text-[11px] font-semibold text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
+                className="mr-1 flex items-center gap-1 rounded-lg border border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-900/20 h-9 px-3 text-xs font-semibold sm:h-auto sm:px-2.5 sm:py-1 sm:text-[11px] text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
               >
                 <Coins size={12} />
                 To Gold
               </button>}
               <button
                 onClick={onEdit}
-                className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                className="p-2.5 sm:p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
                 title="Edit"
               >
                 <Pencil size={13} />
               </button>
               <button
                 onClick={onDelete}
-                className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                className="p-2.5 sm:p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                 title="Delete"
               >
                 <Trash2 size={13} />
@@ -163,7 +165,7 @@ export function AccountCard({ a, tx, onEdit, onArchive, onDelete, onConvertToGol
           <span className="shrink-0 text-[11px] text-gray-500 dark:text-gray-400">Paid</span>
           <ProgressBar percent={a.cost ? ((a.paid_gold ?? 0) / a.cost) * 100 : 100} color="bg-amber-500" className="flex-1" />
           <span className="shrink-0 text-[11px] font-semibold text-gray-600 dark:text-gray-300">
-            {a.cost && (a.paid_gold ?? 0) >= a.cost ? 'Fully paid' : `${fmtGold(a.paid_gold ?? 0)}${a.cost ? ` / ${fmtGold(a.cost)}` : ''}`}
+            {a.cost && (a.paid_gold ?? 0) >= a.cost ? 'Fully paid' : <><Gold value={a.paid_gold ?? 0} />{a.cost ? <> / <Gold value={a.cost} /></> : null}</>}
           </span>
         </button>
       )}

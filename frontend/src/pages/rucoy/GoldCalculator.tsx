@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowDownUp, Calculator, Coins, Copy, RotateCcw, TrendingUp } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
+import { Gold } from '@/components/ui/Gold'
 import { useGolds } from '@/hooks/useGolds'
 import { useRucoyDashboard } from '@/hooks/useRucoyDashboard'
 import { formatWithCommas } from '@/utils/format'
@@ -146,30 +147,30 @@ export default function GoldCalculator() {
               <div className="flex items-center gap-3 rounded-xl border-2 border-white/10 bg-white/10 px-4 py-3 focus-within:border-amber-400">
                 <Coins className="h-6 w-6 shrink-0 text-amber-400" />
                 <NumberInput value={gold} onChange={setGold} placeholder="e.g. 1,000,000,000"
-                  className="w-full bg-transparent text-3xl font-bold text-white placeholder:text-slate-500 focus:outline-none caret-amber-400" />
+                  className="w-full bg-transparent text-2xl font-bold text-white sm:text-3xl placeholder:text-slate-500 focus:outline-none caret-amber-400" />
                 <span className="text-xl font-semibold text-amber-400/70">G</span>
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
                 {QUICK.map((q) => (
                   <button key={q} onClick={() => setGold(String(q))}
-                    className="rounded-lg bg-white/10 px-2.5 py-1 text-xs font-semibold text-slate-200 hover:bg-white/20 transition-colors">
+                    className="rounded-lg bg-white/10 px-2.5 py-2 sm:py-1 text-xs font-semibold text-slate-200 hover:bg-white/20 transition-colors">
                     {shortG(q)}
                   </button>
                 ))}
                 <span className="mx-1 h-4 w-px bg-white/10" />
                 <button onClick={() => setGold(String(Math.max(0, totalGold)))} disabled={totalGold <= 0}
                   title={totalGold <= 0 ? 'Your stash is empty or negative' : undefined}
-                  className="rounded-lg bg-amber-400/15 px-2.5 py-1 text-xs font-semibold text-amber-200 hover:bg-amber-400/25 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                  className="rounded-lg bg-amber-400/15 px-2.5 py-2 sm:py-1 text-xs font-semibold text-amber-200 hover:bg-amber-400/25 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                   Use stash ({totalGold.toLocaleString()} G)
                 </button>
                 {tradesGold > 0 && (
                   <button onClick={() => setGold(String(tradesGold))}
-                    className="rounded-lg bg-amber-400/15 px-2.5 py-1 text-xs font-semibold text-amber-200 hover:bg-amber-400/25 transition-colors">
+                    className="rounded-lg bg-amber-400/15 px-2.5 py-2 sm:py-1 text-xs font-semibold text-amber-200 hover:bg-amber-400/25 transition-colors">
                     Use trades gold ({tradesGold.toLocaleString()} G)
                   </button>
                 )}
                 {gold && (
-                  <button onClick={() => setGold('')} className="rounded-lg px-2 py-1 text-xs font-semibold text-slate-400 hover:text-white">Clear</button>
+                  <button onClick={() => setGold('')} className="rounded-lg px-2 py-2 sm:py-1 text-xs font-semibold text-slate-400 hover:text-white">Clear</button>
                 )}
               </div>
             </>
@@ -181,12 +182,12 @@ export default function GoldCalculator() {
                   {CODES.map((c) => <option key={c} value={c} className="text-gray-900">{CURRENCIES[c].symbol} {c}</option>)}
                 </select>
                 <NumberInput value={money} onChange={setMoney} placeholder="e.g. 1,000"
-                  className="w-full bg-transparent text-3xl font-bold text-white placeholder:text-slate-500 focus:outline-none caret-amber-400" />
+                  className="w-full bg-transparent text-2xl font-bold text-white sm:text-3xl placeholder:text-slate-500 focus:outline-none caret-amber-400" />
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {[500, 1000, 5000, 10000].map((q) => (
                   <button key={q} onClick={() => setMoney(String(q))}
-                    className="rounded-lg bg-white/10 px-2.5 py-1 text-xs font-semibold text-slate-200 hover:bg-white/20 transition-colors">
+                    className="rounded-lg bg-white/10 px-2.5 py-2 sm:py-1 text-xs font-semibold text-slate-200 hover:bg-white/20 transition-colors">
                     {CURRENCIES[moneyCode].symbol}{q.toLocaleString()}
                   </button>
                 ))}
@@ -221,7 +222,7 @@ export default function GoldCalculator() {
           const isSource = mode === 'toGold' && code === moneyCode
           return (
             <Card key={code} className={['flex flex-col overflow-hidden', isSource ? 'ring-2 ring-amber-400/60' : ''].join(' ')}>
-              <div className={['flex items-center gap-3 px-5 py-3.5 border-b border-gray-100 dark:border-gray-700/60', c.soft].join(' ')}>
+              <div className={['flex items-center gap-3 px-4 py-3 sm:px-5 sm:py-3.5 border-b border-gray-100 dark:border-gray-700/60', c.soft].join(' ')}>
                 <span className="text-xl">{c.flag}</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">{c.label}</p>
@@ -233,11 +234,12 @@ export default function GoldCalculator() {
                 onClick={() => value != null && copy(`${c.symbol}${fmtMoney(value)}`)}
                 disabled={value == null}
                 title={value != null ? 'Click to copy' : undefined}
-                className="group flex flex-col items-center justify-center gap-1 px-5 py-6 border-b border-gray-100 dark:border-gray-700/60 hover:bg-gray-50/60 dark:hover:bg-gray-800/30 disabled:hover:bg-transparent transition-colors"
+                // Phones: no empty "—" block until there's a value to show
+                className={[value == null ? 'hidden sm:flex' : 'flex', 'group flex-col items-center justify-center gap-1 px-4 py-5 sm:px-5 sm:py-6 border-b border-gray-100 dark:border-gray-700/60 hover:bg-gray-50/60 dark:hover:bg-gray-800/30 disabled:hover:bg-transparent transition-colors'].join(' ')}
               >
                 {value != null ? (
                   <>
-                    <p className={['text-3xl font-bold tabular-nums tracking-tight', c.text].join(' ')}>{c.symbol}{fmtMoney(value)}</p>
+                    <p className={['text-2xl font-bold tabular-nums tracking-tight sm:text-3xl', c.text].join(' ')}>{c.symbol}{fmtMoney(value)}</p>
                     <p className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
                       <Copy size={11} className="opacity-0 group-hover:opacity-100 transition-opacity" /> {code} equivalent
                     </p>
@@ -247,7 +249,7 @@ export default function GoldCalculator() {
                 )}
               </button>
 
-              <div className="px-5 py-4">
+              <div className="px-4 py-4 sm:px-5">
                 <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
                   {c.quote === 'gold-per-unit' ? `Gold per ${c.symbol}1` : `${c.symbol} per 1KK G`}
                 </label>
@@ -267,15 +269,15 @@ export default function GoldCalculator() {
       <Card className="flex flex-col">
         <div className="px-5 py-3.5 border-b border-gray-100 dark:border-gray-700/60">
           <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Quick reference</h2>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Common amounts at your current rates · click a row to load it</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Common amounts at your current rates · tap a row to load it</p>
         </div>
         <div className="overflow-x-auto scrollbar-thin">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 dark:bg-gray-800/40 border-b border-gray-100 dark:border-gray-700/60">
-                <th className="px-5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Gold</th>
+                <th className="px-3 py-2.5 text-left sm:px-5 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Gold</th>
                 {CODES.map((c) => (
-                  <th key={c} className="px-5 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{CURRENCIES[c].flag} {c}</th>
+                  <th key={c} className="whitespace-nowrap px-3 py-2.5 text-right sm:px-5 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{CURRENCIES[c].flag} {c}</th>
                 ))}
               </tr>
             </thead>
@@ -283,11 +285,11 @@ export default function GoldCalculator() {
               {[10e6, 50e6, 100e6, 250e6, 500e6, 1e9, 2e9, 5e9].map((g) => (
                 <tr key={g} onClick={() => { setMode('toMoney'); setGold(String(g)) }}
                   className={['cursor-pointer transition-colors hover:bg-amber-50/50 dark:hover:bg-amber-900/10', goldNum === g && mode === 'toMoney' ? 'bg-amber-50/60 dark:bg-amber-900/10' : ''].join(' ')}>
-                  <td className="px-5 py-2.5 font-semibold text-amber-600 dark:text-amber-400">{g.toLocaleString()} G</td>
+                  <td className="whitespace-nowrap px-3 py-2.5 font-semibold text-amber-600 sm:px-5 dark:text-amber-400"><Gold value={g} /></td>
                   {CODES.map((c) => {
                     const r = rateNum(c)
                     return (
-                      <td key={c} className={['px-5 py-2.5 text-right font-medium tabular-nums', CURRENCIES[c].text].join(' ')}>
+                      <td key={c} className={['whitespace-nowrap px-3 py-2.5 text-right font-medium tabular-nums sm:px-5', CURRENCIES[c].text].join(' ')}>
                         {r != null ? `${CURRENCIES[c].symbol}${fmtMoney(goldToMoney(c, g, r))}` : '—'}
                       </td>
                     )

@@ -1,5 +1,6 @@
 import { accessoriesFor } from './accessories'
 import { formatCash } from './cash'
+import { formatGoldShort } from './goldShort'
 import type { RucoyAccount } from '@/types'
 
 /** How an account is marketed: its highest attack skill. */
@@ -7,20 +8,7 @@ export type AccountBuild = 'Melee' | 'Distance' | 'Magic'
 
 const DAY_MS = 86_400_000
 
-/**
- * Rucoy gold shorthand used in listings: K = thousand, KK = million, KKK = billion.
- * 700,000,000 → "700KK", 1,800,000,000 → "1.8KKK", 1,250,000 → "1.25KK".
- */
-export function formatGoldShort(gold: number): string {
-  const units: [number, string][] = [[1e9, 'KKK'], [1e6, 'KK'], [1e3, 'K']]
-  for (const [size, suffix] of units) {
-    if (gold >= size) {
-      const value = Math.round((gold / size) * 100) / 100
-      return `${value}${suffix}`
-    }
-  }
-  return String(Math.round(gold))
-}
+export { formatGoldShort }
 
 /** The build an account is sold as, from its highest attack skill (null until stats are entered). */
 export function accountBuild(a: Pick<RucoyAccount, 'melee' | 'distance' | 'magic'>): AccountBuild | null {

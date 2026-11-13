@@ -3,7 +3,8 @@ import { BarChart3, DollarSign, TrendingDown, TrendingUp, Users, type LucideIcon
 import { Amt } from '@/components/ui/Amt'
 import type { BusinessSummary } from '@/api/business'
 import { formatCurrency } from '@/utils/format'
-import { CUR_LABEL, fmtGold } from './salesUtils'
+import { Gold } from '@/components/ui/Gold'
+import { CUR_LABEL } from './salesUtils'
 
 export interface ListedTotals {
   price: number
@@ -66,16 +67,16 @@ export function SalesHero({ summary, totals, accountCount }: {
               </span>
             </div>
             <p className={['text-3xl font-bold', totals.profit >= 0 ? 'text-emerald-300' : 'text-red-400'].join(' ')}>
-              {fmtGold(totals.profit)}
+              <Gold value={totals.profit} />
             </p>
             <p className="mt-1 text-xs text-slate-500">
               ≈ <span className="font-semibold text-slate-300"><Amt value={formatCurrency(totals.profitPhp)} /></span> at the rates you've set
             </p>
           </div>
           <div className="grid grid-cols-2 gap-3 pt-3 border-t border-white/10">
-            <HeroStat Icon={DollarSign} label="Total Price" value={fmtGold(totals.price)} valueCls="text-indigo-300"
+            <HeroStat Icon={DollarSign} label="Total Price" value={<Gold value={totals.price} />} valueCls="text-indigo-300"
               sub={<Amt value={formatCurrency(totals.pricePhp)} />} />
-            <HeroStat Icon={TrendingDown} label="Total Cost" value={fmtGold(totals.cost)} valueCls="text-slate-200"
+            <HeroStat Icon={TrendingDown} label="Total Cost" value={<Gold value={totals.cost} />} valueCls="text-slate-200"
               sub={<>
                 <Amt value={formatCurrency(totals.costPhp)} />
                 {totals.cashCostPhp > 0 && <> · incl. <Amt value={formatCurrency(totals.cashCostPhp)} /> paid in cash</>}

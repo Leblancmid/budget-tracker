@@ -1,4 +1,5 @@
 import { Card } from '@/components/ui/Card'
+import { Gold } from '@/components/ui/Gold'
 import { MONTHS } from '@/utils/format'
 import { fmtG, shortG, type GoldFlow } from './summaryUtils'
 
@@ -8,7 +9,7 @@ export function GoldFlowCard({ flow, loading }: { flow: GoldFlow; loading: boole
 
   return (
     <Card className="flex flex-col">
-      <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 border-b border-gray-100 dark:border-gray-700/60">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3.5 sm:px-5 border-b border-gray-100 dark:border-gray-700/60">
         <div>
           <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Gold flow</h2>
           <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{MONTHS[new Date().getMonth()]} totals · daily movement over the last 30 days</p>
@@ -21,7 +22,7 @@ export function GoldFlowCard({ flow, loading }: { flow: GoldFlow; loading: boole
       {loading ? (
         <div className="m-5 h-40 rounded-xl animate-pulse bg-gray-100 dark:bg-gray-800" />
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-[16rem_1fr] gap-5 p-5">
+        <div className="grid grid-cols-1 lg:grid-cols-[16rem_1fr] gap-5 p-4 sm:p-5">
           <div className="grid grid-cols-2 lg:grid-cols-1 gap-3">
             {[
               { label: 'Added',   value: flow.added, cls: 'text-emerald-600 dark:text-emerald-400', sign: '+' },
@@ -31,7 +32,7 @@ export function GoldFlowCard({ flow, loading }: { flow: GoldFlow; loading: boole
             ].map(({ label, value, cls, sign }) => (
               <div key={label} className="flex items-baseline justify-between gap-2 rounded-lg bg-gray-50 dark:bg-gray-800/50 px-3 py-2">
                 <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{label}</span>
-                <span className={['text-sm font-bold', cls].join(' ')}>{sign}{fmtG(Math.abs(value))}</span>
+                <span className={['text-sm font-bold', cls].join(' ')}>{sign}<Gold value={Math.abs(value)} /></span>
               </div>
             ))}
           </div>

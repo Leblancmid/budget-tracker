@@ -4,6 +4,7 @@ import { ArrowLeftRight, Coins, Download, Scale, Search, ShoppingBag } from 'luc
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { Gold } from '@/components/ui/Gold'
 import { Pagination } from '@/components/ui/Pagination'
 import { useGolds } from '@/hooks/useGolds'
 import { useGoldLogs } from '@/hooks/useGoldLogs'
@@ -19,7 +20,7 @@ import { GoldFlowCard } from './summary/GoldFlowCard'
 import { HistoryEntryRow } from './summary/HistoryEntryRow'
 import { SummaryHero } from './summary/SummaryHero'
 import {
-  ENTRY_STYLE, TYPE_FILTERS, fmtG, goldFlow, logDelta, mmFeeTotal, typeOfEntry,
+  ENTRY_STYLE, TYPE_FILTERS, goldFlow, logDelta, mmFeeTotal, typeOfEntry,
   type MmFeePeriod, type TypeFilter, type UnifiedEntry,
 } from './summary/summaryUtils'
 
@@ -110,16 +111,16 @@ export default function RucoySummary() {
           <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">Rucoy</h1>
           <p className="text-xs text-gray-400 dark:text-gray-500">Gold stash, trades and every gold movement</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto sm:items-center">
           <button onClick={() => setFixOpen(true)} title="Set the stash to the gold you actually have"
-            className="flex items-center gap-1.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-            <Scale size={15} /> Correct stash
+            className="flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-2 py-2.5 text-sm font-semibold sm:px-3 sm:py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+            <Scale size={15} /> <span className="sm:hidden">Correct</span><span className="hidden sm:inline">Correct stash</span>
           </button>
-          <Link to="/rucoy/trades" className="flex items-center gap-1.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+          <Link to="/rucoy/trades" className="flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-2 py-2.5 text-sm font-semibold sm:px-3 sm:py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
             <ArrowLeftRight size={15} /> Trades
           </Link>
-          <Link to="/business/transactions" className="flex items-center gap-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition-colors">
-            <ShoppingBag size={15} /> Add / sell gold
+          <Link to="/business/transactions" className="flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl bg-amber-500 hover:bg-amber-600 px-2 py-2.5 text-sm sm:px-3.5 sm:py-2 font-semibold text-white shadow-sm transition-colors">
+            <ShoppingBag size={15} /> <span className="sm:hidden">Add / sell</span><span className="hidden sm:inline">Add / sell gold</span>
           </Link>
         </div>
       </div>
@@ -145,21 +146,21 @@ export default function RucoySummary() {
 
       {/* ── History ────────────────────────────────────────────────── */}
       <Card className="flex flex-col">
-        <div className="flex flex-col gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
+        <div className="flex flex-col gap-3 px-4 py-4 sm:px-5 border-b border-gray-100 dark:border-gray-700/60">
           <div className="flex flex-wrap items-center gap-3">
             <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">History</h2>
             <span className="rounded-full bg-gray-100 dark:bg-gray-700/60 px-2.5 py-0.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400">
               {filteredEntries.length}{filteredEntries.length !== allEntries.length && ` of ${allEntries.length}`}
             </span>
-            <div className="ml-auto flex items-center gap-2">
-              <div className="relative">
+            <div className="flex w-full items-center gap-2 sm:ml-auto sm:w-auto">
+              <div className="relative min-w-0 flex-1 sm:flex-none">
                 <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 <input
                   type="text"
                   value={search}
                   onChange={(e) => { setSearch(e.target.value); setPage(1) }}
                   placeholder="Search…"
-                  className="w-44 rounded-lg border border-gray-200 bg-white pl-8 pr-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+                  className="w-full rounded-lg border border-gray-200 bg-white pl-8 pr-3 py-2 text-sm sm:w-44 sm:py-1.5 text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
                 />
               </div>
               <div className="hidden md:block">
@@ -174,7 +175,7 @@ export default function RucoySummary() {
               return (
                 <button key={t} onClick={() => { setTypeFilter(t); setPage(1) }}
                   className={[
-                    'flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-colors',
+                    'flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition-colors sm:py-1',
                     on ? (style ? style.pill + ' ring-1 ring-current/30' : 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900') : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
                   ].join(' ')}>
                   {style && <style.Icon size={11} />}
@@ -213,7 +214,7 @@ export default function RucoySummary() {
                   <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{formatDateLong(g.items[0].date)}</span>
                   {g.net !== 0 && (
                     <span className={['text-[11px] font-semibold', g.net >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'].join(' ')}>
-                      {g.net >= 0 ? '+' : '−'}{fmtG(Math.abs(g.net))}
+                      {g.net >= 0 ? '+' : '−'}<Gold value={Math.abs(g.net)} />
                     </span>
                   )}
                 </div>

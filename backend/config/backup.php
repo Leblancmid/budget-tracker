@@ -21,4 +21,10 @@ return [
 
     // Folder (prefix) inside the bucket
     'prefix' => 'budget/',
+
+    // The monthly restore check (backup:verify) loads the newest backup into this scratch database,
+    // compares it with the live one, then drops it. It must never be the live database.
+    'verify_database' => env('BACKUP_VERIFY_DATABASE', 'budget_restore_check'),
+    // The mysql client used to load it (default: next to mysqldump)
+    'mysql_path' => env('MYSQL_PATH'),
 ];

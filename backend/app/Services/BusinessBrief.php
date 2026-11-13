@@ -8,6 +8,7 @@ use App\Models\BalanceEntry;
 use App\Models\BusinessTransaction;
 use App\Models\Gold;
 use App\Models\RucoyAccount;
+use App\Services\Backup\RestoreCheck;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -51,6 +52,7 @@ class BusinessBrief
             ->merge(self::wallets($today))
             ->push(self::stash())
             ->push(self::offsiteBackup($today))
+            ->push(self::backupRestore($today))
             ->push(self::waitingLeads())
             ->filter()->values();
 
@@ -280,6 +282,27 @@ class BusinessBrief
         return self::insight('backup', 'bad',
             $days === null ? 'Off-site backup has never run' : "Off-site backup last worked {$days} days ago",
             'Your records are only on this PC until it works again. Check storage/logs/laravel.log for "Off-site backup failed", or run php artisan backup:offsite.');
+    }
+
+    /** The monthly restore check failed, or hasn't run in over 40 days: the backups may not be usable. */
+    private static function backupRestore(CarbonImmutable $today): ?array
+    {
+        if (! config('backup.r2.account_id')) {
+            return null;
+        }
+        $last = Cache::get(RestoreCheck::LAST_RESULT);
+        if ($last && ! $last['ok']) {
+            return self::insight('backup-restore', 'bad', 'The last backup check failed',
+                ($last['problems'][0] ?? 'The newest backup could not be restored.') . ' Run php artisan backup:verify to try again.');
+        }
+        $days = $last ? (int) CarbonImmutable::parse($last['checked_at'])->diffInDays($today->utc()) : null;
+        if ($days !== null && $days <= 40) {
+            return null;
+        }
+
+        return self::insight('backup-restore', 'warn',
+            $days === null ? 'Your backups have never been test-restored' : "Backups last test-restored {$days} days ago",
+            'Run php artisan backup:verify: it restores the newest backup into a scratch database and checks it.');
     }
 
     private static function stash(): ?array

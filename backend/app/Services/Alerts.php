@@ -31,4 +31,10 @@ class Alerts
     {
         return self::peopleWith($module)->filter(fn (User $u) => self::once($u, $alert))->count();
     }
+
+    /** For things only admins act on (backups, the server). @return int how many it was sent to */
+    public static function toAdmins(AppAlert $alert): int
+    {
+        return User::whereNull('deactivated_at')->where('role', 'admin')->get()->filter(fn (User $u) => self::once($u, $alert))->count();
+    }
 }

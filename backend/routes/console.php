@@ -32,3 +32,6 @@ Schedule::command('operations:prune')->dailyAt('04:00')->withoutOverlapping();
 Schedule::command('leads:watch')->everyMinute()->withoutOverlapping();
 // Morning alerts at 09:00 Manila (01:00 UTC): trades and payments due, Monday's weekly brief
 Schedule::command('business:alerts')->dailyAt('01:00')->withoutOverlapping();
+// Monthly backup check: restore the newest off-site backup into a scratch database and compare it
+// with the live one (1st of the month, 13:00 Manila = 05:00 UTC, after the 11:00 upload)
+Schedule::command('backup:verify')->monthlyOn(1, '05:00')->withoutOverlapping();

@@ -36,3 +36,19 @@ If it stops working for 2 days, the weekly brief (Business → Stats) says so.
    mysql -u root budget_restore_check < budget_tracker_2026-11-09_02-00-00.sql
    ```
    Check it looks right, then import into the real database the same way (or point `.env` at it).
+
+## Monthly restore check
+
+A backup only counts if it can be restored. On the 1st of every month (13:00 Manila) the server runs
+`php artisan backup:verify`, which:
+
+1. downloads the newest backup from R2 and decrypts it with `BACKUP_PASSWORD`;
+2. loads it into a **scratch** database (`budget_restore_check`, or `BACKUP_VERIFY_DATABASE`) with the
+   `mysql` client next to `mysqldump` (or `MYSQL_PATH`). It refuses to use the live database;
+3. checks the main tables (users, daily entries, sales, accounts, gold, trades, wallets, logs) are all
+   there with about as many rows as now, and that the newest backup is at most 3 days old;
+4. drops the scratch database.
+
+If anything is wrong, admins get a "Backup check failed" alert (bell and phone) and the weekly brief
+says so. The brief also reminds you if no check has run in 40 days. Run it by hand any time with
+`php artisan backup:verify`: it prints each table's rows now and in the backup.

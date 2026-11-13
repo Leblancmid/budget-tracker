@@ -63,6 +63,17 @@ class R2Client
         return $objects;
     }
 
+    /** Download one object (a backup file). */
+    public function get(string $objectKey): string
+    {
+        $res = $this->send('GET', $objectKey);
+        if (! $res->successful()) {
+            throw new RuntimeException('Downloading from R2 failed (' . $res->status() . '): ' . self::errorOf($res->body()));
+        }
+
+        return $res->body();
+    }
+
     public function delete(string $objectKey): void
     {
         $res = $this->send('DELETE', $objectKey);

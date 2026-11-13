@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Master;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Master\UndoOperationRequest;
 use App\Models\ActivityLog;
 use App\Models\Operation;
 use App\Models\OperationChange;
@@ -12,7 +13,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use RuntimeException;
 
-/** Master File → Undo: everything done in the app, newest first, each one undoable. */
+/**
+ * Master File → Undo: everything done in the app, newest first, each one undoable. Admins see and
+ * undo everyone's actions; anyone else only their own.
+ */
 class OperationController extends Controller
 {
     private const PER_PAGE = 15;
@@ -22,7 +26,10 @@ class OperationController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        // Admins see everyone's; anyone else only what they did
+        $me = $request->user();
         $page = Operation::where('kind', 'action')->with(['user:id,name', 'changes'])
+            ->when(! $me->isAdmin(), fn ($q) => $q->where('user_id', $me->id))
             ->latest('id')->paginate(self::PER_PAGE);
 
         $undoers = Operation::whereIn('id', $page->getCollection()->pluck('undone_by_id')->filter())->with('user:id,name')->get()->keyBy('id');
@@ -40,7 +47,7 @@ class OperationController extends Controller
         return response()->json($page);
     }
 
-    public function undo(Request $request, Operation $operation): JsonResponse
+    public function undo(UndoOperationRequest $request, Operation $operation): JsonResponse
     {
         try {
             OperationUndo::undo($operation, $request->user()->id);
@@ -53,7 +60,7 @@ class OperationController extends Controller
     }
 
     /** Do an undone operation again (by undoing its undo). */
-    public function redo(Request $request, Operation $operation): JsonResponse
+    public function redo(UndoOperationRequest $request, Operation $operation): JsonResponse
     {
         $undo = $operation->undone_by_id ? Operation::find($operation->undone_by_id) : null;
         if (! $undo) {

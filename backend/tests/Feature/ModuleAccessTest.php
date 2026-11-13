@@ -122,6 +122,40 @@ class ModuleAccessTest extends TestCase
         $this->assertSame(1, ActivityLog::where('type', 'edited')->where('loggable_id', $sam)->whereNotNull('changes->modules')->count());
     }
 
+    public function test_without_admin_the_logs_and_undo_show_only_your_own_actions(): void
+    {
+        $admin = $this->make('admin');
+        $sam = User::factory()->create(['name' => 'Sam', 'role' => 'trader', 'modules' => ['daily', 'trading', 'master']]);
+
+        Sanctum::actingAs($admin);
+        $this->postJson('/api/v1/categories', ['name' => 'Admin food', 'type' => 'expense'])->assertCreated();
+        Sanctum::actingAs($sam);
+        $this->postJson('/api/v1/categories', ['name' => 'Sam food', 'type' => 'expense'])->assertCreated();
+
+        // Sam: only Sam's
+        $logs = $this->getJson('/api/v1/logs')->assertOk()->assertJsonPath('scope', 'own')->json('data');
+        $this->assertNotEmpty($logs);
+        $this->assertSame([$sam->id], array_values(array_unique(array_column($logs, 'user_id'))));
+        $this->assertStringNotContainsString('Admin food', json_encode($logs));
+
+        $ops = $this->getJson('/api/v1/master/operations')->assertOk()->json('data');
+        $this->assertSame(['Sam'], array_values(array_unique(array_column($ops, 'user'))));
+
+        $adminOp = \App\Models\Operation::where('user_id', $admin->id)->where('kind', 'action')->value('id');
+        $samOp = \App\Models\Operation::where('user_id', $sam->id)->where('kind', 'action')->value('id');
+        $this->postJson("/api/v1/master/operations/{$adminOp}/undo")->assertForbidden();
+        $this->postJson("/api/v1/master/operations/{$samOp}/undo")->assertOk();
+        $this->postJson("/api/v1/master/operations/{$samOp}/redo")->assertOk();
+        $this->postJson("/api/v1/master/operations/{$adminOp}/redo")->assertForbidden();
+
+        // Admin: everyone's
+        Sanctum::actingAs($admin);
+        $all = $this->getJson('/api/v1/logs')->assertOk()->assertJsonPath('scope', 'everyone')->json('data');
+        $this->assertContains($sam->id, array_column($all, 'user_id'));
+        $this->assertContains($admin->id, array_column($all, 'user_id'));
+        $this->assertEqualsCanonicalizing(['Sam', $admin->name], array_values(array_unique(array_column($this->getJson('/api/v1/master/operations')->json('data'), 'user'))));
+    }
+
     public function test_nobody_changes_their_own_modules(): void
     {
         $admin = $this->make('admin');

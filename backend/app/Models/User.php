@@ -19,7 +19,7 @@ class User extends Authenticatable
      * The parts of the app access is given for. Daily Expenses (your own entries) is everyone's.
      * trading: Business and Rucoy together (each screen uses the other's data).
      * wallets: the Balance page and linking entries to a wallet.
-     * master: Master File (net worth overview, logs of everyone's actions, undo).
+     * master: Master File (net worth overview; logs and undo of your own actions, everyone's for admins).
      */
     public const MODULES = ['daily', 'trading', 'wallets', 'master'];
 

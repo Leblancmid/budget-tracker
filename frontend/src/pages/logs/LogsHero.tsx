@@ -2,7 +2,9 @@ import { Activity, ScrollText } from 'lucide-react'
 import type { LogEntry } from '@/api/logs'
 import { MODULE_STYLES, type LogSummary } from './logFormat'
 
-export function LogsHero({ summary, shownCount, totalCount, userName }: {
+export function LogsHero({ summary, shownCount, totalCount, userName, everyone = true }: {
+  /** false: only the signed-in person's own activity is shown */
+  everyone?: boolean
   summary: LogSummary
   shownCount: number
   totalCount: number
@@ -27,7 +29,7 @@ export function LogsHero({ summary, shownCount, totalCount, userName }: {
               )}
             </div>
             <p className="text-4xl font-bold text-slate-100">{shownCount.toLocaleString()}</p>
-            <p className="text-xs text-slate-500 mt-1">of {totalCount.toLocaleString()} across all users</p>
+            <p className="text-xs text-slate-500 mt-1">of {totalCount.toLocaleString()} {everyone ? 'across all users' : 'of your own'}</p>
           </div>
           <div className="grid grid-cols-3 gap-3">
             {[

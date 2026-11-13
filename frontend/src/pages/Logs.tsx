@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card'
 import { Pagination } from '@/components/ui/Pagination'
 import { paginateLocally } from '@/utils/format'
 import { useAuth } from '@/context/auth'
+import { isAdmin } from '@/lib/access'
 import type { LogEntry } from '@/api/logs'
 import { LogRow } from './logs/LogRow'
 import { LogsHero } from './logs/LogsHero'
@@ -16,6 +17,8 @@ import {
 export default function Logs() {
   const { entries, loading, refetch } = useLogs()
   const { user: currentUser } = useAuth()
+  // Admins see everyone's activity; anyone else only their own (the server sends only that)
+  const everyone = isAdmin(currentUser)
 
   const users = useMemo(() => {
     const userMap = new Map<number, { id: number; name: string; email: string }>()
@@ -92,7 +95,11 @@ export default function Logs() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">Activity logs</h1>
-          <p className="text-xs text-gray-400 dark:text-gray-500">Every sign-in, add, edit, sale and removal across the app — with before → after for edits</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500">
+            {everyone
+              ? 'Every sign-in, add, edit, sale and removal across the app — with before → after for edits'
+              : 'Everything you did: your sign-ins, adds, edits and removals — with before → after for edits. Only admins see everyone\x27s.'}
+          </p>
         </div>
         <button onClick={refetch} disabled={loading}
           className="flex items-center gap-1.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40 transition-colors">
@@ -108,6 +115,7 @@ export default function Logs() {
           summary={summary}
           shownCount={byUser.length}
           totalCount={entries.length}
+          everyone={everyone}
           userName={activeUser === 'all' ? null : users.find((u) => u.id === activeUser)?.name ?? ''}
         />
       )}
@@ -153,7 +161,7 @@ export default function Logs() {
           ))}
         </div>
 
-        {users.length > 0 && (
+        {everyone && users.length > 0 && (
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="mr-1 flex items-center gap-1 text-[11px] font-semibold text-gray-400 dark:text-gray-500"><User size={12} /> User</span>
             {[{ id: 'all' as const, name: 'Everyone', count: entries.length }, ...users.map((u) => ({ id: u.id, name: u.name, count: entries.filter((e) => isAbout(e, u.id)).length }))].map((u) => (

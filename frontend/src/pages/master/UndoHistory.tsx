@@ -5,6 +5,8 @@ import { Pagination } from '@/components/ui/Pagination'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { operationsApi, type Operation, type OperationChange, type OperationPage } from '@/api/master'
 import { useAsyncData } from '@/hooks/useAsyncData'
+import { useAuth } from '@/context/auth'
+import { isAdmin } from '@/lib/access'
 import { emitDataChanged } from '@/lib/dataEvents'
 import { toast } from '@/lib/toast'
 import { errorMessage } from '@/utils/api'
@@ -112,6 +114,7 @@ function OperationRow({ op, onAsk }: { op: Operation; onAsk: (op: Operation, mod
  * action touched (sales, the gold stash, wallets, logs…), so totals follow; Redo does it again.
  */
 export default function UndoHistory() {
+  const { user } = useAuth()
   const [page, setPage] = useState(1)
   const load = useCallback(() => operationsApi.list(page), [page])
   const { data, loading, error, refetch } = useAsyncData(load, NO_PAGE)
@@ -142,7 +145,9 @@ export default function UndoHistory() {
         <div>
           <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">Undo</h1>
           <p className="text-xs text-gray-400 dark:text-gray-500">
-            Everything done in the app, newest first. Undo puts back every record an action changed, so totals follow. Kept for 90 days.
+            {isAdmin(user)
+              ? 'Everything done in the app, newest first. Undo puts back every record an action changed, so totals follow. Kept for 90 days.'
+              : 'Everything you did, newest first. Undo puts back every record an action changed, so totals follow. Kept for 90 days. Only admins can undo other people\x27s actions.'}
           </p>
         </div>
         <button onClick={() => refetch()} title="Refresh" aria-label="Refresh"

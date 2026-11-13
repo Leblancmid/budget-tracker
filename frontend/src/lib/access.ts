@@ -9,7 +9,7 @@ export const MODULES: { value: Module; label: string; description: string; locke
   { value: 'daily', label: 'Daily Expenses', description: 'Their own expenses, budgets and report', locked: true },
   { value: 'trading', label: 'Trading', description: 'Business and Rucoy: sales, listings, leads, gold and trades' },
   { value: 'wallets', label: 'Wallets', description: 'The Balance page, and linking entries to a wallet' },
-  { value: 'master', label: 'Master File', description: 'Net worth overview, everyone\'s logs, and undo' },
+  { value: 'master', label: 'Master File', description: 'Net worth overview, plus the logs and undo of what they did' },
 ]
 
 /** What each role gets unless an admin picks modules for that person. */

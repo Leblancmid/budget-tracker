@@ -15,6 +15,7 @@ use App\Models\Transaction;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class LogController extends Controller
 {
@@ -31,7 +32,7 @@ class LogController extends Controller
         'undone', 'redone', 'published',
     ];
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $allActivityLogs = ActivityLog::with('user:id,name,email')->get();
 
@@ -130,8 +131,17 @@ class LogController extends Controller
             ]);
         });
 
+        // Admins see everyone's; anyone else with the Master File sees only what they did (and failed
+        // sign-ins with their own email)
+        $me = $request->user();
+        if (! $me->isAdmin()) {
+            $logs = $logs->filter(fn (array $e) => ($e['user_id'] ?? null) === $me->id
+                || (($e['about_user_id'] ?? null) === $me->id && in_array($e['type'], ['sign_in_failed', 'locked_out'], true)));
+        }
+
         return response()->json([
             'data' => $logs->sortByDesc('created_at')->values(),
+            'scope' => $me->isAdmin() ? 'everyone' : 'own',
         ]);
     }
 

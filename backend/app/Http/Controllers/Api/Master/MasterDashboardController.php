@@ -12,12 +12,19 @@ use App\Models\Trade;
 use App\Models\Transaction;
 use App\Services\BusinessProfit;
 use App\Services\MasterTrend;
+use App\Services\OwnOverview;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class MasterDashboardController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
+        // Not an admin: only their own figures (their expenses, and the sales they made)
+        if (! $request->user()->isAdmin()) {
+            return response()->json(OwnOverview::stats($request->user()));
+        }
+
         $now = now();
 
         // Overall Profit = Business archived profit (all types) + Daily net
@@ -66,13 +73,16 @@ class MasterDashboardController extends Controller
             'account_count'           => RucoyAccount::active()->count(),
             'balance_usd_accounts'    => count($usdAccounts),
             'balance_php_accounts'    => count($phpAccounts),
+            'scope'                   => 'everyone',
         ]);
     }
 
     /** The Overview charts: the last 12 months of profit and holdings. */
-    public function trend(): JsonResponse
+    public function trend(Request $request): JsonResponse
     {
-        return response()->json(['months' => MasterTrend::months(12)]);
+        $user = $request->user();
+
+        return response()->json(['months' => $user->isAdmin() ? MasterTrend::months(12) : OwnOverview::months($user, 12)]);
     }
 
     /** Money added minus money taken out across the given balance accounts. */

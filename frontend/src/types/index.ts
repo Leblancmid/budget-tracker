@@ -183,6 +183,16 @@ export interface MasterDashboardStats {
   account_count?: number
   balance_usd_accounts?: number
   balance_php_accounts?: number
+  /** own: not an admin, so only their own figures (no wallets, gold or accounts); everyone: the whole business */
+  scope?: 'own' | 'everyone'
+  // Own overview only
+  daily_income?: number
+  daily_expense?: number
+  monthly_daily_income?: number
+  monthly_daily_expense?: number
+  /** Sales they made (marked sold, or added already sold) */
+  sales_count?: number
+  monthly_sales_count?: number
 }
 
 /** One Manila month on Master → Overview: what was earned, and what was held at its end (raw ₱, $ and gold). */

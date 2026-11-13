@@ -1,3 +1,4 @@
+import { formatCurrency } from '@/utils/format'
 import type { MasterTrendMonth } from '@/types'
 import { MONTHS } from '@/utils/format'
 import { goldToPhp } from './goldRates'
@@ -96,3 +97,9 @@ export function niceTicks(min: number, max: number, count = 4): number[] {
 export function change(now: number, before: number): { amount: number; pct: number | null } {
   return { amount: now - before, pct: before !== 0 ? ((now - before) / Math.abs(before)) * 100 : null }
 }
+
+/** '+₱1,200.00' / '−₱300.00' */
+export const fmtSigned = (n: number) => `${n < 0 ? '−' : '+'}${formatCurrency(Math.abs(n))}`
+
+/** Green for gains, red for losses */
+export const tone = (n: number) => (n >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')

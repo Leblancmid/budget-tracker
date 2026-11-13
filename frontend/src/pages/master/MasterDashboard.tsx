@@ -1,6 +1,6 @@
-import { useState, type ReactNode } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeftRight, ArrowRight, TrendingDown, TrendingUp } from 'lucide-react'
+import { ArrowLeftRight, ArrowRight } from 'lucide-react'
 import { formatCurrency } from '@/utils/format'
 import { useMasterDashboard } from '@/hooks/useMasterDashboard'
 import { useAmountVisibility } from '@/context/amountVisibility'
@@ -10,15 +10,15 @@ import { Legend } from '@/components/charts/chartKit'
 import { StackedAreaChart } from '@/components/charts/StackedAreaChart'
 import { ProfitBarChart } from '@/components/charts/ProfitBarChart'
 import { Donut, Sparkline } from '@/components/charts/Donut'
-import { change, compactPhp, fromFirstActivity, HOLDINGS, holdingsOf, monthLabel, netWorthOf, PROFIT_SERIES, profitOf, type HoldingKey, type Rates } from '@/lib/overview'
+import { change, compactPhp, fromFirstActivity, HOLDINGS, holdingsOf, monthLabel, netWorthOf, PROFIT_SERIES, profitOf, type HoldingKey, type Rates, fmtSigned, tone } from '@/lib/overview'
 import { savedGoldRates } from '@/lib/goldRates'
 import { formatGoldShort } from '@/utils/listing'
 import { STORAGE_KEYS, writeString, type StorageKey } from '@/lib/storage'
 import type { MasterDashboardStats, MasterTrendMonth } from '@/types'
+import { OwnOverview } from './OwnOverview'
+import { ChartCard, Delta, Stat } from './overviewParts'
 
 const fmtUsd = (n: number) => `${n < 0 ? '−' : ''}$${Math.abs(n).toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-const fmtSigned = (n: number) => `${n < 0 ? '−' : '+'}${formatCurrency(Math.abs(n))}`
-const tone = (n: number) => (n >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')
 
 /**
  * Master File → Overview: everything at a glance. Four headline numbers, net worth over the year
@@ -30,6 +30,8 @@ export default function MasterDashboard() {
   const [rates, setRates] = useState<Rates>(() => savedGoldRates())
 
   if (loading) return <Skeleton />
+  // Not an admin: the server sends only their own figures, shown on their own page
+  if (stats?.scope === 'own') return <OwnOverview stats={stats} months={lastYear} loading={trendLoading} error={trendError} />
 
   // The last 12 months, from just before your records begin
   const trend = fromFirstActivity(lastYear)
@@ -121,53 +123,6 @@ function currentHoldings(stats: MasterDashboardStats | null, rates: Rates): Reco
     php_balance: stats?.balance_php_total ?? 0, usd_balance: stats?.balance_usd_total ?? 0, gold_stash: stats?.gold_stash ?? 0,
     account_gold: stats?.total_price ?? 0, account_cash_php: stats?.accounts_cash_cost_php ?? 0,
   }, rates)
-}
-
-function Stat({ label, value, valueClass, aside, children }: { label: string; value: string; valueClass: string; aside?: ReactNode; children?: ReactNode }) {
-  return (
-    <Card className="flex flex-col gap-1 px-5 py-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{label}</p>
-          <p className={['mt-1 truncate text-2xl font-bold tabular-nums', valueClass].join(' ')}><Amt value={value} /></p>
-        </div>
-        {aside}
-      </div>
-      <div className="text-xs text-gray-500 dark:text-gray-400">{children}</div>
-    </Card>
-  )
-}
-
-/** "▲ ₱12.3k (2.1%) since end of Oct" */
-function Delta({ amount, pct, since }: { amount: number; pct: number | null; since: string }) {
-  const up = amount >= 0
-  const Icon = up ? TrendingUp : TrendingDown
-  return (
-    <span className="flex flex-wrap items-center gap-x-1">
-      <span className={['inline-flex items-center gap-1 font-semibold', tone(amount)].join(' ')}>
-        {/* The % is hidden with the amounts: it shows how much the business moved */}
-        <Icon size={12} /> <Amt value={`${up ? '+' : '−'}${compactPhp(Math.abs(amount))}`} />{pct !== null && <> (<Amt value={`${Math.abs(pct).toFixed(1)}%`} />)</>}
-      </span>
-      {since}
-    </span>
-  )
-}
-
-function ChartCard({ title, note, legend, loading, error, className = '', children }: {
-  title: string; note: string; legend: ReactNode; loading: boolean; error: string | null; className?: string; children: ReactNode
-}) {
-  return (
-    <Card className={['flex flex-col gap-3 p-5', className].join(' ')}>
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{title}</h2>
-        {legend}
-      </div>
-      {loading ? <div className="h-[220px] animate-pulse rounded-lg bg-gray-100 dark:bg-gray-800" />
-        : error ? <p className="flex h-[220px] items-center justify-center text-sm text-red-500">{error}</p>
-        : children}
-      <p className="text-[11px] text-gray-400 dark:text-gray-500">{note}</p>
-    </Card>
-  )
 }
 
 /** Where net worth sits: ring + one row per part, each linking to its page. */

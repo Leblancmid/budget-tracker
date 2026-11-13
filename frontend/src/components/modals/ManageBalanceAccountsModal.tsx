@@ -118,12 +118,12 @@ export function ManageBalanceAccountsModal({ open, onClose, accounts, startWithN
               return (
                 <div key={a.id} className={['flex items-center gap-3 px-3 py-2.5 bg-white dark:bg-gray-900', hidden ? 'opacity-55' : ''].join(' ')}>
                   <div className="flex flex-col">
-                    <button type="button" onClick={() => move(i, -1)} disabled={i === 0} title="Move up"
-                      className="rounded p-0.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-25 disabled:cursor-not-allowed">
+                    <button type="button" onClick={() => move(i, -1)} disabled={i === 0} title="Move up" aria-label="Move up"
+                      className="flex h-8 w-8 items-center justify-center rounded text-gray-400 hover:text-gray-700 sm:h-auto sm:w-auto sm:p-0.5 dark:hover:text-gray-200 disabled:opacity-25 disabled:cursor-not-allowed">
                       <ArrowUp size={12} />
                     </button>
-                    <button type="button" onClick={() => move(i, 1)} disabled={i === accounts.length - 1} title="Move down"
-                      className="rounded p-0.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-25 disabled:cursor-not-allowed">
+                    <button type="button" onClick={() => move(i, 1)} disabled={i === accounts.length - 1} title="Move down" aria-label="Move down"
+                      className="flex h-8 w-8 items-center justify-center rounded text-gray-400 hover:text-gray-700 sm:h-auto sm:w-auto sm:p-0.5 dark:hover:text-gray-200 disabled:opacity-25 disabled:cursor-not-allowed">
                       <ArrowDown size={12} />
                     </button>
                   </div>
@@ -150,16 +150,16 @@ export function ManageBalanceAccountsModal({ open, onClose, accounts, startWithN
                     <div className="flex items-center gap-0.5">
                       <button type="button" onClick={() => toggleHidden(a)} disabled={busyId === a.id}
                         title={hidden ? 'Show on Balance page' : 'Hide from Balance page'}
-                        className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 dark:hover:text-gray-200 transition-colors">
+                        className="p-2 sm:p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 dark:hover:text-gray-200 transition-colors">
                         {hidden ? <EyeOff size={14} /> : <Eye size={14} />}
                       </button>
                       <button type="button" onClick={() => openForm(a)} title="Edit"
-                        className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
+                        className="p-2 sm:p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
                         <Pencil size={14} />
                       </button>
                       <button type="button" onClick={() => setConfirmDelete(a.id)} disabled={a.entry_count > 0}
                         title={a.entry_count > 0 ? 'Has entries — hide it instead, or delete its entries first' : 'Delete'}
-                        className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400 disabled:cursor-not-allowed">
+                        className="p-2 sm:p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400 disabled:cursor-not-allowed">
                         <Trash2 size={14} />
                       </button>
                     </div>

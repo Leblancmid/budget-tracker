@@ -83,7 +83,7 @@ export function AccountTile({ account: a, stats: s, share, phpRate, active, onTo
             onClick={(e) => { e.stopPropagation(); onCheck() }}
             title="Compare with what the bank shows and fix any difference"
             className={[
-              'mt-1.5 flex items-center gap-1 text-[11px] font-semibold transition-colors',
+              'mt-1 -mx-1 flex items-center gap-1 rounded px-1 py-1.5 text-[11px] font-semibold transition-colors sm:mt-1.5 sm:mx-0 sm:p-0',
               checkDue
                 ? 'text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300'
                 : 'text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300',
@@ -108,13 +108,13 @@ export function AccountTile({ account: a, stats: s, share, phpRate, active, onTo
           </p>
           <button
             onClick={(e) => { e.stopPropagation(); onAdd('add') }}
-            className="flex items-center gap-1 rounded-lg border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-900/20 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
+            className="flex items-center gap-1 rounded-lg border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-900/20 px-2.5 py-2 sm:py-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
           >
             <Plus size={11} /> Add
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); onAdd('sell') }}
-            className="flex items-center gap-1 rounded-lg border border-red-200 dark:border-red-800/60 bg-red-50 dark:bg-red-900/20 px-2.5 py-1 text-[11px] font-semibold text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
+            className="flex items-center gap-1 rounded-lg border border-red-200 dark:border-red-800/60 bg-red-50 dark:bg-red-900/20 px-2.5 py-2 sm:py-1 text-[11px] font-semibold text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
           >
             <Minus size={11} /> Sell
           </button>

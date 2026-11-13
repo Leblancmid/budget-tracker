@@ -181,7 +181,7 @@ export default function Trades() {
             <div className="flex items-center gap-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-1">
               {(['all', 'kks', 'cash'] as const).map((f) => (
                 <button key={f} onClick={() => changeFilter(f)}
-                  className={['rounded-md px-3 py-1 text-xs font-semibold transition-colors', typeFilter === f ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'].join(' ')}>
+                  className={['rounded-md px-3 py-2 sm:py-1 text-xs font-semibold transition-colors', typeFilter === f ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'].join(' ')}>
                   {f === 'all' ? 'All' : f.toUpperCase()}
                   <span className="ml-1 opacity-60">{f === 'all' ? trades.length : f === 'kks' ? kksCount : cashCount}</span>
                 </button>

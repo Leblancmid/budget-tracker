@@ -34,7 +34,7 @@ export function CashPricing({ currency, onCurrency, rows }: {
       aria-checked={currency === c}
       onClick={() => onCurrency(c)}
       className={[
-        'rounded-full border px-3 py-1 text-xs font-semibold transition-colors',
+        'rounded-full border px-3 py-2 sm:py-1 text-xs font-semibold transition-colors',
         currency === c
           ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:border-emerald-500/70 dark:bg-emerald-900/30 dark:text-emerald-300'
           : 'border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800',

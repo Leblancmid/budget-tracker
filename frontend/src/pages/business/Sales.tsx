@@ -549,7 +549,7 @@ export default function Sales() {
               {STATUS_FILTERS.filter(([f]) => f === 'all' || statusCounts[f] > 0 || statusFilter === f).map(([f, label]) => (
                 <button key={f} onClick={() => { setStatusFilter(f); setPage(1) }}
                   className={[
-                    'flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-colors',
+                    'flex items-center gap-1.5 rounded-full px-3 py-2 sm:py-1 text-xs font-semibold transition-colors',
                     statusFilter === f ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
                   ].join(' ')}>
                   {label}

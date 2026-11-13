@@ -83,7 +83,7 @@ export default function Users() {
       </div>
 
       {/* Counts: each one is also a filter */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3 lg:grid-cols-5">
         {stats.map((s) => (
           <button
             key={s.key}
@@ -91,14 +91,14 @@ export default function Users() {
             onClick={s.pick}
             aria-pressed={s.active}
             className={[
-              'group relative overflow-hidden rounded-2xl border bg-white p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md dark:bg-gray-900',
+              'group relative overflow-hidden rounded-2xl border bg-white p-3 text-left shadow-sm transition-all sm:p-4 hover:-translate-y-0.5 hover:shadow-md dark:bg-gray-900',
               s.active ? 'border-indigo-400 ring-1 ring-indigo-400 dark:border-indigo-500 dark:ring-indigo-500' : 'border-gray-200/80 dark:border-gray-800',
             ].join(' ')}
           >
             <div className={['pointer-events-none absolute inset-0 bg-gradient-to-br to-transparent', s.glow].join(' ')} />
-            <s.icon className={['relative h-5 w-5', s.color].join(' ')} />
-            <p className="relative mt-3 text-2xl font-bold tabular-nums text-gray-900 dark:text-white">{s.value}</p>
-            <p className="relative text-xs font-medium text-gray-500 dark:text-gray-400">{s.label}</p>
+            <s.icon className={['relative h-4 w-4 sm:h-5 sm:w-5', s.color].join(' ')} />
+            <p className="relative mt-2 text-lg font-bold tabular-nums sm:mt-3 sm:text-2xl text-gray-900 dark:text-white">{s.value}</p>
+            <p className="relative text-[11px] font-medium leading-tight text-gray-500 sm:text-xs dark:text-gray-400">{s.label}</p>
           </button>
         ))}
       </div>

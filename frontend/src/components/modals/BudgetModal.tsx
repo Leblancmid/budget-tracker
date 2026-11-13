@@ -146,7 +146,7 @@ export function BudgetModal({ open, onClose, onSubmit, categories, budget, curre
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             {quick.map((n) => (
               <button key={n} type="button" onClick={() => setAmount(n)}
-                className="rounded-lg border border-gray-200 dark:border-gray-700 px-2.5 py-1 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                className="rounded-lg border border-gray-200 dark:border-gray-700 px-2.5 py-2 sm:py-1 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                 {formatCurrency(n)}
               </button>
             ))}

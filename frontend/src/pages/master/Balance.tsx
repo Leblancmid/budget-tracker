@@ -230,25 +230,25 @@ export default function Balance() {
             <span className="rounded-full bg-gray-100 dark:bg-gray-700/60 px-2.5 py-0.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400">
               {filteredEntries.length}{filteredEntries.length !== entries.length && ` of ${entries.length}`}
             </span>
-            <div className="ml-auto flex flex-wrap items-center gap-2">
-              <div className="flex items-center gap-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-1">
+            <div className="flex w-full items-center gap-2 sm:ml-auto sm:w-auto">
+              <div className="flex shrink-0 items-center gap-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-1">
                 {(['all', 'add', 'sell'] as const).map((t) => (
                   <button key={t} onClick={() => changeFilter(setTypeFilter)(t)}
                     className={[
-                      'rounded-md px-2.5 py-0.5 text-xs font-semibold transition-colors',
+                      'rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors sm:py-0.5',
                       typeFilter === t ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200',
                     ].join(' ')}>
                     {t === 'all' ? 'All' : t === 'add' ? 'Add' : 'Sell'}
                   </button>
                 ))}
               </div>
-              <div className="relative">
+              <div className="relative min-w-0 flex-1 sm:flex-none">
                 <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 <input
                   value={search}
                   onChange={(e) => changeFilter(setSearch)(e.target.value)}
                   placeholder="Search…"
-                  className="w-40 rounded-lg border border-gray-200 bg-white pl-8 pr-3 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-400/40 focus:border-indigo-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+                  className="w-full rounded-lg border border-gray-200 bg-white pl-8 pr-3 py-2 text-xs sm:w-40 sm:py-1.5 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-400/40 focus:border-indigo-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
                 />
               </div>
             </div>
@@ -259,7 +259,7 @@ export default function Balance() {
             <div className="flex flex-wrap gap-1.5">
               <button onClick={() => changeFilter(setAccountFilter)(null)}
                 className={[
-                  'rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors',
+                  'rounded-full px-2.5 py-2 sm:py-1 text-[11px] font-semibold transition-colors',
                   accountFilter === null ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
                 ].join(' ')}>
                 All accounts
@@ -270,7 +270,7 @@ export default function Balance() {
                 return (
                   <button key={a.code} onClick={() => changeFilter(setAccountFilter)(on ? null : a.code)}
                     className={[
-                      'flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors',
+                      'flex items-center gap-1.5 rounded-full px-2.5 py-2 sm:py-1 text-[11px] font-semibold transition-colors',
                       on ? c.badge + ' ring-1 ' + c.ring : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
                     ].join(' ')}>
                     <span className={['h-1.5 w-1.5 rounded-full', c.swatch].join(' ')} />

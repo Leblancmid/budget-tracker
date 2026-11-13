@@ -125,7 +125,7 @@ export default function Leads() {
         <div className="flex flex-wrap items-center gap-1 border-b border-gray-100 px-4 py-3 dark:border-gray-700/60">
           {FILTERS.map((f) => (
             <button key={f.value} onClick={() => { setFilter(f.value); setPage(1) }}
-              className={['rounded-md px-2.5 py-1 text-xs font-semibold transition-colors',
+              className={['rounded-md px-2.5 py-2 sm:py-1 text-xs font-semibold transition-colors',
                 filter === f.value ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'].join(' ')}>
               {f.label}
             </button>
@@ -168,7 +168,7 @@ export default function Leads() {
                   </div>
                   <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                     {link ? (
-                      <a href={link} target="_blank" rel="noreferrer" className="flex items-center gap-1 rounded-lg bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-300">
+                      <a href={link} target="_blank" rel="noreferrer" className="flex items-center gap-1 rounded-lg bg-emerald-50 px-2 py-2 sm:py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-300">
                         <Phone size={12} /> {l.contact} <ExternalLink size={10} />
                       </a>
                     ) : (
@@ -179,7 +179,7 @@ export default function Leads() {
                     <span className="text-[11px] text-gray-500 dark:text-gray-400">{STATUS[l.status].label}</span>
                     {STATUS[l.status].next.map((s) => (
                       <button key={s} disabled={saving === l.id} onClick={() => setStatus(l, s)}
-                        className={['rounded-lg px-2 py-1 text-xs font-semibold transition-colors disabled:opacity-50',
+                        className={['rounded-lg px-2 py-2 sm:py-1 text-xs font-semibold transition-colors disabled:opacity-50',
                           s === 'won' || s === 'contacted' ? 'bg-gray-900 text-white hover:bg-gray-700 dark:bg-gray-100 dark:text-gray-900'
                             : 'border border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800'].join(' ')}>
                         {ACTION[s]}

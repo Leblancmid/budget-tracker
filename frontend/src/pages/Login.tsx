@@ -104,7 +104,7 @@ export default function Login() {
                   autoFocus={!!email}
                   maxLength={255}
                   className={[
-                    'block w-full rounded-xl border bg-white dark:bg-gray-800 px-4 py-2.5 pr-10 text-sm text-gray-900 dark:text-gray-100',
+                    'block w-full rounded-xl border bg-white dark:bg-gray-800 px-4 py-2.5 pr-12 text-sm text-gray-900 dark:text-gray-100',
                     'placeholder:text-gray-400 dark:placeholder:text-gray-600',
                     'focus:outline-none focus:ring-2 focus:ring-indigo-400/40 focus:border-indigo-400 transition-colors',
                     error ? 'border-red-400 dark:border-red-500' : 'border-gray-200 dark:border-gray-700',
@@ -114,7 +114,7 @@ export default function Login() {
                   type="button"
                   onClick={() => setShowPw((v) => !v)}
                   aria-label={showPw ? 'Hide password' : 'Show password'}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                  className="absolute right-1 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                 >
                   {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -122,7 +122,7 @@ export default function Login() {
             </div>
 
             {/* Remember me */}
-            <label className="flex cursor-pointer items-start gap-2.5 select-none">
+            <label className="-my-1 flex cursor-pointer items-start gap-2.5 py-1 select-none">
               <input
                 type="checkbox"
                 checked={remember}

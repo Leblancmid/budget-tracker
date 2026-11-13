@@ -138,7 +138,8 @@ export function Budgets() {
           <Link
             to="/categories"
             title="Add, rename or recolour categories"
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white"
+            aria-label="Categories"
+            className="inline-flex h-10 min-w-10 items-center justify-center gap-1.5 rounded-lg px-2.5 text-sm font-medium text-gray-600 sm:h-9 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white"
           >
             <Tags className="h-4 w-4" />
             <span className="hidden sm:inline">Categories</span>

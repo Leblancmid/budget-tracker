@@ -40,9 +40,9 @@ export function BalanceHero({ totals, allocation, accountCount, phpRate, phpInpu
             <span className="font-medium">1 USD =</span>
             <span className="text-slate-400">₱</span>
             <input
-              type="number" min="0.01" step="0.01" value={phpInput}
+              type="number" inputMode="decimal" min="0.01" step="0.01" value={phpInput}
               onChange={(e) => onPhpRateChange(e.target.value)}
-              className="w-16 rounded-md border border-white/10 bg-white/10 px-1.5 py-0.5 text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-emerald-400/40"
+              className="w-20 rounded-md border border-white/10 bg-white/10 px-1.5 py-1.5 text-xs sm:w-16 sm:py-0.5 font-semibold text-white focus:outline-none focus:ring-2 focus:ring-emerald-400/40"
             />
           </label>
         </div>

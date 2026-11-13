@@ -57,7 +57,7 @@ export function PublishToWebsite() {
           <button onClick={() => refetch()} className="flex items-center gap-1 font-semibold text-indigo-600 dark:text-indigo-400"><RefreshCw size={13} /> Retry</button>
         </div>
       ) : !preview.configured ? (
-        <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+        <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 break-words dark:bg-amber-900/20 dark:text-amber-200 [&_code]:break-all">
           Publishing is off. Add <code>LISTING_SITE_PATH=C:\Users\michaeln\Desktop\Dev\Leblanc</code> to the backend <code>.env</code> on this PC (then run the after-deploy script so it's picked up).
         </p>
       ) : (

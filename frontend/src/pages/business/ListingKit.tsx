@@ -191,7 +191,7 @@ export default function ListingKit() {
                   <span className="text-xs text-amber-600 dark:text-amber-400">{missingShots} without screenshot</span>
                 )}
               </div>
-              <ul className="max-h-[420px] divide-y divide-gray-100 overflow-y-auto dark:divide-gray-800">
+              <ul className="divide-y divide-gray-100 scrollbar-thin dark:divide-gray-800 xl:max-h-[420px] xl:overflow-y-auto">
                 {ordered.map((a) => (
                   <AccountPickRow
                     key={a.id}

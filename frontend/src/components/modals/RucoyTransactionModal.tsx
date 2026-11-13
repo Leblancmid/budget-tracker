@@ -559,8 +559,8 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
                 </div>
               </div>
             ) : (
-            <div className="flex items-end gap-1.5 sm:gap-2">
-              <div className="flex-[1.3] min-w-0">
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:items-end">
+              <div className="col-span-2 flex-[1.3] min-w-0">
                 <p className="mb-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 truncate">{row.labels[0]}</p>
                 <input
                   type="text"
@@ -573,22 +573,22 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
                   className={[goldLocked ? lockedCls : inputCls, row.goldError ? 'border-red-400 dark:border-red-500' : ''].join(' ')}
                 />
               </div>
-              <span className="pb-2 text-gray-400 dark:text-gray-500 text-xs sm:text-sm font-medium shrink-0">×</span>
+              <span className="hidden pb-2 text-sm font-medium text-gray-400 dark:text-gray-500 shrink-0 sm:inline">×</span>
               <div className="flex-1 min-w-0">
                 <p className="mb-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 truncate">{row.labels[1]}</p>
                 <input type="text" inputMode="decimal" value={row.rate} onChange={(e) => handleAmountInput(e.target.value, row.onRate)} placeholder="0.25" readOnly={ratesFixed} title={ratesFixed ? 'Fully paid: the cost comes from the payments' : undefined} className={ratesFixed ? lockedCls : inputCls} />
               </div>
-              <span className="pb-2 text-gray-400 dark:text-gray-500 text-xs sm:text-sm font-medium shrink-0">=</span>
+              <span className="hidden pb-2 text-sm font-medium text-gray-400 dark:text-gray-500 shrink-0 sm:inline">=</span>
               <div className="flex-1 min-w-0">
                 <p className="mb-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 truncate">{row.labels[2]}</p>
                 <div className={[readonlyCls, row.color].join(' ')}>{fmtUSD(row.usd)}</div>
               </div>
-              <span className="pb-2 text-gray-400 dark:text-gray-500 text-xs sm:text-sm font-medium shrink-0">×</span>
+              <span className="hidden pb-2 text-sm font-medium text-gray-400 dark:text-gray-500 shrink-0 sm:inline">×</span>
               <div className="flex-1 min-w-0">
                 <p className="mb-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 truncate">{row.labels[3]}</p>
                 <input type="text" inputMode="decimal" value={row.phpRate} onChange={(e) => handleAmountInput(e.target.value, row.onPhpRate)} placeholder="58.5" readOnly={ratesFixed} title={ratesFixed ? 'Fully paid: the cost comes from the payments' : undefined} className={ratesFixed ? lockedCls : inputCls} />
               </div>
-              <span className="pb-2 text-gray-400 dark:text-gray-500 text-xs sm:text-sm font-medium shrink-0">=</span>
+              <span className="hidden pb-2 text-sm font-medium text-gray-400 dark:text-gray-500 shrink-0 sm:inline">=</span>
               <div className="flex-[1.2] min-w-0">
                 <p className="mb-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 truncate">{row.labels[4]}</p>
                 <div className={[readonlyCls, row.color].join(' ')}>{fmtPHP(row.php)}</div>

@@ -3,7 +3,7 @@ import { Amt } from '@/components/ui/Amt'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { formatCurrency, formatDate } from '@/utils/format'
 import type { BusinessTransaction } from '@/types'
-import { CUR_LABEL, txProfitPhp } from './salesUtils'
+import { CUR_LABEL, fmtGold, txProfitPhp } from './salesUtils'
 import { costPaidInPhp } from '@/utils/goldTrade'
 
 export function GoldTradeRow({ tx, archived = false, onEdit, onSell, onAddGold, onDelete, onUnarchive, totalReceived }: {
@@ -22,7 +22,8 @@ export function GoldTradeRow({ tx, archived = false, onEdit, onSell, onAddGold, 
   const profit    = txProfitPhp(tx)
 
   return (
-    <div className={['flex items-center gap-3 px-5 py-3 group', archived ? 'opacity-75' : ''].join(' ')}>
+    // Phones: the name on top, then a full-width row with the profit and the buttons
+    <div className={['flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 sm:flex-nowrap sm:px-5 group', archived ? 'opacity-75' : ''].join(' ')}>
       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/30">
         <Coins size={15} className="text-amber-600 dark:text-amber-400" />
       </div>
@@ -39,6 +40,16 @@ export function GoldTradeRow({ tx, archived = false, onEdit, onSell, onAddGold, 
           {formatDate(tx.date)}
           {archived && tx.sold_to && <span className="text-emerald-600 dark:text-emerald-400"> · Sold to {tx.sold_to}</span>}
         </p>
+        {/* Phones: the gold price / cost in one short line (the full breakdown is on wider screens) */}
+        {(tx.price_gold != null || tx.cost_gold != null) && (
+          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400 sm:hidden">
+            {tx.price_gold != null && <span className="text-emerald-600 dark:text-emerald-400">Price {fmtGold(Number(tx.price_gold))}</span>}
+            {tx.price_gold != null && tx.cost_gold != null && ' · '}
+            {costPaidInPhp(tx.cost_gold, tx.cost_php)
+              ? <span className="text-red-500 dark:text-red-400">Cost <Amt value={formatCurrency(Number(tx.cost_php))} /></span>
+              : tx.cost_gold != null && <span className="text-red-500 dark:text-red-400">Cost {fmtGold(Number(tx.cost_gold))}</span>}
+          </p>
+        )}
         {totalReceived != null && (
           <p className="mt-1 inline-flex items-center gap-1 rounded-md bg-violet-50 dark:bg-violet-900/20 px-1.5 py-0.5 text-[11px] text-violet-700 dark:text-violet-300">
             <HandCoins size={11} />
@@ -46,22 +57,22 @@ export function GoldTradeRow({ tx, archived = false, onEdit, onSell, onAddGold, 
           </p>
         )}
       </div>
-      <div className="flex items-center gap-3 shrink-0">
+      <div className="flex basis-full items-center justify-end gap-2 sm:basis-auto sm:shrink-0 sm:gap-3">
         {/* Buttons — hover only */}
         <div className="pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 focus-within:opacity-100 transition-opacity flex items-center gap-0.5">
           {archived ? (
             <button onClick={onUnarchive} title="Restore"
-              className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
+              className="p-2.5 sm:p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
               <RotateCcw size={13} />
             </button>
           ) : (
             <>
               <button onClick={onEdit} title="Edit"
-                className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
+                className="p-2.5 sm:p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
                 <Pencil size={13} />
               </button>
               {!isSystem && <button onClick={onDelete} title="Remove"
-                className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                className="p-2.5 sm:p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
                 <Trash2 size={13} />
               </button>}
             </>
@@ -86,7 +97,7 @@ export function GoldTradeRow({ tx, archived = false, onEdit, onSell, onAddGold, 
         </div>
 
         {/* PHP profit / status */}
-        <div className="flex flex-col items-end text-right min-w-[96px]">
+        <div className="order-first mr-auto flex flex-col items-start text-left sm:order-none sm:mr-0 sm:min-w-[96px] sm:items-end sm:text-right">
           {profit != null ? (
             <span className={['text-sm font-bold', profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'].join(' ')}>
               <Amt value={formatCurrency(profit)} />
@@ -106,7 +117,7 @@ export function GoldTradeRow({ tx, archived = false, onEdit, onSell, onAddGold, 
           <button
             onClick={onAddGold}
             title="Add gold to the price / cost"
-            className="flex items-center gap-1 rounded-lg border border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-900/20 px-2.5 py-1 text-[11px] font-semibold text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
+            className="flex items-center gap-1 rounded-lg border border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-900/20 h-9 px-3 text-xs sm:h-auto sm:px-2.5 sm:py-1 sm:text-[11px] font-semibold text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
           >
             <Plus size={12} />
             Add
@@ -119,7 +130,7 @@ export function GoldTradeRow({ tx, archived = false, onEdit, onSell, onAddGold, 
             onClick={onSell}
             disabled={isPending || Number(tx.price_gold ?? 0) <= 0}
             title={isPending ? 'Set the rates before selling' : Number(tx.price_gold ?? 0) <= 0 ? 'No gold to sell yet' : 'Sell all or part of this gold'}
-            className="flex items-center gap-1 rounded-lg border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-900/20 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-1 rounded-lg border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-900/20 h-9 px-3 text-xs sm:h-auto sm:px-2.5 sm:py-1 sm:text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             <HandCoins size={12} />
             Sell

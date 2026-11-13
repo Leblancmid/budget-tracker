@@ -64,7 +64,8 @@ export function ScreenshotField({ currentUrl, file, removed, error, onFile, onRe
         ) : (
           <div className="flex flex-col items-center gap-1 px-4 py-6 text-center text-xs text-gray-500 dark:text-gray-400">
             <ImagePlus size={20} className="text-gray-400" />
-            <span>Click, drop, or <span className="font-semibold">Ctrl+V</span> to paste the Stats screen</span>
+            <span className="pointer-coarse:hidden">Click, drop, or <span className="font-semibold">Ctrl+V</span> to paste the Stats screen</span>
+            <span className="hidden pointer-coarse:inline">Tap to choose the Stats screenshot</span>
           </div>
         )}
         {shown && (

@@ -454,22 +454,24 @@ export default function Sales() {
 
       {/* ── Tabs + toolbar ──────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-2">
-        <div className="flex items-center gap-1 rounded-xl bg-gray-100 dark:bg-gray-800 p-1">
+        {/* Phones: the tabs fill the row */}
+        <div className="flex w-full items-center gap-1 rounded-xl bg-gray-100 dark:bg-gray-800 p-1 sm:w-auto">
           {([
-            { key: 'accounts', label: 'Accounts',    Icon: Users,   count: accounts.length },
-            { key: 'gold',     label: 'Gold trades', Icon: Coins,   count: pendingGoldTrades.length },
-            { key: 'sold',     label: 'Sold',        Icon: Archive, count: showArchive ? archivedAccounts.length + archivedGoldTrades.length : null },
-          ] as const).map(({ key, label, Icon, count }) => (
+            { key: 'accounts', label: 'Accounts',    short: 'Accounts', Icon: Users,   count: accounts.length },
+            { key: 'gold',     label: 'Gold trades', short: 'Gold',     Icon: Coins,   count: pendingGoldTrades.length },
+            { key: 'sold',     label: 'Sold',        short: 'Sold',     Icon: Archive, count: showArchive ? archivedAccounts.length + archivedGoldTrades.length : null },
+          ] as const).map(({ key, label, short, Icon, count }) => (
             <button
               key={key}
               onClick={() => setTab(key)}
               className={[
-                'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-all',
+                'flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-sm font-semibold transition-all sm:flex-none sm:px-3 sm:py-1.5',
                 tab === key ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-900 dark:text-gray-100' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200',
               ].join(' ')}
             >
               <Icon size={14} />
-              {label}
+              <span className="sm:hidden">{short}</span>
+              <span className="hidden sm:inline">{label}</span>
               {count != null && (
                 <span className={['rounded-full px-1.5 text-[10px] font-bold', tab === key ? 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300' : 'bg-gray-200/70 text-gray-500 dark:bg-gray-700 dark:text-gray-400'].join(' ')}>{count}</span>
               )}
@@ -479,7 +481,7 @@ export default function Sales() {
 
         {tab === 'accounts' && (
           <>
-            <div className="relative min-w-0 flex-1 max-w-xs">
+            <div className="relative min-w-0 flex-1 sm:max-w-xs">
               <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               <input
                 type="text"
@@ -512,7 +514,7 @@ export default function Sales() {
           <div className="flex items-center gap-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-1">
             {([['account', 'Accounts', archivedAccounts.length], ['gold', 'Golds', archivedGoldTrades.length]] as const).map(([k, label, n]) => (
               <button key={k} onClick={() => setSoldKind(k)}
-                className={['rounded-md px-2.5 py-1 text-xs font-semibold transition-colors', soldKind === k ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'].join(' ')}>
+                className={['rounded-md px-3 py-2 text-xs font-semibold transition-colors sm:px-2.5 sm:py-1', soldKind === k ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'].join(' ')}>
                 {label} <span className="opacity-60">{n}</span>
               </button>
             ))}

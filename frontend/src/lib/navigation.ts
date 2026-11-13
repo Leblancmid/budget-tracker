@@ -1,12 +1,12 @@
 import type { Module } from '@/context/auth'
-import { Briefcase, CircleUserRound, FolderOpen, Gamepad2, Wallet, type LucideIcon } from 'lucide-react'
+import { Briefcase, CircleUserRound, FolderOpen, Gamepad2, Store, Wallet, type LucideIcon } from 'lucide-react'
 
 /**
  * The app's navigation in one place: the sidebar lists the sections, the tab bar under the header
  * lists the current section's tabs, and the header shows "Section / Tab". Page URLs never change.
  */
 
-export type SectionId = 'daily' | 'business' | 'rucoy' | 'master' | 'account'
+export type SectionId = 'daily' | 'business' | 'storefront' | 'rucoy' | 'master' | 'account'
 
 export interface NavTab {
   to: string
@@ -54,16 +54,27 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     id: 'business',
     group: 'Trading',
-    caption: 'Sales, listings & leads',
+    caption: 'Sales, stats & report',
     label: 'Business',
     icon: Briefcase,
     module: 'trading',
     tabs: [
       { to: '/business', label: 'Stats', end: true },
       { to: '/business/transactions', label: 'Sales' },
-      { to: '/business/listing', label: 'Listing Kit', module: 'storefront' },
-      { to: '/business/leads', label: 'Leads', module: 'storefront' },
       { to: '/reports/business', label: 'Report' },
+    ],
+  },
+  {
+    // The public website: given separately from Trading (see lib/access)
+    id: 'storefront',
+    group: 'Trading',
+    caption: 'Listing Kit & leads',
+    label: 'Storefront',
+    icon: Store,
+    module: 'storefront',
+    tabs: [
+      { to: '/business/listing', label: 'Listing Kit', end: true },
+      { to: '/business/leads', label: 'Leads' },
     ],
   },
   {
@@ -150,6 +161,12 @@ export const SECTION_STYLES: Record<SectionId, { icon: string; iconBg: string; b
     iconBg: 'bg-teal-100 dark:bg-teal-900/40',
     badge: 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300',
     tabActive: 'border-teal-500 text-teal-700 dark:border-teal-400 dark:text-teal-300',
+  },
+  storefront: {
+    icon: 'text-rose-600 dark:text-rose-400',
+    iconBg: 'bg-rose-100 dark:bg-rose-900/40',
+    badge: 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300',
+    tabActive: 'border-rose-500 text-rose-700 dark:border-rose-400 dark:text-rose-300',
   },
   rucoy: {
     icon: 'text-amber-600 dark:text-amber-400',

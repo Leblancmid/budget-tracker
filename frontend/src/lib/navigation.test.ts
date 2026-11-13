@@ -16,8 +16,8 @@ describe('navigation', () => {
     expect(where('/reports/daily-expenses')).toBe('Daily Expenses / Report (Report)')
     expect(where('/business')).toBe('Business / Stats (Stats)')
     expect(where('/business/transactions')).toBe('Business / Sales (Sales)')
-    expect(where('/business/listing')).toBe('Business / Listing Kit (Listing Kit)')
-    expect(where('/business/leads')).toBe('Business / Leads (Leads)')
+    expect(where('/business/listing')).toBe('Storefront / Listing Kit (Listing Kit)')
+    expect(where('/business/leads')).toBe('Storefront / Leads (Leads)')
     expect(where('/reports/business')).toBe('Business / Report (Report)')
     expect(where('/rucoy')).toBe('Rucoy / Summary (Summary)')
     expect(where('/rucoy/trades')).toBe('Rucoy / Trades (Trades)')
@@ -55,15 +55,21 @@ describe('navigation', () => {
 
   it('shows traders Business and Rucoy but not wallets, the Master File or users', () => {
     const sections = forUser({ role: 'trader' })
-    expect(sections.map((s) => s.id)).toEqual(['daily', 'business', 'rucoy', 'account'])
+    expect(sections.map((s) => s.id)).toEqual(['daily', 'business', 'storefront', 'rucoy', 'account'])
     expect(sections[0].tabs.map((t) => t.label)).not.toContain('Balance')
     expect(sections.at(-1)?.tabs.map((t) => t.label)).toEqual(['Profile'])
-    expect(sections[1].tabs.map((t) => t.label)).toContain('Listing Kit')
+    expect(sections[1].tabs.map((t) => t.label)).toEqual(['Stats', 'Sales', 'Report'])
+    expect(sections[2].tabs.map((t) => t.label)).toEqual(['Listing Kit', 'Leads'])
   })
 
-  it('hides the Listing Kit and Leads from a trader without the storefront', () => {
-    const business = forUser({ role: 'trader', modules: ['daily', 'trading'] }).find((s) => s.id === 'business')
-    expect(business?.tabs.map((t) => t.label)).toEqual(['Stats', 'Sales', 'Report'])
+  it('hides the Storefront (Listing Kit and Leads) from a trader without it', () => {
+    expect(forUser({ role: 'trader', modules: ['daily', 'trading'] }).map((s) => s.id)).toEqual(['daily', 'business', 'rucoy', 'account'])
+  })
+
+  it('puts the Listing Kit and Leads under Storefront', () => {
+    expect(locate('/business/listing')).toMatchObject({ title: 'Listing Kit', section: { id: 'storefront' } })
+    expect(locate('/business/leads')).toMatchObject({ title: 'Leads', section: { id: 'storefront' } })
+    expect(locate('/business')).toMatchObject({ title: 'Stats', section: { id: 'business' } })
   })
 
   it('follows the modules picked for a person, and shows admins everything', () => {
@@ -71,7 +77,7 @@ describe('navigation', () => {
     expect(custom.map((s) => s.id)).toEqual(['daily', 'master', 'account'])
     expect(custom[0].tabs.map((t) => t.label)).toContain('Balance')
     const admin = forUser({ role: 'admin' })
-    expect(admin).toHaveLength(5)
+    expect(admin).toHaveLength(6)
     expect(admin.at(-1)?.tabs.map((t) => t.label)).toEqual(['Profile', 'Users'])
   })
 

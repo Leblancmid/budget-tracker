@@ -63,7 +63,7 @@ export function Sidebar({ sections, leadsWaiting, briefUnseen, mobileOpen = fals
           )
           const c = SECTION_STYLES[section.id]
           const active = current === section.id
-          const leads = section.id === 'business' ? leadsWaiting : 0
+          const leads = section.id === 'storefront' ? leadsWaiting : 0
           const dot = !!briefUnseen[section.id]
           const hint = [section.label, leads ? `${leads} lead${leads === 1 ? '' : 's'} waiting` : null, dot ? 'new weekly brief' : null].filter(Boolean).join(' · ')
 

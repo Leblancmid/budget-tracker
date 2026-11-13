@@ -2,8 +2,15 @@ import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { createHash } from 'crypto'
-import { readFileSync } from 'fs'
+import { readFileSync, realpathSync } from 'fs'
 import path from 'path'
+
+/**
+ * This folder, spelled the way Windows stores it. A terminal opened as "c:\..." would otherwise make
+ * Vite see "c:/.../react" and "C:/.../react" as two different files and bundle React twice, and the
+ * app then fails on load ("Cannot read properties of null (reading 'useState')").
+ */
+const ROOT = realpathSync.native(__dirname)
 
 /** Files from public/ the installed app needs offline (the build's own files are added automatically). */
 const OFFLINE_PUBLIC_FILES = ['manifest.webmanifest', 'logo.svg', 'favicon.svg', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png']
@@ -23,7 +30,7 @@ function serviceWorker(): Plugin {
         ...OFFLINE_PUBLIC_FILES,
       ].sort()
       const version = createHash('sha256').update(files.join('\n')).digest('hex').slice(0, 12)
-      const source = readFileSync(path.resolve(__dirname, 'sw/sw.js'), 'utf8')
+      const source = readFileSync(path.resolve(ROOT, 'sw/sw.js'), 'utf8')
         .replace("'__VERSION__'", JSON.stringify(version))
         .replace('__FILES__', JSON.stringify(files))
       this.emitFile({ type: 'asset', fileName: 'sw.js', source })
@@ -32,9 +39,10 @@ function serviceWorker(): Plugin {
 }
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '')
+  const env = loadEnv(mode, ROOT, '')
 
   return {
+    root: ROOT,
     base: env.VITE_BASE_URL || '/',
     plugins: [
       react(),
@@ -42,7 +50,7 @@ export default defineConfig(({ mode }) => {
       serviceWorker(),
     ],
     resolve: {
-      alias: { '@': path.resolve(__dirname, './src') },
+      alias: { '@': path.resolve(ROOT, './src') },
     },
     server: {
       host: true,

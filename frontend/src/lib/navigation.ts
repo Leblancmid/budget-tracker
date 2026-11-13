@@ -21,6 +21,10 @@ export interface NavTab {
 export interface NavSection {
   id: SectionId
   label: string
+  /** One line under the label in the sidebar */
+  caption: string
+  /** Heading the section sits under in the sidebar */
+  group: string
   icon: LucideIcon
   adminOnly?: boolean
   /** Reached from the account menu and the sidebar's profile card, not a row of its own */
@@ -31,6 +35,8 @@ export interface NavSection {
 export const NAV_SECTIONS: NavSection[] = [
   {
     id: 'daily',
+    group: 'Personal',
+    caption: 'Expenses & budgets',
     label: 'Daily Expenses',
     icon: Wallet,
     tabs: [
@@ -43,6 +49,8 @@ export const NAV_SECTIONS: NavSection[] = [
   },
   {
     id: 'business',
+    group: 'Trading',
+    caption: 'Sales, listings & leads',
     label: 'Business',
     icon: Briefcase,
     adminOnly: true,
@@ -56,6 +64,8 @@ export const NAV_SECTIONS: NavSection[] = [
   },
   {
     id: 'rucoy',
+    group: 'Trading',
+    caption: 'Gold & trades',
     label: 'Rucoy',
     icon: Gamepad2,
     adminOnly: true,
@@ -67,6 +77,8 @@ export const NAV_SECTIONS: NavSection[] = [
   },
   {
     id: 'master',
+    group: 'Overview',
+    caption: 'Net worth, logs & undo',
     label: 'Master File',
     icon: FolderOpen,
     adminOnly: true,
@@ -78,6 +90,8 @@ export const NAV_SECTIONS: NavSection[] = [
   },
   {
     id: 'account',
+    group: 'Account',
+    caption: 'Profile & users',
     label: 'Account',
     icon: CircleUserRound,
     hideInSidebar: true,

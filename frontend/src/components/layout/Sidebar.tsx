@@ -1,5 +1,5 @@
 import { SidebarBrand } from './SidebarBrand'
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { locate, SECTION_STYLES, type NavSection, type SectionId } from '@/lib/navigation'
@@ -52,8 +52,15 @@ export function Sidebar({ sections, leadsWaiting, briefUnseen, mobileOpen = fals
       </div>
 
       <nav aria-label="Sections" className="flex flex-1 flex-col gap-1 p-2">
-        {sections.map((section) => {
+        {sections.map((section, i) => {
           const Icon = section.icon
+          // A heading where a new group starts (a thin line when the sidebar is collapsed)
+          const groupStart = i === 0 || sections[i - 1].group !== section.group
+          const heading = groupStart && (
+            iconOnly
+              ? i > 0 && <span className="mx-auto my-1.5 h-px w-6 bg-gray-200 dark:bg-gray-700/70" aria-hidden="true" />
+              : <p className={['px-2.5 pb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500', i === 0 ? 'pt-1' : 'pt-4'].join(' ')}>{section.group}</p>
+          )
           const c = SECTION_STYLES[section.id]
           const active = current === section.id
           const leads = section.id === 'business' ? leadsWaiting : 0
@@ -61,8 +68,9 @@ export function Sidebar({ sections, leadsWaiting, briefUnseen, mobileOpen = fals
           const hint = [section.label, leads ? `${leads} lead${leads === 1 ? '' : 's'} waiting` : null, dot ? 'new weekly brief' : null].filter(Boolean).join(' · ')
 
           return (
+            <Fragment key={section.id}>
+            {heading}
             <Link
-              key={section.id}
               to={section.tabs[0].to}
               onClick={onClose}
               title={iconOnly ? hint : undefined}
@@ -74,12 +82,16 @@ export function Sidebar({ sections, leadsWaiting, briefUnseen, mobileOpen = fals
                 active ? 'bg-gray-100 dark:bg-gray-800/70' : 'hover:bg-gray-100 dark:hover:bg-gray-800/60',
               ].join(' ')}
             >
+              {active && !iconOnly && <span className={['absolute -left-2 bottom-2 top-2 w-1 rounded-r-full bg-current', c.icon].join(' ')} aria-hidden="true" />}
               <span className={['flex h-7 w-7 shrink-0 items-center justify-center rounded-lg', active || !iconOnly ? c.iconBg : ''].join(' ')}>
                 <Icon className={['h-3.5 w-3.5', active || !iconOnly ? c.icon : 'text-gray-400 dark:text-gray-500'].join(' ')} />
               </span>
               {!iconOnly && (
-                <span className={['flex-1 truncate text-[13px] font-semibold', active ? 'text-gray-900 dark:text-gray-100' : 'text-gray-600 dark:text-gray-400'].join(' ')}>
-                  {section.label}
+                <span className="min-w-0 flex-1">
+                  <span className={['block truncate text-[13px] font-semibold', active ? 'text-gray-900 dark:text-gray-100' : 'text-gray-600 dark:text-gray-400'].join(' ')}>
+                    {section.label}
+                  </span>
+                  <span className="block truncate text-[11px] leading-4 text-gray-400 dark:text-gray-500">{section.caption}</span>
                 </span>
               )}
               {/* Waiting leads, else the weekly-brief dot */}
@@ -99,6 +111,7 @@ export function Sidebar({ sections, leadsWaiting, briefUnseen, mobileOpen = fals
                 />
               ) : null}
             </Link>
+            </Fragment>
           )
         })}
       </nav>

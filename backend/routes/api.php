@@ -102,16 +102,20 @@ Route::prefix('v1')->group(function () {
                 Route::get('dashboard', [BusinessDashboardController::class, 'index'])->name('dashboard');
                 Route::get('brief', [InsightsController::class, 'brief'])->name('brief');
                 Route::get('price-guide', [InsightsController::class, 'priceGuide'])->name('price-guide');
-                // Accounts for sale → the Leblanc website (git push → Vercel)
-                Route::get('listing/publish', [ListingPublishController::class, 'preview'])->name('listing.preview');
-                Route::post('listing/publish', [ListingPublishController::class, 'publish'])->middleware('throttle:6,1')->name('listing.publish');
-                Route::get('website-stats', [ListingPublishController::class, 'stats'])->name('website-stats');
-                // Leads from the website (I want this, gold orders, accounts offered to you)
-                Route::get('leads', [LeadController::class, 'index'])->name('leads.index');
-                Route::patch('leads/{lead}', [LeadController::class, 'update'])->whereNumber('lead')->name('leads.update');
-                Route::get('website-gold', [ListingPublishController::class, 'goldRates'])->name('website-gold.show');
-                Route::put('website-gold', [ListingPublishController::class, 'updateGoldRates'])->name('website-gold.update');
-                Route::delete('website-alerts/{alert}', [ListingPublishController::class, 'deleteAlert'])->whereNumber('alert')->name('website-alerts.destroy');
+                // Storefront: what the public website shows and what comes in from it. Given separately
+                // (on top of Trading), since publishing and website prices are seen by buyers
+                Route::middleware('module:storefront')->group(function () {
+                    // Accounts for sale → the Leblanc website (git push → Vercel)
+                    Route::get('listing/publish', [ListingPublishController::class, 'preview'])->name('listing.preview');
+                    Route::post('listing/publish', [ListingPublishController::class, 'publish'])->middleware('throttle:6,1')->name('listing.publish');
+                    Route::get('website-stats', [ListingPublishController::class, 'stats'])->name('website-stats');
+                    // Leads from the website (I want this, gold orders, accounts offered to you)
+                    Route::get('leads', [LeadController::class, 'index'])->name('leads.index');
+                    Route::patch('leads/{lead}', [LeadController::class, 'update'])->whereNumber('lead')->name('leads.update');
+                    Route::get('website-gold', [ListingPublishController::class, 'goldRates'])->name('website-gold.show');
+                    Route::put('website-gold', [ListingPublishController::class, 'updateGoldRates'])->name('website-gold.update');
+                    Route::delete('website-alerts/{alert}', [ListingPublishController::class, 'deleteAlert'])->whereNumber('alert')->name('website-alerts.destroy');
+                });
                 Route::apiResource('transactions', BusinessTransactionController::class)
                     ->except(['show'])
                     ->parameters(['transactions' => 'businessTransaction']);

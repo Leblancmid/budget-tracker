@@ -58,6 +58,12 @@ describe('navigation', () => {
     expect(sections.map((s) => s.id)).toEqual(['daily', 'business', 'rucoy', 'account'])
     expect(sections[0].tabs.map((t) => t.label)).not.toContain('Balance')
     expect(sections.at(-1)?.tabs.map((t) => t.label)).toEqual(['Profile'])
+    expect(sections[1].tabs.map((t) => t.label)).toContain('Listing Kit')
+  })
+
+  it('hides the Listing Kit and Leads from a trader without the storefront', () => {
+    const business = forUser({ role: 'trader', modules: ['daily', 'trading'] }).find((s) => s.id === 'business')
+    expect(business?.tabs.map((t) => t.label)).toEqual(['Stats', 'Sales', 'Report'])
   })
 
   it('follows the modules picked for a person, and shows admins everything', () => {

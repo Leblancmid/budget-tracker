@@ -88,10 +88,13 @@ export default function App() {
 
                     <Route path="/business"              element={<BusinessDashboard />} />
                     <Route path="/business/transactions" element={<Sales />} />
-                    <Route path="/business/listing"      element={<ListingKit />} />
-                    <Route path="/business/leads"        element={<Leads />} />
 
                     <Route path="/reports/business" element={<BusinessReport />} />
+                  </Route>
+
+                  <Route element={<Guard module="storefront" />}>
+                    <Route path="/business/listing" element={<ListingKit />} />
+                    <Route path="/business/leads"   element={<Leads />} />
                   </Route>
                 </Route>
               </Route>

@@ -21,6 +21,7 @@ class ModuleAccessTest extends TestCase
     /** One endpoint per area, and the module it belongs to */
     private const AREAS = [
         'trading' => ['/api/v1/business/dashboard', '/api/v1/rucoy/dashboard', '/api/v1/reports/business?period=month'],
+        'storefront' => ['/api/v1/business/leads', '/api/v1/business/website-gold'],
         'wallets' => ['/api/v1/master/balance-entries'],
         'master'  => ['/api/v1/master/dashboard', '/api/v1/logs', '/api/v1/master/operations'],
     ];
@@ -49,17 +50,19 @@ class ModuleAccessTest extends TestCase
 
     public function test_each_role_opens_its_own_parts(): void
     {
-        $this->assertSame(['trading' => true, 'wallets' => true, 'master' => true, 'users' => true, 'daily' => true], $this->reach($this->make('admin')));
-        $this->assertSame(['trading' => true, 'wallets' => false, 'master' => false, 'users' => false, 'daily' => true], $this->reach($this->make('trader')));
-        $this->assertSame(['trading' => false, 'wallets' => false, 'master' => false, 'users' => false, 'daily' => true], $this->reach($this->make('daily_only')));
+        $this->assertSame(['trading' => true, 'storefront' => true, 'wallets' => true, 'master' => true, 'users' => true, 'daily' => true], $this->reach($this->make('admin')));
+        $this->assertSame(['trading' => true, 'storefront' => true, 'wallets' => false, 'master' => false, 'users' => false, 'daily' => true], $this->reach($this->make('trader')));
+        $this->assertSame(['trading' => false, 'storefront' => false, 'wallets' => false, 'master' => false, 'users' => false, 'daily' => true], $this->reach($this->make('daily_only')));
     }
 
     public function test_modules_picked_for_a_person_replace_their_roles(): void
     {
-        $this->assertSame(['trading' => true, 'wallets' => true, 'master' => false, 'users' => false, 'daily' => true],
+        $this->assertSame(['trading' => true, 'storefront' => false, 'wallets' => true, 'master' => false, 'users' => false, 'daily' => true],
             $this->reach($this->make('trader', ['daily', 'trading', 'wallets'])));
-        $this->assertSame(['trading' => false, 'wallets' => false, 'master' => true, 'users' => false, 'daily' => true],
+        $this->assertSame(['trading' => false, 'storefront' => false, 'wallets' => false, 'master' => true, 'users' => false, 'daily' => true],
             $this->reach($this->make('daily_only', ['master'])));
+        // The storefront lists Trading's accounts: without Trading it opens nothing
+        $this->assertFalse($this->reach($this->make('daily_only', ['storefront']))['storefront']);
         // Modules never give user management: that stays with the Admin role
         $this->assertFalse($this->reach($this->make('trader', User::MODULES))['users']);
     }
@@ -106,7 +109,7 @@ class ModuleAccessTest extends TestCase
         Sanctum::actingAs($admin);
 
         $sam = $this->postJson('/api/v1/users', ['name' => 'Sam', 'email' => 'sam@example.com', 'role' => 'trader', 'password' => 'Strong-pass-1'])
-            ->assertCreated()->assertJsonPath('user.modules', ['daily', 'trading'])->json('user.id');
+            ->assertCreated()->assertJsonPath('user.modules', ['daily', 'trading', 'storefront'])->json('user.id');
         $this->assertNull(User::find($sam)->modules, 'the preset is not stored, so it follows the role');
 
         $this->patchJson("/api/v1/users/{$sam}", ['modules' => ['trading', 'wallets']])->assertOk()->assertJsonPath('user.modules', ['daily', 'trading', 'wallets']);

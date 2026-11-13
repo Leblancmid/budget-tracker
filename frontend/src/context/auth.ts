@@ -3,7 +3,7 @@ import { createContext, useContext } from 'react'
 export type UserRole = 'admin' | 'trader' | 'daily_only'
 
 /** Parts of the app access is given for (see lib/access) */
-export type Module = 'daily' | 'trading' | 'wallets' | 'master'
+export type Module = 'daily' | 'trading' | 'storefront' | 'wallets' | 'master'
 
 export interface AuthUser {
   id: number

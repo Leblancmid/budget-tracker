@@ -23,7 +23,7 @@ export function Layout() {
   const currentId = locate(pathname).section.id
   const tabs = sections.find((s) => s.id === currentId)?.tabs ?? []
   // Badges: website leads waiting for a reply, and a weekly brief (every Monday) not opened yet
-  const leadsWaiting = useWaitingLeads(trading)
+  const leadsWaiting = useWaitingLeads(can(user, 'storefront'))
   const businessBrief = useBriefUnseen('business')
   const dailyBrief = useBriefUnseen('daily')
   const briefUnseen = { business: businessBrief && trading, daily: dailyBrief }

@@ -18,15 +18,17 @@ class User extends Authenticatable
     /**
      * The parts of the app access is given for. Daily Expenses (your own entries) is everyone's.
      * trading: Business and Rucoy together (each screen uses the other's data).
+     * storefront: the public website: Listing Kit and publishing, website gold rates, leads. Needs
+     *   trading too (it lists Trading's accounts), so it only counts alongside it.
      * wallets: the Balance page and linking entries to a wallet.
      * master: Master File (net worth overview; logs and undo of your own actions, everyone's for admins).
      */
-    public const MODULES = ['daily', 'trading', 'wallets', 'master'];
+    public const MODULES = ['daily', 'trading', 'storefront', 'wallets', 'master'];
 
     /** What each role gets unless an admin picks modules for that person. Admins always get everything. */
     public const PRESETS = [
         'admin'      => self::MODULES,
-        'trader'     => ['daily', 'trading'],
+        'trader'     => ['daily', 'trading', 'storefront'],
         'daily_only' => ['daily'],
     ];
 
@@ -67,7 +69,10 @@ class User extends Authenticatable
         }
         $chosen = $this->modules ?: (self::PRESETS[$this->role] ?? ['daily']);
 
-        return array_values(array_intersect(self::MODULES, array_unique([...$chosen, 'daily'])));
+        $modules = array_values(array_intersect(self::MODULES, array_unique([...$chosen, 'daily'])));
+
+        // The storefront shows Trading's accounts: without Trading it opens nothing
+        return in_array('trading', $modules, true) ? $modules : array_values(array_diff($modules, ['storefront']));
     }
 
     public function canUse(string $module): bool

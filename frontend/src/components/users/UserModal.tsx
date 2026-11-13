@@ -40,7 +40,10 @@ export function UserModal({ user, onClose, onSaved }: {
   const picked = form.modules ?? []
   // A role starts from its preset; the switches below change it module by module
   const pickRole = (role: UserRole) => setForm((f) => ({ ...f, role, modules: PRESETS[role] }))
-  const toggle = (m: Module) => set('modules', picked.includes(m) ? picked.filter((x) => x !== m) : [...picked, m])
+  // Turning a module off also turns off what needs it (Storefront needs Trading)
+  const toggle = (m: Module) => set('modules', picked.includes(m)
+    ? picked.filter((x) => x !== m && MODULES.find((d) => d.value === x)?.requires !== m)
+    : [...picked, m])
   const sameModules = (a: Module[], b: Module[]) => a.length === b.length && a.every((m) => b.includes(m))
   const custom = form.role !== 'admin' && !sameModules(picked, PRESETS[form.role])
 
@@ -166,13 +169,15 @@ export function UserModal({ user, onClose, onSaved }: {
               <ul className="divide-y divide-gray-100 overflow-hidden rounded-xl border border-gray-200 dark:divide-gray-800 dark:border-gray-700">
                 {MODULES.map((m) => {
                   const isAdminRole = form.role === 'admin'
-                  const on = isAdminRole || picked.includes(m.value)
-                  const locked = isAdminRole || !!m.locked || ownRoleLocked
+                  // Storefront needs Trading: greyed out (and off) without it
+                  const needs = m.requires && !isAdminRole && !picked.includes(m.requires) ? MODULES.find((x) => x.value === m.requires) : null
+                  const on = isAdminRole || (picked.includes(m.value) && !needs)
+                  const locked = isAdminRole || !!m.locked || ownRoleLocked || !!needs
                   return (
                     <li key={m.value} className="flex items-center gap-3 px-3 py-2.5">
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{m.label}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{m.description}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{m.description}{needs && <span className="text-amber-600 dark:text-amber-400"> · Needs {needs.label}</span>}</p>
                       </div>
                       <Switch on={on} disabled={locked} label={`${m.label} access`} onChange={() => toggle(m.value)} />
                     </li>

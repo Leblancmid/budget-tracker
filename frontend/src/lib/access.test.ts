@@ -3,8 +3,8 @@ import { can, extraModules, isAdmin, isCustom, modulesOf } from './access'
 
 describe('access', () => {
   it('gives each role its preset', () => {
-    expect(modulesOf({ role: 'admin' })).toEqual(['daily', 'trading', 'wallets', 'master'])
-    expect(modulesOf({ role: 'trader' })).toEqual(['daily', 'trading'])
+    expect(modulesOf({ role: 'admin' })).toEqual(['daily', 'trading', 'storefront', 'wallets', 'master'])
+    expect(modulesOf({ role: 'trader' })).toEqual(['daily', 'trading', 'storefront'])
     expect(modulesOf({ role: 'daily_only' })).toEqual(['daily'])
     expect(modulesOf(null)).toEqual([])
   })
@@ -16,11 +16,17 @@ describe('access', () => {
   })
 
   it('says when someone has more or less than their role gives', () => {
-    expect(isCustom({ role: 'trader', modules: ['daily', 'trading'] })).toBe(false)
+    expect(isCustom({ role: 'trader', modules: ['daily', 'trading', 'storefront'] })).toBe(false)
+    expect(isCustom({ role: 'trader', modules: ['daily', 'trading'] })).toBe(true)
     expect(isCustom({ role: 'trader', modules: ['daily', 'trading', 'wallets'] })).toBe(true)
     expect(isCustom({ role: 'admin', modules: ['daily'] })).toBe(false)
     expect(extraModules({ role: 'trader', modules: ['daily', 'trading', 'wallets'] })).toBe('Trading, Wallets')
     expect(extraModules({ role: 'daily_only' })).toBe('')
+  })
+
+  it('never opens the storefront without trading (it lists the Trading accounts)', () => {
+    expect(can({ role: 'daily_only', modules: ['daily', 'storefront'] }, 'storefront')).toBe(false)
+    expect(can({ role: 'trader', modules: ['daily', 'trading', 'storefront'] }, 'storefront')).toBe(true)
   })
 
   it('knows admins', () => {

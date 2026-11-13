@@ -5,17 +5,18 @@ import type { AuthUser, Module, UserRole } from '@/context/auth'
  * Daily Expenses (your own entries) is everyone's. The rest is given per person: by their role, or
  * module by module by an admin.
  */
-export const MODULES: { value: Module; label: string; description: string; locked?: boolean }[] = [
+export const MODULES: { value: Module; label: string; description: string; locked?: boolean; requires?: Module }[] = [
   { value: 'daily', label: 'Daily Expenses', description: 'Their own expenses, budgets and report', locked: true },
-  { value: 'trading', label: 'Trading', description: 'Business and Rucoy: sales, listings, leads, gold and trades' },
+  { value: 'trading', label: 'Trading', description: 'Business and Rucoy: sales, accounts, gold and trades' },
+  { value: 'storefront', label: 'Storefront', description: 'Listing Kit, publishing to the website, website gold rates and leads', requires: 'trading' },
   { value: 'wallets', label: 'Wallets', description: 'The Balance page, and linking entries to a wallet' },
   { value: 'master', label: 'Master File', description: 'Net worth overview, plus the logs and undo of what they did' },
 ]
 
 /** What each role gets unless an admin picks modules for that person. */
 export const PRESETS: Record<UserRole, Module[]> = {
-  admin: ['daily', 'trading', 'wallets', 'master'],
-  trader: ['daily', 'trading'],
+  admin: ['daily', 'trading', 'storefront', 'wallets', 'master'],
+  trader: ['daily', 'trading', 'storefront'],
   daily_only: ['daily'],
 }
 
@@ -25,7 +26,9 @@ export const isAdmin = (user: Pick<AuthUser, 'role'> | null | undefined) => user
 export function modulesOf(user: Pick<AuthUser, 'role' | 'modules'> | null | undefined): Module[] {
   if (!user) return []
   if (user.role === 'admin') return PRESETS.admin
-  return user.modules ?? PRESETS[user.role] ?? ['daily']
+  const mine = user.modules ?? PRESETS[user.role] ?? ['daily']
+  // The storefront lists Trading's accounts: without Trading it opens nothing (as on the server)
+  return mine.includes('trading') ? mine : mine.filter((m) => m !== 'storefront')
 }
 
 export const can = (user: Pick<AuthUser, 'role' | 'modules'> | null | undefined, module: Module) => modulesOf(user).includes(module)

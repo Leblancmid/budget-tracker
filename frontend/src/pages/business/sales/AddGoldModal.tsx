@@ -157,7 +157,7 @@ export function AddGoldModal({ target, wallets = [], onClose, onAdded }: {
 
         {error && <p className="-mt-1 text-xs text-red-500">{error}</p>}
 
-        <div className="flex justify-end gap-3 pt-1">
+        <div className="modal-footer flex justify-end gap-3 pt-1">
           <Button variant="secondary" onClick={onClose} disabled={adding}>Cancel</Button>
           <Button onClick={handleAdd} loading={adding} icon={<Plus className="h-4 w-4" />}>Add Gold</Button>
         </div>

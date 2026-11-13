@@ -138,7 +138,7 @@ export function AvatarCropper({ file, saving, onCancel, onSave }: {
           </button>
         </div>
 
-        <div className="flex w-full justify-end gap-2 border-t border-gray-100 pt-4 dark:border-gray-800">
+        <div className="modal-footer flex w-full justify-end gap-2 border-t border-gray-100 pt-4 dark:border-gray-800">
           <Button variant="secondary" onClick={onCancel} disabled={saving}>Cancel</Button>
           <Button onClick={save} loading={saving} disabled={!natural}>Save picture</Button>
         </div>

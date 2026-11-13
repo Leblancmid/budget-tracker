@@ -55,7 +55,7 @@ export function Layout() {
         <OfflineBanner />
         {/* Changes made offline: asks before sending any */}
         <SyncReviewDialog />
-        <main className="flex-1 overflow-y-auto overscroll-contain p-3 sm:p-6 scrollbar-thin">
+        <main className="flex-1 overflow-y-auto overscroll-contain p-3 pr-[max(0.75rem,env(safe-area-inset-right))] sm:p-6 sm:pr-[max(1.5rem,env(safe-area-inset-right))] scrollbar-thin">
           {/* Keyed by page so a crash on one page clears when you navigate away */}
           <ErrorBoundary key={pathname}>
             <Suspense fallback={<PageLoading />}>

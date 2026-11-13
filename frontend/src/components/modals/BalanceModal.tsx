@@ -162,7 +162,7 @@ export function BalanceModal({ open, onClose, onSubmit, accounts, entry, default
           placeholder="Optional"
         />
 
-        <div className="flex justify-end gap-3 pt-1">
+        <div className="modal-footer flex justify-end gap-3 pt-1">
           <Button variant="secondary" onClick={onClose} disabled={loading}>Cancel</Button>
           <Button onClick={handleSubmit} loading={loading} variant={!entry && form.type === 'sell' ? 'danger' : 'primary'}>
             {entry ? 'Save Changes' : form.type === 'add' ? 'Add' : 'Sell'}

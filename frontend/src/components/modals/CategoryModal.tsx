@@ -156,7 +156,7 @@ export function CategoryModal({ open, onClose, onSubmit, category, defaultType =
           </div>
         </div>
 
-        <div className="flex justify-end gap-3">
+        <div className="modal-footer flex justify-end gap-3">
           <Button variant="secondary" onClick={onClose} disabled={loading}>Cancel</Button>
           <Button onClick={handleSubmit} loading={loading}>{category ? 'Save Changes' : 'Create Category'}</Button>
         </div>

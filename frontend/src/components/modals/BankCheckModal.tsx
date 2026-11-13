@@ -101,7 +101,7 @@ export function BankCheckModal({ account, balance, onClose, onDone }: {
 
         <Input label="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. forgot a Grab ride" maxLength={100} />
 
-        <div className="flex justify-end gap-3">
+        <div className="modal-footer flex justify-end gap-3">
           <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>Cancel</Button>
           <Button type="submit" loading={saving} disabled={actualNum == null}>{matches ? 'Mark as checked' : 'Match to bank'}</Button>
         </div>

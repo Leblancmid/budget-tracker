@@ -76,7 +76,7 @@ export function CorrectStashModal({ totalGold, onClose, onCorrected }: {
               : <>Records <b>{delta > 0 ? '+' : '−'}{Math.abs(delta).toLocaleString()} G</b> so the stash becomes <b>{actual.toLocaleString()} G</b>.</>}
           </div>
         )}
-        <div className="flex justify-end gap-3">
+        <div className="modal-footer flex justify-end gap-3">
           <Button variant="secondary" onClick={onClose} disabled={fixing}>Cancel</Button>
           <Button onClick={handleFix} loading={fixing} disabled={!valid || delta === 0}>Correct stash</Button>
         </div>

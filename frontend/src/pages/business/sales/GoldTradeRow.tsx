@@ -48,7 +48,7 @@ export function GoldTradeRow({ tx, archived = false, onEdit, onSell, onAddGold, 
       </div>
       <div className="flex items-center gap-3 shrink-0">
         {/* Buttons — hover only */}
-        <div className="md:opacity-0 md:group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+        <div className="pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 focus-within:opacity-100 transition-opacity flex items-center gap-0.5">
           {archived ? (
             <button onClick={onUnarchive} title="Restore"
               className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">

@@ -239,7 +239,7 @@ export function RecurringEntriesModal({ categories, wallets, canUseBusiness, onC
                     <p className={['text-sm font-semibold', e.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'].join(' ')}>
                       {e.type === 'income' ? '+' : '−'}<Amt value={formatCurrency(e.amount)} />
                     </p>
-                    <div className="flex items-center gap-0.5 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
+                    <div className="flex items-center gap-0.5 pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 focus-within:opacity-100 md:group-focus-within:opacity-100">
                       <button onClick={(ev) => { ev.stopPropagation(); toggleActive(e) }} title={e.active ? 'Pause' : 'Resume'} aria-label={e.active ? 'Pause' : 'Resume'}
                         className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-200">
                         {e.active ? <Pause size={14} /> : <Play size={14} />}

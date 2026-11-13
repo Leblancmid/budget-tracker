@@ -733,7 +733,7 @@ export function RucoyTransactionModal({ open, onClose, kind, account, accountTx,
 
         {errors.amount && <p className="text-xs text-red-500">{errors.amount}</p>}
 
-        <div className="flex justify-end gap-3 pt-1 lg:mt-auto">
+        <div className="modal-footer flex justify-end gap-3 pt-1 lg:mt-auto">
           <Button variant="secondary" onClick={onClose} disabled={loading}>Cancel</Button>
           <Button onClick={handleSubmit} loading={loading}>
             {isEdit ? 'Save Changes' : kind === 'account' ? 'Add Account' : 'Add Gold'}

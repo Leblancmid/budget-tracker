@@ -6,14 +6,16 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   error?: string
   options: { value: string | number; label: string }[]
   placeholder?: string
+  /** Classes for the whole field (label, box and arrow), e.g. to hide it on phones */
+  wrapperClassName?: string
 }
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ label, error, options, placeholder, className = '', id, ...props }, ref) => {
+  ({ label, error, options, placeholder, className = '', wrapperClassName = '', id, ...props }, ref) => {
     const selectId = id ?? label?.toLowerCase().replace(/\s+/g, '-')
 
     return (
-      <div className="flex flex-col gap-1">
+      <div className={['flex flex-col gap-1', wrapperClassName].join(' ')}>
         {label && (
           <label htmlFor={selectId} className="text-sm font-medium text-gray-700 dark:text-gray-300">
             {label}

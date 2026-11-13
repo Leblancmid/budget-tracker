@@ -139,7 +139,7 @@ export function TransferModal({ accounts, balanceOf, defaultFrom, onClose, onDon
           </p>
         )}
 
-        <div className="flex justify-end gap-3">
+        <div className="modal-footer flex justify-end gap-3">
           <Button variant="secondary" onClick={onClose} disabled={saving}>Cancel</Button>
           <Button onClick={submit} loading={saving}>Transfer</Button>
         </div>

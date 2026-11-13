@@ -80,7 +80,7 @@ export function NotificationsBell() {
         aria-label={unread ? `Notifications, ${unread} unread` : 'Notifications'}
         title="Notifications"
         aria-expanded={open}
-        className="relative flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+        className="relative flex h-10 w-10 items-center justify-center rounded-lg text-gray-400 sm:h-8 sm:w-8 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-300"
       >
         <Bell className="h-4 w-4" />
         {unread > 0 && (
@@ -91,7 +91,7 @@ export function NotificationsBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 z-50 mt-2 w-[min(22rem,calc(100vw-1.5rem))] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl shadow-gray-900/10 dark:border-gray-700 dark:bg-gray-900 dark:shadow-black/40">
+        <div className="fixed inset-x-3 top-[calc(3.5rem+env(safe-area-inset-top)+0.5rem)] z-50 overflow-hidden rounded-xl sm:absolute sm:inset-x-auto sm:top-auto sm:right-0 sm:mt-2 sm:w-[22rem] border border-gray-200 bg-white shadow-xl shadow-gray-900/10 dark:border-gray-700 dark:bg-gray-900 dark:shadow-black/40">
           <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-gray-800">
             <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Notifications</p>
             {unread > 0 && (
@@ -108,7 +108,7 @@ export function NotificationsBell() {
               <p className="text-sm text-gray-500 dark:text-gray-400">Nothing yet. New leads, things due and changes to your account show up here.</p>
             </div>
           ) : (
-            <ul className="max-h-96 divide-y divide-gray-100 overflow-y-auto scrollbar-thin dark:divide-gray-800">
+            <ul className="max-h-[min(24rem,65dvh)] divide-y divide-gray-100 overflow-y-auto scrollbar-thin dark:divide-gray-800">
               {items.map((n) => {
                 const Icon = ICONS[n.kind] ?? Bell
                 return (

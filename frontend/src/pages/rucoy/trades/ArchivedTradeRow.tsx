@@ -21,7 +21,7 @@ export function ArchivedTradeRow({ trade: t, onRestore }: { trade: Trade; onRest
       </div>
       <span className="shrink-0 text-sm font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap">{formatAmount(t)}</span>
       <button onClick={onRestore} title="Restore" aria-label="Restore"
-        className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 md:opacity-0 md:group-hover:opacity-100 transition-all">
+        className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 focus-within:opacity-100 transition-all">
         <RotateCcw size={14} />
       </button>
     </div>

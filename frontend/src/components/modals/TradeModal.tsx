@@ -294,7 +294,7 @@ export function TradeModal({ open, onClose, onSubmit, trade }: TradeModalProps) 
           onChange={(e) => set('completion_date', e.target.value)}
         />
 
-        <div className="flex justify-end gap-3 pt-1">
+        <div className="modal-footer flex justify-end gap-3 pt-1">
           <Button variant="secondary" onClick={onClose} disabled={loading}>Cancel</Button>
           <Button onClick={handleSubmit} loading={loading}>
             {trade ? 'Save Changes' : 'Add Trade'}

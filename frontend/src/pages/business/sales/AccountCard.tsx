@@ -72,7 +72,7 @@ export function AccountCard({ a, tx, onEdit, onArchive, onDelete, onConvertToGol
         </div>
 
         {/* Actions */}
-        <div className={['ml-auto flex items-center gap-1 shrink-0', archived ? '' : 'md:opacity-0 md:group-hover:opacity-100 transition-opacity'].join(' ')}>
+        <div className={['ml-auto flex items-center gap-1 shrink-0', archived ? '' : 'pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 focus-within:opacity-100 transition-opacity'].join(' ')}>
           {archived ? (
             <button
               onClick={onUnarchive}

@@ -634,7 +634,7 @@ export default function Sales() {
                       <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{tx.description || 'Account'}</p>
                       <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{formatDate(tx.date)}</p>
                     </div>
-                    <div className="md:opacity-0 md:group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+                    <div className="pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 focus-within:opacity-100 transition-opacity flex items-center gap-0.5">
                       <button onClick={() => setArchivePendingTarget(tx)} title="Mark as sold"
                         className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors">
                         <Check size={13} />

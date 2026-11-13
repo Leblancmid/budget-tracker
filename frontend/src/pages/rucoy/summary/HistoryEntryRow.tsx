@@ -40,7 +40,7 @@ export function HistoryEntryRow({ entry, onCancel }: { entry: UnifiedEntry; onCa
       <span className="shrink-0 text-sm font-bold whitespace-nowrap">{amount}</span>
       {entry.kind === 'log' && !cancelled ? (
         <button onClick={() => onCancel(entry.log)} title="Undo" aria-label="Undo"
-          className="flex h-7 shrink-0 items-center gap-1 rounded-lg px-2 text-xs font-semibold text-gray-400 hover:bg-amber-50 hover:text-amber-600 dark:text-gray-500 dark:hover:bg-amber-900/20 dark:hover:text-amber-400 md:opacity-0 md:group-hover:opacity-100 transition-all">
+          className="flex h-7 shrink-0 items-center gap-1 rounded-lg px-2 text-xs font-semibold text-gray-400 hover:bg-amber-50 hover:text-amber-600 dark:text-gray-500 dark:hover:bg-amber-900/20 dark:hover:text-amber-400 pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 focus-within:opacity-100 transition-all">
           <Undo2 size={13} /> Undo
         </button>
       ) : <span className="w-16 shrink-0" />}

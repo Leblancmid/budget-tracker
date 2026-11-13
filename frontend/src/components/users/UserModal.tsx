@@ -194,7 +194,7 @@ export function UserModal({ user, onClose, onSaved }: {
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 border-t border-gray-100 pt-4 dark:border-gray-800">
+        <div className="modal-footer flex justify-end gap-2 border-t border-gray-100 pt-4 dark:border-gray-800">
           <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
           <Button type="submit" loading={saving}>{adding ? 'Add user' : 'Save changes'}</Button>
         </div>
@@ -251,7 +251,7 @@ export function SetPasswordModal({ user, onClose }: { user: AccountUser; onClose
         <p className="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600 dark:bg-gray-800/50 dark:text-gray-400">
           {user.name} will be signed out on every device, signs in with this password, and is then asked to choose their own.
         </p>
-        <div className="flex justify-end gap-2">
+        <div className="modal-footer flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
           <Button type="submit" loading={saving}>Set password</Button>
         </div>

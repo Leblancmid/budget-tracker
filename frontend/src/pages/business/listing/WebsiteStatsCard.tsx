@@ -166,7 +166,7 @@ export function WebsiteStatsCard() {
                   <span className="text-gray-500 dark:text-gray-400"> wants {describeAlert(a)} · {a.method === 'whatsapp' ? 'WhatsApp' : 'Discord'} {a.contact}</span>
                 </span>
                 <button onClick={() => setRemoveTarget(a)} title="Remove this request" aria-label={`Remove ${a.name}'s request`}
-                  className="shrink-0 rounded p-0.5 text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100">
+                  className="shrink-0 rounded p-0.5 text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 focus-within:opacity-100 md:focus:opacity-100">
                   <X size={13} />
                 </button>
               </li>

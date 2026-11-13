@@ -131,7 +131,7 @@ export function SellGoldModal({ target, onClose, onSold }: {
           </span>
         </label>
 
-        <div className="flex justify-end gap-3 pt-1">
+        <div className="modal-footer flex justify-end gap-3 pt-1">
           <Button variant="secondary" onClick={onClose} disabled={selling}>Cancel</Button>
           <Button onClick={handleSell} loading={selling} icon={<HandCoins className="h-4 w-4" />}>
             {sellNum >= sellTotal ? 'Sell All' : `Sell ${sellNum.toLocaleString()} G`}

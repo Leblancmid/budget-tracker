@@ -257,7 +257,7 @@ export function Transactions() {
             value={filters.category_id ?? ''}
             onChange={(e) => applyFilters({ category_id: e.target.value ? Number(e.target.value) : '' })}
             options={categories.map((c) => ({ value: c.id, label: c.name }))}
-            className="w-40 hidden md:block"
+            className="w-40" wrapperClassName="hidden md:flex"
           />
           {canWallets && accounts.some((a) => a.currency === 'PHP') && (
             <Select
@@ -268,7 +268,7 @@ export function Transactions() {
                 { value: 'none', label: 'No account' },
                 ...accounts.filter((a) => a.currency === 'PHP').map((a) => ({ value: a.code, label: a.name })),
               ]}
-              className="w-40 hidden md:block"
+              className="w-40" wrapperClassName="hidden md:flex"
             />
           )}
           <div className="hidden md:flex items-center gap-1.5">
@@ -280,7 +280,7 @@ export function Transactions() {
             value={filters.per_page ?? 10}
             onChange={(e) => applyFilters({ per_page: Number(e.target.value) })}
             options={[10, 25, 50].map((n) => ({ value: n, label: `${n} / page` }))}
-            className="w-28 hidden md:block"
+            className="w-28" wrapperClassName="hidden md:flex"
           />
           {hasFilters && (
             <button
@@ -376,7 +376,7 @@ export function Transactions() {
                             )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center gap-1 pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                           <button onClick={() => openEdit(tx)} title="Edit"
                             className="rounded-lg p-1.5 text-gray-400 hover:bg-indigo-50 hover:text-indigo-600 transition-colors dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400">
                             <Pencil className="h-3.5 w-3.5" />

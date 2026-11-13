@@ -28,7 +28,8 @@ export function ToastContainer() {
   const dismiss = (id: number) => setToasts((prev) => prev.filter((t) => t.id !== id))
 
   return (
-    <div className="fixed bottom-5 right-5 z-[100] flex flex-col gap-2 w-80" role="status" aria-live="polite">
+    // Phones: full width, above the home indicator. Larger screens: bottom-right corner
+    <div className="fixed inset-x-3 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-[100] flex flex-col gap-2 sm:inset-x-auto sm:right-5 sm:bottom-5 sm:w-80" role="status" aria-live="polite">
       {toasts.map((t) => (
         <div
           key={t.id}

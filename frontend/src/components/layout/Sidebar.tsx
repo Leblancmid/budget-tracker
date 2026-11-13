@@ -1,7 +1,7 @@
 import { SidebarBrand } from './SidebarBrand'
 import { Fragment, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { PanelLeftClose, PanelLeftOpen, X } from 'lucide-react'
 import { locate, SECTION_STYLES, type NavSection, type SectionId } from '@/lib/navigation'
 import { readString, STORAGE_KEYS, writeString } from '@/lib/storage'
 import { roleLabel } from '@/lib/users'
@@ -36,7 +36,7 @@ export function Sidebar({ sections, leadsWaiting, briefUnseen, mobileOpen = fals
 
   return (
     <aside className={[
-      'safe-top safe-bottom flex h-full shrink-0 flex-col border-r border-gray-200 bg-white dark:border-gray-700/60 dark:bg-gray-900 overflow-y-auto scrollbar-thin overflow-x-hidden transition-all duration-200',
+      'safe-top safe-bottom safe-left flex h-full shrink-0 flex-col border-r border-gray-200 bg-white dark:border-gray-700/60 dark:bg-gray-900 overflow-y-auto scrollbar-thin overflow-x-hidden transition-all duration-200',
       // Mobile: fixed overlay drawer
       'fixed inset-y-0 left-0 z-50 md:relative md:translate-x-0',
       mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
@@ -47,8 +47,20 @@ export function Sidebar({ sections, leadsWaiting, briefUnseen, mobileOpen = fals
     ].join(' ')}>
 
       {/* Brand: logo + a live headline number */}
-      <div className={['shrink-0 border-b border-gray-100 dark:border-gray-700/60', collapsed ? 'md:flex md:justify-center md:py-3.5 px-3 py-3' : 'px-3 py-3'].join(' ')}>
+      <div className={['relative shrink-0 border-b border-gray-100 dark:border-gray-700/60', collapsed ? 'md:flex md:justify-center md:py-3.5 px-3 py-3' : 'px-3 py-3'].join(' ')}>
         <SidebarBrand collapsed={collapsed} onNavigate={onClose} />
+        {/* Phones: a clear way to close the menu (tapping outside works too) */}
+        {mobileOpen && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close menu"
+            title="Close menu"
+            className="absolute right-1.5 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-lg bg-white/80 text-gray-500 hover:bg-gray-100 md:hidden dark:bg-gray-900/80 dark:text-gray-400 dark:hover:bg-gray-800"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        )}
       </div>
 
       <nav aria-label="Sections" className="flex flex-1 flex-col gap-1 p-2">

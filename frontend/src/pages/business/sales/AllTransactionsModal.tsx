@@ -64,7 +64,7 @@ export function AllTransactionsModal({ onClose, loading, transactions, onReclass
                       <button
                         onClick={() => onReclassify(tx)}
                         title="Mark as Gold"
-                        className="md:opacity-0 md:group-hover:opacity-100 flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] font-semibold text-amber-700 hover:bg-amber-100 transition-all dark:border-amber-700/40 dark:bg-amber-900/20 dark:text-amber-400 dark:hover:bg-amber-900/40"
+                        className="pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 focus-within:opacity-100 flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] font-semibold text-amber-700 hover:bg-amber-100 transition-all dark:border-amber-700/40 dark:bg-amber-900/20 dark:text-amber-400 dark:hover:bg-amber-900/40"
                       >
                         <Coins size={11} />
                         Gold

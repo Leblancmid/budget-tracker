@@ -32,7 +32,7 @@ export function MarkSoldDialog({ name, note, loading, onClose, onConfirm }: {
           </div>
         </div>
         <BuyerField value={buyer} onChange={setBuyer} autoFocus />
-        <div className="flex justify-end gap-2">
+        <div className="modal-footer flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose} disabled={loading}>Cancel</Button>
           <Button type="submit" loading={loading}>Mark as sold</Button>
         </div>

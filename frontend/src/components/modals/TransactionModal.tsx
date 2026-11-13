@@ -284,7 +284,7 @@ export function TransactionModal({ open, onClose, onSubmit, categories, transact
           </div>
         )}
 
-        <div className="mt-auto flex justify-end gap-3">
+        <div className="modal-footer mt-auto flex justify-end gap-3">
           <Button variant="secondary" onClick={onClose} disabled={loading}>Cancel</Button>
           <Button onClick={handleSubmit} loading={loading}>
             {transaction ? 'Save Changes' : isIncome ? 'Add Income' : 'Add Expense'}

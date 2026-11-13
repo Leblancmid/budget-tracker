@@ -63,7 +63,14 @@ export function Menu({ trigger, label, items, header, align = 'right' }: {
     if (!open) return
     const inside = (t: EventTarget | null) => button.current?.contains(t as Node) || list.current?.contains(t as Node)
     const onDown = (e: MouseEvent) => { if (!inside(e.target)) close() }
-    const onMove = (e: Event) => { if (!inside(e.target)) close() }
+    // Close when the page really moved (the list would no longer sit by its button), not on the
+    // tiny scroll a phone makes while you tap
+    const startTop = button.current?.getBoundingClientRect().top ?? 0
+    const onMove = (e: Event) => {
+      if (inside(e.target)) return
+      const top = button.current?.getBoundingClientRect().top ?? startTop
+      if (e.type === 'resize' || Math.abs(top - startTop) > 12) close()
+    }
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') close(true)
       if (e.key === 'Tab') close()
@@ -98,7 +105,7 @@ export function Menu({ trigger, label, items, header, align = 'right' }: {
         aria-label={label}
         title={label}
         onClick={() => (open ? close() : setOpen(true))}
-        className="flex items-center rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+        className="flex min-h-10 min-w-10 items-center justify-center rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 sm:min-h-0 sm:min-w-0"
       >
         {trigger}
       </button>

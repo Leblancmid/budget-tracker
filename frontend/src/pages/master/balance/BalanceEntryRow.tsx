@@ -56,17 +56,17 @@ export function BalanceEntryRow({ entry: e, account: a, phpRate, onEdit, onDelet
       {e.transaction_id ? (
         // Owned by a daily transaction — changing it here would make the two drift apart
         <Link to="/transactions" title="Edit this in Transactions"
-          className="md:opacity-0 md:group-hover:opacity-100 transition-opacity flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/20">
+          className="pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 focus-within:opacity-100 transition-opacity flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/20">
           Edit in Transactions <ExternalLink size={11} />
         </Link>
       ) : e.balance_transfer_id ? (
         // One side of a transfer: editing would unbalance it, so it can only be undone as a whole
         <button onClick={onDelete} title="Undo the whole transfer" aria-label="Undo transfer"
-          className="md:opacity-0 md:group-hover:opacity-100 transition-opacity flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-gray-500 hover:bg-amber-50 hover:text-amber-600 dark:text-gray-400 dark:hover:bg-amber-900/20 dark:hover:text-amber-400">
+          className="pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 focus-within:opacity-100 transition-opacity flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-gray-500 hover:bg-amber-50 hover:text-amber-600 dark:text-gray-400 dark:hover:bg-amber-900/20 dark:hover:text-amber-400">
           <Undo2 size={12} /> Undo transfer
         </button>
       ) : (
-        <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center gap-1 pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
           <button onClick={onEdit} title="Edit" aria-label="Edit"
             className="rounded-lg p-1.5 text-gray-400 hover:bg-indigo-50 hover:text-indigo-600 transition-colors dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400">
             <Pencil className="h-3.5 w-3.5" />

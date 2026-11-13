@@ -17,6 +17,9 @@ interface HeaderProps {
   onMenuClick?: () => void
 }
 
+/** Below the sm breakpoint, where the header hides its theme button */
+const isPhoneWidth = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 639px)').matches
+
 export function Header({ onMenuClick }: HeaderProps) {
   const { pathname } = useLocation()
   const navigate     = useNavigate()
@@ -52,34 +55,35 @@ export function Header({ onMenuClick }: HeaderProps) {
   const handleLogout = () => (pending.length > 0 ? setConfirmLogout(true) : signOut())
 
   return (
-    <header className="app-header flex shrink-0 items-center justify-between border-b border-gray-200 bg-white px-3 sm:px-6 dark:border-gray-700/60 dark:bg-gray-900">
+    <header className="app-header flex shrink-0 items-center justify-between border-b border-gray-200 bg-white px-3 pr-[max(0.75rem,env(safe-area-inset-right))] sm:px-6 sm:pr-[max(1.5rem,env(safe-area-inset-right))] dark:border-gray-700/60 dark:bg-gray-900">
 
       {/* Hamburger — mobile only */}
       <button
         onClick={onMenuClick}
         aria-label="Open menu"
         title="Open menu"
-        className="md:hidden flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors mr-2"
+        className="md:hidden -ml-1 mr-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors"
       >
         <MenuIcon className="h-5 w-5" />
       </button>
 
       {/* Left: breadcrumb-style title */}
       <div className="flex items-center gap-2.5 min-w-0 flex-1">
-        <span className={['shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold tracking-wide', styles.badge].join(' ')}>
+        {/* Phones: just the page name (the tabs and the menu already show the section) */}
+        <span className={['hidden shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold tracking-wide sm:inline', styles.badge].join(' ')}>
           {meta.section}
         </span>
-        <span className="text-gray-300 dark:text-gray-600 text-sm">/</span>
-        <h1 className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">{meta.title}</h1>
+        <span className="hidden text-gray-300 dark:text-gray-600 text-sm sm:inline">/</span>
+        <h1 className="text-base font-semibold text-gray-800 dark:text-gray-100 truncate sm:text-sm">{meta.title}</h1>
       </div>
 
       {/* Right: controls */}
-      <div className="flex items-center gap-1 shrink-0">
+      <div className="flex items-center gap-0.5 shrink-0 sm:gap-1">
         <button
           onClick={() => setQuickAdd(true)}
           title="Quick add (Ctrl+K): type one line like 250 lunch gcash"
           aria-label="Quick add"
-          className="mr-1 flex h-8 items-center gap-1.5 rounded-lg bg-indigo-600 px-2.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 transition-colors"
+          className="mr-1 flex h-10 min-w-10 items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-2.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 transition-colors sm:h-8 sm:min-w-0"
         >
           <Zap className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">Quick add</span>
@@ -89,8 +93,10 @@ export function Header({ onMenuClick }: HeaderProps) {
         <button
           onClick={toggleAmounts}
           title={hidden ? 'Show amounts' : 'Hide amounts'}
+          aria-label={hidden ? 'Show amounts' : 'Hide amounts'}
+          aria-pressed={hidden}
           className={[
-            'flex items-center gap-1.5 h-8 rounded-lg px-2.5 text-xs font-medium transition-colors',
+            'flex h-10 min-w-10 items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-medium transition-colors sm:h-8 sm:min-w-0',
             hidden
               ? 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200'
               : 'text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-300',
@@ -103,7 +109,8 @@ export function Header({ onMenuClick }: HeaderProps) {
         <button
           onClick={toggle}
           title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          className="hidden sm:flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-300"
         >
           {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </button>
@@ -127,6 +134,8 @@ export function Header({ onMenuClick }: HeaderProps) {
               items={[
                 { label: 'Your profile', icon: <UserRound className="h-4 w-4" />, onSelect: () => navigate('/profile') },
                 { label: 'Users', icon: <Users className="h-4 w-4" />, onSelect: () => navigate('/users'), hidden: !isAdmin(user) },
+                // Phones: the theme switch lives here (the header has no room for it)
+                { label: theme === 'dark' ? 'Light mode' : 'Dark mode', icon: theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />, onSelect: toggle, hidden: !isPhoneWidth() },
                 { label: 'Sign out', icon: <LogOut className="h-4 w-4" />, onSelect: handleLogout, danger: true },
               ]}
             />

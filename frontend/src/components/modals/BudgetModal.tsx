@@ -163,7 +163,7 @@ export function BudgetModal({ open, onClose, onSubmit, categories, budget, curre
           )}
         </div>
 
-        <div className="flex justify-end gap-3">
+        <div className="modal-footer flex justify-end gap-3">
           <Button variant="secondary" onClick={onClose} disabled={loading}>Cancel</Button>
           <Button onClick={handleSubmit} loading={loading}>{budget ? 'Save Changes' : 'Set Budget'}</Button>
         </div>

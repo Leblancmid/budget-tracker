@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import api from '@/api/axios'
-import { clearSession, loadSession, saveSession, setRememberedEmail, type AuthSession } from '@/lib/authSession'
+import { clearSession, loadSession, saveSession, setRememberedEmail, updateSessionUser, type AuthSession } from '@/lib/authSession'
 import { AuthContext, type AuthUser } from './auth'
 
 /** setTimeout can't wait longer than this (~24.8 days); longer waits are re-armed in steps. */
@@ -29,6 +29,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null)
   }, [])
 
+  const updateUser = useCallback((user: AuthUser) => {
+    updateSessionUser(user)
+    setSession((s) => (s ? { ...s, user } : s))
+  }, [])
+
+  // Once per sign-in: pick up changes made elsewhere (a new picture, a role an admin changed)
+  const signedInAs = session?.token
+  useEffect(() => {
+    if (!signedInAs) return
+    let cancelled = false
+    api.get<{ user: AuthUser }>('/profile')
+      .then(({ data }) => { if (!cancelled) updateUser(data.user) })
+      .catch(() => { /* offline, or the token was refused (handled by the API client) */ })
+    return () => { cancelled = true }
+  }, [signedInAs, updateUser])
+
   // Sign out when the token expires, even if the app is left open
   useEffect(() => {
     if (!session?.expiresAt) return
@@ -52,8 +68,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     expiresAt: session?.expiresAt || null,
     login,
     logout,
+    updateUser,
     isAuthenticated: !!session,
-  }), [session, login, logout])
+  }), [session, login, logout, updateUser])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

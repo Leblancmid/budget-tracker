@@ -43,6 +43,13 @@ export function loadSession(now = Date.now()): AuthSession | null {
   return null
 }
 
+/** Replace the saved user (after a profile change), wherever the login is kept. */
+export function updateSessionUser(user: AuthUser): void {
+  for (const area of AREAS) {
+    if (readString(STORAGE_KEYS.authToken, area)) writeJson(STORAGE_KEYS.authUser, user, area)
+  }
+}
+
 /** The token to send with API requests, if any. */
 export function sessionToken(): string | null {
   return readString(STORAGE_KEYS.authToken, 'local') ?? readString(STORAGE_KEYS.authToken, 'session')

@@ -43,10 +43,16 @@ describe('navigation', () => {
     for (const s of NAV_SECTIONS) expect(s.tabs.length).toBeLessThanOrEqual(5)
   })
 
-  it('shows daily-only users just Daily Expenses, without Balance', () => {
+  it('shows daily-only users just Daily Expenses (without Balance) and their profile', () => {
     const sections = visibleSections(false)
-    expect(sections.map((s) => s.id)).toEqual(['daily'])
+    expect(sections.map((s) => s.id)).toEqual(['daily', 'account'])
     expect(sections[0].tabs.map((t) => t.label)).toEqual(['Dashboard', 'Transactions', 'Budgets', 'Report'])
-    expect(visibleSections(true)).toHaveLength(4)
+    expect(sections[1].tabs.map((t) => t.label)).toEqual(['Profile'])
+    expect(visibleSections(true)).toHaveLength(5)
+  })
+
+  it('puts Profile and Users under Account', () => {
+    expect(locate('/profile')).toMatchObject({ title: 'Profile', section: { id: 'account' } })
+    expect(locate('/users')).toMatchObject({ title: 'Users', section: { id: 'account' } })
   })
 })

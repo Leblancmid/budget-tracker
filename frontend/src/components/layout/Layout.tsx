@@ -41,7 +41,7 @@ export function Layout() {
       )}
 
       <Sidebar
-        sections={sections}
+        sections={sections.filter((s) => !s.hideInSidebar)}
         leadsWaiting={leadsWaiting}
         briefUnseen={briefUnseen}
         mobileOpen={mobileOpen}

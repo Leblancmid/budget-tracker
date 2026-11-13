@@ -48,7 +48,8 @@ export interface OfflineWrite {
 }
 
 /** Changes that only make sense with a connection: signing in/out, undo/redo, publishing to the website. */
-const NEEDS_CONNECTION = [/^\/auth\//, /^\/master\/operations\//, /^\/business\/listing\/publish/]
+// Accounts (your profile, user management) change who can sign in: never queued, always sent now
+const NEEDS_CONNECTION = [/^\/auth\//, /^\/profile(\/|$)/, /^\/users(\/|$)/, /^\/master\/operations\//, /^\/business\/listing\/publish/]
 
 export const keepsOffline = (config: AxiosRequestConfig) =>
   (config.method ?? 'get').toLowerCase() !== 'get'

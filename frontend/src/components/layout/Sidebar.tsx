@@ -4,6 +4,9 @@ import { Link, useLocation } from 'react-router-dom'
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { locate, SECTION_STYLES, type NavSection, type SectionId } from '@/lib/navigation'
 import { readString, STORAGE_KEYS, writeString } from '@/lib/storage'
+import { roleLabel } from '@/lib/users'
+import { useAuth } from '@/context/auth'
+import { Avatar } from '@/components/ui/Avatar'
 
 interface SidebarProps {
   /** This user's sections (see lib/navigation) */
@@ -19,6 +22,7 @@ interface SidebarProps {
 /** One row per section; a section's pages are the tabs under the header (SectionTabs). */
 export function Sidebar({ sections, leadsWaiting, briefUnseen, mobileOpen = false, onClose }: SidebarProps) {
   const { pathname } = useLocation()
+  const { user } = useAuth()
   const current = locate(pathname).section.id
   const [collapsed, setCollapsed] = useState(() => readString(STORAGE_KEYS.sidebarCollapsed) === 'true')
   const iconOnly = collapsed && !mobileOpen
@@ -99,9 +103,25 @@ export function Sidebar({ sections, leadsWaiting, briefUnseen, mobileOpen = fals
         })}
       </nav>
 
-      {/* Footer */}
-      <div className={['border-t border-gray-100 dark:border-gray-700/60 shrink-0', collapsed ? 'md:flex md:justify-center md:py-3 flex items-center justify-between px-4 py-3' : 'flex items-center justify-between px-4 py-3'].join(' ')}>
-        <p className={['text-[10px] text-gray-300 dark:text-gray-600 select-none', collapsed ? 'md:hidden' : ''].join(' ')}>v1.0</p>
+      {/* Footer: who's signed in (opens the profile), and collapse */}
+      <div className={['border-t border-gray-100 dark:border-gray-700/60 shrink-0', iconOnly ? 'flex flex-col items-center gap-2 py-3' : 'flex items-center gap-2 px-2 py-2.5'].join(' ')}>
+        {user && (
+          <Link
+            to="/profile"
+            onClick={onClose}
+            title={iconOnly ? `${user.name}: your profile` : 'Your profile'}
+            aria-label={iconOnly ? `${user.name}: your profile` : undefined}
+            className={['flex min-w-0 items-center gap-2.5 rounded-xl transition-colors hover:bg-gray-100 dark:hover:bg-gray-800/60', iconOnly ? 'p-0.5' : 'flex-1 px-1.5 py-1.5', current === 'account' && !iconOnly ? 'bg-gray-100 dark:bg-gray-800/70' : ''].join(' ')}
+          >
+            <Avatar user={user} size="sm" />
+            {!iconOnly && (
+              <span className="min-w-0">
+                <span className="block truncate text-[13px] font-semibold text-gray-800 dark:text-gray-100">{user.name}</span>
+                <span className="block truncate text-[11px] text-gray-500 dark:text-gray-400">{roleLabel(user.role)}</span>
+              </span>
+            )}
+          </Link>
+        )}
         <button
           onClick={toggleCollapsed}
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}

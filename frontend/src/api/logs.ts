@@ -1,7 +1,7 @@
 import api from './axios'
 
 export interface LogEntry {
-  /** access: sign-ins and sign-outs; system: undo / redo */
+  /** access: sign-ins, sign-outs and changes to user accounts; system: undo / redo */
   module: 'daily' | 'business' | 'savings' | 'balance' | 'gold' | 'trade' | 'access' | 'system'
   type: string
   description: string | null

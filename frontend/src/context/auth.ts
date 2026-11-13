@@ -1,10 +1,15 @@
 import { createContext, useContext } from 'react'
 
+export type UserRole = 'admin' | 'daily_only'
+
 export interface AuthUser {
   id: number
   name: string
   email: string
-  role: 'admin' | 'daily_only'
+  role: UserRole
+  /** Profile picture (absent on logins saved before profiles existed) */
+  avatar_url?: string | null
+  created_at?: string | null
 }
 
 export interface AuthContextValue {
@@ -14,6 +19,8 @@ export interface AuthContextValue {
   expiresAt: string | null
   login: (email: string, password: string, remember: boolean) => Promise<void>
   logout: () => Promise<void>
+  /** Show changes to your own account (name, email, picture) everywhere, and keep them for next time. */
+  updateUser: (user: AuthUser) => void
   isAuthenticated: boolean
 }
 

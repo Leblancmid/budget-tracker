@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Moon, Sun, Eye, EyeOff, LogOut, Menu, Zap } from 'lucide-react'
+import { Moon, Sun, Eye, EyeOff, LogOut, Menu as MenuIcon, UserRound, Users, Zap } from 'lucide-react'
+import { Avatar } from '@/components/ui/Avatar'
+import { Menu } from '@/components/ui/Menu'
 import { QuickAddModal } from '@/components/modals/QuickAddModal'
 import { useTheme } from '@/context/theme'
 import { useAmountVisibility } from '@/context/amountVisibility'
@@ -53,9 +55,11 @@ export function Header({ onMenuClick }: HeaderProps) {
       {/* Hamburger — mobile only */}
       <button
         onClick={onMenuClick}
+        aria-label="Open menu"
+        title="Open menu"
         className="md:hidden flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors mr-2"
       >
-        <Menu className="h-5 w-5" />
+        <MenuIcon className="h-5 w-5" />
       </button>
 
       {/* Left: breadcrumb-style title */}
@@ -102,13 +106,28 @@ export function Header({ onMenuClick }: HeaderProps) {
           {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </button>
 
-        <button
-          onClick={handleLogout}
-          title="Sign out"
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors dark:text-gray-500 dark:hover:bg-red-900/20 dark:hover:text-red-400"
-        >
-          <LogOut className="h-4 w-4" />
-        </button>
+        {user && (
+          <div className="ml-1">
+            <Menu
+              label="Account menu"
+              trigger={<Avatar user={user} size="sm" className="ring-2 ring-transparent transition-shadow hover:ring-indigo-200 dark:hover:ring-indigo-800" />}
+              header={
+                <div className="flex items-center gap-2.5">
+                  <Avatar user={user} size="md" />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{user.name}</p>
+                    <p className="truncate text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
+                  </div>
+                </div>
+              }
+              items={[
+                { label: 'Your profile', icon: <UserRound className="h-4 w-4" />, onSelect: () => navigate('/profile') },
+                { label: 'Users', icon: <Users className="h-4 w-4" />, onSelect: () => navigate('/users'), hidden: user.role === 'daily_only' },
+                { label: 'Sign out', icon: <LogOut className="h-4 w-4" />, onSelect: handleLogout, danger: true },
+              ]}
+            />
+          </div>
+        )}
       </div>
       {quickAdd && <QuickAddModal isAdmin={user?.role !== 'daily_only'} onClose={() => setQuickAdd(false)} />}
       <ConfirmDialog

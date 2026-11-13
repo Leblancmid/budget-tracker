@@ -1,11 +1,11 @@
-import { Briefcase, FolderOpen, Gamepad2, Wallet, type LucideIcon } from 'lucide-react'
+import { Briefcase, CircleUserRound, FolderOpen, Gamepad2, Wallet, type LucideIcon } from 'lucide-react'
 
 /**
  * The app's navigation in one place: the sidebar lists the sections, the tab bar under the header
  * lists the current section's tabs, and the header shows "Section / Tab". Page URLs never change.
  */
 
-export type SectionId = 'daily' | 'business' | 'rucoy' | 'master'
+export type SectionId = 'daily' | 'business' | 'rucoy' | 'master' | 'account'
 
 export interface NavTab {
   to: string
@@ -23,6 +23,8 @@ export interface NavSection {
   label: string
   icon: LucideIcon
   adminOnly?: boolean
+  /** Reached from the account menu and the sidebar's profile card, not a row of its own */
+  hideInSidebar?: boolean
   tabs: NavTab[]
 }
 
@@ -72,6 +74,16 @@ export const NAV_SECTIONS: NavSection[] = [
       { to: '/master', label: 'Overview', end: true },
       { to: '/logs', label: 'Logs' },
       { to: '/master/undo', label: 'Undo' },
+    ],
+  },
+  {
+    id: 'account',
+    label: 'Account',
+    icon: CircleUserRound,
+    hideInSidebar: true,
+    tabs: [
+      { to: '/profile', label: 'Profile', end: true },
+      { to: '/users', label: 'Users', adminOnly: true },
     ],
   },
 ]
@@ -132,5 +144,11 @@ export const SECTION_STYLES: Record<SectionId, { icon: string; iconBg: string; b
     iconBg: 'bg-violet-100 dark:bg-violet-900/40',
     badge: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
     tabActive: 'border-violet-500 text-violet-700 dark:border-violet-400 dark:text-violet-300',
+  },
+  account: {
+    icon: 'text-pink-600 dark:text-pink-400',
+    iconBg: 'bg-pink-100 dark:bg-pink-900/40',
+    badge: 'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300',
+    tabActive: 'border-pink-500 text-pink-700 dark:border-pink-400 dark:text-pink-300',
   },
 }

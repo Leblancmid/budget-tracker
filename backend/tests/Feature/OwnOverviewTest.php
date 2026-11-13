@@ -98,4 +98,20 @@ class OwnOverviewTest extends TestCase
         $this->assertEquals(1300, $s['business_profit']);
         $this->assertArrayHasKey('balance_php_total', $s);
     }
+
+    public function test_the_admin_overview_counts_only_the_admins_own_daily_entries(): void
+    {
+        $this->daily($this->admin, 'income', 2000, '2026-11-02');
+        $this->daily($this->admin, 'expense', 500, '2026-11-03');
+        $this->daily($this->sam, 'expense', 9000, '2026-11-04');   // Sam's own: private to Sam
+
+        Sanctum::actingAs($this->admin);
+        $s = $this->getJson('/api/v1/master/dashboard')->assertOk()->json();
+        $this->assertEquals(1500, $s['daily_net']);
+        $this->assertEquals(1500, $s['monthly_daily_net']);
+
+        $nov = collect($this->getJson('/api/v1/master/dashboard/trend')->assertOk()->json('months'))->firstWhere('month', '2026-11');
+        $this->assertEquals(2000, $nov['daily_income']);
+        $this->assertEquals(500, $nov['daily_expense']);
+    }
 }

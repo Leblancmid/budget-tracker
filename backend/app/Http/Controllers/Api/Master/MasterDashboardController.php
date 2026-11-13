@@ -26,20 +26,22 @@ class MasterDashboardController extends Controller
         }
 
         $now = now();
+        // Daily Expenses are personal: the admin's own entries, never other users'
+        $me = $request->user()->id;
 
-        // Overall Profit = Business archived profit (all types) + Daily net
+        // Overall Profit = Business archived profit (all types) + your own Daily net
         $businessProfit = BusinessProfit::realized(BusinessTransaction::archived()->get())['profit'];
-        $dailyIncome    = (float) Transaction::personal()->where('type', 'income')->sum('amount');
-        $dailyExpense   = (float) Transaction::personal()->where('type', 'expense')->sum('amount');
+        $dailyIncome    = (float) Transaction::personal()->where('user_id', $me)->where('type', 'income')->sum('amount');
+        $dailyExpense   = (float) Transaction::personal()->where('user_id', $me)->where('type', 'expense')->sum('amount');
         $overallProfit  = $businessProfit + ($dailyIncome - $dailyExpense);
 
         // Monthly Profit (current month only)
         $monthlyBusinessProfit = BusinessProfit::realized(
             BusinessTransaction::archived()->whereYear('archived_at', $now->year)->whereMonth('archived_at', $now->month)->get()
         )['profit'];
-        $monthlyDailyIncome = (float) Transaction::personal()->where('type', 'income')
+        $monthlyDailyIncome = (float) Transaction::personal()->where('user_id', $me)->where('type', 'income')
             ->whereYear('date', $now->year)->whereMonth('date', $now->month)->sum('amount');
-        $monthlyDailyExpense = (float) Transaction::personal()->where('type', 'expense')
+        $monthlyDailyExpense = (float) Transaction::personal()->where('user_id', $me)->where('type', 'expense')
             ->whereYear('date', $now->year)->whereMonth('date', $now->month)->sum('amount');
         $monthlyProfit = $monthlyBusinessProfit + ($monthlyDailyIncome - $monthlyDailyExpense);
 
@@ -82,7 +84,7 @@ class MasterDashboardController extends Controller
     {
         $user = $request->user();
 
-        return response()->json(['months' => $user->isAdmin() ? MasterTrend::months(12) : OwnOverview::months($user, 12)]);
+        return response()->json(['months' => $user->isAdmin() ? MasterTrend::months(12, $user->id) : OwnOverview::months($user, 12)]);
     }
 
     /** Money added minus money taken out across the given balance accounts. */

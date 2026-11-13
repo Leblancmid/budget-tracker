@@ -23,7 +23,7 @@ class MasterTrend
      * @return list<array{month: string, business_profit: float, daily_income: float, daily_expense: float,
      *     php_balance: float, usd_balance: float, gold_stash: float, account_gold: float, account_cash_php: float}>
      */
-    public static function months(int $count = 12): array
+    public static function months(int $count = 12, ?int $userId = null): array
     {
         $now = CarbonImmutable::now(self::ZONE);
         $first = $now->startOfMonth()->subMonths($count - 1);
@@ -38,7 +38,7 @@ class MasterTrend
         }
 
         $business = self::businessProfit($firstUtc);
-        [$income, $expense] = self::daily($first->toDateString());
+        [$income, $expense] = self::daily($first->toDateString(), $userId);
         $php = self::balance(BalanceAccount::codesFor('PHP'), $first->toDateString(), array_keys($months));
         $usd = self::balance(BalanceAccount::codesFor('USD'), $first->toDateString(), array_keys($months));
         $gold = self::goldStash($firstUtc, array_keys($months));
@@ -73,10 +73,11 @@ class MasterTrend
             ->all();
     }
 
-    /** Personal income and expenses per month (Daily Expenses). */
-    private static function daily(string $fromDate): array
+    /** Personal income and expenses per month (Daily Expenses), of one person when given. */
+    private static function daily(string $fromDate, ?int $userId): array
     {
         $rows = Transaction::personal()->where('date', '>=', $fromDate)
+            ->when($userId, fn ($q) => $q->where('user_id', $userId))
             ->selectRaw('substr(date, 1, 7) as ym, type, sum(amount) as total')
             ->groupBy('ym', 'type')->get();
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { TrendingDown, TrendingUp } from 'lucide-react'
 import { useAuth } from '@/context/auth'
+import { can } from '@/lib/access'
 import { useAmountVisibility } from '@/context/amountVisibility'
 import { masterDashboardApi } from '@/api/master'
 import { dashboardApi } from '@/api/dashboard'
@@ -17,14 +18,14 @@ function compactPhp(n: number) {
 interface Headline { label: string; value: number; delta: number | null; deltaLabel: string; to: string }
 
 /**
- * Sidebar brand: the logo plus one live number — net worth for admins (same formula as
- * Master → Overview), or this month's Daily net for daily-only users.
+ * Sidebar brand: the logo plus one live number — net worth for people with the Master File (same
+ * formula as Master → Overview), or this month's Daily net for everyone else.
  */
 export function SidebarBrand({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: () => void }) {
   const { user } = useAuth()
   const { hidden } = useAmountVisibility()
   const visible = !hidden
-  const dailyOnly = user?.role === 'daily_only'
+  const dailyOnly = !can(user, 'master')
   const [headline, setHeadline] = useState<Headline | null>(null)
 
   useEffect(() => {

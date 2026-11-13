@@ -4,7 +4,7 @@ import { useAsyncData } from './useAsyncData'
 
 const EMPTY_PAGE: UserPage = {
   data: [], current_page: 1, last_page: 1, per_page: 10, from: null, to: null, total: 0,
-  counts: { all: 0, admin: 0, daily_only: 0, deactivated: 0 },
+  counts: { all: 0, admin: 0, trader: 0, daily_only: 0, deactivated: 0 },
 }
 
 /** One page of the user list for these filters. */

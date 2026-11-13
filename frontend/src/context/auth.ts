@@ -1,12 +1,17 @@
 import { createContext, useContext } from 'react'
 
-export type UserRole = 'admin' | 'daily_only'
+export type UserRole = 'admin' | 'trader' | 'daily_only'
+
+/** Parts of the app access is given for (see lib/access) */
+export type Module = 'daily' | 'trading' | 'wallets' | 'master'
 
 export interface AuthUser {
   id: number
   name: string
   email: string
   role: UserRole
+  /** What they can open (absent on logins saved before modules existed: see lib/access) */
+  modules?: Module[]
   /** Profile picture (absent on logins saved before profiles existed) */
   avatar_url?: string | null
   created_at?: string | null

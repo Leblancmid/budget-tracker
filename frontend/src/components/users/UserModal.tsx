@@ -1,19 +1,20 @@
 import { useState, type FormEvent } from 'react'
 import { Check, Copy } from 'lucide-react'
 import { usersApi, type AccountUser, type UserInput } from '@/api/users'
-import type { UserRole } from '@/context/auth'
+import type { Module, UserRole } from '@/context/auth'
+import { MODULES, modulesOf, PRESETS } from '@/lib/access'
 import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { Avatar } from '@/components/ui/Avatar'
 import { PasswordField } from './PasswordField'
 import { StatusLine } from './UserBits'
-import { generatePassword, passwordOk, ROLES } from '@/lib/users'
+import { generatePassword, passwordOk, roleLabel, ROLES } from '@/lib/users'
 import { toast } from '@/lib/toast'
 import { errorMessage, flattenApiErrors } from '@/utils/api'
 
 /**
- * Add a user (with a first password to give them), or edit one's name, email and role. Editing
+ * Add a user (with a first password to give them), or edit one's name, email, role and modules. Editing
  * sends only what changed. Your own role can't be changed here, so there's always an admin.
  */
 export function UserModal({ user, onClose, onSaved }: {
@@ -27,6 +28,7 @@ export function UserModal({ user, onClose, onSaved }: {
     name: user?.name ?? '',
     email: user?.email ?? '',
     role: user?.role ?? 'daily_only',
+    modules: user ? modulesOf(user) : PRESETS.daily_only,
     password: adding ? generatePassword() : undefined,
   }))
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -35,13 +37,20 @@ export function UserModal({ user, onClose, onSaved }: {
 
   const set = <K extends keyof UserInput>(k: K, v: UserInput[K]) => setForm((f) => ({ ...f, [k]: v }))
   const ownRoleLocked = !!user?.is_self
+  const picked = form.modules ?? []
+  // A role starts from its preset; the switches below change it module by module
+  const pickRole = (role: UserRole) => setForm((f) => ({ ...f, role, modules: PRESETS[role] }))
+  const toggle = (m: Module) => set('modules', picked.includes(m) ? picked.filter((x) => x !== m) : [...picked, m])
+  const sameModules = (a: Module[], b: Module[]) => a.length === b.length && a.every((m) => b.includes(m))
+  const custom = form.role !== 'admin' && !sameModules(picked, PRESETS[form.role])
 
   const changes = (): Partial<UserInput> => {
-    if (!user) return form
+    if (!user) return form.role === 'admin' ? { ...form, modules: undefined } : form
     const out: Partial<UserInput> = {}
     if (form.name.trim() !== user.name) out.name = form.name.trim()
     if (form.email.trim().toLowerCase() !== user.email) out.email = form.email.trim().toLowerCase()
     if (form.role !== user.role) out.role = form.role
+    if (form.role !== 'admin' && !sameModules(picked, modulesOf(user))) out.modules = picked
     return out
   }
 
@@ -99,8 +108,8 @@ export function UserModal({ user, onClose, onSaved }: {
         </div>
 
         <fieldset>
-          <legend className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Access</legend>
-          <div className="grid gap-2 sm:grid-cols-2" role="radiogroup">
+          <legend className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Role</legend>
+          <div className="grid gap-2 sm:grid-cols-3" role="radiogroup">
             {ROLES.map((r) => {
               const active = form.role === r.value
               return (
@@ -110,7 +119,7 @@ export function UserModal({ user, onClose, onSaved }: {
                   role="radio"
                   aria-checked={active}
                   disabled={ownRoleLocked && !active}
-                  onClick={() => set('role', r.value as UserRole)}
+                  onClick={() => pickRole(r.value)}
                   className={[
                     'relative rounded-xl border p-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-40',
                     active
@@ -127,6 +136,40 @@ export function UserModal({ user, onClose, onSaved }: {
           </div>
           {ownRoleLocked && <p className="mt-2 text-xs text-gray-500">You can't change your own access, so there's always an admin.</p>}
           {errors.role && <p className="mt-2 text-xs text-red-600 dark:text-red-400">{errors.role}</p>}
+        </fieldset>
+
+        {/* Module by module: starts from the role, and can be changed for this person */}
+        <fieldset>
+          <div className="mb-2 flex items-center justify-between">
+            <legend className="text-sm font-medium text-gray-700 dark:text-gray-300">What they can open</legend>
+            {custom && (
+              <button type="button" onClick={() => set('modules', PRESETS[form.role])} className="text-xs font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">
+                Reset to {roleLabel(form.role)}
+              </button>
+            )}
+          </div>
+          <ul className="divide-y divide-gray-100 overflow-hidden rounded-xl border border-gray-200 dark:divide-gray-800 dark:border-gray-700">
+            {MODULES.map((m) => {
+              const isAdminRole = form.role === 'admin'
+              const on = isAdminRole || picked.includes(m.value)
+              const locked = isAdminRole || !!m.locked || ownRoleLocked
+              return (
+                <li key={m.value} className="flex items-center gap-3 px-3 py-2.5">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{m.label}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{m.description}</p>
+                  </div>
+                  <Switch on={on} disabled={locked} label={`${m.label} access`} onChange={() => toggle(m.value)} />
+                </li>
+              )
+            })}
+          </ul>
+          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+            {form.role === 'admin'
+              ? 'Admins can open everything and manage users.'
+              : custom ? `Custom: different from what ${roleLabel(form.role)} gives. Managing users stays with admins.` : 'Managing users stays with admins.'}
+          </p>
+          {errors.modules && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.modules}</p>}
         </fieldset>
 
         {adding && (
@@ -147,6 +190,27 @@ export function UserModal({ user, onClose, onSaved }: {
         </div>
       </form>
     </Modal>
+  )
+}
+
+/** An on/off switch. */
+function Switch({ on, disabled, label, onChange }: { on: boolean; disabled?: boolean; label: string; onChange: () => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      aria-label={label}
+      title={label}
+      disabled={disabled}
+      onClick={onChange}
+      className={[
+        'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-offset-gray-900',
+        on ? 'bg-indigo-600 dark:bg-indigo-500' : 'bg-gray-200 dark:bg-gray-700',
+      ].join(' ')}
+    >
+      <span className={['inline-block h-5 w-5 rounded-full bg-white shadow transition-transform', on ? 'translate-x-5' : 'translate-x-0.5'].join(' ')} />
+    </button>
   )
 }
 

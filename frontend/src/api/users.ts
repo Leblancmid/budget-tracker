@@ -1,9 +1,10 @@
 import api from './axios'
 import { MULTIPART } from './rucoy'
-import type { AuthUser, UserRole } from '@/context/auth'
+import type { AuthUser, Module, UserRole } from '@/context/auth'
 
 /** A user as the profile page and the user list see them. */
 export interface AccountUser extends AuthUser {
+  modules: Module[]
   avatar_url: string | null
   deactivated_at: string | null
   created_at: string | null
@@ -26,6 +27,7 @@ export interface DeviceSession {
 export interface UserCounts {
   all: number
   admin: number
+  trader: number
   daily_only: number
   deactivated: number
 }
@@ -52,6 +54,8 @@ export interface UserInput {
   name: string
   email: string
   role: UserRole
+  /** Modules picked for this person (left out: their role's) */
+  modules?: Module[]
   password?: string
 }
 

@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { PageLoading } from '@/components/PageLoading'
 import { useAuth } from '@/context/auth'
+import { can, isAdmin } from '@/lib/access'
 import { useBriefUnseen } from '@/lib/briefSeen'
 import { locate, visibleSections } from '@/lib/navigation'
 import { useWaitingLeads } from '@/hooks/useWaitingLeads'
@@ -17,15 +18,15 @@ export function Layout() {
   const { pathname } = useLocation()
   const { user } = useAuth()
 
-  const isAdmin = user?.role !== 'daily_only'
-  const sections = visibleSections(isAdmin)
+  const trading = can(user, 'trading')
+  const sections = visibleSections({ can: (m) => can(user, m), admin: isAdmin(user) })
   const currentId = locate(pathname).section.id
   const tabs = sections.find((s) => s.id === currentId)?.tabs ?? []
   // Badges: website leads waiting for a reply, and a weekly brief (every Monday) not opened yet
-  const leadsWaiting = useWaitingLeads(isAdmin)
+  const leadsWaiting = useWaitingLeads(trading)
   const businessBrief = useBriefUnseen('business')
   const dailyBrief = useBriefUnseen('daily')
-  const briefUnseen = { business: businessBrief && isAdmin, daily: dailyBrief }
+  const briefUnseen = { business: businessBrief && trading, daily: dailyBrief }
 
   return (
     // Pinned to the screen: only <main> scrolls, never the page itself, so the header can't slide

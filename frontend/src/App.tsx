@@ -3,7 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom
 import { ThemeProvider } from '@/context/ThemeProvider'
 import { AmountVisibilityProvider } from '@/context/AmountVisibilityProvider'
 import { AuthProvider } from '@/context/AuthProvider'
-import { useAuth } from '@/context/auth'
+import { useAuth, type Module } from '@/context/auth'
+import { can, isAdmin } from '@/lib/access'
 import { Layout } from '@/components/layout/Layout'
 import { PrivateRoute } from '@/components/PrivateRoute'
 import { PageLoading } from '@/components/PageLoading'
@@ -31,10 +32,14 @@ const UndoHistory         = lazy(() => import('@/pages/master/UndoHistory'))
 const Profile             = lazy(() => import('@/pages/account/Profile'))
 const Users               = lazy(() => import('@/pages/account/Users'))
 
-/** Pages for admins only; daily-only users are sent to their dashboard. */
-function AdminRoute() {
+/**
+ * Pages of one module (or admins only); anyone else is sent to their dashboard. The server refuses
+ * them too: this only keeps people off pages that would just show "not allowed".
+ */
+function Guard({ module, admin = false }: { module?: Module; admin?: boolean }) {
   const { user } = useAuth()
-  if (user?.role === 'daily_only') return <Navigate to="/" replace />
+  const allowed = admin ? isAdmin(user) : module ? can(user, module) : true
+  if (!allowed) return <Navigate to="/" replace />
   return <Outlet />
 }
 
@@ -60,10 +65,21 @@ export default function App() {
                   <Route path="/reports/daily-expenses" element={<DailyExpensesReport />} />
                   <Route path="/profile" element={<Profile />} />
 
-                  <Route element={<AdminRoute />}>
-                    <Route path="/master"         element={<MasterDashboard />} />
+                  <Route element={<Guard module="wallets" />}>
                     <Route path="/master/balance" element={<Balance />} />
+                  </Route>
 
+                  <Route element={<Guard module="master" />}>
+                    <Route path="/master" element={<MasterDashboard />} />
+                    <Route path="/logs" element={<Logs />} />
+                    <Route path="/master/undo" element={<UndoHistory />} />
+                  </Route>
+
+                  <Route element={<Guard admin />}>
+                    <Route path="/users" element={<Users />} />
+                  </Route>
+
+                  <Route element={<Guard module="trading" />}>
                     <Route path="/rucoy"            element={<RucoySummary />} />
                     <Route path="/rucoy/golds"      element={<Navigate to="/rucoy" replace />} />
                     <Route path="/rucoy/trades"     element={<Trades />} />
@@ -76,10 +92,6 @@ export default function App() {
                     <Route path="/business/leads"        element={<Leads />} />
 
                     <Route path="/reports/business" element={<BusinessReport />} />
-
-                    <Route path="/logs" element={<Logs />} />
-                    <Route path="/master/undo" element={<UndoHistory />} />
-                    <Route path="/users" element={<Users />} />
                   </Route>
                 </Route>
               </Route>

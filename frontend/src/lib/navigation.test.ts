@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { locate, NAV_SECTIONS, visibleSections } from './navigation'
+import { can, isAdmin } from './access'
 
 const where = (path: string) => {
   const { section, tab, title } = locate(path)
@@ -43,12 +44,29 @@ describe('navigation', () => {
     for (const s of NAV_SECTIONS) expect(s.tabs.length).toBeLessThanOrEqual(5)
   })
 
+  const forUser = (user: Parameters<typeof can>[0]) => visibleSections({ can: (m) => can(user, m), admin: isAdmin(user) })
+
   it('shows daily-only users just Daily Expenses (without Balance) and their profile', () => {
-    const sections = visibleSections(false)
+    const sections = forUser({ role: 'daily_only' })
     expect(sections.map((s) => s.id)).toEqual(['daily', 'account'])
     expect(sections[0].tabs.map((t) => t.label)).toEqual(['Dashboard', 'Transactions', 'Budgets', 'Report'])
     expect(sections[1].tabs.map((t) => t.label)).toEqual(['Profile'])
-    expect(visibleSections(true)).toHaveLength(5)
+  })
+
+  it('shows traders Business and Rucoy but not wallets, the Master File or users', () => {
+    const sections = forUser({ role: 'trader' })
+    expect(sections.map((s) => s.id)).toEqual(['daily', 'business', 'rucoy', 'account'])
+    expect(sections[0].tabs.map((t) => t.label)).not.toContain('Balance')
+    expect(sections.at(-1)?.tabs.map((t) => t.label)).toEqual(['Profile'])
+  })
+
+  it('follows the modules picked for a person, and shows admins everything', () => {
+    const custom = forUser({ role: 'daily_only', modules: ['daily', 'wallets', 'master'] })
+    expect(custom.map((s) => s.id)).toEqual(['daily', 'master', 'account'])
+    expect(custom[0].tabs.map((t) => t.label)).toContain('Balance')
+    const admin = forUser({ role: 'admin' })
+    expect(admin).toHaveLength(5)
+    expect(admin.at(-1)?.tabs.map((t) => t.label)).toEqual(['Profile', 'Users'])
   })
 
   it('puts Profile and Users under Account', () => {

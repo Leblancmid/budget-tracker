@@ -6,7 +6,8 @@ import type { UserRole } from '@/context/auth'
  */
 
 export const ROLES: { value: UserRole; label: string; description: string }[] = [
-  { value: 'admin', label: 'Admin', description: 'Everything: business, Rucoy, Master File and users' },
+  { value: 'admin', label: 'Admin', description: 'Everything, including wallets, the Master File and users' },
+  { value: 'trader', label: 'Trader', description: 'Trading (Business and Rucoy) plus their own expenses' },
   { value: 'daily_only', label: 'Daily Expenses only', description: 'Only their own expenses, budgets and report' },
 ]
 

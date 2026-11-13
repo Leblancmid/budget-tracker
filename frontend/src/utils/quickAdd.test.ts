@@ -3,7 +3,7 @@ import { parseGold, parseMoney, parseQuickAdd, type QuickAddContext } from './qu
 
 const ctx: QuickAddContext = {
   today: '2026-11-05',
-  isAdmin: true,
+  access: { trading: true, wallets: true },
   wallets: [
     { code: 'GCASH', name: 'GCash', currency: 'PHP' },
     { code: 'MAYA', name: 'Maya', currency: 'PHP' },
@@ -87,7 +87,7 @@ describe('parseQuickAdd', () => {
   })
 
   it('keeps daily-only users to daily entries', () => {
-    const daily = { ...ctx, isAdmin: false }
+    const daily = { ...ctx, access: { trading: false, wallets: false } }
     expect(parseQuickAdd('gold 500M @.17', daily)).toMatchObject({ kind: 'error' })
     expect(parseQuickAdd('250 lunch gcash biz', daily)).toMatchObject({ kind: 'daily', wallet: null, business: false })
   })

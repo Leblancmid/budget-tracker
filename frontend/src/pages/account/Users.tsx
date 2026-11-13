@@ -1,5 +1,5 @@
 import { useEffect, useState, type KeyboardEvent } from 'react'
-import { KeyRound, Pencil, Search, ShieldCheck, UserCheck, UserPlus, UserX, Users as UsersIcon, Wallet, X } from 'lucide-react'
+import { CandlestickChart, KeyRound, Pencil, Search, ShieldCheck, UserCheck, UserPlus, UserX, Users as UsersIcon, Wallet, X } from 'lucide-react'
 import { usersApi, type AccountUser } from '@/api/users'
 import type { UserRole } from '@/context/auth'
 import { useUsers } from '@/hooks/useUsers'
@@ -10,6 +10,7 @@ import { Pagination } from '@/components/ui/Pagination'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { RoleBadge, StatusLine } from '@/components/users/UserBits'
 import { SetPasswordModal, UserModal } from '@/components/users/UserModal'
+import { extraModules, isCustom } from '@/lib/access'
 import { toast } from '@/lib/toast'
 import { errorMessage } from '@/utils/api'
 
@@ -63,6 +64,7 @@ export default function Users() {
   const stats = [
     { key: 'all', label: 'All users', value: data.counts.all, icon: UsersIcon, glow: 'from-indigo-500/15', color: 'text-indigo-600 dark:text-indigo-300', active: !role && !status, pick: () => chooseStat({}) },
     { key: 'admin', label: 'Admins', value: data.counts.admin, icon: ShieldCheck, glow: 'from-violet-500/15', color: 'text-violet-600 dark:text-violet-300', active: role === 'admin', pick: () => chooseStat({ role: 'admin', status: 'active' }) },
+    { key: 'trader', label: 'Traders', value: data.counts.trader, icon: CandlestickChart, glow: 'from-amber-500/15', color: 'text-amber-600 dark:text-amber-300', active: role === 'trader', pick: () => chooseStat({ role: 'trader', status: 'active' }) },
     { key: 'daily', label: 'Daily Expenses only', value: data.counts.daily_only, icon: Wallet, glow: 'from-sky-500/15', color: 'text-sky-600 dark:text-sky-300', active: role === 'daily_only', pick: () => chooseStat({ role: 'daily_only', status: 'active' }) },
     { key: 'off', label: 'Deactivated', value: data.counts.deactivated, icon: UserX, glow: 'from-rose-500/15', color: 'text-rose-600 dark:text-rose-300', active: status === 'deactivated' && !role, pick: () => chooseStat({ status: 'deactivated' }) },
   ]
@@ -79,7 +81,7 @@ export default function Users() {
       </div>
 
       {/* Counts: each one is also a filter */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {stats.map((s) => (
           <button
             key={s.key}
@@ -114,7 +116,7 @@ export default function Users() {
             />
           </label>
           <div className="flex gap-1 rounded-xl bg-gray-100 p-1 dark:bg-gray-800" role="group" aria-label="Filter by role">
-            {([['', 'Everyone'], ['admin', 'Admins'], ['daily_only', 'Daily only']] as const).map(([value, label]) => (
+            {([['', 'Everyone'], ['admin', 'Admins'], ['trader', 'Traders'], ['daily_only', 'Daily only']] as const).map(([value, label]) => (
               <button
                 key={value || 'all'}
                 type="button"
@@ -222,12 +224,12 @@ function UserRow({ user: u, onOpen, onPassword, onStatus }: { user: AccountUser;
           <p className="truncate text-xs text-gray-500 dark:text-gray-400">{u.email}</p>
           {/* Phone: role and status under the name */}
           <div className="mt-1.5 flex flex-wrap items-center gap-2 md:hidden">
-            <RoleBadge role={u.role} />
+            <Access user={u} />
             <StatusLine user={u} />
           </div>
         </div>
       </div>
-      <div className="hidden md:block"><RoleBadge role={u.role} /></div>
+      <div className="hidden md:block"><Access user={u} /></div>
       <div className="hidden md:block"><StatusLine user={u} /></div>
       <p className="hidden text-xs text-gray-500 md:block dark:text-gray-400">{joined}</p>
       <div className="flex justify-end">
@@ -244,6 +246,17 @@ function UserRow({ user: u, onOpen, onPassword, onStatus }: { user: AccountUser;
         />
       </div>
     </li>
+  )
+}
+
+/** The role, and the modules this person has when they differ from what the role gives. */
+function Access({ user }: { user: AccountUser }) {
+  const extra = isCustom(user) ? extraModules(user) : null
+  return (
+    <div className="flex flex-col items-start gap-0.5">
+      <RoleBadge role={user.role} />
+      {isCustom(user) && <span className="text-[11px] text-gray-500 dark:text-gray-400" title="Modules picked for this person">Custom: {extra || 'Daily Expenses only'}</span>}
+    </div>
   )
 }
 

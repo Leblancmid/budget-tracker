@@ -19,8 +19,8 @@ export interface QuickAddContext {
   wallets: QuickAddWallet[]
   categories: QuickAddCategory[]
   history: QuickAddHistory[]
-  /** Business, gold and transfers need the full app (not daily-only users) */
-  isAdmin: boolean
+  /** Gold and business need Trading; wallets and transfers need Wallets */
+  access: { trading: boolean; wallets: boolean }
   today: string
 }
 
@@ -157,7 +157,7 @@ export function parseQuickAdd(input: string, ctx: QuickAddContext): QuickAddResu
 
   // ── Gold trade ──
   if (gold != null || (goldWord && rates.length > 0)) {
-    if (!ctx.isAdmin) return { kind: 'error', message: 'Gold trades are only for the business side of the app.' }
+    if (!ctx.access.trading) return { kind: 'error', message: 'Gold trades need access to Trading.' }
     if (gold == null) return { kind: 'error', message: 'Add how much gold, e.g. 500kk or 1.8kkk.' }
     // A ₱ amount without the ₱ sign after the gold (e.g. "gold 500kk @.17 5400") is the ₱ paid
     if (phpPaid == null && money.length > 0) phpPaid = money[0]
@@ -172,7 +172,7 @@ export function parseQuickAdd(input: string, ctx: QuickAddContext): QuickAddResu
 
   // ── Transfer: two wallets ──
   if (wallets.length >= 2 || (transferWord && wallets.length > 0)) {
-    if (!ctx.isAdmin) return { kind: 'error', message: 'Transfers are only for the full Balance page.' }
+    if (!ctx.access.wallets) return { kind: 'error', message: 'Transfers need access to Wallets.' }
     if (wallets.length < 2) return { kind: 'error', message: 'Name both accounts, e.g. "5000 maribank > gcash".' }
     if (amount == null) return { kind: 'error', message: 'Add the amount to move, e.g. "5000 maribank > gcash".' }
     const [from, to] = wallets
@@ -194,8 +194,8 @@ export function parseQuickAdd(input: string, ctx: QuickAddContext): QuickAddResu
 
   return {
     kind: 'daily', type, amount, description: capitalize(descWords.join(' ')),
-    categoryId: finalCategory?.id ?? null, wallet: ctx.isAdmin ? wallets[0]?.code ?? null : null,
-    business: ctx.isAdmin && business, date,
+    categoryId: finalCategory?.id ?? null, wallet: ctx.access.wallets ? wallets[0]?.code ?? null : null,
+    business: ctx.access.trading && business, date,
   }
 }
 

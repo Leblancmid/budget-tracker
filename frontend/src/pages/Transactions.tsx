@@ -5,6 +5,7 @@ import { useCategories } from '@/hooks/useCategories'
 import { useDashboard } from '@/hooks/useDashboard'
 import { useBalanceAccounts } from '@/hooks/useBalanceAccounts'
 import { useAuth } from '@/context/auth'
+import { can } from '@/lib/access'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
@@ -56,11 +57,13 @@ export function Transactions() {
   const { categories } = useCategories()
   const { stats, refetch: refetchStats } = useDashboard()
   const { user } = useAuth()
-  const isAdmin = user?.role !== 'daily_only'
+  // Wallet links need Wallets; marking an entry as business needs Trading
+  const canWallets = can(user, 'wallets')
+  const canTrade = can(user, 'trading')
   const { accounts, refetch: refetchAccounts } = useBalanceAccounts()
 
   // Daily amounts are in ₱, so only visible PHP accounts can be linked
-  const phpAccounts   = useMemo(() => (isAdmin ? accounts.filter((a) => a.currency === 'PHP' && !a.hidden_at) : []), [accounts, isAdmin])
+  const phpAccounts   = useMemo(() => (canWallets ? accounts.filter((a) => a.currency === 'PHP' && !a.hidden_at) : []), [accounts, canWallets])
   const accountByCode = useMemo(() => new Map(accounts.map((a) => [a.code, a])), [accounts])
 
   const [modalOpen, setModalOpen]       = useState(false)
@@ -74,7 +77,7 @@ export function Transactions() {
   useDataChanged(refreshAll)
 
   const handleSubmit = async (data: TransactionFormData) => {
-    const payload = { ...data, balance_account: isAdmin ? data.balance_account : undefined }
+    const payload = { ...data, balance_account: canWallets ? data.balance_account : undefined }
     if (editTarget) {
       const result = await update(editTarget.id, payload)
       if (result.queued) {
@@ -256,7 +259,7 @@ export function Transactions() {
             options={categories.map((c) => ({ value: c.id, label: c.name }))}
             className="w-40 hidden md:block"
           />
-          {isAdmin && accounts.some((a) => a.currency === 'PHP') && (
+          {canWallets && accounts.some((a) => a.currency === 'PHP') && (
             <Select
               placeholder="All accounts"
               value={filters.balance_account ?? ''}
@@ -417,7 +420,7 @@ export function Transactions() {
         <RecurringEntriesModal
           categories={categories}
           wallets={phpAccounts}
-          canUseBusiness={isAdmin}
+          canUseBusiness={canTrade}
           onClose={() => setRecurringOpen(false)}
           onChanged={refreshAll}
         />

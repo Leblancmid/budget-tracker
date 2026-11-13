@@ -7,6 +7,7 @@ import { QuickAddModal } from '@/components/modals/QuickAddModal'
 import { useTheme } from '@/context/theme'
 import { useAmountVisibility } from '@/context/amountVisibility'
 import { useAuth } from '@/context/auth'
+import { can, isAdmin } from '@/lib/access'
 import { locate, SECTION_STYLES } from '@/lib/navigation'
 import { usePendingEntries } from '@/lib/offline/outbox'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -122,14 +123,14 @@ export function Header({ onMenuClick }: HeaderProps) {
               }
               items={[
                 { label: 'Your profile', icon: <UserRound className="h-4 w-4" />, onSelect: () => navigate('/profile') },
-                { label: 'Users', icon: <Users className="h-4 w-4" />, onSelect: () => navigate('/users'), hidden: user.role === 'daily_only' },
+                { label: 'Users', icon: <Users className="h-4 w-4" />, onSelect: () => navigate('/users'), hidden: !isAdmin(user) },
                 { label: 'Sign out', icon: <LogOut className="h-4 w-4" />, onSelect: handleLogout, danger: true },
               ]}
             />
           </div>
         )}
       </div>
-      {quickAdd && <QuickAddModal isAdmin={user?.role !== 'daily_only'} onClose={() => setQuickAdd(false)} />}
+      {quickAdd && <QuickAddModal access={{ trading: can(user, 'trading'), wallets: can(user, 'wallets') }} onClose={() => setQuickAdd(false)} />}
       <ConfirmDialog
         open={confirmLogout}
         onClose={() => setConfirmLogout(false)}

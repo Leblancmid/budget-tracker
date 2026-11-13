@@ -60,7 +60,8 @@ function goldPayload(r: Extract<QuickAddResult, { kind: 'gold' }>): BusinessTran
  * Quick Add: type one line ("250 lunch gcash") and press Enter. Works from any page
  * (Ctrl+K). Mount it only while open.
  */
-export function QuickAddModal({ isAdmin, onClose }: { isAdmin: boolean; onClose: () => void }) {
+export function QuickAddModal({ access, onClose }: { access: { trading: boolean; wallets: boolean }; onClose: () => void }) {
+  const { trading, wallets: canWallets } = access
   const [text, setText]           = useState('')
   const [categories, setCategories] = useState<Category[]>([])
   const [wallets, setWallets]     = useState<BalanceAccountConfig[]>([])
@@ -75,7 +76,8 @@ export function QuickAddModal({ isAdmin, onClose }: { isAdmin: boolean; onClose:
     let cancelled = false
     Promise.all([
       categoriesApi.getAll(),
-      isAdmin ? balanceAccountsApi.getAll() : Promise.resolve([] as BalanceAccountConfig[]),
+      // Wallet names are needed to link an entry to a wallet, and to pay for gold from one
+      canWallets || trading ? balanceAccountsApi.getAll() : Promise.resolve([] as BalanceAccountConfig[]),
       transactionsApi.getAll({ per_page: 200 }).then((p) => p.data).catch(() => []),
     ]).then(([cats, accs, txs]) => {
       if (cancelled) return
@@ -86,13 +88,13 @@ export function QuickAddModal({ isAdmin, onClose }: { isAdmin: boolean; onClose:
       if (!cancelled) toast.error('Could not load your categories and accounts.')
     }).finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [isAdmin])
+  }, [canWallets, trading])
 
   const ctx: QuickAddContext = useMemo(() => ({
-    today: todayManila(), isAdmin, history,
+    today: todayManila(), access: { trading, wallets: canWallets }, history,
     wallets: wallets.map((w) => ({ code: w.code, name: w.name, currency: w.currency })),
     categories: categories.map((c) => ({ id: c.id, name: c.name, type: c.type })),
-  }), [isAdmin, history, wallets, categories])
+  }), [trading, canWallets, history, wallets, categories])
 
   const result = useMemo(() => parseQuickAdd(text, ctx), [text, ctx])
   const walletByCode = useMemo(() => new Map(wallets.map((w) => [w.code, w])), [wallets])
@@ -115,7 +117,7 @@ export function QuickAddModal({ isAdmin, onClose }: { isAdmin: boolean; onClose:
         const saved = await transactionsApi.createOrQueue({
           type: result.type, amount: result.amount, description: result.description || undefined,
           category_id: categoryId!, date: result.date, scope: result.business ? 'business' : 'personal',
-          ...(isAdmin ? { balance_account: result.wallet } : {}),
+          ...(canWallets ? { balance_account: result.wallet } : {}),
         })
         const what = `${result.type === 'income' ? 'Income' : 'Expense'} of ${formatCurrency(result.amount)}`
         toast.success(saved.queued ? `You're offline: ${what.toLowerCase()} saved on this device. You'll approve sending it when you're back online.` : `${what} added.`)
@@ -208,7 +210,7 @@ export function QuickAddModal({ isAdmin, onClose }: { isAdmin: boolean; onClose:
     )
   })()
 
-  const examples = isAdmin ? EXAMPLES_ALL : EXAMPLES_DAILY
+  const examples = trading || canWallets ? EXAMPLES_ALL : EXAMPLES_DAILY
 
   return (
     <Modal open onClose={onClose} title="Quick add" size="2xl">
@@ -241,7 +243,7 @@ export function QuickAddModal({ isAdmin, onClose }: { isAdmin: boolean; onClose:
             ))}
           </div>
           <p className="mt-2 text-[11px] text-gray-400">
-            Add <code>yesterday</code> for another day{isAdmin && <>, <code>biz</code> for business</>}. Enter saves; the box stays open for the next one.
+            Add <code>yesterday</code> for another day{trading && <>, <code>biz</code> for business</>}. Enter saves; the box stays open for the next one.
           </p>
         </div>
       </form>

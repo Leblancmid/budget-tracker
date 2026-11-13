@@ -1,3 +1,4 @@
+import type { Module } from '@/context/auth'
 import { Briefcase, CircleUserRound, FolderOpen, Gamepad2, Wallet, type LucideIcon } from 'lucide-react'
 
 /**
@@ -12,7 +13,9 @@ export interface NavTab {
   label: string
   /** Only this exact URL makes the tab active (for a section's first page) */
   end?: boolean
-  /** Hidden from daily-only users */
+  /** Shown only to people who can open this module */
+  module?: Module
+  /** Shown only to admins (user management) */
   adminOnly?: boolean
   /** Other pages that belong under this tab (e.g. Categories is managed from Budgets) */
   alsoActiveOn?: { path: string; title: string }[]
@@ -26,7 +29,8 @@ export interface NavSection {
   /** Heading the section sits under in the sidebar */
   group: string
   icon: LucideIcon
-  adminOnly?: boolean
+  /** Shown only to people who can open this module */
+  module?: Module
   /** Reached from the account menu and the sidebar's profile card, not a row of its own */
   hideInSidebar?: boolean
   tabs: NavTab[]
@@ -43,7 +47,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { to: '/', label: 'Dashboard', end: true },
       { to: '/transactions', label: 'Transactions' },
       { to: '/budgets', label: 'Budgets', alsoActiveOn: [{ path: '/categories', title: 'Categories' }] },
-      { to: '/master/balance', label: 'Balance', adminOnly: true },
+      { to: '/master/balance', label: 'Balance', module: 'wallets' },
       { to: '/reports/daily-expenses', label: 'Report' },
     ],
   },
@@ -53,7 +57,7 @@ export const NAV_SECTIONS: NavSection[] = [
     caption: 'Sales, listings & leads',
     label: 'Business',
     icon: Briefcase,
-    adminOnly: true,
+    module: 'trading',
     tabs: [
       { to: '/business', label: 'Stats', end: true },
       { to: '/business/transactions', label: 'Sales' },
@@ -68,7 +72,7 @@ export const NAV_SECTIONS: NavSection[] = [
     caption: 'Gold & trades',
     label: 'Rucoy',
     icon: Gamepad2,
-    adminOnly: true,
+    module: 'trading',
     tabs: [
       { to: '/rucoy', label: 'Summary', end: true },
       { to: '/rucoy/trades', label: 'Trades' },
@@ -81,7 +85,7 @@ export const NAV_SECTIONS: NavSection[] = [
     caption: 'Net worth, logs & undo',
     label: 'Master File',
     icon: FolderOpen,
-    adminOnly: true,
+    module: 'master',
     tabs: [
       { to: '/master', label: 'Overview', end: true },
       { to: '/logs', label: 'Logs' },
@@ -127,10 +131,10 @@ export function locate(pathname: string): { section: NavSection; tab: NavTab; ti
   return { section, tab, title: extra?.title ?? tab.label }
 }
 
-/** Sections and tabs this user may see. */
-export function visibleSections(isAdmin: boolean): NavSection[] {
-  if (isAdmin) return NAV_SECTIONS
-  return NAV_SECTIONS.filter((s) => !s.adminOnly).map((s) => ({ ...s, tabs: s.tabs.filter((t) => !t.adminOnly) }))
+/** Sections and tabs this user may see: what their modules open (and Users for admins). */
+export function visibleSections(access: { can: (m: Module) => boolean; admin: boolean }): NavSection[] {
+  const shows = (x: { module?: Module; adminOnly?: boolean }) => (!x.module || access.can(x.module)) && (!x.adminOnly || access.admin)
+  return NAV_SECTIONS.filter(shows).map((s) => ({ ...s, tabs: s.tabs.filter(shows) })).filter((s) => s.tabs.length > 0)
 }
 
 /** Colours per section (sidebar icon, header badge, active tab underline). */

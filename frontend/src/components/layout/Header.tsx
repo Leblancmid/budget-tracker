@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Moon, Sun, Eye, EyeOff, LogOut, Menu as MenuIcon, UserRound, Users, Zap } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
+import { NotificationsBell } from './NotificationsBell'
 import { Menu } from '@/components/ui/Menu'
 import { QuickAddModal } from '@/components/modals/QuickAddModal'
 import { useTheme } from '@/context/theme'
@@ -106,6 +107,8 @@ export function Header({ onMenuClick }: HeaderProps) {
         >
           {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </button>
+
+        {user && <NotificationsBell />}
 
         {user && (
           <div className="ml-1">

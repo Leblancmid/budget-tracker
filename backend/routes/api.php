@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\Rucoy\MiddlemanFeeController;
 use App\Http\Controllers\Api\Rucoy\RucoyAccountController;
 use App\Http\Controllers\Api\Rucoy\RucoyDashboardController;
 use App\Http\Controllers\Api\Rucoy\TradeController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\TransactionController;
 use App\Http\Controllers\Api\UserController;
@@ -38,6 +39,11 @@ Route::prefix('v1')->group(function () {
     Route::middleware(['auth:sanctum', 'password.chosen'])->group(function () {
         Route::post('auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
         Route::post('auth/logout-all', [AuthController::class, 'logoutAll'])->name('auth.logout-all');
+
+        // Your in-app notifications (the bell)
+        Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+        Route::post('notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+        Route::post('notifications/{notification}/read', [NotificationController::class, 'read'])->whereUuid('notification')->name('notifications.read');
 
         // Your own profile (every signed-in user)
         Route::prefix('profile')->name('profile.')->group(function () {

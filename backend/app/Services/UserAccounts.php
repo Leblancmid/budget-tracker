@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\ActivityLog;
 use App\Models\User;
+use App\Notifications\AccountChanged;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
@@ -62,6 +63,44 @@ class UserAccounts
         return ['role' => $role];
     }
 
+    /** Module names as the app shows them */
+    private const MODULE_LABELS = [
+        'daily' => 'Daily Expenses', 'trading' => 'Trading', 'storefront' => 'Storefront', 'wallets' => 'Wallets', 'master' => 'Master File',
+    ];
+
+    private const ROLE_LABELS = ['admin' => 'Admin', 'trader' => 'Trader', 'daily_only' => 'Daily Expenses only'];
+
+    /** What's worth telling about an account before a change (pass it to tellAboutChanges after). */
+    public static function snapshot(User $user): array
+    {
+        return ['name' => $user->name, 'email' => $user->email, 'role' => $user->role, 'modules' => $user->modules()];
+    }
+
+    /**
+     * Tell the person what an admin changed on their account (the bell). Never when it's their own
+     * doing.
+     */
+    public static function tellAboutChanges(User $user, array $before, User $by): void
+    {
+        if ($by->id === $user->id) {
+            return;
+        }
+        $after = self::snapshot($user->fresh());
+
+        if ($before['role'] !== $after['role'] || $before['modules'] !== $after['modules']) {
+            $can = collect($after['modules'])->map(fn ($m) => self::MODULE_LABELS[$m] ?? $m)->join(', ', ' and ');
+            $role = $before['role'] !== $after['role'] ? 'You\'re now ' . (self::ROLE_LABELS[$after['role']] ?? $after['role']) . '. ' : '';
+            $user->notify(new AccountChanged('access', 'Your access changed', "{$role}You can open: {$can}.", $by->name));
+        }
+        $details = array_filter([
+            $before['name'] !== $after['name'] ? "your name is now {$after['name']}" : null,
+            $before['email'] !== $after['email'] ? "you now sign in with {$after['email']}" : null,
+        ]);
+        if ($details) {
+            $user->notify(new AccountChanged('details', 'Your details changed', ucfirst(implode(', and ', $details)) . '.', $by->name));
+        }
+    }
+
     /** Replace the profile picture. The stored name is generated, never the uploaded one. */
     public static function setAvatar(User $user, UploadedFile $file): void
     {
@@ -94,6 +133,9 @@ class UserAccounts
         $user->tokens()->when($keepTokenId, fn ($q) => $q->where('id', '!=', $keepTokenId))->delete();
 
         ActivityLog::note('access', 'edited', $own ? 'Changed own password' : 'Set a new password for ' . $user->name, $user);
+        if (! $own && auth()->user()) {
+            $user->notify(new AccountChanged('password', 'An admin set a new password for you', 'You were signed out of your devices and asked to choose your own password.', auth()->user()->name));
+        }
     }
 
     /** Turn an account off: it can't sign in, and every device it's signed in on is signed out. */
@@ -114,6 +156,9 @@ class UserAccounts
         }
         $user->forceFill(['deactivated_at' => null])->save();
         ActivityLog::note('access', 'edited', 'Reactivated user: ' . $user->name, $user);
+        if (auth()->user() && auth()->id() !== $user->id) {
+            $user->notify(new AccountChanged('reactivated', 'Your account was turned back on', 'It had been turned off for a while; you can use the app again.', auth()->user()->name));
+        }
     }
 
     /** The devices a user is signed in on, most recently used first. */

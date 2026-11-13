@@ -64,8 +64,10 @@ class UserController extends Controller
     public function update(UpdateUserRequest $request, User $user): JsonResponse
     {
         $data = $request->validated();
+        $before = UserAccounts::snapshot($user);
         $access = isset($data['role']) || array_key_exists('modules', $data) ? UserAccounts::access($data, $user) : [];
         $user->fill([...$data, ...$access])->save();
+        UserAccounts::tellAboutChanges($user, $before, $request->user());
         $user->loadMax('tokens', 'last_used_at');
 
         return response()->json(['user' => UserAccounts::present($user, $request->user()->id)]);

@@ -21,7 +21,7 @@ class OperationRecorder
 {
     /** Never journaled: logs, the journal itself, logins and framework tables. */
     private const SKIP = [
-        'activity_logs', 'operations', 'operation_changes', 'personal_access_tokens', 'users',
+        'activity_logs', 'operations', 'operation_changes', 'personal_access_tokens', 'users', 'notifications',
         'password_reset_tokens', 'sessions', 'cache', 'cache_locks', 'jobs', 'job_batches', 'failed_jobs', 'migrations',
     ];
 

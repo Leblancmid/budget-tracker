@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { profileApi, usersApi, type DeviceSession, type AccountUser, type UserFilters, type UserPage } from '@/api/users'
+import { profileApi, usersApi, type DeviceSession, type AccountUser, type UserDetail, type UserFilters, type UserPage } from '@/api/users'
 import { useAsyncData } from './useAsyncData'
 
 const EMPTY_PAGE: UserPage = {
@@ -12,6 +12,12 @@ export function useUsers(filters: UserFilters) {
   const { search, role, status, page } = filters
   const load = useCallback(() => usersApi.list({ search, role, status, page }), [search, role, status, page])
   return useAsyncData<UserPage>(load, EMPTY_PAGE)
+}
+
+/** One person in detail (admins): account, devices, failed sign-ins, recent activity. */
+export function useUserDetail(id: number) {
+  const load = useCallback(() => usersApi.get(id), [id])
+  return useAsyncData<UserDetail | null>(load, null)
 }
 
 /** Your own account and the devices you're signed in on. */

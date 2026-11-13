@@ -61,7 +61,9 @@ Route::prefix('v1')->group(function () {
 
         // Users: admins only (add, edit, set a password, turn off / on; never deleted, see UserController)
         Route::middleware('admin')->group(function () {
-            Route::apiResource('users', UserController::class)->only(['index', 'store', 'update']);
+            Route::apiResource('users', UserController::class)->only(['index', 'store', 'show', 'update']);
+            Route::delete('users/{user}/sessions/{token}', [UserController::class, 'destroySession'])->whereNumber('token')->name('users.sessions.destroy');
+            Route::post('users/{user}/sign-out-everywhere', [UserController::class, 'signOutEverywhere'])->name('users.sign-out-everywhere');
             Route::put('users/{user}/password', [UserController::class, 'updatePassword'])->middleware('throttle:10,1')->name('users.password');
             Route::post('users/{user}/deactivate', [UserController::class, 'deactivate'])->name('users.deactivate');
             Route::post('users/{user}/reactivate', [UserController::class, 'reactivate'])->name('users.reactivate');

@@ -75,7 +75,32 @@ export const profileApi = {
   signOutDevice: (id: number) => api.delete<{ message: string }>(`/profile/sessions/${id}`).then((r) => r.data.message),
 }
 
+/** One thing a person did (from the activity log) */
+export interface UserActivity {
+  id: number
+  module: string
+  type: string
+  description: string | null
+  amount: string | null
+  ip_address: string | null
+  user_agent: string | null
+  created_at: string
+}
+
+export interface UserDetail {
+  user: AccountUser
+  sessions: DeviceSession[]
+  failed_sign_ins: {
+    last_30_days: number
+    recent: { type: string; description: string | null; ip_address: string | null; user_agent: string | null; created_at: string }[]
+  }
+  activity: UserActivity[]
+}
+
 export const usersApi = {
+  get: (id: number) => api.get<UserDetail>(`/users/${id}`).then((r) => r.data),
+  signOutDevice: (id: number, token: number) => api.delete<{ message: string }>(`/users/${id}/sessions/${token}`).then((r) => r.data.message),
+  signOutEverywhere: (id: number) => api.post<{ message: string }>(`/users/${id}/sign-out-everywhere`).then((r) => r.data.message),
   list: (filters: UserFilters) => {
     const params = Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== '' && v != null))
     return api.get<UserPage>('/users', { params }).then((r) => r.data)

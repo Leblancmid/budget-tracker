@@ -31,6 +31,7 @@ const Logs                = lazy(() => import('@/pages/Logs'))
 const UndoHistory         = lazy(() => import('@/pages/master/UndoHistory'))
 const Profile             = lazy(() => import('@/pages/account/Profile'))
 const Users               = lazy(() => import('@/pages/account/Users'))
+const UserDetail          = lazy(() => import('@/pages/account/UserDetail'))
 
 /**
  * Pages of one module (or admins only); anyone else is sent to their dashboard. The server refuses
@@ -77,6 +78,7 @@ export default function App() {
 
                   <Route element={<Guard admin />}>
                     <Route path="/users" element={<Users />} />
+                    <Route path="/users/:id" element={<UserDetail />} />
                   </Route>
 
                   <Route element={<Guard module="trading" />}>

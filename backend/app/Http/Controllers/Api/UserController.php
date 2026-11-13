@@ -8,6 +8,8 @@ use App\Http\Requests\Users\ListUsersRequest;
 use App\Http\Requests\Users\SetUserPasswordRequest;
 use App\Http\Requests\Users\StoreUserRequest;
 use App\Http\Requests\Users\UpdateUserRequest;
+use App\Http\Requests\Users\UserSessionsRequest;
+use App\Models\ActivityLog;
 use App\Models\User;
 use App\Services\UserAccounts;
 use Illuminate\Http\JsonResponse;
@@ -75,6 +77,47 @@ class UserController extends Controller
         UserAccounts::setPassword($user, $request->validated('password'));
 
         return response()->json(['message' => "New password set. {$user->name} was signed out everywhere."]);
+    }
+
+    /**
+     * One person, in detail: their account, the devices they're signed in on, failed sign-ins on
+     * their email, and what they did lately.
+     */
+    public function show(ListUsersRequest $request, User $user): JsonResponse
+    {
+        $user->loadMax('tokens', 'last_used_at');
+        $failed = ActivityLog::where('module', 'access')->whereIn('type', ['sign_in_failed', 'locked_out'])
+            ->where('loggable_type', User::class)->where('loggable_id', $user->id);
+
+        return response()->json([
+            'user'     => UserAccounts::present($user, $request->user()->id),
+            'sessions' => UserAccounts::sessions($user, null),
+            'failed_sign_ins' => [
+                'last_30_days' => (clone $failed)->where('created_at', '>=', now()->subDays(30))->count(),
+                'recent'       => (clone $failed)->latest('id')->limit(5)->get(['type', 'description', 'ip_address', 'user_agent', 'created_at']),
+            ],
+            'activity' => ActivityLog::where('user_id', $user->id)->latest('id')->limit(30)
+                ->get(['id', 'module', 'type', 'description', 'amount', 'ip_address', 'user_agent', 'created_at']),
+        ]);
+    }
+
+    /** Sign out one of someone's devices. */
+    public function destroySession(UserSessionsRequest $request, User $user, int $token): JsonResponse
+    {
+        $session = $user->tokens()->whereKey($token)->firstOrFail();
+        $session->delete();
+        ActivityLog::note('access', 'signed_out', "Signed {$user->name} out of a device: " . mb_strimwidth($session->name, 0, 100, '…'), $user);
+
+        return response()->json(['message' => 'Device signed out.']);
+    }
+
+    /** Sign someone out everywhere (without turning their account off). */
+    public function signOutEverywhere(UserSessionsRequest $request, User $user): JsonResponse
+    {
+        $count = $user->tokens()->delete();
+        ActivityLog::note('access', 'signed_out_all', "Signed {$user->name} out of all devices", $user);
+
+        return response()->json(['message' => $count ? "{$user->name} was signed out of {$count} device" . ($count === 1 ? '' : 's') . '.' : "{$user->name} wasn't signed in anywhere."]);
     }
 
     public function deactivate(ChangeUserStatusRequest $request, User $user): JsonResponse

@@ -1,4 +1,5 @@
 import { useEffect, useState, type KeyboardEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { CandlestickChart, KeyRound, Pencil, Search, ShieldCheck, UserCheck, UserPlus, UserX, Users as UsersIcon, Wallet, X } from 'lucide-react'
 import { usersApi, type AccountUser } from '@/api/users'
 import type { UserRole } from '@/context/auth'
@@ -23,6 +24,7 @@ type Dialog =
 
 /** User management (admins): who can sign in, and what they can see. */
 export default function Users() {
+  const navigate = useNavigate()
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
   const [role, setRole] = useState<UserRole | ''>('')
@@ -161,7 +163,8 @@ export default function Users() {
               <UserRow
                 key={u.id}
                 user={u}
-                onOpen={() => setDialog({ kind: 'edit', user: u })}
+                onOpen={() => navigate(`/users/${u.id}`)}
+                onEdit={() => setDialog({ kind: 'edit', user: u })}
                 onPassword={() => setDialog({ kind: 'password', user: u })}
                 onStatus={() => setDialog({ kind: 'status', user: u })}
               />
@@ -199,7 +202,7 @@ export default function Users() {
   )
 }
 
-function UserRow({ user: u, onOpen, onPassword, onStatus }: { user: AccountUser; onOpen: () => void; onPassword: () => void; onStatus: () => void }) {
+function UserRow({ user: u, onOpen, onEdit, onPassword, onStatus }: { user: AccountUser; onOpen: () => void; onEdit: () => void; onPassword: () => void; onStatus: () => void }) {
   const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-PH', { timeZone: 'Asia/Manila', month: 'short', day: 'numeric', year: 'numeric' }) : '—'
   const onKey = (e: KeyboardEvent) => { if (e.key === 'Enter' && e.target === e.currentTarget) onOpen() }
 
@@ -237,7 +240,7 @@ function UserRow({ user: u, onOpen, onPassword, onStatus }: { user: AccountUser;
           label={`Actions for ${u.name}`}
           trigger={<span className="flex h-8 w-8 items-center justify-center rounded-lg text-lg leading-none text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-200">⋯</span>}
           items={[
-            { label: 'Edit details', icon: <Pencil className="h-4 w-4" />, onSelect: onOpen },
+            { label: 'Edit details', icon: <Pencil className="h-4 w-4" />, onSelect: onEdit },
             { label: 'Set new password', icon: <KeyRound className="h-4 w-4" />, onSelect: onPassword, hidden: u.is_self },
             u.deactivated_at
               ? { label: 'Reactivate', icon: <UserCheck className="h-4 w-4" />, onSelect: onStatus, hidden: u.is_self }

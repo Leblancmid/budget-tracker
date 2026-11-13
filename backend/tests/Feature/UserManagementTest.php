@@ -53,7 +53,7 @@ class UserManagementTest extends TestCase
             ->assertJsonMissingPath('data.0.password');
         $this->assertSame('Ben', collect($this->getJson('/api/v1/users?page=2')->json('data'))->last()['name'], 'deactivated users are listed last');
 
-        $this->assertSame(['ann@example.com'], array_column($this->getJson('/api/v1/users?search=ANN@')->json('data'), 'email'));
+        $this->assertSame(['ann@example.com'], array_column($this->getJson('/api/v1/users?search=admin%20ANN')->json('data'), 'email'));
         $this->assertSame(['ann@example.com'], array_column($this->getJson('/api/v1/users?role=admin')->json('data'), 'email'));
         $this->assertSame(['ben@example.com'], array_column($this->getJson('/api/v1/users?status=deactivated')->json('data'), 'email'));
         $this->assertTrue(collect($this->getJson('/api/v1/users?role=admin')->json('data'))->first()['is_self']);

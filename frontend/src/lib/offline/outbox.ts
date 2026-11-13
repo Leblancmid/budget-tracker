@@ -4,6 +4,7 @@ import type { TransactionPayload } from '@/api/transactions'
 import { loadSession } from '@/lib/authSession'
 import { emitDataChanged } from '@/lib/dataEvents'
 import { errorMessage, flattenApiErrors, isOfflineError, type ApiError } from '@/utils/api'
+import { newClientId } from './clientId'
 import { describeRequest, nameOf } from './describeRequest'
 import { entries, removeItem, setItem } from './localStore'
 import type { SavedResponse } from './responseCache'
@@ -52,14 +53,7 @@ export interface SyncResult {
 export const kindOf = (e: PendingEntry): PendingKind => e.kind ?? 'create'
 export const isDailyEntry = (e: PendingEntry) => kindOf(e) !== 'request'
 
-/** A random id (UUID v4). getRandomValues also works on plain http, unlike crypto.randomUUID. */
-export function newClientId(): string {
-  const b = crypto.getRandomValues(new Uint8Array(16))
-  b[6] = (b[6] & 0x0f) | 0x40
-  b[8] = (b[8] & 0x3f) | 0x80
-  const h = [...b].map((x) => x.toString(16).padStart(2, '0')).join('')
-  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`
-}
+export { newClientId }
 
 /** Stored in the order they were made */
 let lastMadeAt = 0
@@ -158,7 +152,8 @@ export async function queueRequest(write: OfflineWrite, now = madeAt()): Promise
   const basePath = id ? write.url.slice(0, write.url.indexOf(`/${id}`)) : null
   const name = id && basePath ? await savedName(basePath, Number(id)) : null
   const label = describeRequest(write.method, write.url, body, () => name)
-  return store({ client_id: newClientId(), user_id: userId, kind: 'request', method: write.method.toUpperCase(), url: write.url, body, label, created_at: now, error: null })
+  // The same key as the first try: if that one did reach the server, sending it again isn't done twice
+  return store({ client_id: write.key ?? newClientId(), user_id: userId, kind: 'request', method: write.method.toUpperCase(), url: write.url, body, label, created_at: now, error: null })
 }
 // Every change made offline (outside Daily Expenses, which handles its own) is kept here
 onOfflineWrite(queueRequest)

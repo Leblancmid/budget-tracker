@@ -25,7 +25,10 @@ let requests: string[] = []
 /** Idempotency-Key of each request that got through */
 let keys: (string | undefined)[] = []
 let bodies: unknown[] = []
+/** Idempotency-Key of every attempt, including ones that got no answer */
+let tried: (string | undefined)[] = []
 const adapter: AxiosAdapter = async (config: InternalAxiosRequestConfig) => {
+  tried.push(config.headers?.['Idempotency-Key'] as string | undefined)
   const body = config.data instanceof FormData ? Object.fromEntries(config.data.entries()) : JSON.parse(String(config.data ?? '{}'))
   const method = (config.method ?? 'get').toUpperCase()
   const outcome = server(body, method, config.url ?? '')
@@ -189,6 +192,19 @@ describe('daily entries added offline', () => {
       expect(posted.map((p) => p.description)).toEqual(['Dinner'])
       expect((await refreshPending()).map((e) => e.payload?.description)).toEqual(['Lunch'])
       void dinner
+    })
+
+    it('keeps a change that got no answer with the key it was first sent with', async () => {
+      tried = []
+      server = () => 'offline'
+      await expect(api.post('/business/transactions', { description: 'Slow sale' })).rejects.toMatchObject({ queued: true })
+      const [waiting] = await refreshPending()
+      expect(waiting.client_id).toBe(tried[0])
+
+      // Sent again after approval with that same key, so the server can tell it already has it
+      server = () => 'ok'
+      await approveAll()
+      expect(keys).toEqual([tried[0]])
     })
 
     it('keeps the order of changes made in the same millisecond', () => {

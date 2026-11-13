@@ -1,7 +1,8 @@
 import axios, { type AxiosRequestConfig, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
 import { clearSession, loadSession, sessionToken } from '@/lib/authSession'
+import { newClientId } from '@/lib/offline/clientId'
 import { emitSavedOffline } from '@/lib/offline/offlineEvents'
-import { markOffline, markOnline } from '@/lib/offline/offlineStatus'
+import { getOfflineStatus, markOffline, markOnline } from '@/lib/offline/offlineStatus'
 import { responseKey, saveResponse, savedResponse } from '@/lib/offline/responseCache'
 import { muteErrorToasts, toast } from '@/lib/toast'
 import type { ApiError } from '@/utils/api'
@@ -23,6 +24,17 @@ const api = axios.create({
 
 /** A page's data that takes longer than this counts as "no connection" (the saved copy shows instead). */
 export const READ_TIMEOUT_MS = 15_000
+/**
+ * A change that gets no answer in this time is kept on the device instead of leaving the form
+ * spinning (a weak signal or a dropped VPN can otherwise hang for a minute or more). Uploads get longer.
+ */
+export const WRITE_TIMEOUT_MS = 12_000
+export const UPLOAD_TIMEOUT_MS = 60_000
+/** Once a request has already found no connection, the next ones give up sooner (until one gets through). */
+export const OFFLINE_TIMEOUT_MS = 4_000
+
+/** The phone itself says there's no network: don't wait for a request that can't go anywhere. */
+const deviceOffline = () => typeof navigator !== 'undefined' && navigator.onLine === false
 
 /**
  * Reads that are kept on the device for offline viewing: JSON GETs, except login/logout.
@@ -45,6 +57,8 @@ export interface OfflineWrite {
   method: string
   url: string
   data: unknown
+  /** The Idempotency-Key the first try was sent with */
+  key?: string
 }
 
 /** Changes that only make sense with a connection: signing in/out, undo/redo, publishing to the website. */
@@ -69,8 +83,19 @@ export const SAVED_OFFLINE_MESSAGE = 'You\'re offline: saved on this device. You
 api.interceptors.request.use((config) => {
   const token = sessionToken()
   if (token) config.headers.Authorization = `Bearer ${token}`
-  // A hung connection (e.g. the VPN dropped) shouldn't leave a page loading forever
-  if ((config.method ?? 'get').toLowerCase() === 'get' && !config.timeout) config.timeout = READ_TIMEOUT_MS
+  const isRead = (config.method ?? 'get').toLowerCase() === 'get'
+  // A hung connection (e.g. the VPN dropped) shouldn't leave a page loading, or a save spinning, forever
+  const upload = config.data instanceof FormData
+  if (!config.timeout) {
+    config.timeout = getOfflineStatus().offline && !upload ? OFFLINE_TIMEOUT_MS
+      : isRead ? READ_TIMEOUT_MS : upload ? UPLOAD_TIMEOUT_MS : WRITE_TIMEOUT_MS
+  }
+  // Every change carries a key, so if it times out after all reaching the server, the copy kept on
+  // the device (sent later with the same key) isn't done a second time
+  // (only changes that can be kept: never sign-in, whose answer holds a token)
+  if (keepsOffline(config) && !config.headers['Idempotency-Key']) config.headers['Idempotency-Key'] = newClientId()
+  // No network at all: fail straight away, like a request that got no answer (handled below)
+  if (deviceOffline()) return Promise.reject(Object.assign(new Error('Network Error'), { config, isAxiosError: true, code: 'ERR_NETWORK' }))
   return config
 })
 
@@ -105,7 +130,8 @@ api.interceptors.response.use(
       // save; the page's own "couldn't save" message is muted (this one says what happened).
       if (config && keepWrite && keepsOffline(config)) {
         try {
-          await keepWrite({ method: config.method ?? 'post', url: config.url ?? '', data: config.data })
+          const key = config.headers?.['Idempotency-Key']
+          await keepWrite({ method: config.method ?? 'post', url: config.url ?? '', data: config.data, key: typeof key === 'string' ? key : undefined })
           toast.success(SAVED_OFFLINE_MESSAGE)
           muteErrorToasts(1500)
           emitSavedOffline()

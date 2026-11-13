@@ -51,7 +51,7 @@ export const transactionsApi = {
   createOrQueue: async (data: TransactionPayload): Promise<DailySaveResult> => {
     const clientId = newClientId()
     try {
-      const { data: transaction } = await api.post<Transaction>('/transactions', { ...data, client_id: clientId }, OWN_OFFLINE)
+      const { data: transaction } = await api.post<Transaction>('/transactions', { ...data, client_id: clientId }, { ...OWN_OFFLINE, headers: { 'Idempotency-Key': clientId } })
       return { queued: false, transaction }
     } catch (err) {
       if (!isOfflineError(err)) throw err

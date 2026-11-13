@@ -5,6 +5,7 @@ import { useReport } from '@/hooks/useReport'
 import { useReportRange } from '@/hooks/useReportRange'
 import type { ReportRow } from '@/types'
 import { Card } from '@/components/ui/Card'
+import { BreakdownList } from '@/components/reports/BreakdownList'
 import { Amt } from '@/components/ui/Amt'
 import { ReportHeader } from '@/components/reports/ReportHeader'
 import { formatCurrency } from '@/utils/format'
@@ -201,7 +202,7 @@ export default function BusinessReport() {
         </Card>
 
         <Card className="flex flex-col">
-          <div className="px-5 py-3.5 border-b border-gray-100 dark:border-gray-700/60">
+          <div className="px-4 py-3.5 sm:px-5 border-b border-gray-100 dark:border-gray-700/60">
             <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Profit by type</h2>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{rangeLabel}</p>
           </div>
@@ -248,16 +249,41 @@ export default function BusinessReport() {
 
       {/* ── Breakdown table ────────────────────────────────────────── */}
       <Card className="flex flex-col">
-        <div className="px-5 py-3.5 border-b border-gray-100 dark:border-gray-700/60">
+        <div className="px-4 py-3.5 sm:px-5 border-b border-gray-100 dark:border-gray-700/60">
           <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Breakdown</h2>
           <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Running total adds each {unit}'s profit in order</p>
         </div>
-        <div className="overflow-x-auto scrollbar-thin">
+        {/* Phones: a list (the table's columns don't fit); the table from the small breakpoint up */}
+        {!loading && rows.length > 0 && (
+          <div className="sm:hidden">
+            <BreakdownList
+              currentClass="bg-teal-50/60 dark:bg-teal-900/10"
+              items={rows.map((r, i) => {
+                const p = profitOf(r)
+                const m = r.income > 0 ? (p / r.income) * 100 : null
+                return {
+                  key: r.label,
+                  label: r.label,
+                  current: i === curIdx,
+                  empty: r.income === 0 && r.expense === 0,
+                  amount: <span className={p >= 0 ? 'text-teal-600 dark:text-teal-400' : 'text-red-500 dark:text-red-400'}>{p < 0 && '−'}<Amt value={formatCurrency(Math.abs(p))} /></span>,
+                  detail: <>Revenue <Amt value={formatCurrency(r.income)} /> · Cost <Amt value={formatCurrency(r.expense)} /></>,
+                  aside: m != null ? `${m.toFixed(1)}% margin` : undefined,
+                }
+              })}
+              total={{
+                amount: <span className={profit >= 0 ? 'text-teal-600 dark:text-teal-400' : 'text-red-500 dark:text-red-400'}>{profit < 0 && '−'}<Amt value={formatCurrency(Math.abs(profit))} /></span>,
+                detail: <>Revenue <Amt value={formatCurrency(income)} /> · Cost <Amt value={formatCurrency(cost)} /></>,
+              }}
+            />
+          </div>
+        )}
+        <div className={['overflow-x-auto scrollbar-thin', !loading && rows.length > 0 ? 'hidden sm:block' : ''].join(' ')}>
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 dark:bg-gray-800/40 border-b border-gray-100 dark:border-gray-700/60">
                 {['Period', 'Revenue', 'Cost', 'Profit', 'Margin', 'Running'].map((h, i) => (
-                  <th key={h} className={['px-5 py-3 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400', i === 0 ? 'text-left' : 'text-right'].join(' ')}>{h}</th>
+                  <th key={h} className={['whitespace-nowrap px-3 py-3 sm:px-5 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400', i === 0 ? 'text-left' : 'text-right', i >= 4 ? 'hidden sm:table-cell' : ''].join(' ')}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -266,7 +292,7 @@ export default function BusinessReport() {
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="animate-pulse">
                     {Array.from({ length: 6 }).map((__, j) => (
-                      <td key={j} className="px-5 py-3.5"><div className={['h-3.5 rounded bg-gray-100 dark:bg-gray-800', j === 0 ? 'w-36' : 'w-20 ml-auto'].join(' ')} /></td>
+                      <td key={j} className={['px-3 py-3.5 sm:px-5', j >= 4 ? 'hidden sm:table-cell' : ''].join(' ')}><div className={['h-3.5 rounded bg-gray-100 dark:bg-gray-800', j === 0 ? 'w-36' : 'w-20 ml-auto'].join(' ')} /></td>
                     ))}
                   </tr>
                 ))
@@ -279,19 +305,19 @@ export default function BusinessReport() {
                   const m = r.income > 0 ? (p / r.income) * 100 : null
                   return (
                     <tr key={r.label} className={['transition-colors', i === curIdx ? 'bg-teal-50/60 dark:bg-teal-900/10' : 'hover:bg-gray-50 dark:hover:bg-gray-800/30', empty ? 'opacity-50' : ''].join(' ')}>
-                      <td className="px-5 py-3">
+                      <td className="whitespace-nowrap px-3 py-3 sm:px-5">
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-gray-800 dark:text-gray-200">{r.label}</span>
                           {i === curIdx && <span className="rounded-full bg-teal-100 dark:bg-teal-900/40 px-1.5 py-0.5 text-[10px] font-semibold text-teal-700 dark:text-teal-300">current</span>}
                         </div>
                       </td>
-                      <td className="px-5 py-3 text-right font-semibold text-emerald-600 dark:text-emerald-400"><Amt value={formatCurrency(r.income)} /></td>
-                      <td className="px-5 py-3 text-right font-semibold text-red-500 dark:text-red-400"><Amt value={formatCurrency(r.expense)} /></td>
-                      <td className={['px-5 py-3 text-right font-semibold', p >= 0 ? 'text-teal-600 dark:text-teal-400' : 'text-red-500 dark:text-red-400'].join(' ')}>
+                      <td className="whitespace-nowrap px-3 py-3 sm:px-5 text-right font-semibold text-emerald-600 dark:text-emerald-400"><Amt value={formatCurrency(r.income)} /></td>
+                      <td className="whitespace-nowrap px-3 py-3 sm:px-5 text-right font-semibold text-red-500 dark:text-red-400"><Amt value={formatCurrency(r.expense)} /></td>
+                      <td className={['whitespace-nowrap px-3 py-3 sm:px-5 text-right font-semibold', p >= 0 ? 'text-teal-600 dark:text-teal-400' : 'text-red-500 dark:text-red-400'].join(' ')}>
                         {p < 0 && '−'}<Amt value={formatCurrency(Math.abs(p))} />
                       </td>
-                      <td className="px-5 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400">{m != null ? `${m.toFixed(1)}%` : '—'}</td>
-                      <td className="px-5 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300">
+                      <td className="hidden whitespace-nowrap px-3 sm:table-cell py-3 sm:px-5 text-right text-xs font-semibold text-gray-500 dark:text-gray-400">{m != null ? `${m.toFixed(1)}%` : '—'}</td>
+                      <td className="hidden whitespace-nowrap px-3 sm:table-cell py-3 sm:px-5 text-right text-xs font-semibold text-gray-600 dark:text-gray-300">
                         {running[i] < 0 && '−'}<Amt value={formatCurrency(Math.abs(running[i]))} />
                       </td>
                     </tr>
@@ -302,14 +328,14 @@ export default function BusinessReport() {
             {!loading && rows.length > 0 && (
               <tfoot>
                 <tr className="border-t-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/40 font-semibold">
-                  <td className="px-5 py-3 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Total</td>
-                  <td className="px-5 py-3 text-right text-emerald-600 dark:text-emerald-400"><Amt value={formatCurrency(income)} /></td>
-                  <td className="px-5 py-3 text-right text-red-500 dark:text-red-400"><Amt value={formatCurrency(cost)} /></td>
-                  <td className={['px-5 py-3 text-right', profit >= 0 ? 'text-teal-600 dark:text-teal-400' : 'text-red-500 dark:text-red-400'].join(' ')}>
+                  <td className="whitespace-nowrap px-3 py-3 sm:px-5 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Total</td>
+                  <td className="whitespace-nowrap px-3 py-3 sm:px-5 text-right text-emerald-600 dark:text-emerald-400"><Amt value={formatCurrency(income)} /></td>
+                  <td className="whitespace-nowrap px-3 py-3 sm:px-5 text-right text-red-500 dark:text-red-400"><Amt value={formatCurrency(cost)} /></td>
+                  <td className={['whitespace-nowrap px-3 py-3 sm:px-5 text-right', profit >= 0 ? 'text-teal-600 dark:text-teal-400' : 'text-red-500 dark:text-red-400'].join(' ')}>
                     {profit < 0 && '−'}<Amt value={formatCurrency(Math.abs(profit))} />
                   </td>
-                  <td className="px-5 py-3 text-right text-xs text-gray-500 dark:text-gray-400">{margin != null ? `${margin.toFixed(1)}%` : '—'}</td>
-                  <td />
+                  <td className="hidden whitespace-nowrap px-3 sm:table-cell py-3 sm:px-5 text-right text-xs text-gray-500 dark:text-gray-400">{margin != null ? `${margin.toFixed(1)}%` : '—'}</td>
+                  <td className="hidden sm:table-cell" />
                 </tr>
               </tfoot>
             )}

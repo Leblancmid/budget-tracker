@@ -4,6 +4,7 @@ import { useReport } from '@/hooks/useReport'
 import { useReportRange } from '@/hooks/useReportRange'
 import type { ReportRow } from '@/types'
 import { Card } from '@/components/ui/Card'
+import { BreakdownList } from '@/components/reports/BreakdownList'
 import { Amt } from '@/components/ui/Amt'
 import { CategoryIcon } from '@/components/ui/CategoryIcon'
 import { ReportHeader } from '@/components/reports/ReportHeader'
@@ -241,16 +242,39 @@ export default function DailyExpensesReport() {
 
       {/* ── Breakdown table ────────────────────────────────────────── */}
       <Card className="flex flex-col">
-        <div className="px-5 py-3.5 border-b border-gray-100 dark:border-gray-700/60">
+        <div className="px-4 py-3.5 sm:px-5 border-b border-gray-100 dark:border-gray-700/60">
           <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Breakdown</h2>
           <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Running balance adds each {unit}'s net in order</p>
         </div>
-        <div className="overflow-x-auto scrollbar-thin">
+        {/* Phones: a list (the table's columns don't fit); the table from the small breakpoint up */}
+        {!loading && rows.length > 0 && (
+          <div className="sm:hidden">
+            <BreakdownList
+              currentClass="bg-indigo-50/60 dark:bg-indigo-900/10"
+              items={rows.map((r, i) => {
+                const n = r.net ?? r.income - r.expense
+                return {
+                  key: r.label,
+                  label: r.label,
+                  current: i === curIdx,
+                  empty: r.income === 0 && r.expense === 0,
+                  amount: <span className={n >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-red-500 dark:text-red-400'}>{n >= 0 ? '+' : '−'}<Amt value={formatCurrency(Math.abs(n))} /></span>,
+                  detail: <>In <Amt value={formatCurrency(r.income)} /> · Out <Amt value={formatCurrency(r.expense)} /></>,
+                }
+              })}
+              total={{
+                amount: <span className={net >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-red-500 dark:text-red-400'}>{net >= 0 ? '+' : '−'}<Amt value={formatCurrency(Math.abs(net))} /></span>,
+                detail: <>In <Amt value={formatCurrency(income)} /> · Out <Amt value={formatCurrency(expense)} /></>,
+              }}
+            />
+          </div>
+        )}
+        <div className={['overflow-x-auto scrollbar-thin', !loading && rows.length > 0 ? 'hidden sm:block' : ''].join(' ')}>
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 dark:bg-gray-800/40 border-b border-gray-100 dark:border-gray-700/60">
                 {['Period', 'Income', 'Expense', 'Net', 'Running'].map((h, i) => (
-                  <th key={h} className={['px-5 py-3 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400', i === 0 ? 'text-left' : 'text-right'].join(' ')}>{h}</th>
+                  <th key={h} className={['whitespace-nowrap px-3 py-3 sm:px-5 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400', i === 0 ? 'text-left' : 'text-right', i >= 4 ? 'hidden sm:table-cell' : ''].join(' ')}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -259,7 +283,7 @@ export default function DailyExpensesReport() {
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="animate-pulse">
                     {Array.from({ length: 5 }).map((__, j) => (
-                      <td key={j} className="px-5 py-3.5"><div className={['h-3.5 rounded bg-gray-100 dark:bg-gray-800', j === 0 ? 'w-36' : 'w-24 ml-auto'].join(' ')} /></td>
+                      <td key={j} className={['px-3 py-3.5 sm:px-5', j >= 4 ? 'hidden sm:table-cell' : ''].join(' ')}><div className={['h-3.5 rounded bg-gray-100 dark:bg-gray-800', j === 0 ? 'w-36' : 'w-24 ml-auto'].join(' ')} /></td>
                     ))}
                   </tr>
                 ))
@@ -271,18 +295,18 @@ export default function DailyExpensesReport() {
                   const empty = r.income === 0 && r.expense === 0
                   return (
                     <tr key={r.label} className={['transition-colors', i === curIdx ? 'bg-indigo-50/60 dark:bg-indigo-900/10' : 'hover:bg-gray-50 dark:hover:bg-gray-800/30', empty ? 'opacity-50' : ''].join(' ')}>
-                      <td className="px-5 py-3">
+                      <td className="whitespace-nowrap px-3 py-3 sm:px-5">
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-gray-800 dark:text-gray-200">{r.label}</span>
                           {i === curIdx && <span className="rounded-full bg-indigo-100 dark:bg-indigo-900/40 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700 dark:text-indigo-300">current</span>}
                         </div>
                       </td>
-                      <td className="px-5 py-3 text-right font-semibold text-emerald-600 dark:text-emerald-400"><Amt value={formatCurrency(r.income)} /></td>
-                      <td className="px-5 py-3 text-right font-semibold text-red-500 dark:text-red-400"><Amt value={formatCurrency(r.expense)} /></td>
-                      <td className={['px-5 py-3 text-right font-semibold', n >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-red-500 dark:text-red-400'].join(' ')}>
+                      <td className="whitespace-nowrap px-3 py-3 sm:px-5 text-right font-semibold text-emerald-600 dark:text-emerald-400"><Amt value={formatCurrency(r.income)} /></td>
+                      <td className="whitespace-nowrap px-3 py-3 sm:px-5 text-right font-semibold text-red-500 dark:text-red-400"><Amt value={formatCurrency(r.expense)} /></td>
+                      <td className={['whitespace-nowrap px-3 py-3 sm:px-5 text-right font-semibold', n >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-red-500 dark:text-red-400'].join(' ')}>
                         {n >= 0 ? '+' : '−'}<Amt value={formatCurrency(Math.abs(n))} />
                       </td>
-                      <td className={['px-5 py-3 text-right text-xs font-semibold', running[i] >= 0 ? 'text-gray-600 dark:text-gray-300' : 'text-red-500 dark:text-red-400'].join(' ')}>
+                      <td className={['hidden whitespace-nowrap px-3 sm:table-cell py-3 sm:px-5 text-right text-xs font-semibold', running[i] >= 0 ? 'text-gray-600 dark:text-gray-300' : 'text-red-500 dark:text-red-400'].join(' ')}>
                         {running[i] >= 0 ? '' : '−'}<Amt value={formatCurrency(Math.abs(running[i]))} />
                       </td>
                     </tr>
@@ -293,13 +317,13 @@ export default function DailyExpensesReport() {
             {!loading && rows.length > 0 && (
               <tfoot>
                 <tr className="border-t-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/40 font-semibold">
-                  <td className="px-5 py-3 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Total</td>
-                  <td className="px-5 py-3 text-right text-emerald-600 dark:text-emerald-400"><Amt value={formatCurrency(income)} /></td>
-                  <td className="px-5 py-3 text-right text-red-500 dark:text-red-400"><Amt value={formatCurrency(expense)} /></td>
-                  <td className={['px-5 py-3 text-right', net >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-red-500 dark:text-red-400'].join(' ')}>
+                  <td className="whitespace-nowrap px-3 py-3 sm:px-5 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Total</td>
+                  <td className="whitespace-nowrap px-3 py-3 sm:px-5 text-right text-emerald-600 dark:text-emerald-400"><Amt value={formatCurrency(income)} /></td>
+                  <td className="whitespace-nowrap px-3 py-3 sm:px-5 text-right text-red-500 dark:text-red-400"><Amt value={formatCurrency(expense)} /></td>
+                  <td className={['whitespace-nowrap px-3 py-3 sm:px-5 text-right', net >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-red-500 dark:text-red-400'].join(' ')}>
                     {net >= 0 ? '+' : '−'}<Amt value={formatCurrency(Math.abs(net))} />
                   </td>
-                  <td />
+                  <td className="hidden sm:table-cell" />
                 </tr>
               </tfoot>
             )}

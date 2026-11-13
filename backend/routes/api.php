@@ -23,7 +23,9 @@ use App\Http\Controllers\Api\Rucoy\MiddlemanFeeController;
 use App\Http\Controllers\Api\Rucoy\RucoyAccountController;
 use App\Http\Controllers\Api\Rucoy\RucoyDashboardController;
 use App\Http\Controllers\Api\Rucoy\TradeController;
+use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\TransactionController;
+use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -35,6 +37,16 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
         Route::post('auth/logout-all', [AuthController::class, 'logoutAll'])->name('auth.logout-all');
+
+        // Your own profile (every signed-in user)
+        Route::prefix('profile')->name('profile.')->group(function () {
+            Route::get('/', [ProfileController::class, 'show'])->name('show');
+            Route::patch('/', [ProfileController::class, 'update'])->name('update');
+            Route::post('avatar', [ProfileController::class, 'updateAvatar'])->middleware('throttle:10,1')->name('avatar.update');
+            Route::delete('avatar', [ProfileController::class, 'destroyAvatar'])->name('avatar.destroy');
+            Route::put('password', [ProfileController::class, 'updatePassword'])->middleware('throttle:6,1')->name('password.update');
+            Route::delete('sessions/{token}', [ProfileController::class, 'destroySession'])->whereNumber('token')->name('sessions.destroy');
+        });
 
         // Daily Expenses (every signed-in user, scoped to their own data)
         Route::get('reports/daily-expenses', [ReportController::class, 'dailyExpenses'])->name('reports.daily-expenses');
@@ -51,6 +63,12 @@ Route::prefix('v1')->group(function () {
 
             // Logs
             Route::get('logs', [LogController::class, 'index'])->name('logs.index');
+
+            // Users: add, edit, set a password, turn off / on (never deleted, see UserController)
+            Route::apiResource('users', UserController::class)->only(['index', 'store', 'update']);
+            Route::put('users/{user}/password', [UserController::class, 'updatePassword'])->middleware('throttle:10,1')->name('users.password');
+            Route::post('users/{user}/deactivate', [UserController::class, 'deactivate'])->name('users.deactivate');
+            Route::post('users/{user}/reactivate', [UserController::class, 'reactivate'])->name('users.reactivate');
 
             // Business report
             Route::get('reports/business', [ReportController::class, 'business'])->name('reports.business');

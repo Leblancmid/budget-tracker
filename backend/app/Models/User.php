@@ -11,14 +11,11 @@ use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
+    public const ROLES = ['admin', 'daily_only'];
+
+    /** avatar_path and deactivated_at are set by UserAccounts only, never mass-assigned from a request. */
     protected $fillable = [
         'name',
         'email',
@@ -26,26 +23,32 @@ class User extends Authenticatable
         'role',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'deactivated_at'    => 'datetime',
+            'password'          => 'hashed',
         ];
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isActive(): bool
+    {
+        return $this->deactivated_at === null;
+    }
+
+    public function avatarUrl(): ?string
+    {
+        return $this->avatar_path ? asset('storage/' . $this->avatar_path) : null;
     }
 }

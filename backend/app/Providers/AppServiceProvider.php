@@ -17,6 +17,7 @@ use App\Models\RucoyAccount;
 use App\Models\SiteSetting;
 use App\Models\Trade;
 use App\Models\Transaction;
+use App\Models\User;
 use App\Observers\AccountPaymentObserver;
 use App\Observers\BalanceAccountObserver;
 use App\Observers\BalanceEntryObserver;
@@ -33,8 +34,10 @@ use App\Observers\RucoyAccountObserver;
 use App\Observers\SiteSettingObserver;
 use App\Observers\TradeObserver;
 use App\Observers\TransactionObserver;
+use App\Observers\UserObserver;
 use App\Services\Undo\OperationRecorder;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -59,6 +62,10 @@ class AppServiceProvider extends ServiceProvider
         Gold::observe(GoldObserver::class);
         MiddlemanFee::observe(MiddlemanFeeLogObserver::class);
         SiteSetting::observe(SiteSettingObserver::class);
+        User::observe(UserObserver::class);
+
+        // Every new password (your own, or one an admin sets): 10+ characters, upper and lower case, a number
+        Password::defaults(fn () => Password::min(10)->letters()->mixedCase()->numbers());
 
         // The undo journal: every row each action creates, changes or deletes (Master File → Undo)
         OperationRecorder::register();

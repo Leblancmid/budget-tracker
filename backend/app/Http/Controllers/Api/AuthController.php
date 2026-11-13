@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\ActivityLog;
+use App\Services\UserAccounts;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -28,12 +29,7 @@ class AuthController extends Controller
             'token'      => $token,
             'expires_at' => $expires->toIso8601String(),
             'remember'   => $remember,
-            'user'       => [
-                'id'    => $user->id,
-                'name'  => $user->name,
-                'email' => $user->email,
-                'role'  => $user->role,
-            ],
+            'user'       => UserAccounts::present($user, $user->id),
         ]);
     }
 

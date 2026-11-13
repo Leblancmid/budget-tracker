@@ -15,8 +15,8 @@ use Throwable;
  */
 class RecordOperation
 {
-    /** Signing in and out, and the undo itself (which records its own operation). */
-    private const NOT_RECORDED = ['auth.', 'master.operations.'];
+    /** Signing in and out, accounts (logged, but not undoable), and the undo itself (which records its own operation). */
+    private const NOT_RECORDED = ['auth.', 'profile.', 'users.', 'master.operations.'];
 
     public function handle(Request $request, Closure $next): Response
     {

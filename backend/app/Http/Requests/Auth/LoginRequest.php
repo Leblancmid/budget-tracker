@@ -64,6 +64,16 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        // Right password, but an admin turned the account off. Said only after the password checks
+        // out, so it doesn't tell a stranger which emails have accounts
+        if (! $user->isActive()) {
+            ActivityLog::note('access', 'sign_in_failed', 'Failed sign-in: ' . $this->input('email') . ' (account deactivated)', $user, userId: null);
+
+            throw ValidationException::withMessages([
+                'email' => ['This account has been deactivated. Ask an admin to turn it back on.'],
+            ]);
+        }
+
         RateLimiter::clear($this->throttleKey());
 
         return $user;

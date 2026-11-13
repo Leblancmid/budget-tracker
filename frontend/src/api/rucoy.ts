@@ -155,8 +155,9 @@ export const rucoyAccountsApi = {
     api.post<RucoyAccount>('/rucoy/accounts', buildAccountForm(data), MULTIPART).then((r) => r.data),
   update: (id: number, data: AccountPayload) =>
     api.post<RucoyAccount>(`/rucoy/accounts/${id}`, buildAccountForm(data, 'PUT'), MULTIPART).then((r) => r.data),
-  archive: (id: number) =>
-    api.post<RucoyAccount>(`/rucoy/accounts/${id}/archive`).then((r) => r.data),
+  /** Mark sold, optionally saying who bought it */
+  archive: (id: number, soldTo?: string | null) =>
+    api.post<RucoyAccount>(`/rucoy/accounts/${id}/archive`, { sold_to: soldTo || null }).then((r) => r.data),
   unarchive: (id: number) =>
     api.post<RucoyAccount>(`/rucoy/accounts/${id}/unarchive`).then((r) => r.data),
   delete: (id: number) =>

@@ -19,8 +19,8 @@ export function useBusinessTransactions() {
     return updated
   }
 
-  const archive = async (id: number) => {
-    await businessTransactionsApi.archive(id)
+  const archive = async (id: number, soldTo?: string | null) => {
+    await businessTransactionsApi.archive(id, soldTo)
     setTransactions((prev) => prev.filter((t) => t.id !== id))
   }
 

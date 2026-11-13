@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Rucoy;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Business\MarkSoldRequest;
 use App\Http\Requests\Rucoy\StoreRucoyAccountRequest;
 use App\Http\Requests\Rucoy\UpdateRucoyAccountRequest;
 use App\Models\BusinessTransaction;
@@ -26,27 +27,32 @@ class RucoyAccountController extends Controller
 
     public function archived(): JsonResponse
     {
-        return response()->json(RucoyAccount::archived()->with('payments')->latest('archived_at')->get()->map(fn ($a) => $this->transform($a)));
+        $accounts = RucoyAccount::archived()->with('payments')->latest('archived_at')->get();
+        // Who each was sold to (kept on its sale), in one query
+        $buyers = BusinessTransaction::whereIn('account_id', $accounts->pluck('id'))->whereNotNull('sold_to')->pluck('sold_to', 'account_id');
+
+        return response()->json($accounts->map(fn ($a) => $this->transform($a, $buyers[$a->id] ?? null)));
     }
 
     /** Mark the account sold: archive its business transactions and add its price to the stash. */
-    public function archive(RucoyAccount $rucoyAccount): JsonResponse
+    public function archive(MarkSoldRequest $request, RucoyAccount $rucoyAccount): JsonResponse
     {
-        DB::transaction(function () use ($rucoyAccount) {
+        $soldTo = trim((string) $request->validated('sold_to')) ?: null;
+        DB::transaction(function () use ($rucoyAccount, $soldTo) {
             $now = now();
             $rucoyAccount->archived_at = $now;
             $rucoyAccount->save();
 
             BusinessTransaction::where('account_id', $rucoyAccount->id)
                 ->active()
-                ->update(['archived_at' => $now]);
+                ->update(['archived_at' => $now, 'sold_to' => $soldTo]);
 
             if ($rucoyAccount->price) {
                 GoldInventory::record($rucoyAccount->price, $this->soldLabel($rucoyAccount));
             }
         });
 
-        return response()->json($this->transform($rucoyAccount->fresh()));
+        return response()->json($this->transform($rucoyAccount->fresh(), $soldTo));
     }
 
     /** Undo a sale: restore its business transactions and take its gold back out. */
@@ -58,7 +64,7 @@ class RucoyAccountController extends Controller
 
             BusinessTransaction::where('account_id', $rucoyAccount->id)
                 ->archived()
-                ->update(['archived_at' => null]);
+                ->update(['archived_at' => null, 'sold_to' => null]);
 
             if ($rucoyAccount->price) {
                 $label = $this->soldLabel($rucoyAccount);
@@ -167,7 +173,8 @@ class RucoyAccountController extends Controller
         return $data;
     }
 
-    private function transform(RucoyAccount $account): array
+    /** $soldTo: who it was sold to (sold accounts only) */
+    private function transform(RucoyAccount $account, ?string $soldTo = null): array
     {
         $account->loadMissing('payments');
 
@@ -176,6 +183,7 @@ class RucoyAccountController extends Controller
             // Paid toward the cost so far, from its payments (gold and exact ₱)
             'paid_gold'     => (float) $account->payments->sum('gold'),
             'paid_cost_php' => round((float) $account->payments->sum('cost_php'), 2),
+            'sold_to'       => $soldTo,
             'avatar' => $account->avatar
                 ? asset('storage/' . $account->avatar)
                 : null,

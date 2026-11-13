@@ -97,19 +97,20 @@ class BusinessTransactionService
      *
      * @return array{0: BusinessTransaction, 1: ?BusinessTransaction} [sold, remaining]
      */
-    public function sell(BusinessTransaction $tx, float $sell, string $note, bool $deductInventory): array
+    public function sell(BusinessTransaction $tx, float $sell, string $note, bool $deductInventory, ?string $soldTo = null): array
     {
         $total       = (float) $tx->price_gold;
         $withNote    = fn (?string $notes, string $line) => trim(($notes ? $notes . "\n" : '') . $line);
         $hasProgress = SchemaColumns::has('business_transactions', 'price_gold_received');
 
-        return DB::transaction(function () use ($tx, $total, $sell, $hasProgress, $deductInventory, $note, $withNote) {
+        return DB::transaction(function () use ($tx, $total, $sell, $hasProgress, $deductInventory, $note, $withNote, $soldTo) {
             // A permanent trade is never archived: even a full sale splits off and leaves it at 0 G
             if ($sell >= $total && ! $tx->isSystem()) {
                 if ($note !== '') {
                     $tx->notes = $withNote($tx->notes, 'Sold: ' . $note);
                 }
                 $tx->archived_at = now();
+                $tx->sold_to     = $soldTo;
                 $tx->save();
                 $sold      = $tx;
                 $remaining = null;
@@ -136,6 +137,7 @@ class BusinessTransactionService
                 $sold->amount      = $sold->profit_php !== null ? max($sold->profit_php, 0.01) : max($part($tx->amount), 0.01);
                 $sold->notes       = $withNote($tx->notes, 'Partial sale of ' . number_format($sell) . ' / ' . number_format($total) . ' G' . ($note !== '' ? ' — ' . $note : ''));
                 $sold->archived_at = now();
+                $sold->sold_to     = $soldTo;
                 if ($hasProgress) {
                     $sold->price_gold_received = $tx->price_gold_received !== null ? min((float) $tx->price_gold_received, $sell) : null;
                     $sold->cost_gold_paid      = $tx->cost_gold_paid !== null && $sold->cost_gold !== null ? min((float) $tx->cost_gold_paid, $sold->cost_gold) : null;

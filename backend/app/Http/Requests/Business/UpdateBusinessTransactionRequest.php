@@ -53,6 +53,7 @@ class UpdateBusinessTransactionRequest extends FormRequest
             'description' => 'nullable|string|max:255',
             'date'        => 'sometimes|date',
             'notes'       => 'nullable|string|max:5000',
+            'sold_to'     => 'nullable|string|max:100',
         ];
     }
 }

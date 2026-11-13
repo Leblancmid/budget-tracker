@@ -35,7 +35,10 @@ export function GoldTradeRow({ tx, archived = false, onEdit, onSell, onAddGold, 
             </span>
           )}
         </div>
-        <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{formatDate(tx.date)}</p>
+        <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+          {formatDate(tx.date)}
+          {archived && tx.sold_to && <span className="text-emerald-600 dark:text-emerald-400"> · Sold to {tx.sold_to}</span>}
+        </p>
         {totalReceived != null && (
           <p className="mt-1 inline-flex items-center gap-1 rounded-md bg-violet-50 dark:bg-violet-900/20 px-1.5 py-0.5 text-[11px] text-violet-700 dark:text-violet-300">
             <HandCoins size={11} />

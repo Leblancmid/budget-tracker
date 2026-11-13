@@ -123,6 +123,7 @@ Route::prefix('v1')->group(function () {
                 Route::controller(BusinessTransactionController::class)->prefix('transactions')->name('transactions.')->group(function () {
                     Route::get('summary', 'summary')->name('summary');
                     Route::get('archived', 'archived')->name('archived');
+                    Route::get('buyers', 'buyers')->name('buyers');
                     Route::post('{businessTransaction}/archive', 'archive')->name('archive');
                     Route::post('{businessTransaction}/unarchive', 'unarchive')->name('unarchive');
                     Route::post('{businessTransaction}/sell', 'sell')->name('sell');

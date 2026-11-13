@@ -19,8 +19,8 @@ export function useRucoyAccounts() {
     return account
   }
 
-  const archive = async (id: number) => {
-    await rucoyAccountsApi.archive(id)
+  const archive = async (id: number, soldTo?: string | null) => {
+    await rucoyAccountsApi.archive(id, soldTo)
     setAccounts((prev) => prev.filter((a) => a.id !== id))
   }
 

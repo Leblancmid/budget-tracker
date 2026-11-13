@@ -68,6 +68,7 @@ export function AccountCard({ a, tx, onEdit, onArchive, onDelete, onConvertToGol
           <p className={['text-xs truncate mt-0.5', a.description ? 'text-gray-400 dark:text-gray-500' : 'text-gray-600 dark:text-gray-300 font-medium'].join(' ')}>
             {a.email}
           </p>
+          {archived && a.sold_to && <p className="mt-0.5 truncate text-xs text-emerald-600 dark:text-emerald-400">Sold to {a.sold_to}</p>}
         </div>
 
         {/* Actions */}

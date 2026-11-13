@@ -10,6 +10,7 @@ import { errorMessage, flattenApiErrors } from '@/utils/api'
 import { formatCurrency, formatWithCommas, handleAmountInput } from '@/utils/format'
 import type { BusinessTransaction } from '@/types'
 import { sellPreview } from './salesUtils'
+import { BuyerField } from './BuyerField'
 
 /** Sell all or part of a confirmed gold trade. Mount it only while open so it starts fresh. */
 export function SellGoldModal({ target, onClose, onSold }: {
@@ -21,6 +22,7 @@ export function SellGoldModal({ target, onClose, onSold }: {
   const [sellAmount, setSellAmount] = useState(() => (target.price_gold != null ? String(Number(target.price_gold)) : ''))
   const [sellDeduct, setSellDeduct] = useState(true)
   const [sellDesc, setSellDesc]     = useState('')
+  const [buyer, setBuyer]           = useState('')
   const [error, setError]           = useState<string | null>(null)
   const [selling, setSelling]       = useState(false)
 
@@ -33,7 +35,7 @@ export function SellGoldModal({ target, onClose, onSold }: {
     if (sellNum > sellTotal) { setError(`You can sell at most ${sellTotal.toLocaleString()} G.`); return }
     setSelling(true)
     try {
-      const { remaining } = await businessTransactionsApi.sell(target.id, sellNum, sellDeduct, sellDesc.trim())
+      const { remaining } = await businessTransactionsApi.sell(target.id, sellNum, sellDeduct, sellDesc.trim(), buyer.trim() || null)
       onSold()
       toast.success(remaining
         ? `Sold ${sellNum.toLocaleString()} G — ${remaining.price_gold != null ? Number(remaining.price_gold).toLocaleString() : 0} G still pending.`
@@ -87,11 +89,13 @@ export function SellGoldModal({ target, onClose, onSold }: {
           {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
         </div>
 
+        <BuyerField value={buyer} onChange={setBuyer} />
+
         <Input
-          label="Description"
+          label="Note (optional)"
           value={sellDesc}
           onChange={(e) => setSellDesc(e.target.value)}
-          placeholder="e.g. Sold to buyer"
+          placeholder="e.g. paid in two parts"
         />
 
         {/* Preview of the split */}

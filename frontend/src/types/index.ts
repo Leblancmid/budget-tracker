@@ -240,6 +240,8 @@ export interface BusinessTransaction {
   description: string | null
   date: string
   notes: string | null
+  /** Who bought it (optional, private) */
+  sold_to?: string | null
   archived_at: string | null
   created_at: string
   updated_at: string
@@ -331,6 +333,8 @@ export interface AccountPayment {
 
 export interface RucoyAccount {
   id: number
+  /** Sold accounts: who bought it (from its sale) */
+  sold_to?: string | null
   description: string | null
   email: string
   avatar: string | null

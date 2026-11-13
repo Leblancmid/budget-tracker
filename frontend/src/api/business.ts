@@ -144,16 +144,19 @@ export const businessTransactionsApi = {
     api.post<BusinessTransaction>('/business/transactions', data).then((r) => r.data),
   update:    (id: number, data: BusinessTransactionPayload) =>
     api.put<BusinessTransaction>(`/business/transactions/${id}`, data).then((r) => r.data),
-  archive:   (id: number) =>
-    api.post<BusinessTransaction>(`/business/transactions/${id}/archive`).then((r) => r.data),
+  /** Mark sold, optionally saying who bought it */
+  archive:   (id: number, soldTo?: string | null) =>
+    api.post<BusinessTransaction>(`/business/transactions/${id}/archive`, { sold_to: soldTo || null }).then((r) => r.data),
+  /** People sold to before, most recent first (suggestions) */
+  buyers:    () => api.get<string[]>('/business/transactions/buyers').then((r) => r.data),
   unarchive: (id: number) =>
     api.post<BusinessTransaction>(`/business/transactions/${id}/unarchive`).then((r) => r.data),
   delete:    (id: number) =>
     api.delete<{ message: string }>(`/business/transactions/${id}`).then((r) => r.data),
   /** Sell all or part of a confirmed gold trade (amount in G). */
-  sell:      (id: number, amount: number, deductInventory: boolean, description?: string) =>
+  sell:      (id: number, amount: number, deductInventory: boolean, description?: string, soldTo?: string | null) =>
     api.post<{ sold: BusinessTransaction; remaining: BusinessTransaction | null }>(
-      `/business/transactions/${id}/sell`, { amount, deduct_inventory: deductInventory, description: description || null },
+      `/business/transactions/${id}/sell`, { amount, deduct_inventory: deductInventory, description: description || null, sold_to: soldTo || null },
     ).then((r) => r.data),
   /** Add gold onto a gold trade's price/cost; price gold also goes into the Golds inventory. */
   addGold:   (id: number, data: { price_gold: number; cost_gold: number; cost_php?: number; description?: string; balance_account?: string | null }) =>

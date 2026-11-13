@@ -28,6 +28,7 @@ import { PendingGoldTotals } from './sales/PendingGoldTotals'
 import { ProfitPhpBar } from './sales/ProfitPhpBar'
 import { SalesHero, type ListedTotals } from './sales/SalesHero'
 import { SellGoldModal } from './sales/SellGoldModal'
+import { MarkSoldDialog } from './sales/MarkSoldDialog'
 import { TypePickerModal } from './sales/TypePickerModal'
 import {
   BIZ_TYPE_LABELS, CUR_M, CUR_Y, STATUS_FILTERS, isDueSoon, isOverdue, nextSort, txProfitPhp, type StatusFilter,
@@ -187,12 +188,12 @@ export default function Sales() {
     }
   }
 
-  const handleArchivePending = async () => {
+  const handleArchivePending = async (soldTo: string | null) => {
     if (!archivePendingTarget) return
     const targetId = archivePendingTarget.id
     setArchivingPending(true)
     try {
-      await archiveBizTx(targetId)
+      await archiveBizTx(targetId, soldTo)
       afterSoldChange()
       toast.success('Marked as sold.', {
         action: { label: 'Undo', onClick: () => handleUnarchiveTx(targetId) },
@@ -233,13 +234,13 @@ export default function Sales() {
     }
   }
 
-  const handleArchive = async () => {
+  const handleArchive = async (soldTo: string | null) => {
     if (!archiveTarget) return
     const target = archiveTarget
     setArchiving(true)
     setArchiveTarget(null)
     try {
-      await archive(target.id)
+      await archive(target.id, soldTo)
       // The API also archives the account's linked business transaction
       refetchBizTxs()
       afterSoldChange()
@@ -746,8 +747,10 @@ export default function Sales() {
         <AllTransactionsModal onClose={() => setShowTxModal(false)} loading={bizTxLoading} transactions={allTxsSorted} onReclassify={setReclassifyTarget} />
       )}
 
-      <ConfirmDialog open={!!archivePendingTarget} onClose={() => setArchivePendingTarget(null)} onConfirm={handleArchivePending} loading={archivingPending}
-        title="Mark as Sold" message={`Mark "${archivePendingTarget?.description || 'this trade'}" as sold?`} confirmLabel="Mark as Sold" />
+      {archivePendingTarget && (
+        <MarkSoldDialog name={archivePendingTarget.description || 'This trade'} loading={archivingPending}
+          onClose={() => setArchivePendingTarget(null)} onConfirm={(soldTo) => void handleArchivePending(soldTo)} />
+      )}
 
       <ConfirmDialog open={!!deletePendingTarget} onClose={() => setDeletePendingTarget(null)} onConfirm={handleDeletePending} loading={deletingPending}
         title="Remove Transaction" message={`Remove "${deletePendingTarget?.description || 'this transaction'}"? This cannot be undone.`} confirmLabel="Remove" />
@@ -756,8 +759,10 @@ export default function Sales() {
         title="Reclassify as Gold" confirmLabel="Mark as Gold"
         message={`Mark "${reclassifyTarget?.description || 'this transaction'}" as Gold instead of ${reclassifyTarget ? BIZ_TYPE_LABELS[reclassifyTarget.type as BusinessTransactionType] : ''}?`} />
 
-      <ConfirmDialog open={!!archiveTarget} onClose={() => setArchiveTarget(null)} onConfirm={handleArchive} loading={archiving}
-        title="Mark as Sold" message={`Mark "${archiveTarget?.description || archiveTarget?.email}" as sold? You can restore it anytime.`} confirmLabel="Mark as Sold" />
+      {archiveTarget && (
+        <MarkSoldDialog name={archiveTarget.description || archiveTarget.email} note="You can restore it anytime." loading={archiving}
+          onClose={() => setArchiveTarget(null)} onConfirm={(soldTo) => void handleArchive(soldTo)} />
+      )}
 
       <ConfirmDialog open={!!unarchiveTarget} onClose={() => setUnarchiveTarget(null)} onConfirm={handleUnarchive} loading={unarchiving}
         title="Restore Account" message={`Restore "${unarchiveTarget?.description || unarchiveTarget?.email}" back to active accounts?`} confirmLabel="Restore" />

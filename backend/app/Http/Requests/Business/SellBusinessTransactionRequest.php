@@ -17,6 +17,8 @@ class SellBusinessTransactionRequest extends FormRequest
             'amount'           => ['required', 'numeric', 'min:1'],
             'deduct_inventory' => ['sometimes', 'boolean'],
             'description'      => ['nullable', 'string', 'max:255'],
+            // Who bought it (optional, private)
+            'sold_to'          => ['nullable', 'string', 'max:100'],
         ];
     }
 }

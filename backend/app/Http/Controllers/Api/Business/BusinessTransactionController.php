@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Business;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Business\AddGoldRequest;
+use App\Http\Requests\Business\MarkSoldRequest;
 use App\Http\Requests\Business\SellBusinessTransactionRequest;
 use App\Http\Requests\Business\StoreBusinessTransactionRequest;
 use App\Http\Requests\Business\UpdateBusinessTransactionRequest;
@@ -51,13 +52,23 @@ class BusinessTransactionController extends Controller
         return response()->json(BusinessTransaction::archived()->latest('archived_at')->get());
     }
 
-    public function archive(BusinessTransaction $businessTransaction): JsonResponse
+    /** Names you sold to before, most recent first (suggestions when marking a sale sold). */
+    public function buyers(): JsonResponse
+    {
+        return response()->json(BusinessTransaction::whereNotNull('sold_to')
+            ->selectRaw('sold_to, MAX(archived_at) as last_sold')->groupBy('sold_to')
+            ->orderByDesc('last_sold')->limit(100)->pluck('sold_to'));
+    }
+
+    /** Mark sold, optionally saying who bought it. */
+    public function archive(MarkSoldRequest $request, BusinessTransaction $businessTransaction): JsonResponse
     {
         if ($businessTransaction->isSystem()) {
             return response()->json(['message' => 'This trade is permanent — sell its gold instead.'], 422);
         }
 
         $businessTransaction->archived_at = now();
+        $businessTransaction->sold_to = self::buyer($request->validated('sold_to'));
         $businessTransaction->save();
 
         return response()->json($businessTransaction->fresh());
@@ -65,7 +76,9 @@ class BusinessTransactionController extends Controller
 
     public function unarchive(BusinessTransaction $businessTransaction): JsonResponse
     {
+        // Back on sale: whoever it was sold to no longer applies
         $businessTransaction->archived_at = null;
+        $businessTransaction->sold_to = null;
         $businessTransaction->save();
 
         return response()->json($businessTransaction->fresh());
@@ -118,6 +131,7 @@ class BusinessTransactionController extends Controller
             $sell,
             trim((string) ($validated['description'] ?? '')),
             (bool) ($validated['deduct_inventory'] ?? false),
+            self::buyer($validated['sold_to'] ?? null),
         );
 
         return response()->json([
@@ -144,5 +158,13 @@ class BusinessTransactionController extends Controller
         $this->transactions->addGold($businessTransaction, $addPrice, $addCost, trim((string) ($validated['description'] ?? '')), $validated['balance_account'] ?? null, $addCostPhp);
 
         return response()->json($businessTransaction->fresh()->load(self::WALLET_ENTRIES));
+    }
+
+    /** A buyer as typed, or null when left empty. */
+    private static function buyer(?string $name): ?string
+    {
+        $name = trim((string) $name);
+
+        return $name === '' ? null : $name;
     }
 }

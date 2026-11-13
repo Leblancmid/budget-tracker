@@ -74,3 +74,34 @@ async function openPage(request) {
     return (await saved()) || Response.error()
   }
 }
+
+// ── Phone alerts (web push): new leads, things due, account changes ─────────────────────────────
+self.addEventListener('push', (event) => {
+  let data = {}
+  try { data = event.data ? event.data.json() : {} } catch { data = { body: event.data && event.data.text() } }
+  const title = data.title || 'Budget'
+  event.waitUntil(self.registration.showNotification(title, {
+    body: data.body || '',
+    icon: new URL('icon-192.png', SCOPE).href,
+    badge: new URL('icon-192.png', SCOPE).href,
+    // Opening it goes to the page it's about (a path inside the app)
+    data: { url: new URL((data.url || '/').replace(/^\//, ''), SCOPE).href },
+  }))
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const target = event.notification.data && event.notification.data.url ? event.notification.data.url : SCOPE
+  event.waitUntil((async () => {
+    // Use an open window of the app if there is one, else open a new one
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+    for (const client of windows) {
+      if (client.url.startsWith(SCOPE) && 'focus' in client) {
+        await client.focus()
+        if ('navigate' in client) await client.navigate(target)
+        return
+      }
+    }
+    await self.clients.openWindow(target)
+  })())
+})

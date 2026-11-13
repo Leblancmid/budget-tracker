@@ -12,6 +12,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Menu } from '@/components/ui/Menu'
 import { AvatarCropper } from '@/components/users/AvatarCropper'
 import { PasswordField } from '@/components/users/PasswordField'
+import { PhoneAlertsCard } from '@/components/users/PhoneAlertsCard'
 import { RoleBadge, StatusLine } from '@/components/users/UserBits'
 import { deviceName, isPhone, passwordOk, timeAgo } from '@/lib/users'
 import { toast } from '@/lib/toast'
@@ -51,8 +52,9 @@ export default function Profile() {
           <PersonalInfo key={`${user.name}|${user.email}`} user={user} onSaved={saved} />
           <ChangePassword onChanged={() => void refetch()} />
         </div>
-        <div className="lg:col-span-2">
+        <div className="flex flex-col gap-5 lg:col-span-2">
           <Devices sessions={data.sessions} onChanged={() => void refetch()} />
+          <PhoneAlertsCard />
         </div>
       </div>
     </div>

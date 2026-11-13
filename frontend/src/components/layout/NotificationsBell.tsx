@@ -1,18 +1,23 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Bell, CheckCheck, KeyRound, ShieldCheck, UserCheck, UserRound } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { ArrowLeftRight, Bell, CheckCheck, HandCoins, Inbox, KeyRound, ShieldCheck, Sparkles, UserCheck, UserRound } from 'lucide-react'
 import { notificationsApi, type AppNotification } from '@/api/notifications'
 import { timeAgo } from '@/lib/users'
 
 /** Checked again this often while the app is open and visible (there's no live connection) */
 const POLL_MS = 60_000
 
-const ICONS: Record<string, typeof Bell> = { access: ShieldCheck, details: UserRound, password: KeyRound, reactivated: UserCheck }
+const ICONS: Record<string, typeof Bell> = {
+  access: ShieldCheck, details: UserRound, password: KeyRound, reactivated: UserCheck,
+  lead: Inbox, trades: ArrowLeftRight, payments: HandCoins, brief: Sparkles,
+}
 
 /**
- * The bell: things an admin changed on your account. Shows how many are unread, opens a list,
- * and marks them read when you open one (or all at once).
+ * The bell: new website leads, things due, the weekly brief, and changes an admin made to your
+ * account. Shows how many are unread; opening one marks it read and goes to its page.
  */
 export function NotificationsBell() {
+  const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const [items, setItems] = useState<AppNotification[]>([])
   const [unread, setUnread] = useState(0)
@@ -49,6 +54,11 @@ export function NotificationsBell() {
   const toggle = () => {
     setOpen((v) => !v)
     if (!open) void load()
+  }
+
+  const openOne = (n: AppNotification) => {
+    void markRead(n)
+    if (n.url) { setOpen(false); navigate(n.url) }
   }
 
   const markRead = async (n: AppNotification) => {
@@ -95,7 +105,7 @@ export function NotificationsBell() {
           ) : items.length === 0 ? (
             <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
               <Bell className="h-6 w-6 text-gray-300 dark:text-gray-600" />
-              <p className="text-sm text-gray-500 dark:text-gray-400">Nothing yet. You'll see here when an admin changes your account.</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Nothing yet. New leads, things due and changes to your account show up here.</p>
             </div>
           ) : (
             <ul className="max-h-96 divide-y divide-gray-100 overflow-y-auto scrollbar-thin dark:divide-gray-800">
@@ -105,17 +115,17 @@ export function NotificationsBell() {
                   <li key={n.id}>
                     <button
                       type="button"
-                      onClick={() => void markRead(n)}
+                      onClick={() => openOne(n)}
                       className={['flex w-full gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50', n.read_at ? '' : 'bg-indigo-50/50 dark:bg-indigo-900/10'].join(' ')}
                     >
                       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-300"><Icon className="h-4 w-4" /></span>
                       <span className="min-w-0 flex-1">
-                        <span className="flex items-center gap-2">
-                          <span className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{n.title}</span>
+                        <span className="flex items-start gap-2">
+                          <span className="line-clamp-2 text-sm font-semibold text-gray-900 dark:text-gray-100">{n.title}</span>
                           {!n.read_at && <span className="h-2 w-2 shrink-0 rounded-full bg-indigo-500" aria-label="Unread" />}
                         </span>
                         <span className="mt-0.5 block text-xs leading-relaxed text-gray-600 dark:text-gray-300">{n.body}</span>
-                        <span className="mt-1 block text-[11px] text-gray-400">By {n.by} · {timeAgo(n.created_at)}</span>
+                        <span className="mt-1 block text-[11px] text-gray-400">{n.by ? `By ${n.by} · ` : ''}{timeAgo(n.created_at)}</span>
                       </span>
                     </button>
                   </li>

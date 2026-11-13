@@ -6,7 +6,7 @@ import { Pagination } from '@/components/ui/Pagination'
 import { paginateLocally } from '@/utils/format'
 import { useAuth } from '@/context/auth'
 import { isAdmin } from '@/lib/access'
-import type { LogEntry } from '@/api/logs'
+import { LOG_PERIODS, type LogEntry, type LogPeriod } from '@/api/logs'
 import { LogRow } from './logs/LogRow'
 import { LogsHero } from './logs/LogsHero'
 import {
@@ -15,7 +15,8 @@ import {
 } from './logs/logFormat'
 
 export default function Logs() {
-  const { entries, loading, refetch } = useLogs()
+  const [days, setDays] = useState<LogPeriod>(90)
+  const { entries, loading, refetch } = useLogs(days)
   const { user: currentUser } = useAuth()
   // Admins see everyone's activity; anyone else only their own (the server sends only that)
   const everyone = isAdmin(currentUser)
@@ -98,13 +99,29 @@ export default function Logs() {
           <p className="text-xs text-gray-400 dark:text-gray-500">
             {everyone
               ? 'Every sign-in, add, edit, sale and removal across the app — with before → after for edits'
-              : 'Everything you did: your sign-ins, adds, edits and removals — with before → after for edits. Only admins see everyone\x27s.'}
+              : "Everything you did: your sign-ins, adds, edits and removals — with before → after for edits. Only admins see everyone's."}
           </p>
         </div>
-        <button onClick={refetch} disabled={loading}
-          className="flex items-center gap-1.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40 transition-colors">
-          <RefreshCw className={['h-4 w-4', loading ? 'animate-spin' : ''].join(' ')} /> Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          {/* How far back: the server sends only this period, so the page stays quick */}
+          <div className="flex gap-0.5 rounded-xl bg-gray-100 p-1 dark:bg-gray-800" role="group" aria-label="Period">
+            {LOG_PERIODS.map((p) => (
+              <button
+                key={p.days}
+                type="button"
+                aria-pressed={days === p.days}
+                onClick={() => { setDays(p.days); setPage(1) }}
+                className={['rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors', days === p.days ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'].join(' ')}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+          <button onClick={refetch} disabled={loading} title="Refresh" aria-label="Refresh"
+            className="flex items-center gap-1.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40 transition-colors">
+            <RefreshCw className={['h-4 w-4', loading ? 'animate-spin' : ''].join(' ')} /> <span className="hidden sm:inline">Refresh</span>
+          </button>
+        </div>
       </div>
 
       {/* ── Hero ───────────────────────────────────────────────────── */}

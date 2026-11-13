@@ -22,6 +22,16 @@ export interface LogEntry {
   account_name?: string
 }
 
+/** How far back the Logs page looks, in days (0 = everything) */
+export type LogPeriod = 30 | 90 | 365 | 0
+
+export const LOG_PERIODS: { days: LogPeriod; label: string }[] = [
+  { days: 30, label: '30 days' },
+  { days: 90, label: '90 days' },
+  { days: 365, label: 'Year' },
+  { days: 0, label: 'All' },
+]
+
 export const logsApi = {
-  getAll: () => api.get<{ data: LogEntry[] }>('/logs').then((r) => r.data),
+  getAll: (days: LogPeriod = 90) => api.get<{ data: LogEntry[]; days: LogPeriod }>('/logs', { params: { days } }).then((r) => r.data),
 }

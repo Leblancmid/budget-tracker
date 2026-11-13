@@ -15,10 +15,13 @@ use App\Models\Transaction;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use App\Http\Requests\LogIndexRequest;
 
 class LogController extends Controller
 {
+    /** Newest rows read from each table, at most (a backstop on top of the period) */
+    private const PER_TABLE = 1000;
+
     /**
      * "Added" logs of records listed from their own tables below (daily entries, sales, wallet
      * entries…): they only give those rows who did it and from where, so aren't entries of their own.
@@ -32,9 +35,14 @@ class LogController extends Controller
         'undone', 'redone', 'published',
     ];
 
-    public function index(Request $request): JsonResponse
+    public function index(LogIndexRequest $request): JsonResponse
     {
-        $allActivityLogs = ActivityLog::with('user:id,name,email')->get();
+        // Only the chosen period (90 days unless asked): the page stays quick however long the app is used
+        $days = $request->days();
+        $since = $days > 0 ? now()->subDays($days) : null;
+
+        $allActivityLogs = ActivityLog::with('user:id,name,email')
+            ->when($since, fn ($q) => $q->where('created_at', '>=', $since))->get();
 
         // created events → keyed for IP/device merge into original table rows
         $activityMap = $allActivityLogs->whereIn('type', self::MERGED_INTO_ROWS)
@@ -47,14 +55,14 @@ class LogController extends Controller
         $logs = collect();
 
         Transaction::select('id', 'type', 'amount', 'description', 'date', 'created_at')
-            ->orderBy('created_at', 'desc')->limit(500)->get()
+            ->when($since, fn ($q) => $q->where('created_at', '>=', $since))->orderBy('created_at', 'desc')->limit(self::PER_TABLE)->get()
             ->each(function ($t) use (&$logs, $activityMap) {
                 $log = $activityMap->get(Transaction::class . '|' . $t->id);
                 $logs->push($this->entry('daily', $t->type, $t->description, $t->amount, $t->date, $t->created_at, $log));
             });
 
         BusinessTransaction::select('id', 'type', 'description', 'amount', 'price_php', 'cost_php', 'profit_php', 'date', 'created_at')
-            ->orderBy('created_at', 'desc')->limit(500)->get()
+            ->when($since, fn ($q) => $q->where('created_at', '>=', $since))->orderBy('created_at', 'desc')->limit(self::PER_TABLE)->get()
             ->each(function ($t) use (&$logs, $activityMap) {
                 $log    = $activityMap->get(BusinessTransaction::class . '|' . $t->id);
                 $amount = $t->profit_php ?? $t->price_php ?? $t->cost_php ?? $t->amount;
@@ -63,14 +71,14 @@ class LogController extends Controller
 
         // Payments toward an account's cost (gold from a trade, cash, already paid): a ₱ cost
         AccountPayment::with('account:id,description,email')
-            ->orderBy('created_at', 'desc')->limit(500)->get()
+            ->when($since, fn ($q) => $q->where('created_at', '>=', $since))->orderBy('created_at', 'desc')->limit(self::PER_TABLE)->get()
             ->each(function ($p) use (&$logs, $activityMap) {
                 $log = $activityMap->get(AccountPayment::class . '|' . $p->id);
                 $logs->push($this->entry('business', 'payment', $p->summary(), $p->cost_php !== null ? -$p->cost_php : null, $p->date?->format('Y-m-d'), $p->created_at, $log));
             });
 
         Saving::select('id', 'type', 'description', 'amount', 'date', 'created_at')
-            ->orderBy('created_at', 'desc')->limit(500)->get()
+            ->when($since, fn ($q) => $q->where('created_at', '>=', $since))->orderBy('created_at', 'desc')->limit(self::PER_TABLE)->get()
             ->each(function ($t) use (&$logs, $activityMap) {
                 $log = $activityMap->get(Saving::class . '|' . $t->id);
                 $logs->push($this->entry('savings', $t->type, $t->description, $t->amount, $t->date, $t->created_at, $log));
@@ -79,7 +87,7 @@ class LogController extends Controller
         // Balance amounts are in their account's currency (USD or PHP)
         $balanceAccounts = BalanceAccount::get(['code', 'name', 'currency'])->keyBy('code');
         BalanceEntry::select('id', 'account', 'type', 'description', 'amount', 'date', 'created_at')
-            ->orderBy('created_at', 'desc')->limit(500)->get()
+            ->when($since, fn ($q) => $q->where('created_at', '>=', $since))->orderBy('created_at', 'desc')->limit(self::PER_TABLE)->get()
             ->each(function ($t) use (&$logs, $activityMap, $balanceAccounts) {
                 $log = $activityMap->get(BalanceEntry::class . '|' . $t->id);
                 $logs->push([
@@ -90,14 +98,14 @@ class LogController extends Controller
             });
 
         GoldLog::select('id', 'type', 'description', 'amount', 'created_at')
-            ->orderBy('created_at', 'desc')->limit(500)->get()
+            ->when($since, fn ($q) => $q->where('created_at', '>=', $since))->orderBy('created_at', 'desc')->limit(self::PER_TABLE)->get()
             ->each(function ($t) use (&$logs, $activityMap) {
                 $log = $activityMap->get(GoldLog::class . '|' . $t->id);
                 $logs->push($this->entry('gold', $t->type, $t->description, $t->amount, null, $t->created_at, $log));
             });
 
         Trade::select('id', 'status', 'description', 'amount', 'currency', 'created_at')
-            ->orderBy('created_at', 'desc')->limit(500)->get()
+            ->when($since, fn ($q) => $q->where('created_at', '>=', $since))->orderBy('created_at', 'desc')->limit(self::PER_TABLE)->get()
             ->each(function ($t) use (&$logs, $activityMap) {
                 $log         = $activityMap->get(Trade::class . '|' . $t->id);
                 $description = $t->description;
@@ -142,6 +150,7 @@ class LogController extends Controller
         return response()->json([
             'data' => $logs->sortByDesc('created_at')->values(),
             'scope' => $me->isAdmin() ? 'everyone' : 'own',
+            'days'  => $days,
         ]);
     }
 

@@ -182,11 +182,14 @@ class ListingPublisher
         $alerted = WebsiteStats::dispatchAlerts($json);
 
         // New accounts and price drops → your Discord listings channel (also never blocks it)
-        $announced = $pushed || ! config('listing.push')
-            ? ListingAnnouncer::post($announcements, collect($built['listings'])->pluck('_screenshot', 'id')->all())
-            : 0;
+        $announced = ListingAnnouncer::post($announcements, collect($built['listings'])->pluck('_screenshot', 'id')->all());
 
-        return ['count' => count($json), 'changed' => $changed || $staged, 'pushed' => $pushed, 'commit' => $commit, 'alerted' => $alerted, 'announced' => $announced];
+        return [
+            'count' => count($json), 'changed' => $changed || $staged, 'pushed' => $pushed, 'commit' => $commit, 'alerted' => $alerted,
+            'announced' => $announced,
+            // So the app can say why nothing reached Discord: off, nothing new, or it failed
+            'discord' => ['on' => ListingAnnouncer::configured(), 'new' => count($announcements), 'posted' => $announced],
+        ];
     }
 
     /** How long a "Price dropped" badge stays up */

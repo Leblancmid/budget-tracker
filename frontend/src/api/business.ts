@@ -21,7 +21,7 @@ export interface ListingPublishPreview {
 /** Accounts for sale → the Leblanc website (commit + push; Vercel redeploys) */
 export const listingPublishApi = {
   preview: () => api.get<ListingPublishPreview>('/business/listing/publish').then((r) => r.data),
-  publish: () => api.post<{ count: number; changed: boolean; pushed: boolean; commit: string | null; alerted: number | null; announced?: number }>('/business/listing/publish').then((r) => r.data),
+  publish: () => api.post<{ count: number; changed: boolean; pushed: boolean; commit: string | null; alerted: number | null; announced?: number; discord?: { on: boolean; new: number; posted: number } }>('/business/listing/publish').then((r) => r.data),
 }
 
 export interface WebsiteStats {

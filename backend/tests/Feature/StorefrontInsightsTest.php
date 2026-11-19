@@ -166,6 +166,19 @@ class StorefrontInsightsTest extends TestCase
         });
     }
 
+    public function test_the_discord_command_tests_the_webhook_and_can_post_the_newest_listings(): void
+    {
+        $this->artisan('listings:discord')->assertFailed(); // no webhook set
+
+        config(['listing.discord_webhook' => 'https://discord.test/api/webhooks/1/abc']);
+        $this->artisan('listings:discord')->expectsOutputToContain('Test message sent')->assertSuccessful();
+        Http::assertSent(fn (Request $r) => str_contains($r->url(), 'discord.test') && str_contains((string) ($r['content'] ?? ''), 'connected'));
+
+        $a = $this->listed('Lv 690 Dist', 3);
+        $a->update(['level' => 690]);
+        $this->artisan('listings:discord', ['--latest' => 2])->expectsOutputToContain('Posted 1 of 1')->assertSuccessful();
+    }
+
     public function test_buyers_are_grouped_by_name_with_repeat_buyers_counted(): void
     {
         $sale = fn (string $to, string $type, float $php, int $daysAgo) => BusinessTransaction::create([

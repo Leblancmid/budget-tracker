@@ -88,6 +88,19 @@ class AlertsTest extends TestCase
         $this->assertStringNotContainsString('Mia', json_encode($n));
     }
 
+    public function test_someone_selling_gold_gets_its_own_alert_without_their_name(): void
+    {
+        $this->websiteHas([]);
+        $this->artisan('leads:watch')->assertSuccessful();
+        $this->websiteHas([['id' => 9, 'type' => 'sell_gold', 'name' => 'Rho', 'contact' => 'rho#2', 'details' => ['amount_kk' => 1500, 'rate' => '$0.17/KK']]]);
+        $this->artisan('leads:watch')->assertSuccessful();
+
+        $this->assertSame(['Someone is selling you gold'], $this->titles($this->trader));
+        $n = $this->trader->notifications()->first()->data;
+        $this->assertSame('1500 KK · at $0.17/KK', $n['body']);
+        $this->assertStringNotContainsString('Rho', json_encode($n));
+    }
+
     public function test_many_new_leads_become_one_alert_and_a_website_outage_is_quiet(): void
     {
         $this->websiteHas([['id' => 1, 'type' => 'gold', 'details' => []]]);

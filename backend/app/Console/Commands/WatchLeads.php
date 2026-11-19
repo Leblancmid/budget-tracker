@@ -71,6 +71,7 @@ class WatchLeads extends Command
         return match ($lead['type'] ?? null) {
             'gold'  => 'New gold order',
             'sell'  => 'Someone is selling an account',
+            'sell_gold' => 'Someone is selling you gold',
             default => 'New lead: wants an account',
         };
     }
@@ -82,6 +83,7 @@ class WatchLeads extends Command
         return match ($lead['type'] ?? null) {
             'gold'  => trim(($d['amount_kk'] ?? '?') . ' KK' . (! empty($d['payment']) ? ' · ' . $d['payment'] : '')),
             'sell'  => trim('Lv ' . ($d['level'] ?? '?') . ' ' . ($d['category'] ?? '') . (! empty($d['asking']) ? ' · asking ' . $d['asking'] : '')),
+            'sell_gold' => trim(($d['amount_kk'] ?? '?') . ' KK' . (! empty($d['rate']) ? ' · at ' . $d['rate'] : '')),
             default => $d['title'] ?? 'An account for sale',
         };
     }

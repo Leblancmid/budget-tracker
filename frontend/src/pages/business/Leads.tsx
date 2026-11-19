@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Coins, ExternalLink, HandCoins, Inbox, MessageCircle, Phone, RefreshCw, ShoppingCart } from 'lucide-react'
+import { Coins, ExternalLink, HandCoins, Inbox, MessageCircle, MessageSquare, Phone, RefreshCw, ShoppingCart } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Pagination } from '@/components/ui/Pagination'
@@ -21,7 +21,11 @@ const TYPES: Record<Lead['type'], { label: string; Icon: LucideIcon; tone: strin
   account: { label: 'Wants an account', Icon: ShoppingCart, tone: 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' },
   gold:    { label: 'Gold order',       Icon: Coins,        tone: 'bg-yellow-50 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400' },
   sell:    { label: 'Offering you an account', Icon: HandCoins, tone: 'bg-teal-50 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400' },
+  sell_gold: { label: 'Selling you gold', Icon: Coins, tone: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' },
 }
+/** A kind of request this app doesn't know yet (the website can add new ones first) */
+const OTHER_TYPE = { label: 'Website request', Icon: MessageSquare, tone: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400' }
+const typeOf = (l: Lead) => TYPES[l.type] ?? OTHER_TYPE
 
 /** Where each lead is: one plain sentence, and the next step. */
 const STATUS: Record<LeadStatus, { label: string; next: LeadStatus[] }> = {
@@ -48,6 +52,7 @@ const money = (n: number, currency: string) => (currency === 'PHP' ? formatCurre
 function summary(l: Lead): string {
   const d = l.details
   if (l.type === 'gold') return `${kk(Number(d.amount_kk))} via ${d.payment} · ${money(Number(d.total), String(d.currency))}`
+  if (l.type === 'sell_gold') return `${kk(Number(d.amount_kk))}${d.rate ? ` · at ${d.rate}` : ''}`
   if (l.type === 'sell') {
     const stats = (['melee', 'distance', 'magic', 'defense'] as const)
       .filter((k) => d.stats?.[k] != null).map((k) => `${k[0].toUpperCase()}${k.slice(1, 3)} ${d.stats![k]}`).join(' · ')
@@ -147,7 +152,7 @@ export default function Leads() {
         ) : (
           <ul className="divide-y divide-gray-50 dark:divide-gray-800">
             {paginated.map((l) => {
-              const t = TYPES[l.type]
+              const t = typeOf(l)
               const link = contactLink(l)
               return (
                 <li key={l.id} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center">

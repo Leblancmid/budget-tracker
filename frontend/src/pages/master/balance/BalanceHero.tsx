@@ -32,6 +32,11 @@ export function BalanceHero({ totals, allocation, accountCount, phpRate, phpInpu
             <p className="text-xs text-slate-500 mt-1">
               ≈ <Amt value={fmtUsd(totals.net / phpRate)} /> · across {accountCount} account{accountCount !== 1 ? 's' : ''}
             </p>
+            {totals.owed > 0 && (
+              <p className="mt-1 text-xs text-rose-300">
+                After <Amt value={fmtPhp(totals.owed)} /> owed on credit cards
+              </p>
+            )}
           </div>
 
           {/* Exchange rate */}

@@ -34,7 +34,7 @@ class BalanceAccountController extends Controller
 
     public function store(StoreBalanceAccountRequest $request): JsonResponse
     {
-        $data = $request->validated();
+        $data = StoreBalanceAccountRequest::fitKind($request->validated());
 
         if ((float) ($data['interest_rate'] ?? 0) > 0) {
             $data['interest_credited_through'] = now(BalanceInterest::ZONE)->subDay()->toDateString();
@@ -45,7 +45,7 @@ class BalanceAccountController extends Controller
             'sort_order' => (int) BalanceAccount::max('sort_order') + 1,
         ]);
 
-        return response()->json([...$account->toArray(), 'entry_count' => 0], 201);
+        return response()->json([...$account->fresh()->toArray(), 'entry_count' => 0], 201);
     }
 
     public function update(UpdateBalanceAccountRequest $request, BalanceAccount $balanceAccount): JsonResponse
@@ -70,7 +70,7 @@ class BalanceAccountController extends Controller
         }
 
         // The code is the link to existing entries, so it never changes on rename
-        $balanceAccount->update($data);
+        $balanceAccount->update(StoreBalanceAccountRequest::fitKind($data, $balanceAccount));
 
         return response()->json([...$balanceAccount->fresh()->toArray(), 'entry_count' => $balanceAccount->entries()->count()]);
     }

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { formatWithCommas, handleAmountInput, todayISO } from '@/utils/format'
 import { flattenApiErrors } from '@/utils/api'
-import { colorOf, iconOf } from '@/utils/balanceAccounts'
+import { colorOf, entryTypeLabel, iconOf, isCredit } from '@/utils/balanceAccounts'
 import { toast } from '@/lib/toast'
 import type { BalanceAccount, BalanceAccountConfig, BalanceEntry, BalanceEntryType } from '@/types'
 import type { BalanceEntryPayload } from '@/api/master'
@@ -83,6 +83,8 @@ export function BalanceModal({ open, onClose, onSubmit, accounts, entry, default
 
   const title = entry
     ? 'Edit Entry'
+    : isCredit(account)
+    ? (form.type === 'add' ? `Payment to ${name}` : `Spend on ${name}`)
     : form.type === 'add' ? `Add to ${name}` : `Sell from ${name}`
 
   return (
@@ -129,7 +131,7 @@ export function BalanceModal({ open, onClose, onSubmit, accounts, entry, default
                       : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
                   ].join(' ')}>
                   {t === 'add' ? <Plus size={14} /> : <Minus size={14} />}
-                  {t === 'add' ? 'Add' : 'Sell'}
+                  {entryTypeLabel(account, t)}
                 </button>
               ))}
             </div>
@@ -165,7 +167,7 @@ export function BalanceModal({ open, onClose, onSubmit, accounts, entry, default
         <div className="modal-footer flex justify-end gap-3 pt-1">
           <Button variant="secondary" onClick={onClose} disabled={loading}>Cancel</Button>
           <Button onClick={handleSubmit} loading={loading} variant={!entry && form.type === 'sell' ? 'danger' : 'primary'}>
-            {entry ? 'Save Changes' : form.type === 'add' ? 'Add' : 'Sell'}
+            {entry ? 'Save Changes' : entryTypeLabel(account, form.type)}
           </Button>
         </div>
       </div>

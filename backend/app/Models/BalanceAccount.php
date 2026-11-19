@@ -12,12 +12,16 @@ class BalanceAccount extends Model
 
     public const CURRENCIES = ['USD', 'PHP'];
 
-    protected $fillable = ['code', 'name', 'currency', 'color', 'icon', 'sort_order', 'hidden_at', 'interest_rate', 'interest_tax', 'interest_credited_through', 'checked_at', 'checked_balance'];
+    /** wallet: money you have. credit: a card you owe on (its balance goes below zero as you spend). */
+    public const KINDS = ['wallet', 'credit'];
+
+    protected $fillable = ['code', 'name', 'currency', 'kind', 'credit_limit', 'color', 'icon', 'sort_order', 'hidden_at', 'interest_rate', 'interest_tax', 'interest_credited_through', 'checked_at', 'checked_balance'];
 
     protected function casts(): array
     {
         return [
             'sort_order' => 'integer',
+            'credit_limit' => 'float',
             'hidden_at'  => 'datetime',
             'interest_rate' => 'float',
             'interest_tax'  => 'float',
@@ -25,6 +29,11 @@ class BalanceAccount extends Model
             'checked_at'      => 'date:Y-m-d',
             'checked_balance' => 'float',
         ];
+    }
+
+    public function isCredit(): bool
+    {
+        return $this->kind === 'credit';
     }
 
     public function entries(): HasMany

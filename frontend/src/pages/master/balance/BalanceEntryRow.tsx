@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { ArrowLeftRight, ExternalLink, Pencil, Percent, Receipt, ScanSearch, Trash2, Undo2 } from 'lucide-react'
 import { Amt } from '@/components/ui/Amt'
 import { formatDate } from '@/utils/format'
-import { colorOf, fmtIn, fmtPhp, iconOf } from '@/utils/balanceAccounts'
+import { colorOf, entryTypeLabel, fmtIn, fmtPhp, iconOf } from '@/utils/balanceAccounts'
 import type { BalanceAccountConfig, BalanceEntry } from '@/types'
 
 /** One add / sell in the history. Entries made by a daily transaction are edited from Transactions. */
@@ -30,7 +30,7 @@ export function BalanceEntryRow({ entry: e, account: a, phpRate, onEdit, onDelet
           </p>
         </div>
         <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5 flex items-center gap-1.5">
-          {formatDate(e.date)} · {isAdd ? 'Add' : 'Sell'}
+          {formatDate(e.date)} · {entryTypeLabel(a, e.type)}
           {e.transaction_id && (
             <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-600 dark:text-indigo-300">
               <Receipt size={9} /> From Transactions

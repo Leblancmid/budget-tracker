@@ -15,16 +15,18 @@ import { WalletPicker } from './WalletPicker'
  * Move money between two Balance accounts (e.g. Maribank → GCash), with an optional fee.
  * Across currencies (PayPal $ → GCash ₱) you enter what arrived. Mount it only while open.
  */
-export function TransferModal({ accounts, balanceOf, defaultFrom, onClose, onDone }: {
+export function TransferModal({ accounts, balanceOf, defaultFrom, defaultTo, onClose, onDone }: {
   accounts: BalanceAccountConfig[]
   /** Current balance of an account (from the page's entries) */
   balanceOf: (a: BalanceAccountConfig) => number
   defaultFrom?: string
+  /** E.g. a credit card whose bill is being paid */
+  defaultTo?: string
   onClose: () => void
   onDone: () => Promise<unknown> | void
 }) {
   const [from, setFrom]         = useState<string | null | undefined>(defaultFrom)
-  const [to, setTo]             = useState<string | null | undefined>(undefined)
+  const [to, setTo]             = useState<string | null | undefined>(defaultTo)
   const [amount, setAmount]     = useState('')
   const [fee, setFee]           = useState('')
   const [received, setReceived] = useState('')

@@ -1,6 +1,6 @@
 import { Ban } from 'lucide-react'
 import type { BalanceAccountConfig } from '@/types'
-import { colorOf, fmtIn, iconOf } from '@/utils/balanceAccounts'
+import { colorOf, fmtIn, iconOf, isCredit, spendable } from '@/utils/balanceAccounts'
 import { Amt } from '@/components/ui/Amt'
 
 /**
@@ -62,8 +62,11 @@ export function WalletPicker({ label, accounts, value, onChange, balanceOf = (a)
               <span className={['flex h-5 w-5 items-center justify-center rounded-md', c.iconTile].join(' ')}><Icon size={11} /></span>
               <span className="flex flex-col items-start leading-tight">
                 <span>{a.name}</span>
-                <span className={['text-[10px] font-medium', balance < 0 ? 'text-red-500' : 'opacity-70'].join(' ')}>
-                  <Amt value={fmtIn(a, balance)} />
+                {/* A card shows the credit it has left; a wallet its balance */}
+                <span className={['text-[10px] font-medium', spendable(a, balance) < 0 ? 'text-red-500' : 'opacity-70'].join(' ')}>
+                  {isCredit(a)
+                    ? (a.credit_limit ? <><Amt value={fmtIn(a, Math.max(0, spendable(a, balance)))} /> left</> : 'Credit card')
+                    : <Amt value={fmtIn(a, balance)} />}
                 </span>
               </span>
             </button>
@@ -77,7 +80,9 @@ export function WalletPicker({ label, accounts, value, onChange, balanceOf = (a)
         const before = balanceOf(linked)
         const change = changeFor(linked)
         const after  = change != null ? before + change : null
-        const short  = change != null && change < 0 && after! < 0
+        const credit = isCredit(linked)
+        // Short: a wallet going below zero, or a card going past its limit
+        const short  = change != null && change < 0 && spendable(linked, after!) < 0
         return (
           <div className={['mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg px-3 py-2 text-xs', c.soft].join(' ')}>
             <span className="font-semibold text-gray-700 dark:text-gray-200">{linked.name}</span>
@@ -94,7 +99,7 @@ export function WalletPicker({ label, accounts, value, onChange, balanceOf = (a)
             </span>
             {short && (
               <span className="ml-auto font-semibold text-red-600 dark:text-red-400">
-                Not enough — short by <Amt value={fmtIn(linked, -after!)} />
+                {credit ? 'Over the limit by ' : 'Not enough — short by '}<Amt value={fmtIn(linked, -spendable(linked, after!))} />
               </span>
             )}
           </div>

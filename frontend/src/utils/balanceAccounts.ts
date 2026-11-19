@@ -37,6 +37,27 @@ export const ACCOUNT_COLORS: Record<string, AccountColor> = {
 
 export const colorOf = (key: string): AccountColor => ACCOUNT_COLORS[key] ?? ACCOUNT_COLORS.slate
 
+/** The face of an account drawn as a bank card: a gradient in its colour (white text stays readable on each). */
+const CARD_GRADIENTS: Record<string, string> = {
+  blue:   'from-blue-500 via-blue-600 to-indigo-700',
+  sky:    'from-sky-500 via-sky-600 to-blue-700',
+  cyan:   'from-cyan-500 via-cyan-600 to-teal-700',
+  teal:   'from-teal-500 via-teal-600 to-emerald-700',
+  green:  'from-green-500 via-green-600 to-emerald-700',
+  lime:   'from-lime-500 via-lime-600 to-green-700',
+  yellow: 'from-yellow-500 via-amber-500 to-orange-600',
+  amber:  'from-amber-400 via-amber-500 to-orange-600',
+  orange: 'from-orange-400 via-orange-500 to-orange-600',
+  red:    'from-red-500 via-red-600 to-rose-700',
+  rose:   'from-rose-500 via-rose-600 to-pink-700',
+  pink:   'from-pink-500 via-pink-600 to-fuchsia-700',
+  violet: 'from-violet-500 via-violet-600 to-purple-700',
+  indigo: 'from-indigo-500 via-indigo-600 to-violet-700',
+  slate:  'from-slate-600 via-slate-700 to-slate-900',
+}
+
+export const cardGradientOf = (key: string): string => CARD_GRADIENTS[key] ?? CARD_GRADIENTS.slate
+
 export const ACCOUNT_ICONS: Record<string, { label: string; Icon: LucideIcon }> = {
   wallet:       { label: 'Wallet',     Icon: Wallet },
   coins:        { label: 'Coins',      Icon: Coins },
@@ -62,6 +83,31 @@ export function dailyInterest(balance: number, ratePct: number | null | undefine
   if (!ratePct || ratePct <= 0 || balance <= 0) return 0
   const keep = 1 - Math.min(Math.max(taxPct, 0), 100) / 100
   return Math.round(((balance * ratePct) / 100 / 365) * keep * 100) / 100
+}
+
+/** A credit card (its balance goes below zero as you spend: that's what you owe). */
+export const isCredit = (a: Pick<BalanceAccountConfig, 'kind'> | undefined) => a?.kind === 'credit'
+
+/** Add / Sell on a wallet; on a credit card, money in is a Payment and money out is a Spend. */
+export const entryTypeLabel = (a: Pick<BalanceAccountConfig, 'kind'> | undefined, type: 'add' | 'sell') =>
+  isCredit(a) ? (type === 'add' ? 'Payment' : 'Spend') : (type === 'add' ? 'Add' : 'Sell')
+
+/** What a card owes (0 when it's paid off or in credit). */
+export const owedOn = (balance: number) => Math.max(0, -balance)
+
+/**
+ * What can still be spent from an account: a wallet's balance, or a card's limit minus what it owes.
+ * A card without a limit set has no ceiling (Infinity).
+ */
+export function spendable(a: Pick<BalanceAccountConfig, 'kind' | 'credit_limit'>, balance: number): number {
+  if (!isCredit(a)) return balance
+  return a.credit_limit ? a.credit_limit + balance : Infinity
+}
+
+/** Share of a card's limit in use, 0–1 (0 without a limit). */
+export function creditUsed(a: Pick<BalanceAccountConfig, 'credit_limit'>, balance: number): number {
+  if (!a.credit_limit) return 0
+  return Math.min(1, owedOn(balance) / a.credit_limit)
 }
 
 export const fmtUsd = (n: number) => `$${n.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`

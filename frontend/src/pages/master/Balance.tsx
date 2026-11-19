@@ -46,7 +46,8 @@ export default function Balance() {
   const [deleteLoading, setDeleteLoading] = useState(false)
 
   const [manageOpen,     setManageOpen]     = useState(false)
-  const [transferOpen,   setTransferOpen]   = useState(false)
+  // Open with nothing preset (true) or to pay a credit card ({ to: its code })
+  const [transferOpen,   setTransferOpen]   = useState<boolean | { to: string }>(false)
   const [checkTarget,    setCheckTarget]    = useState<BalanceAccountConfig | null>(null)
   const [manageStartNew, setManageStartNew] = useState(false)
   const [showHidden,     setShowHidden]     = useState(false)
@@ -184,11 +185,12 @@ export default function Balance() {
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-40 rounded-xl animate-pulse bg-gray-100 dark:bg-gray-800" />
+              <div key={i} className="aspect-[1.586/1] rounded-2xl animate-pulse bg-gray-100 dark:bg-gray-800" />
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          // Phones: a row of cards you swipe through, like a wallet app; wider screens: a grid
+          <div className="-mx-3 flex snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-2 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
             {shownAccounts.map((a) => {
               const bal    = stats.get(a.code)?.balance ?? 0
               const active = accountFilter === a.code
@@ -202,7 +204,9 @@ export default function Balance() {
                   active={active}
                   onToggleFilter={() => changeFilter(setAccountFilter)(active ? null : a.code)}
                   onAdd={(type) => openAdd(a.code, type)}
+                  onPay={() => setTransferOpen({ to: a.code })}
                   onCheck={() => setCheckTarget(a)}
+                  className="w-[85%] shrink-0 snap-center sm:w-auto"
                 />
               )
             })}
@@ -210,7 +214,7 @@ export default function Balance() {
             {/* New account tile */}
             <button
               onClick={() => openManage(true)}
-              className="flex min-h-[10rem] flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500 hover:border-indigo-300 hover:text-indigo-500 dark:hover:border-indigo-700 dark:hover:text-indigo-400 transition-colors"
+              className="flex aspect-[1.586/1] w-[85%] shrink-0 snap-center flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed sm:w-auto border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500 hover:border-indigo-300 hover:text-indigo-500 dark:hover:border-indigo-700 dark:hover:text-indigo-400 transition-colors"
             >
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800">
                 <Plus size={18} />
@@ -352,6 +356,7 @@ export default function Balance() {
         <TransferModal
           accounts={accounts.filter((a) => !a.hidden_at)}
           balanceOf={(a) => stats.get(a.code)?.balance ?? 0}
+          defaultTo={typeof transferOpen === 'object' ? transferOpen.to : undefined}
           onClose={() => setTransferOpen(false)}
           onDone={() => Promise.all([refetchEntries(), refetchAccounts()])}
         />

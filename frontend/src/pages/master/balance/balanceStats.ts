@@ -2,7 +2,11 @@ import type { BalanceAccountConfig, BalanceEntry } from '@/types'
 
 export interface AccountStats { balance: number; count: number; last: string | null }
 
-export interface BalanceTotals { usd: number; php: number; usdCount: number; phpCount: number; net: number }
+export interface BalanceTotals {
+  usd: number; php: number; usdCount: number; phpCount: number; net: number
+  /** Owed on credit cards, in ₱ (already taken off the totals above) */
+  owed: number
+}
 
 export interface Allocation {
   /** Sum of positive balances, in ₱ */
@@ -29,12 +33,13 @@ export const toPhp = (a: BalanceAccountConfig, n: number, phpRate: number) => (a
 
 /** USD / PHP totals and net worth in ₱. Hidden accounts count: hiding only declutters the page. */
 export function balanceTotals(accounts: BalanceAccountConfig[], stats: Map<string, AccountStats>, phpRate: number): BalanceTotals {
-  let usd = 0, php = 0, usdCount = 0, phpCount = 0
+  let usd = 0, php = 0, usdCount = 0, phpCount = 0, owed = 0
   for (const a of accounts) {
     const b = stats.get(a.code)?.balance ?? 0
     if (a.currency === 'USD') { usd += b; usdCount++ } else { php += b; phpCount++ }
+    if (a.kind === 'credit' && b < 0) owed += toPhp(a, -b, phpRate)
   }
-  return { usd, php, usdCount, phpCount, net: php + usd * phpRate }
+  return { usd, php, usdCount, phpCount, net: php + usd * phpRate, owed }
 }
 
 /** Share of each positive balance, in ₱, largest first. */

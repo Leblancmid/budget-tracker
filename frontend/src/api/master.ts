@@ -25,6 +25,10 @@ export const balanceEntriesApi = {
 export interface BalanceAccountPayload {
   name: string
   currency: BalanceCurrency
+  /** wallet (default) or credit card */
+  kind?: 'wallet' | 'credit'
+  /** Credit cards: the most that can be owed */
+  credit_limit?: number | null
   color: string
   icon: string
   /** % a year, credited daily; null = no interest */

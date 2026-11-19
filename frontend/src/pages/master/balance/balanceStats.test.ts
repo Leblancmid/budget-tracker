@@ -19,7 +19,22 @@ describe('balance stats', () => {
   })
 
   it('totals by currency and converts net worth to ₱', () => {
-    expect(balanceTotals(accounts, stats, 58)).toEqual({ usd: 80, php: 1000, usdCount: 1, phpCount: 2, net: 1000 + 80 * 58 })
+    expect(balanceTotals(accounts, stats, 58)).toEqual({ usd: 80, php: 1000, usdCount: 1, phpCount: 2, net: 1000 + 80 * 58, owed: 0 })
+  })
+
+  it('takes what credit cards owe off net worth and reports it', () => {
+    const card = { ...account('VISA', 'PHP'), kind: 'credit', credit_limit: 50000 } as BalanceAccountConfig
+    const withCard = accountStats([...[
+      entry('GCASH', 'add', 1000, '2026-10-03'),
+      entry('VISA', 'sell', 12000, '2026-10-04'),
+      entry('VISA', 'add', 2000, '2026-10-06'),
+    ]])
+    const t = balanceTotals([account('GCASH', 'PHP'), card], withCard, 58)
+    expect(t.php).toBe(1000 - 10000)
+    expect(t.net).toBe(-9000)
+    expect(t.owed).toBe(10000)
+    // A card in debt isn't part of where the money is
+    expect(allocation([account('GCASH', 'PHP'), card], withCard, 58).parts.map((p) => p.a.code)).toEqual(['GCASH'])
   })
 
   it('allocates positive balances in ₱, largest first', () => {

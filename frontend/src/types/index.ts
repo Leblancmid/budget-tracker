@@ -129,6 +129,10 @@ export interface BalanceAccountConfig {
   code: string
   name: string
   currency: BalanceCurrency
+  /** wallet: money you have; credit: a card you owe on (balance below zero = owed) */
+  kind?: 'wallet' | 'credit'
+  /** Credit cards: how much can be owed at most */
+  credit_limit?: number | null
   color: string
   icon: string
   sort_order: number

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { toast } from '@/lib/toast'
 import { flattenApiErrors } from '@/utils/api'
-import { ACCOUNT_COLORS, ACCOUNT_ICONS, colorOf, dailyInterest, fmtIn, iconOf } from '@/utils/balanceAccounts'
+import { ACCOUNT_COLORS, ACCOUNT_ICONS, cardGradientOf, colorOf, dailyInterest, fmtIn, iconOf } from '@/utils/balanceAccounts'
 import { handleAmountInput } from '@/utils/format'
 import type { BalanceAccountPayload } from '@/api/master'
 import type { BalanceAccountConfig, BalanceCurrency } from '@/types'
@@ -22,7 +22,7 @@ interface ManageBalanceAccountsModalProps {
   onDelete:  (id: number) => Promise<unknown>
 }
 
-const BLANK: BalanceAccountPayload = { name: '', currency: 'PHP', color: 'blue', icon: 'wallet', interest_rate: null, interest_tax: 20 }
+const BLANK: BalanceAccountPayload = { name: '', currency: 'PHP', kind: 'wallet', credit_limit: null, color: 'blue', icon: 'wallet', interest_rate: null, interest_tax: 20 }
 
 export function ManageBalanceAccountsModal({ open, onClose, accounts, startWithNew, onCreate, onUpdate, onReorder, onDelete }: ManageBalanceAccountsModalProps) {
   // null = list view; 'new' = create form; account = edit form
@@ -45,11 +45,12 @@ export function ManageBalanceAccountsModal({ open, onClose, accounts, startWithN
     setEditing(target)
     setForm(target === 'new'
       ? BLANK
-      : { name: target.name, currency: target.currency, color: target.color, icon: target.icon, interest_rate: target.interest_rate ?? null, interest_tax: target.interest_tax ?? 20 })
+      : { name: target.name, currency: target.currency, kind: target.kind ?? 'wallet', credit_limit: target.credit_limit ?? null, color: target.color, icon: target.icon, interest_rate: target.interest_rate ?? null, interest_tax: target.interest_tax ?? 20 })
   }
 
   const save = async () => {
     if (!form.name.trim()) { setErrors({ name: 'Give the account a name.' }); return }
+    if (form.kind === 'credit' && !(Number(form.credit_limit) > 0)) { setErrors({ credit_limit: "Enter the card's credit limit." }); return }
     setSaving(true)
     try {
       if (editing === 'new') {
@@ -136,7 +137,7 @@ export function ManageBalanceAccountsModal({ open, onClose, accounts, startWithN
                       {hidden && <span className="ml-2 text-[10px] font-semibold uppercase text-gray-400">Hidden</span>}
                     </p>
                     <p className="text-[11px] text-gray-400 dark:text-gray-500">
-                      {a.currency} · {a.entry_count} entr{a.entry_count === 1 ? 'y' : 'ies'}{a.interest_rate ? ` · ${a.interest_rate}% a year` : ''}
+                      {a.kind === 'credit' ? `Credit card · limit ${fmtIn(a, a.credit_limit ?? 0)}` : a.currency} · {a.entry_count} entr{a.entry_count === 1 ? 'y' : 'ies'}{a.kind !== 'credit' && a.interest_rate ? ` · ${a.interest_rate}% a year` : ''}
                     </p>
                   </div>
 
@@ -180,16 +181,23 @@ export function ManageBalanceAccountsModal({ open, onClose, accounts, startWithN
         <div className="flex flex-col gap-4">
           {/* Live preview */}
           {(() => {
-            const c = colorOf(form.color)
             const Icon = iconOf(form.icon)
+            const credit = form.kind === 'credit'
             return (
-              <div className={['flex items-center gap-3 rounded-xl border border-gray-100 dark:border-gray-700/60 px-4 py-3', c.soft].join(' ')}>
-                <div className={['flex h-10 w-10 items-center justify-center rounded-xl', c.iconTile].join(' ')}><Icon size={18} /></div>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">{form.name.trim() || 'Account name'}</p>
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400">{form.currency} balance</p>
+              <div className={['relative mx-auto flex aspect-[1.586/1] w-full max-w-xs flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-br p-4 text-white shadow-lg', cardGradientOf(form.color)].join(' ')}>
+                <span aria-hidden="true" className="absolute -right-10 -top-16 h-44 w-44 rounded-full bg-white/10" />
+                <div className="relative flex items-center gap-2.5">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/20 ring-1 ring-white/30"><Icon size={16} /></span>
+                  <div className="min-w-0">
+                    <p className="truncate font-bold">{form.name.trim() || 'Account name'}</p>
+                    <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-white/70">{credit ? 'Credit card' : `${form.currency} account`}</p>
+                  </div>
                 </div>
-                <p className={['ml-auto text-lg font-bold', c.text].join(' ')}>{form.currency === 'PHP' ? '₱' : '$'}0.00</p>
+                <span aria-hidden="true" className="relative h-6 w-9 rounded-md bg-gradient-to-br from-amber-200 via-yellow-300 to-amber-500" />
+                <div className="relative">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/70">{credit ? 'Limit' : 'Balance'}</p>
+                  <p className="text-xl font-bold">{fmtIn({ currency: form.currency }, credit ? Number(form.credit_limit) || 0 : 0)}</p>
+                </div>
               </div>
             )
           })()}
@@ -202,6 +210,41 @@ export function ManageBalanceAccountsModal({ open, onClose, accounts, startWithN
             placeholder="e.g. GCash, Wise, Cold wallet"
             autoFocus
           />
+
+          <div>
+            <p className="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Type</p>
+            <div className="flex gap-2">
+              {([['wallet', 'Wallet or bank', 'Money you have'], ['credit', 'Credit card', 'Spend now, pay the bill later']] as const).map(([k, label, hint]) => (
+                <button key={k} type="button"
+                  onClick={() => { setForm((f) => ({ ...f, kind: k, icon: k === 'credit' && f.icon === 'wallet' ? 'credit-card' : k === 'wallet' && f.icon === 'credit-card' ? 'wallet' : f.icon })); setErrors({}) }}
+                  className={[
+                    'flex-1 rounded-lg border px-3 py-2 text-left transition-colors',
+                    (form.kind ?? 'wallet') === k
+                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:border-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400'
+                      : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700',
+                  ].join(' ')}>
+                  <span className="block text-sm font-semibold">{label}</span>
+                  <span className="block text-[11px] opacity-75">{hint}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {form.kind === 'credit' && (
+            <div>
+              <Input
+                label={`Credit limit (${form.currency === 'PHP' ? '₱' : '$'})`}
+                inputMode="decimal"
+                value={form.credit_limit != null ? String(form.credit_limit) : ''}
+                onChange={(e) => handleAmountInput(e.target.value, (v) => { setForm((f) => ({ ...f, credit_limit: v === '' ? null : Number(v) })); setErrors({}) })}
+                placeholder="e.g. 50000"
+                error={errors.credit_limit}
+              />
+              <p className="mt-1.5 text-[11px] text-gray-500 dark:text-gray-400">
+                What you spend on the card shows as owed and counts against your net worth. Paying the bill from a bank brings it back down.
+              </p>
+            </div>
+          )}
 
           <div>
             <p className="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Currency</p>
@@ -256,8 +299,8 @@ export function ManageBalanceAccountsModal({ open, onClose, accounts, startWithN
             </div>
           </div>
 
-          {/* Interest: optional, depends on the bank */}
-          <div className="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+          {/* Interest: optional, depends on the bank (cards don't earn any) */}
+          {form.kind !== 'credit' && <div className="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
             <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Interest <span className="font-normal text-gray-400">(optional)</span></p>
             <p className="mb-2 text-[11px] text-gray-500 dark:text-gray-400">For banks that pay interest daily, like Maribank. Leave blank if this account doesn't earn any.</p>
             <div className="grid grid-cols-2 gap-3">
@@ -282,7 +325,7 @@ export function ManageBalanceAccountsModal({ open, onClose, accounts, startWithN
                 ≈ +{fmtIn({ currency: form.currency }, dailyInterest(editing.balance ?? 0, form.interest_rate, form.interest_tax ?? 20))} a day on the current balance, added automatically each day.
               </p>
             )}
-          </div>
+          </div>}
 
           <div className="flex items-center justify-between gap-3 pt-1">
             {startWithNew && editing === 'new' ? <span /> : (

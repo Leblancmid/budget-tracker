@@ -16,12 +16,34 @@ export interface ListingPublishPreview {
   configured: boolean
   listings: PublishedListing[]
   skipped: { id: number; name: string; reason: string }[]
+  /** The Discord listings channel is set up (LISTING_DISCORD_WEBHOOK) */
+  discord?: boolean
+}
+
+/** The Listing Kit image and its caption, for the Discord listings channel */
+export interface KitImage { blob: Blob; caption: string }
+
+const kitForm = (kit: KitImage | null) => {
+  const form = new FormData()
+  if (kit) {
+    form.append('image', kit.blob, kit.blob.type === 'image/jpeg' ? 'Leblanc.jpg' : 'Leblanc.png')
+    form.append('caption', kit.caption)
+  }
+  return form
 }
 
 /** Accounts for sale → the Leblanc website (commit + push; Vercel redeploys) */
 export const listingPublishApi = {
   preview: () => api.get<ListingPublishPreview>('/business/listing/publish').then((r) => r.data),
-  publish: () => api.post<{ count: number; changed: boolean; pushed: boolean; commit: string | null; alerted: number | null; announced?: number; discord?: { on: boolean; new: number; posted: number } }>('/business/listing/publish').then((r) => r.data),
+  /** kit: the Listing Kit image, posted to Discord when what's for sale changed */
+  publish: (kit: KitImage | null = null) => api.post<{
+    count: number; changed: boolean; pushed: boolean; commit: string | null; alerted: number | null
+    /** on: set up · changed: what's for sale changed · image: one was sent · posted: it went through */
+    discord?: { on: boolean; changed: boolean; image: boolean; posted: boolean }
+  }>('/business/listing/publish', kitForm(kit), { headers: { 'Content-Type': 'multipart/form-data' } }).then((r) => r.data),
+  /** Post the Listing Kit image to Discord now */
+  postToDiscord: (kit: KitImage) =>
+    api.post<{ message: string }>('/business/listing/discord', kitForm(kit), { headers: { 'Content-Type': 'multipart/form-data' } }).then((r) => r.data),
 }
 
 export interface WebsiteStats {

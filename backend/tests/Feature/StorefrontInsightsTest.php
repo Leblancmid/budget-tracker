@@ -10,6 +10,7 @@ use App\Services\ListingPerformance;
 use App\Services\PhoneAlerts;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -127,56 +128,48 @@ class StorefrontInsightsTest extends TestCase
         $this->assertStringContainsString('Lv 700 Melee (40 days)', $alerts->firstWhere('title', 'A listing is slow to sell')['body']);
     }
 
-    public function test_new_listings_and_price_drops_are_planned_for_discord_but_not_on_the_first_publish(): void
+    public function test_only_a_change_in_whats_for_sale_counts_for_discord(): void
     {
-        $now = [
-            ['id' => 'acc-1', 'level' => 690, 'category' => 'Distance', 'price' => '1.8KKK', 'price_was' => '2KKK', 'price_dropped_at' => '2026-11-20'],
-            ['id' => 'acc-2', 'level' => 650, 'category' => 'Melee', 'price' => '1KKK'],
-            ['id' => 'acc-3', 'level' => 700, 'category' => 'Magic'],
-        ];
         $before = [['id' => 'acc-1', 'price' => '2KKK'], ['id' => 'acc-2', 'price' => '1KKK']];
 
-        $plan = ListingAnnouncer::plan($now, $before, '2026-11-20');
-        $this->assertSame([['drop', 'acc-1'], ['new', 'acc-3']], array_map(fn ($p) => [$p['kind'], $p['listing']['id']], $plan));
-        $this->assertSame([], ListingAnnouncer::plan($now, [], '2026-11-20'), 'the first publish posts nothing');
+        $this->assertFalse(ListingAnnouncer::listingsChanged([['id' => 'acc-2', 'price' => '1KKK', 'level' => 650], ['id' => 'acc-1', 'price' => '2KKK']], $before));
+        $this->assertTrue(ListingAnnouncer::listingsChanged([...$before, ['id' => 'acc-3']], $before), 'added');
+        $this->assertTrue(ListingAnnouncer::listingsChanged([$before[0]], $before), 'sold');
+        $this->assertTrue(ListingAnnouncer::listingsChanged([['id' => 'acc-1', 'price' => '1.8KKK'], $before[1]], $before), 'repriced');
     }
 
-    public function test_posts_go_to_the_webhook_with_the_screenshot_and_only_when_set_up(): void
+    public function test_post_to_discord_sends_the_listing_kit_image_with_its_caption(): void
     {
-        Storage::disk('public')->put('accounts/a.jpg', 'img');
-        $post = [['kind' => 'new', 'listing' => ['id' => 'acc-3', 'level' => 700, 'category' => 'Magic', 'price' => '3KKK', 'image' => '/listings/acc-3.jpg',
-            'stats' => ['melee' => 50, 'distance' => 60, 'magic' => 640, 'defense' => 500]]]];
+        $image = fn () => UploadedFile::fake()->image('whatever-name.png', 1200, 800);
 
-        $this->assertSame(0, ListingAnnouncer::post($post, ['acc-3' => 'accounts/a.jpg']), 'no webhook: nothing posted');
+        $this->postJson('/api/v1/business/listing/discord', ['image' => $image(), 'caption' => 'Rucoy accounts for sale'])
+            ->assertStatus(422)->assertJsonPath('message', fn ($m) => str_contains($m, 'LISTING_DISCORD_WEBHOOK'));
 
         config(['listing.discord_webhook' => 'https://discord.test/api/webhooks/1/abc']);
-        $this->assertSame(1, ListingAnnouncer::post($post, ['acc-3' => 'accounts/a.jpg']));
+        $this->post('/api/v1/business/listing/discord', ['image' => $image(), 'caption' => 'Rucoy accounts for sale'], ['Accept' => 'application/json'])->assertOk();
         Http::assertSent(function (Request $r) {
             if (! str_contains($r->url(), 'discord.test')) {
                 return false;
             }
             $parts = collect($r->data())->keyBy('name');
-            $embed = json_decode($parts['payload_json']['contents'], true)['embeds'][0];
 
-            return $parts->has('files[0]')
-                && $embed['title'] === '🆕 Lv 700 Magic for sale'
-                && $embed['url'] === 'https://site.test/for-sale?listing=acc-3'
-                && $embed['image']['url'] === 'attachment://acc-3.jpg'
-                && str_contains($embed['fields'][0]['value'], 'Magic 640');
+            return $parts['files[0]']['filename'] === 'Leblanc.png' // never the uploaded name
+                && json_decode($parts['payload_json']['contents'], true)['content'] === 'Rucoy accounts for sale';
         });
+
+        // Only images, and one is needed
+        $this->post('/api/v1/business/listing/discord', ['image' => UploadedFile::fake()->create('a.pdf', 10, 'application/pdf')], ['Accept' => 'application/json'])
+            ->assertStatus(422)->assertJsonValidationErrors('image');
+        $this->postJson('/api/v1/business/listing/discord', ['caption' => 'x'])->assertStatus(422)->assertJsonValidationErrors('image');
     }
 
-    public function test_the_discord_command_tests_the_webhook_and_can_post_the_newest_listings(): void
+    public function test_the_discord_command_sends_a_test_message(): void
     {
         $this->artisan('listings:discord')->assertFailed(); // no webhook set
 
         config(['listing.discord_webhook' => 'https://discord.test/api/webhooks/1/abc']);
         $this->artisan('listings:discord')->expectsOutputToContain('Test message sent')->assertSuccessful();
         Http::assertSent(fn (Request $r) => str_contains($r->url(), 'discord.test') && str_contains((string) ($r['content'] ?? ''), 'connected'));
-
-        $a = $this->listed('Lv 690 Dist', 3);
-        $a->update(['level' => 690]);
-        $this->artisan('listings:discord', ['--latest' => 2])->expectsOutputToContain('Posted 1 of 1')->assertSuccessful();
     }
 
     public function test_buyers_are_grouped_by_name_with_repeat_buyers_counted(): void

@@ -10,6 +10,7 @@ import { readJson, STORAGE_KEYS, writeJson } from '@/lib/storage'
 import { toast } from '@/lib/toast'
 import { errorMessage } from '@/utils/api'
 import type { RucoyAccount } from '@/types'
+import type { KitImage } from '@/api/business'
 import {
   DEFAULT_CROP, isNewListing, listingPrice, listingCaption, sameOriginPath, sortForListing,
   type CropInsets,
@@ -143,6 +144,13 @@ export default function ListingKit() {
     }
   }
 
+  /** The image as drawn, under Discord's size limit, with the caption: for the Discord listings channel */
+  const kitImage = async (): Promise<KitImage | null> => {
+    if (!canvasRef.current || tiles.length === 0) return null
+    const { blob } = await pngUnder(canvasRef.current)
+    return { blob, caption: listingCaption(included, { headline: settings.headline, link: settings.link, promos }) }
+  }
+
   const copyCaption = async () => {
     try {
       await navigator.clipboard.writeText(listingCaption(included, { headline: settings.headline, link: settings.link, promos }))
@@ -273,7 +281,7 @@ export default function ListingKit() {
               <Input label="Caption headline" value={settings.headline} onChange={(e) => patch({ headline: e.target.value })} />
             </Card>
 
-            <PublishToWebsite />
+            <PublishToWebsite kitImage={kitImage} />
             <GoldRatesCard />
           </div>
 

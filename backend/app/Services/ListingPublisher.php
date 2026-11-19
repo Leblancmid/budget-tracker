@@ -116,11 +116,13 @@ class ListingPublisher
     }
 
     /**
-     * Write, commit and push.
+     * Write, commit and push. $kitImage: the Listing Kit image drawn in the app (with its caption),
+     * posted to your Discord listings channel when what's for sale changed.
      *
-     * @return array{count: int, changed: bool, pushed: bool, commit: ?string, alerted: ?int}
+     * @param  array{contents: string, name: string, caption: string}|null  $kitImage
+     * @return array{count: int, changed: bool, pushed: bool, commit: ?string, alerted: ?int, discord: array<string, bool>}
      */
-    public function publish(): array
+    public function publish(?array $kitImage = null): array
     {
         if (! $this->configured()) {
             throw new RuntimeException('Publishing is off: set LISTING_SITE_PATH in the backend .env to the Leblanc repo folder.');
@@ -155,8 +157,8 @@ class ListingPublisher
         $published = $this->readJson(self::JSON);
         $json = array_map(fn ($l) => array_diff_key($l, ['_screenshot' => true]), $built['listings']);
         $json = self::markPriceDrops($json, $published, $today);
-        // What to post to Discord: worked out now, against what the website had before
-        $announcements = ListingAnnouncer::plan($json, $published, $today);
+        // Worked out now, against what the website had before: did what's for sale change?
+        $forSaleChanged = ListingAnnouncer::listingsChanged($json, $published);
         $this->writeJson(self::JSON, $json);
         $this->writeJson(self::GOLD, WebsiteContent::gold());
         $this->writeJson(self::STATS, WebsiteContent::stats());
@@ -181,14 +183,15 @@ class ListingPublisher
         // Buyers who asked to be notified: the website posts the matches to Discord (never blocks the publish)
         $alerted = WebsiteStats::dispatchAlerts($json);
 
-        // New accounts and price drops → your Discord listings channel (also never blocks it)
-        $announced = ListingAnnouncer::post($announcements, collect($built['listings'])->pluck('_screenshot', 'id')->all());
+        // The Listing Kit image → your Discord listings channel, when what's for sale changed
+        // (also never blocks the publish)
+        $posted = $forSaleChanged && $kitImage !== null && ListingAnnouncer::configured()
+            && ListingAnnouncer::postImage($kitImage['contents'], $kitImage['name'], $kitImage['caption']);
 
         return [
             'count' => count($json), 'changed' => $changed || $staged, 'pushed' => $pushed, 'commit' => $commit, 'alerted' => $alerted,
-            'announced' => $announced,
-            // So the app can say why nothing reached Discord: off, nothing new, or it failed
-            'discord' => ['on' => ListingAnnouncer::configured(), 'new' => count($announcements), 'posted' => $announced],
+            // So the app can say what happened on Discord: off, nothing changed, posted, or it failed
+            'discord' => ['on' => ListingAnnouncer::configured(), 'changed' => $forSaleChanged, 'image' => $kitImage !== null, 'posted' => $posted],
         ];
     }
 

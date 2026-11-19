@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { ExternalLink, Globe, RefreshCw, Star } from 'lucide-react'
+import { ExternalLink, Globe, MessageCircle, RefreshCw, Star } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
-import { listingPublishApi, type ListingPublishPreview } from '@/api/business'
+import { listingPublishApi, type KitImage, type ListingPublishPreview } from '@/api/business'
 import { useAsyncData } from '@/hooks/useAsyncData'
 import { toast } from '@/lib/toast'
 import { errorMessage } from '@/utils/api'
@@ -14,26 +14,46 @@ const NO_PREVIEW = null as ListingPublishPreview | null
 /**
  * Publish to website: the unsold accounts (with a screenshot) go to leblancmid.pages.dev.
  * Sold ones drop off; prices show only where "Show price" is ticked.
+ * kitImage: draws the Listing Kit image for Discord (null when there's nothing to draw).
  */
-export function PublishToWebsite() {
+export function PublishToWebsite({ kitImage }: { kitImage: () => Promise<KitImage | null> }) {
   const { data: preview, loading, error, refetch } = useAsyncData(listingPublishApi.preview, NO_PREVIEW)
   const [confirming, setConfirming] = useState(false)
   const [publishing, setPublishing] = useState(false)
+  const [posting, setPosting]       = useState(false)
+
+  /** The image, or null if it can't be drawn (the publish still goes ahead) */
+  const safeImage = async () => { try { return await kitImage() } catch { return null } }
+
+  const postToDiscord = async () => {
+    setPosting(true)
+    try {
+      const kit = await safeImage()
+      if (!kit) { toast.error('Nothing to post yet: the Listing Kit image is empty.'); return }
+      await listingPublishApi.postToDiscord(kit)
+      toast.success('Posted the Listing Kit image to Discord.')
+    } catch (err) {
+      toast.error(errorMessage(err, 'Could not post to Discord.'))
+    } finally {
+      setPosting(false)
+    }
+  }
 
   const publish = async () => {
     setPublishing(true)
     try {
-      const r = await listingPublishApi.publish()
+      const r = await listingPublishApi.publish(await safeImage())
       // Pushed counts even when nothing new was written (e.g. finishing a push that failed before)
       if (!r.changed && !r.pushed) toast.success('The website is already up to date.')
       else if (r.pushed) toast.success(`Published ${r.count} listing${r.count === 1 ? '' : 's'}. The website updates in about a minute.`)
       else toast.success(`Saved ${r.count} listings to the website repo. Push it to go live.`)
-      // The Discord listings channel: posted, nothing new, or it failed (off: say nothing)
+      // The Discord listings channel: posted, nothing changed, or it failed (off: say nothing)
       const d = r.discord
       if (d?.on) {
-        if (d.new === 0) toast.success('Nothing new for Discord: no accounts added or prices dropped since the last publish.')
-        else if (d.posted === d.new) toast.success(`Posted ${d.posted} to your Discord listings channel.`)
-        else toast.error(`Posted ${d.posted} of ${d.new} to Discord. Check the webhook link (php artisan listings:discord tests it).`)
+        if (d.posted) toast.success('Posted the Listing Kit image to Discord.')
+        else if (!d.changed) toast.success('Nothing changed for sale, so nothing was posted to Discord. Use "Post image to Discord" to post it anyway.')
+        else if (!d.image) toast.error('The Listing Kit image was empty, so nothing was posted to Discord.')
+        else toast.error('Discord refused the image. Check the webhook link (php artisan listings:discord tests it).')
       }
       // Buyers who asked to be notified about one of these: the list is in #inquiries
       if (r.alerted) toast.success(`${r.alerted} buyer request${r.alerted === 1 ? '' : 's'} matched. See #inquiries for who to message.`)
@@ -95,6 +115,18 @@ export function PublishToWebsite() {
             Publish to website
           </Button>
         </>
+      )}
+
+      {/* The Discord listings channel: works whether or not publishing is set up on this PC */}
+      {preview?.discord && (
+        <div className="flex flex-col gap-1.5 border-t border-gray-100 pt-3 dark:border-gray-800">
+          <Button variant="secondary" icon={<MessageCircle className="h-4 w-4" />} onClick={postToDiscord} loading={posting} disabled={publishing}>
+            Post image to Discord
+          </Button>
+          <p className="text-[11px] text-gray-500 dark:text-gray-400">
+            Posts the Listing Kit image and caption to your listings channel. Publishing also posts it when what's for sale changed.
+          </p>
+        </div>
       )}
 
       <ConfirmDialog

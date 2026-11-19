@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\RucoyAccount;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
@@ -82,6 +83,10 @@ class ListingPublisher
             if ($price = self::price($a)) {
                 $item['price'] = $price;
             }
+            // For the website's "New" badge
+            if ($a->listed_at) {
+                $item['listed_at'] = $a->listed_at->setTimezone(BalanceInterest::ZONE)->toDateString();
+            }
             $item['_screenshot'] = $a->screenshot;
             $listings[] = $item;
         }
@@ -147,6 +152,7 @@ class ListingPublisher
         }
 
         $json = array_map(fn ($l) => array_diff_key($l, ['_screenshot' => true]), $built['listings']);
+        $json = self::markPriceDrops($json, $this->readJson(self::JSON), now(BalanceInterest::ZONE)->toDateString());
         $this->writeJson(self::JSON, $json);
         $this->writeJson(self::GOLD, WebsiteContent::gold());
         $this->writeJson(self::STATS, WebsiteContent::stats());
@@ -172,6 +178,58 @@ class ListingPublisher
         $alerted = WebsiteStats::dispatchAlerts($json);
 
         return ['count' => count($json), 'changed' => $changed || $staged, 'pushed' => $pushed, 'commit' => $commit, 'alerted' => $alerted];
+    }
+
+    /** How long a "Price dropped" badge stays up */
+    public const PRICE_DROP_DAYS = 14;
+
+    /**
+     * Compare with what's on the website now: a listing whose price went down gets price_was (the
+     * old price) and price_dropped_at, kept for PRICE_DROP_DAYS while the price stays the same.
+     * Prices are only compared in the same unit (gold with gold, $ with $, ₱ with ₱).
+     */
+    public static function markPriceDrops(array $listings, array $published, string $today): array
+    {
+        $before = collect($published)->filter(fn ($l) => is_array($l) && isset($l['id']))->keyBy('id');
+
+        return array_map(function (array $l) use ($before, $today) {
+            $old = $before->get($l['id']);
+            $now = isset($l['price']) ? self::priceValue($l['price']) : null;
+            $was = isset($old['price']) ? self::priceValue($old['price']) : null;
+
+            if ($now && $was && $now[0] === $was[0] && $now[1] < $was[1]) {
+                return [...$l, 'price_was' => $old['price'], 'price_dropped_at' => $today];
+            }
+            // Still the same lower price: keep the badge until it's old
+            if ($old && isset($old['price_was'], $old['price_dropped_at'], $l['price']) && $old['price'] === $l['price']
+                && CarbonImmutable::parse($old['price_dropped_at'])->diffInDays(CarbonImmutable::parse($today)) < self::PRICE_DROP_DAYS) {
+                return [...$l, 'price_was' => $old['price_was'], 'price_dropped_at' => $old['price_dropped_at']];
+            }
+
+            return $l;
+        }, $listings);
+    }
+
+    /** "1.8KKK" → ['G', 1800000000], "$300" → ['$', 300], "₱1,500" → ['₱', 1500]; null if unreadable. */
+    public static function priceValue(string $price): ?array
+    {
+        if (preg_match('/^([$₱])([\d,]+(?:\.\d+)?)$/u', trim($price), $m)) {
+            return [$m[1], (float) str_replace(',', '', $m[2])];
+        }
+        if (preg_match('/^(\d+(?:\.\d+)?)(KKK|KK|K)?$/', trim($price), $m)) {
+            return ['G', (float) $m[1] * ['KKK' => 1e9, 'KK' => 1e6, 'K' => 1e3, '' => 1][$m[2] ?? '']];
+        }
+
+        return null;
+    }
+
+    /** A JSON file in the website repo, or [] if it isn't there or can't be read. */
+    private function readJson(string $path): array
+    {
+        $file = $this->sitePath . '/' . $path;
+        $data = is_file($file) ? json_decode((string) File::get($file), true) : null;
+
+        return is_array($data) ? $data : [];
     }
 
     private function writeJson(string $path, mixed $data): void

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Business;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Business\UpdateGoldRatesRequest;
 use App\Models\ActivityLog;
+use App\Services\ListingPerformance;
 use App\Services\ListingPublisher;
 use App\Services\PriceGuide;
 use App\Services\WebsiteContent;
@@ -35,6 +36,12 @@ class ListingPublishController extends Controller
         } catch (RuntimeException $e) {
             return response()->json(['message' => $e->getMessage()], 502);
         }
+    }
+
+    /** How each listed account is doing: days listed, views, requests and a verdict. */
+    public function performance(): JsonResponse
+    {
+        return response()->json(ListingPerformance::build());
     }
 
     /** Gold rates for the website, with your recent sell / buy rates as a guide. */

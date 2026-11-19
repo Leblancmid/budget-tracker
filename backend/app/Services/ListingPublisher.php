@@ -151,8 +151,12 @@ class ListingPublisher
             }
         }
 
+        $today     = now(BalanceInterest::ZONE)->toDateString();
+        $published = $this->readJson(self::JSON);
         $json = array_map(fn ($l) => array_diff_key($l, ['_screenshot' => true]), $built['listings']);
-        $json = self::markPriceDrops($json, $this->readJson(self::JSON), now(BalanceInterest::ZONE)->toDateString());
+        $json = self::markPriceDrops($json, $published, $today);
+        // What to post to Discord: worked out now, against what the website had before
+        $announcements = ListingAnnouncer::plan($json, $published, $today);
         $this->writeJson(self::JSON, $json);
         $this->writeJson(self::GOLD, WebsiteContent::gold());
         $this->writeJson(self::STATS, WebsiteContent::stats());
@@ -177,7 +181,12 @@ class ListingPublisher
         // Buyers who asked to be notified: the website posts the matches to Discord (never blocks the publish)
         $alerted = WebsiteStats::dispatchAlerts($json);
 
-        return ['count' => count($json), 'changed' => $changed || $staged, 'pushed' => $pushed, 'commit' => $commit, 'alerted' => $alerted];
+        // New accounts and price drops → your Discord listings channel (also never blocks it)
+        $announced = $pushed || ! config('listing.push')
+            ? ListingAnnouncer::post($announcements, collect($built['listings'])->pluck('_screenshot', 'id')->all())
+            : 0;
+
+        return ['count' => count($json), 'changed' => $changed || $staged, 'pushed' => $pushed, 'commit' => $commit, 'alerted' => $alerted, 'announced' => $announced];
     }
 
     /** How long a "Price dropped" badge stays up */

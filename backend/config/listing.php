@@ -20,4 +20,11 @@ return [
     */
     'site_url'   => rtrim((string) env('LISTING_SITE_URL', 'https://leblancmid.pages.dev'), '/'),
     'site_token' => env('LISTING_SITE_TOKEN'),
+
+    /*
+    | A Discord webhook for your public listings channel (Channel settings > Integrations > Webhooks).
+    | After each publish, new accounts and price drops are posted there. Leave empty to turn it off.
+    | It's a secret: keep it only in .env.
+    */
+    'discord_webhook' => env('LISTING_DISCORD_WEBHOOK'),
 ];

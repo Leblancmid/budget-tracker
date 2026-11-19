@@ -7,12 +7,17 @@ use App\Models\Trade;
 use App\Notifications\AppAlert;
 use App\Services\Alerts;
 use App\Services\BalanceInterest;
+use App\Services\ListingPerformance;
+use App\Services\WebsiteStats;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
+use Throwable;
 
 /**
  * Every morning (Manila): tells people with Trading what's due (trades to complete, account
  * payments to collect) and, on Mondays, that the weekly brief is ready. Each alert once a day.
+ * People with the Storefront also hear about buyers to follow up and listings slow to sell
+ * (once for each new set, so the same ones don't nag every morning).
  */
 class BusinessAlerts extends Command
 {
@@ -63,8 +68,61 @@ class BusinessAlerts extends Command
             ));
         }
 
+        $sent += $this->followUps($today);
+        $sent += $this->slowListings($today);
+
         $this->info("{$sent} alert(s) sent.");
 
         return self::SUCCESS;
+    }
+
+    /** Leads you messaged this many days ago that still have no outcome */
+    public const FOLLOW_UP_DAYS = 3;
+
+    /** Website leads marked "Messaged" FOLLOW_UP_DAYS+ ago with no "Deal done / No deal" since. */
+    private function followUps(CarbonImmutable $today): int
+    {
+        if (! WebsiteStats::configured()) {
+            return 0;
+        }
+        try {
+            $leads = collect(WebsiteStats::rawLeads());
+        } catch (Throwable) {
+            return 0; // the website is down: try again tomorrow
+        }
+        $before = $today->subDays(self::FOLLOW_UP_DAYS)->getTimestampMs();
+        $waiting = $leads->filter(fn ($l) => ($l['status'] ?? null) === 'contacted' && (int) ($l['updated_at'] ?? 0) <= $before)->sortBy('id');
+        if ($waiting->isEmpty()) {
+            return 0;
+        }
+        $n = $waiting->count();
+
+        return Alerts::toEveryoneWith('storefront', new AppAlert(
+            'lead',
+            $n === 1 ? 'Follow up with a buyer' : "Follow up with {$n} buyers",
+            // What they wanted, never their name (it shows on the lock screen)
+            $waiting->take(3)->map(fn ($l) => WatchLeads::summary($l))->join(' · ') . ($n > 3 ? '…' : '') . ': messaged ' . self::FOLLOW_UP_DAYS . '+ days ago, no answer yet',
+            '/business/leads',
+            key: 'followup-' . $waiting->pluck('id')->join('-'),
+        ));
+    }
+
+    /** Accounts listed longer than you usually take to sell (re-sent weekly while still slow). */
+    private function slowListings(CarbonImmutable $today): int
+    {
+        $slow = collect(ListingPerformance::build($today)['listings'])
+            ->filter(fn ($l) => in_array($l['verdict'], ListingPerformance::SLOW, true));
+        if ($slow->isEmpty()) {
+            return 0;
+        }
+        $n = $slow->count();
+
+        return Alerts::toEveryoneWith('storefront', new AppAlert(
+            'listings',
+            $n === 1 ? 'A listing is slow to sell' : "{$n} listings are slow to sell",
+            $slow->take(3)->map(fn ($l) => "{$l['name']} ({$l['days']} days)")->join(', ') . ($n > 3 ? '…' : '') . '. See why on Leads.',
+            '/business/leads',
+            key: 'slow-' . $slow->pluck('account_id')->sort()->join('-') . '-' . $today->format('o-\WW'),
+        ));
     }
 }

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BudgetController;
 use App\Http\Controllers\Api\Business\BusinessDashboardController;
+use App\Http\Controllers\Api\Business\BuyerController;
 use App\Http\Controllers\Api\Business\BusinessTransactionController;
 use App\Http\Controllers\Api\Business\InsightsController;
 use App\Http\Controllers\Api\Business\LeadController;
@@ -116,6 +117,8 @@ Route::prefix('v1')->group(function () {
             Route::prefix('business')->name('business.')->group(function () {
                 Route::get('dashboard', [BusinessDashboardController::class, 'index'])->name('dashboard');
                 Route::get('brief', [InsightsController::class, 'brief'])->name('brief');
+                // The people you sell to (from Sold to)
+                Route::get('buyers', [BuyerController::class, 'index'])->name('buyers.index');
                 Route::get('price-guide', [InsightsController::class, 'priceGuide'])->name('price-guide');
                 // Storefront: what the public website shows and what comes in from it. Given separately
                 // (on top of Trading), since publishing and website prices are seen by buyers
@@ -124,6 +127,7 @@ Route::prefix('v1')->group(function () {
                     Route::get('listing/publish', [ListingPublishController::class, 'preview'])->name('listing.preview');
                     Route::post('listing/publish', [ListingPublishController::class, 'publish'])->middleware('throttle:6,1')->name('listing.publish');
                     Route::get('website-stats', [ListingPublishController::class, 'stats'])->name('website-stats');
+                    Route::get('listing-performance', [ListingPublishController::class, 'performance'])->name('listing-performance');
                     // Leads from the website (I want this, gold orders, accounts offered to you)
                     Route::get('leads', [LeadController::class, 'index'])->name('leads.index');
                     Route::patch('leads/{lead}', [LeadController::class, 'update'])->whereNumber('lead')->name('leads.update');

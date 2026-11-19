@@ -80,6 +80,23 @@ class WebsiteContentTest extends TestCase
         $this->assertStringNotContainsString('buyer@', json_encode($sold));
     }
 
+    public function test_accounts_sold_for_gold_with_to_gold_count_as_recently_sold(): void
+    {
+        $day = fn (int $ago) => now('Asia/Manila')->subDays($ago)->toDateString();
+        $sold = RucoyAccount::create(['description' => 'Lv 688 Dist', 'email' => 'a@x.com', 'level' => 688, 'melee' => 100, 'distance' => 640, 'magic' => 60, 'defense' => 520]);
+        $sold->forceFill(['archived_at' => now()->subDays(3)])->save();
+        // "To Gold": the card is gone; the gold trade keeps its name and the note
+        BusinessTransaction::create(['type' => 'gold', 'description' => 'Lv 702 Mage', 'notes' => 'Converted from account: m@x.com', 'price_gold' => 3e9, 'amount' => 1, 'date' => $day(1)]);
+        BusinessTransaction::create(['type' => 'gold', 'description' => 'Lv 650 Melee', 'notes' => 'Converted from account: o@x.com', 'price_gold' => 2e9, 'amount' => 1, 'date' => $day(120)]); // too long ago
+        BusinessTransaction::create(['type' => 'gold', 'description' => '500KK to Rho', 'amount' => 1, 'date' => $day(1)]); // an ordinary gold trade
+
+        $this->assertSame([
+            ['level' => 702, 'category' => 'Magic', 'sold_on' => $day(1)],
+            ['level' => 688, 'category' => 'Distance', 'sold_on' => $day(3)],
+        ], WebsiteContent::recentSold());
+        $this->assertStringNotContainsString('m@x.com', json_encode(WebsiteContent::recentSold()));
+    }
+
     public function test_reply_time_is_the_median_from_request_to_marked_messaged(): void
     {
         $base = now()->subDays(5)->startOfHour();

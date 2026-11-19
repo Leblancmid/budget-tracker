@@ -71,34 +71,56 @@ class WebsiteContent
 
     public const RECENT_DAYS = 90;
 
+    /** Gold trades made from an account with "To Gold" carry this note (see the Sales page) */
+    public const CONVERTED_NOTE = 'Converted from account:';
+
     /**
      * Accounts sold lately: level, build and the day only. Never the price or who bought it.
+     * Counts accounts marked sold, and accounts sold for gold with "To Gold" (the account card is
+     * removed then, so its level and build are read from the trade's name, e.g. "Lv 688 Dist").
      *
      * @return list<array{level: int, category: string, sold_on: string}>
      */
     public static function recentSold(): array
     {
-        $names = ['melee' => 'Melee', 'distance' => 'Distance', 'magic' => 'Magic'];
+        $since = now()->subDays(self::RECENT_DAYS);
+        $limit = self::RECENT_SOLD * 2; // some may lack a level or build
 
-        return RucoyAccount::archived()
-            ->where('archived_at', '>=', now()->subDays(self::RECENT_DAYS))
+        $sold = RucoyAccount::archived()
+            ->where('archived_at', '>=', $since)
             ->orderByDesc('archived_at')
-            ->limit(self::RECENT_SOLD * 2) // some may lack a level or build
+            ->limit($limit)
             ->get()
-            ->map(function (RucoyAccount $a) use ($names) {
-                $level = PriceGuide::levelOf($a);
-                $class = PriceGuide::classOf($a);
+            ->map(fn (RucoyAccount $a) => self::soldItem($a, $a->archived_at->setTimezone(BalanceInterest::ZONE)->toDateString()));
 
-                return $level && $class ? [
-                    'level'    => $level,
-                    'category' => $names[$class],
-                    'sold_on'  => $a->archived_at->setTimezone(BalanceInterest::ZONE)->toDateString(),
-                ] : null;
-            })
+        $converted = BusinessTransaction::where('type', 'gold')
+            ->where('notes', 'like', self::CONVERTED_NOTE . '%')
+            ->where('date', '>=', $since->copy()->setTimezone(BalanceInterest::ZONE)->toDateString())
+            ->orderByDesc('date')
+            ->limit($limit)
+            ->get()
+            ->map(fn (BusinessTransaction $t) => self::soldItem(
+                new RucoyAccount(['description' => $t->description]),
+                CarbonImmutable::parse($t->date)->toDateString(),
+            ));
+
+        return $sold->concat($converted)
             ->filter()
+            ->sortByDesc('sold_on')
             ->take(self::RECENT_SOLD)
             ->values()
             ->all();
+    }
+
+    /** One entry for the strip, or null when the level or build can't be told. */
+    private static function soldItem(RucoyAccount $a, string $soldOn): ?array
+    {
+        $level = PriceGuide::levelOf($a);
+        $class = PriceGuide::classOf($a);
+
+        return $level && $class
+            ? ['level' => $level, 'category' => ['melee' => 'Melee', 'distance' => 'Distance', 'magic' => 'Magic'][$class], 'sold_on' => $soldOn]
+            : null;
     }
 
     /** Fewer replies than this and the website shows no reply time (too little to go on) */

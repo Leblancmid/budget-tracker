@@ -39,11 +39,11 @@ export const listingPublishApi = {
   publish: (kit: KitImage | null = null) => api.post<{
     count: number; changed: boolean; pushed: boolean; commit: string | null; alerted: number | null
     /** on: set up · changed: what's for sale changed · image: one was sent · posted: it went through */
-    discord?: { on: boolean; changed: boolean; image: boolean; posted: boolean }
+    discord?: { on: boolean; changed: boolean; image: boolean; posted: boolean; sent: number; total: number }
   }>('/business/listing/publish', kitForm(kit), { headers: { 'Content-Type': 'multipart/form-data' } }).then((r) => r.data),
   /** Post the Listing Kit image to Discord now */
   postToDiscord: (kit: KitImage) =>
-    api.post<{ message: string }>('/business/listing/discord', kitForm(kit), { headers: { 'Content-Type': 'multipart/form-data' } }).then((r) => r.data),
+    api.post<{ message: string; sent: number; total: number }>('/business/listing/discord', kitForm(kit), { headers: { 'Content-Type': 'multipart/form-data' } }).then((r) => r.data),
 }
 
 export interface WebsiteStats {

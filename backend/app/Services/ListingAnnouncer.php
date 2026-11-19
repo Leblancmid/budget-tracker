@@ -16,9 +16,24 @@ class ListingAnnouncer
     /** Discord's limit for a message's text */
     public const CAPTION_MAX = 2000;
 
+    /**
+     * The channels to post to: LISTING_DISCORD_WEBHOOK holds one webhook link per server's
+     * channel, separated by commas. Anything that isn't a https:// link is ignored.
+     *
+     * @return list<string>
+     */
+    public static function webhooks(): array
+    {
+        return collect(preg_split('/[\s,]+/', (string) config('listing.discord_webhook')) ?: [])
+            ->filter(fn ($url) => str_starts_with($url, 'https://'))
+            ->unique()
+            ->values()
+            ->all();
+    }
+
     public static function configured(): bool
     {
-        return str_starts_with((string) config('listing.discord_webhook'), 'https://');
+        return self::webhooks() !== [];
     }
 
     /**
@@ -36,26 +51,32 @@ class ListingAnnouncer
         return $key($listings) !== $key($published);
     }
 
-    /** Post the image (PNG or JPEG bytes) with the caption. False if it didn't go through. */
-    public static function postImage(string $contents, string $filename, string $caption): bool
+    /**
+     * Post the image (PNG or JPEG bytes) with the caption to every channel.
+     *
+     * @return array{sent: int, total: int} how many channels it reached, of how many
+     */
+    public static function postImage(string $contents, string $filename, string $caption): array
     {
-        if (! self::configured()) {
-            return false;
-        }
-        try {
-            $res = Http::timeout(30)
-                ->attach('files[0]', $contents, $filename)
-                ->post((string) config('listing.discord_webhook'), [
-                    'payload_json' => json_encode(['content' => mb_substr($caption, 0, self::CAPTION_MAX)]),
-                ]);
-            if ($res->successful()) {
-                return true;
+        $hooks = self::webhooks();
+        $sent  = 0;
+        foreach ($hooks as $i => $url) {
+            // Logged as "channel 2", never the link itself (it's a secret)
+            $which = 'channel ' . ($i + 1);
+            try {
+                $res = Http::timeout(30)
+                    ->attach('files[0]', $contents, $filename)
+                    ->post($url, ['payload_json' => json_encode(['content' => mb_substr($caption, 0, self::CAPTION_MAX)])]);
+                if ($res->successful()) {
+                    $sent++;
+                } else {
+                    Log::warning("Discord listings post failed ({$which}): HTTP " . $res->status() . ' ' . mb_substr($res->body(), 0, 300));
+                }
+            } catch (Throwable $e) {
+                Log::warning("Discord listings post failed ({$which}): " . $e->getMessage());
             }
-            Log::warning('Discord listings post failed: HTTP ' . $res->status() . ' ' . mb_substr($res->body(), 0, 300));
-        } catch (Throwable $e) {
-            Log::warning('Discord listings post failed: ' . $e->getMessage());
         }
 
-        return false;
+        return ['sent' => $sent, 'total' => count($hooks)];
     }
 }

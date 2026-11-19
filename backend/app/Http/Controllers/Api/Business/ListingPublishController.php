@@ -48,12 +48,17 @@ class ListingPublishController extends Controller
             return response()->json(['message' => "Discord isn't set up: add LISTING_DISCORD_WEBHOOK to the backend .env, then run the after-deploy script."], 422);
         }
         $image = $request->kitImage();
-        if (! ListingAnnouncer::postImage($image['contents'], $image['name'], $image['caption'])) {
-            return response()->json(['message' => 'Discord refused the post. Check the webhook link (php artisan listings:discord tests it).'], 502);
+        ['sent' => $sent, 'total' => $total] = ListingAnnouncer::postImage($image['contents'], $image['name'], $image['caption']);
+        if ($sent === 0) {
+            return response()->json(['message' => 'Discord refused the post. Check the webhook links (php artisan listings:discord tests them).'], 502);
         }
-        ActivityLog::note('business', 'published', 'Posted the listing image to Discord');
+        ActivityLog::note('business', 'published', "Posted the listing image to Discord ({$sent} of {$total} channels)");
 
-        return response()->json(['message' => 'Posted.']);
+        return response()->json([
+            'message' => $sent === $total ? 'Posted.' : "Posted to {$sent} of {$total} channels: check the others' webhook links.",
+            'sent'    => $sent,
+            'total'   => $total,
+        ]);
     }
 
     /** How each listed account is doing: days listed, views, requests and a verdict. */

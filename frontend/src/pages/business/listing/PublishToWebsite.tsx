@@ -30,8 +30,9 @@ export function PublishToWebsite({ kitImage }: { kitImage: () => Promise<KitImag
     try {
       const kit = await safeImage()
       if (!kit) { toast.error('Nothing to post yet: the Listing Kit image is empty.'); return }
-      await listingPublishApi.postToDiscord(kit)
-      toast.success('Posted the Listing Kit image to Discord.')
+      const r = await listingPublishApi.postToDiscord(kit)
+      if (r.sent === r.total) toast.success(r.total === 1 ? 'Posted the Listing Kit image to Discord.' : `Posted the Listing Kit image to ${r.total} Discord servers.`)
+      else toast.error(r.message)
     } catch (err) {
       toast.error(errorMessage(err, 'Could not post to Discord.'))
     } finally {
@@ -50,7 +51,8 @@ export function PublishToWebsite({ kitImage }: { kitImage: () => Promise<KitImag
       // The Discord listings channel: posted, nothing changed, or it failed (off: say nothing)
       const d = r.discord
       if (d?.on) {
-        if (d.posted) toast.success('Posted the Listing Kit image to Discord.')
+        if (d.posted && d.sent < d.total) toast.error(`Posted to ${d.sent} of ${d.total} Discord channels: check the others' webhook links.`)
+        else if (d.posted) toast.success(d.total === 1 ? 'Posted the Listing Kit image to Discord.' : `Posted the Listing Kit image to ${d.total} Discord servers.`)
         else if (!d.changed) toast.success('Nothing changed for sale, so nothing was posted to Discord. Use "Post image to Discord" to post it anyway.')
         else if (!d.image) toast.error('The Listing Kit image was empty, so nothing was posted to Discord.')
         else toast.error('Discord refused the image. Check the webhook link (php artisan listings:discord tests it).')

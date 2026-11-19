@@ -185,13 +185,18 @@ class ListingPublisher
 
         // The Listing Kit image → your Discord listings channel, when what's for sale changed
         // (also never blocks the publish)
-        $posted = $forSaleChanged && $kitImage !== null && ListingAnnouncer::configured()
-            && ListingAnnouncer::postImage($kitImage['contents'], $kitImage['name'], $kitImage['caption']);
+        $result = $forSaleChanged && $kitImage !== null && ListingAnnouncer::configured()
+            ? ListingAnnouncer::postImage($kitImage['contents'], $kitImage['name'], $kitImage['caption'])
+            : ['sent' => 0, 'total' => count(ListingAnnouncer::webhooks())];
 
         return [
             'count' => count($json), 'changed' => $changed || $staged, 'pushed' => $pushed, 'commit' => $commit, 'alerted' => $alerted,
-            // So the app can say what happened on Discord: off, nothing changed, posted, or it failed
-            'discord' => ['on' => ListingAnnouncer::configured(), 'changed' => $forSaleChanged, 'image' => $kitImage !== null, 'posted' => $posted],
+            // So the app can say what happened on Discord: off, nothing changed, posted (to how many
+            // channels), or it failed
+            'discord' => [
+                'on' => ListingAnnouncer::configured(), 'changed' => $forSaleChanged, 'image' => $kitImage !== null,
+                'posted' => $result['sent'] > 0, 'sent' => $result['sent'], 'total' => $result['total'],
+            ],
         ];
     }
 

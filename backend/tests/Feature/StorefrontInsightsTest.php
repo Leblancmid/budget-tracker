@@ -49,6 +49,9 @@ class StorefrontInsightsTest extends TestCase
             if (str_contains($r->url(), '/api/leads')) {
                 return Http::response(['leads' => $this->leads]);
             }
+            if (str_contains($r->url(), 'discord.test/api/webhooks/9/deleted')) {
+                return Http::response(['message' => 'Unknown Webhook'], 404); // a webhook someone deleted
+            }
             if (str_contains($r->url(), 'discord.test')) {
                 return Http::response(null, 204);
             }
@@ -168,8 +171,28 @@ class StorefrontInsightsTest extends TestCase
         $this->artisan('listings:discord')->assertFailed(); // no webhook set
 
         config(['listing.discord_webhook' => 'https://discord.test/api/webhooks/1/abc']);
-        $this->artisan('listings:discord')->expectsOutputToContain('Test message sent')->assertSuccessful();
+        $this->artisan('listings:discord')->expectsOutputToContain('Channel 1 of 1: test message sent')->assertSuccessful();
         Http::assertSent(fn (Request $r) => str_contains($r->url(), 'discord.test') && str_contains((string) ($r['content'] ?? ''), 'connected'));
+
+        // Several servers: each is tested, and one that fails is named by its number, never its link
+        config(['listing.discord_webhook' => 'https://discord.test/api/webhooks/1/abc, https://discord.test/api/webhooks/9/deleted']);
+        $this->artisan('listings:discord')
+            ->expectsOutputToContain('Channel 2 of 2: Discord refused it')
+            ->doesntExpectOutputToContain('webhooks/9')
+            ->assertFailed();
+    }
+
+    public function test_the_image_goes_to_every_server_and_a_failing_one_doesnt_stop_the_others(): void
+    {
+        config(['listing.discord_webhook' => "https://discord.test/api/webhooks/1/abc,\nhttps://discord.test/api/webhooks/9/deleted , https://discord.test/api/webhooks/2/def, not-a-link"]);
+        $this->assertCount(3, ListingAnnouncer::webhooks());
+
+        $this->post('/api/v1/business/listing/discord', ['image' => UploadedFile::fake()->image('x.png', 800, 600), 'caption' => 'For sale'], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJsonPath('sent', 2)
+            ->assertJsonPath('total', 3)
+            ->assertJsonPath('message', "Posted to 2 of 3 channels: check the others' webhook links.");
+        Http::assertSent(fn (Request $r) => str_contains($r->url(), 'webhooks/2/def'));
     }
 
     public function test_buyers_are_grouped_by_name_with_repeat_buyers_counted(): void

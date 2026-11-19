@@ -22,8 +22,9 @@ return [
     'site_token' => env('LISTING_SITE_TOKEN'),
 
     /*
-    | A Discord webhook for your public listings channel (Channel settings > Integrations > Webhooks).
-    | After each publish, new accounts and price drops are posted there. Leave empty to turn it off.
+    | Discord webhooks for your public listings channels (Channel settings > Integrations > Webhooks),
+    | one per server, separated by commas. The Listing Kit image is posted to each when what's for
+    | sale changed. Leave empty to turn it off.
     | It's a secret: keep it only in .env.
     */
     'discord_webhook' => env('LISTING_DISCORD_WEBHOOK'),

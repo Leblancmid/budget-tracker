@@ -58,7 +58,7 @@ export type LeadStatus = 'new' | 'contacted' | 'won' | 'lost'
 export interface Lead {
   id: number
   /** sell_gold: someone wants to sell you gold */
-  type: 'account' | 'gold' | 'sell' | 'sell_gold'
+  type: 'account' | 'gold' | 'sell' | 'sell_gold' | 'project'
   status: LeadStatus
   name: string
   method: 'discord' | 'whatsapp'
@@ -71,6 +71,8 @@ export interface Lead {
     level?: number; category?: string; asking?: string | null
     /** sell_gold: the rate they ask, as typed ("$0.17", "₱10/KK") */
     rate?: string | null
+    /** project: a website someone wants built */
+    kind?: 'store' | 'system' | 'fix'; budget?: string | null; timeline?: string | null
     stats?: Partial<Record<'melee' | 'distance' | 'magic' | 'defense', number>>
   }
   created_at: number

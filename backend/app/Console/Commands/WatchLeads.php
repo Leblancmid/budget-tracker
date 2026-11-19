@@ -65,6 +65,9 @@ class WatchLeads extends Command
         return self::SUCCESS;
     }
 
+    /** What a website project request is for (Leblanc's /websites form) */
+    public const PROJECT_KINDS = ['store' => 'Online store', 'system' => 'Business system', 'fix' => 'Fixes and upgrades'];
+
     /** "New lead: wants an account" (never the buyer's name or contact: it shows on the lock screen) */
     public static function title(array $lead): string
     {
@@ -72,6 +75,7 @@ class WatchLeads extends Command
             'gold'  => 'New gold order',
             'sell'  => 'Someone is selling an account',
             'sell_gold' => 'Someone is selling you gold',
+            'project' => 'New website project request',
             default => 'New lead: wants an account',
         };
     }
@@ -84,6 +88,7 @@ class WatchLeads extends Command
             'gold'  => trim(($d['amount_kk'] ?? '?') . ' KK' . (! empty($d['payment']) ? ' · ' . $d['payment'] : '')),
             'sell'  => trim('Lv ' . ($d['level'] ?? '?') . ' ' . ($d['category'] ?? '') . (! empty($d['asking']) ? ' · asking ' . $d['asking'] : '')),
             'sell_gold' => trim(($d['amount_kk'] ?? '?') . ' KK' . (! empty($d['rate']) ? ' · at ' . $d['rate'] : '')),
+            'project' => trim((self::PROJECT_KINDS[$d['kind'] ?? ''] ?? 'A website') . (! empty($d['budget']) ? ' · budget ' . $d['budget'] : '')),
             default => $d['title'] ?? 'An account for sale',
         };
     }

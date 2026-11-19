@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Coins, ExternalLink, HandCoins, Inbox, MessageCircle, MessageSquare, Phone, RefreshCw, ShoppingCart } from 'lucide-react'
+import { Coins, ExternalLink, Globe, HandCoins, Inbox, MessageCircle, MessageSquare, Phone, RefreshCw, ShoppingCart } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Pagination } from '@/components/ui/Pagination'
@@ -22,6 +22,7 @@ const TYPES: Record<Lead['type'], { label: string; Icon: LucideIcon; tone: strin
   gold:    { label: 'Gold order',       Icon: Coins,        tone: 'bg-yellow-50 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400' },
   sell:    { label: 'Offering you an account', Icon: HandCoins, tone: 'bg-teal-50 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400' },
   sell_gold: { label: 'Selling you gold', Icon: Coins, tone: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' },
+  project: { label: 'Wants a website', Icon: Globe, tone: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400' },
 }
 /** A kind of request this app doesn't know yet (the website can add new ones first) */
 const OTHER_TYPE = { label: 'Website request', Icon: MessageSquare, tone: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400' }
@@ -52,6 +53,10 @@ const money = (n: number, currency: string) => (currency === 'PHP' ? formatCurre
 function summary(l: Lead): string {
   const d = l.details
   if (l.type === 'gold') return `${kk(Number(d.amount_kk))} via ${d.payment} · ${money(Number(d.total), String(d.currency))}`
+  if (l.type === 'project') {
+    const kind = { store: 'Online store', system: 'Business system', fix: 'Fixes and upgrades' }[d.kind ?? 'store'] ?? 'A website'
+    return [kind, d.budget && `budget ${d.budget}`, d.timeline && `by ${d.timeline}`].filter(Boolean).join(' · ')
+  }
   if (l.type === 'sell_gold') return `${kk(Number(d.amount_kk))}${d.rate ? ` · at ${d.rate}` : ''}`
   if (l.type === 'sell') {
     const stats = (['melee', 'distance', 'magic', 'defense'] as const)

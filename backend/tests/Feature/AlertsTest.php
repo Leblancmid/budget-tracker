@@ -99,6 +99,11 @@ class AlertsTest extends TestCase
         $n = $this->trader->notifications()->first()->data;
         $this->assertSame('1500 KK · at $0.17/KK', $n['body']);
         $this->assertStringNotContainsString('Rho', json_encode($n));
+
+        // And a website project request from the /websites form
+        $project = ['type' => 'project', 'details' => ['kind' => 'system', 'budget' => '₱50k']];
+        $this->assertSame('New website project request', \App\Console\Commands\WatchLeads::title($project));
+        $this->assertSame('Business system · budget ₱50k', \App\Console\Commands\WatchLeads::summary($project));
     }
 
     public function test_many_new_leads_become_one_alert_and_a_website_outage_is_quiet(): void

@@ -58,7 +58,7 @@ describe('navigation', () => {
     expect(sections.map((s) => s.id)).toEqual(['daily', 'business', 'storefront', 'rucoy', 'account'])
     expect(sections[0].tabs.map((t) => t.label)).not.toContain('Balance')
     expect(sections.at(-1)?.tabs.map((t) => t.label)).toEqual(['Profile'])
-    expect(sections[1].tabs.map((t) => t.label)).toEqual(['Stats', 'Sales', 'Report'])
+    expect(sections[1].tabs.map((t) => t.label)).toEqual(['Stats', 'Sales', 'Buyers', 'Report'])
     expect(sections[2].tabs.map((t) => t.label)).toEqual(['Listing Kit', 'Leads'])
   })
 

@@ -7,13 +7,7 @@ import { useAmountVisibility } from '@/context/amountVisibility'
 import { masterDashboardApi } from '@/api/master'
 import { dashboardApi } from '@/api/dashboard'
 import { goldToPhp, savedGoldRates } from '@/lib/goldRates'
-
-/** Compact ₱ figure for a narrow sidebar: ₱444.9k, ₱1.2M. */
-function compactPhp(n: number) {
-  const a = Math.abs(n)
-  const s = a >= 1e6 ? `${(a / 1e6).toFixed(2)}M` : a >= 1e3 ? `${(a / 1e3).toFixed(1)}k` : a.toFixed(0)
-  return `${n < 0 ? '−' : ''}₱${s}`
-}
+import { compactPhp } from '@/utils/format'
 
 interface Headline { label: string; value: number; delta: number | null; deltaLabel: string; to: string }
 

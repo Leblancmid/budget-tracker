@@ -1,5 +1,5 @@
 import api from './axios'
-import type { AccountClass, BusinessBrief, BusinessTransaction, BusinessDashboardStats, BusinessTransactionType, BusinessTransactionAction, PriceGuide } from '@/types'
+import type { AccountClass, BusinessBrief, BusinessTransaction, BusinessDashboardStats, BusinessTransactionType, BusinessTransactionAction, PaginationMeta, PriceGuide } from '@/types'
 
 export interface PublishedListing {
   id: string
@@ -21,7 +21,7 @@ export interface ListingPublishPreview {
 /** Accounts for sale → the Leblanc website (commit + push; Vercel redeploys) */
 export const listingPublishApi = {
   preview: () => api.get<ListingPublishPreview>('/business/listing/publish').then((r) => r.data),
-  publish: () => api.post<{ count: number; changed: boolean; pushed: boolean; commit: string | null; alerted: number | null }>('/business/listing/publish').then((r) => r.data),
+  publish: () => api.post<{ count: number; changed: boolean; pushed: boolean; commit: string | null; alerted: number | null; announced?: number }>('/business/listing/publish').then((r) => r.data),
 }
 
 export interface WebsiteStats {
@@ -169,3 +169,43 @@ export const businessTransactionsApi = {
       .then((r) => r.data),
 }
 
+/** How each account on the website is doing (see ListingPerformance on the server) */
+export type ListingVerdict = 'interest' | 'early' | 'reach' | 'price' | 'slow'
+export interface ListingPerformanceRow {
+  account_id: number
+  name: string
+  price: string | null
+  days: number
+  /** null when the website's stats aren't available */
+  views: number | null
+  views_week: number | null
+  requests: number | null
+  verdict: ListingVerdict
+  advice: string
+}
+export interface ListingPerformance { usual_days: number; has_stats: boolean; listings: ListingPerformanceRow[] }
+
+export const listingPerformanceApi = {
+  get: () => api.get<ListingPerformance>('/business/listing-performance').then((r) => r.data),
+}
+
+/** The people you sell to, from "Sold to" (see Buyers on the server) */
+export interface Buyer {
+  name: string
+  purchases: number
+  accounts: number
+  golds: number
+  total_php: number
+  profit_php: number
+  first_on: string | null
+  last_on: string | null
+  items: { id: number; type: 'account' | 'gold'; description: string | null; price_php: number | null; sold_on: string | null }[]
+}
+export interface BuyersSummary { buyers: number; repeat: number; repeat_share: number | null; repeat_sales_php: number; total_php: number }
+export type BuyerSort = 'recent' | 'purchases' | 'total'
+export interface BuyersPage extends PaginationMeta { data: Buyer[]; summary: BuyersSummary }
+
+export const buyersApi = {
+  list: (params: { q?: string; sort?: BuyerSort; page?: number; per_page?: number }) =>
+    api.get<BuyersPage>('/business/buyers', { params }).then((r) => r.data),
+}

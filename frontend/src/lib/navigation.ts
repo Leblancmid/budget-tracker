@@ -60,6 +60,7 @@ export const NAV_SECTIONS: NavSection[] = [
     tabs: [
       { to: '/business', label: 'Stats', end: true },
       { to: '/business/transactions', label: 'Sales' },
+      { to: '/business/buyers', label: 'Buyers' },
       { to: '/reports/business', label: 'Report' },
     ],
   },

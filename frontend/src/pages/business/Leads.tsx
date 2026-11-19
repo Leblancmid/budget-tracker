@@ -8,6 +8,7 @@ import { leadsApi, type Lead, type LeadStatus } from '@/api/business'
 import { useAsyncData } from '@/hooks/useAsyncData'
 import { emitDataChanged } from '@/lib/dataEvents'
 import { WebsiteStatsCard } from './listing/WebsiteStatsCard'
+import { ListingPerformanceCard } from './listing/ListingPerformanceCard'
 import { DaysToSellCard } from './listing/DaysToSellCard'
 import { toast } from '@/lib/toast'
 import { errorMessage } from '@/utils/api'
@@ -35,6 +36,9 @@ const STATUS: Record<LeadStatus, { label: string; next: LeadStatus[] }> = {
   won:       { label: 'Deal done',              next: ['contacted'] },
   lost:      { label: 'No deal',                next: ['new'] },
 }
+/** Messaged this long ago with no outcome: suggest a follow-up (the morning alert uses 3 days too) */
+const FOLLOW_UP_MS = 3 * 86_400_000
+
 const ACTION: Record<LeadStatus, string> = { new: 'Reopen', contacted: 'Messaged', won: 'Deal done', lost: 'No deal' }
 
 const FILTERS: { value: LeadStatus | 'open' | 'all'; label: string }[] = [
@@ -186,7 +190,12 @@ export default function Leads() {
                         <MessageCircle size={12} /> {l.contact}
                       </span>
                     )}
-                    <span className="text-[11px] text-gray-500 dark:text-gray-400">{STATUS[l.status].label}</span>
+                    {/* Messaged a while ago with no answer since: nudge a follow-up */}
+                    {l.status === 'contacted' && Date.now() - l.updated_at >= FOLLOW_UP_MS ? (
+                      <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400">Messaged {ago(l.updated_at)} · follow up?</span>
+                    ) : (
+                      <span className="text-[11px] text-gray-500 dark:text-gray-400">{STATUS[l.status].label}</span>
+                    )}
                     {STATUS[l.status].next.map((s) => (
                       <button key={s} disabled={saving === l.id} onClick={() => setStatus(l, s)}
                         className={['rounded-lg px-2 py-2 sm:py-1 text-xs font-semibold transition-colors disabled:opacity-50',
@@ -211,6 +220,8 @@ export default function Leads() {
         <DaysToSellCard />
       </div>
       </div>
+
+      <ListingPerformanceCard />
     </div>
   )
 }

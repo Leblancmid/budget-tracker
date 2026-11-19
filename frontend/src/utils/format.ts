@@ -68,3 +68,10 @@ export const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
 ]
+
+/** Compact ₱ figure for tight spaces (the sidebar, phone tiles): ₱444.9k, ₱1.20M. */
+export function compactPhp(n: number): string {
+  const a = Math.abs(n)
+  const s = a >= 1e6 ? `${(a / 1e6).toFixed(2)}M` : a >= 1e3 ? `${(a / 1e3).toFixed(1)}k` : a.toFixed(0)
+  return `${n < 0 ? '−' : ''}₱${s}`
+}

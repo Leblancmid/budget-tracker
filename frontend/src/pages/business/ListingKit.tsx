@@ -48,6 +48,23 @@ const DEFAULTS: KitSettings = {
   crop: DEFAULT_CROP,
 }
 
+/**
+ * Copy text even on a plain http:// address (where the modern clipboard is off), using the older
+ * select-and-copy way. True if it worked.
+ */
+function copyTextAnywhere(text: string): boolean {
+  const area = document.createElement('textarea')
+  area.value = text
+  area.setAttribute('readonly', '')
+  area.style.position = 'fixed'
+  area.style.opacity = '0'
+  document.body.appendChild(area)
+  area.select()
+  let ok = false
+  try { ok = document.execCommand('copy') } catch { ok = false }
+  area.remove()
+  return ok
+}
 
 /**
  * Builds the image posted in Discord / WhatsApp straight from the accounts for sale:
@@ -187,29 +204,38 @@ export default function ListingKit() {
       })
       return
     }
-    void copyForWhatsAppWeb()
+    void copyForWhatsAppWeb(caption)
   }
 
   /** Computer: copy the image and open WhatsApp Web, to paste it into each group */
-  const copyForWhatsAppWeb = async () => {
+  const copyForWhatsAppWeb = async (caption: string) => {
     if (!canvasRef.current) return
+    // Copying pictures only works on a secure address (https or localhost); over a plain http://
+    // address the browser has no image clipboard, so save the picture instead
     try {
+      if (!navigator.clipboard?.write || typeof ClipboardItem === 'undefined') throw new Error('no image clipboard')
       const { blob } = await pngUnder(canvasRef.current)
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
       window.open('https://web.whatsapp.com/', '_blank', 'noopener')
       toast.success('Image copied. In WhatsApp Web, open a group and press Ctrl+V, then use Copy caption for the text.')
-    } catch (err) {
-      const name = err instanceof DOMException ? err.name : 'Error'
-      toast.error(`Couldn't copy the image (${name}). Use Download, then send it in WhatsApp.`)
-    }
+      return
+    } catch { /* fall back to saving it */ }
+
+    await downloadImage()
+    const captionCopied = copyTextAnywhere(caption)
+    window.open('https://web.whatsapp.com/', '_blank', 'noopener')
+    toast.success(`Saved Leblanc.jpg${captionCopied ? ' and copied the caption' : ''}. In WhatsApp Web, open a group, drag the picture in (or click 📎 and pick it)${captionCopied ? ', and paste the caption' : ''}.`)
   }
 
   const copyCaption = async () => {
+    const caption = listingCaption(included, { headline: settings.headline, link: settings.link, promos })
     try {
-      await navigator.clipboard.writeText(listingCaption(included, { headline: settings.headline, link: settings.link, promos }))
+      await navigator.clipboard.writeText(caption)
       toast.success('Caption copied.')
     } catch {
-      toast.error('Your browser blocked copying the caption.')
+      // A plain http:// address has no modern clipboard: the older way still works there
+      if (copyTextAnywhere(caption)) toast.success('Caption copied.')
+      else toast.error('Your browser blocked copying the caption.')
     }
   }
 

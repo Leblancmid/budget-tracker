@@ -93,12 +93,17 @@ class WebsiteContent
             ->get()
             ->map(fn (RucoyAccount $a) => self::soldItem($a, $a->archived_at->setTimezone(BalanceInterest::ZONE)->toDateString()));
 
+        // Selling the gold in parts copies the note onto each part: one account, counted once, on
+        // the day it was converted (its earliest part)
         $converted = BusinessTransaction::where('type', 'gold')
             ->where('notes', 'like', self::CONVERTED_NOTE . '%')
             ->where('date', '>=', $since->copy()->setTimezone(BalanceInterest::ZONE)->toDateString())
-            ->orderByDesc('date')
-            ->limit($limit)
+            ->orderBy('date')
+            ->orderBy('id')
             ->get()
+            ->unique(fn (BusinessTransaction $t) => strtolower(trim(strtok((string) $t->notes, "\n"))))
+            ->sortByDesc('date')
+            ->take($limit)
             ->map(fn (BusinessTransaction $t) => self::soldItem(
                 new RucoyAccount(['description' => $t->description]),
                 CarbonImmutable::parse($t->date)->toDateString(),

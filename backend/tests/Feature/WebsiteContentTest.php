@@ -97,6 +97,21 @@ class WebsiteContentTest extends TestCase
         $this->assertStringNotContainsString('m@x.com', json_encode(WebsiteContent::recentSold()));
     }
 
+    public function test_a_converted_account_sold_in_parts_counts_once_on_the_day_it_was_converted(): void
+    {
+        $day = fn (int $ago) => now('Asia/Manila')->subDays($ago)->toDateString();
+        // Partial sales copy the note (with extra lines) onto each part
+        BusinessTransaction::create(['type' => 'gold', 'description' => 'Leblanc 621 Dist', 'notes' => "Converted from account: p@x.com\nSold: Pantay", 'amount' => 1, 'date' => $day(16)]);
+        BusinessTransaction::create(['type' => 'gold', 'description' => 'Leblanc 621 Dist', 'notes' => 'Converted from account: p@x.com', 'amount' => 1, 'date' => $day(15)]);
+        BusinessTransaction::create(['type' => 'gold', 'description' => 'Leblanc 621 Dist', 'notes' => "Converted from account: p@x.com\nPartial sale of 268,000,000 / 1,200,000,000 G", 'amount' => 1, 'date' => $day(15)]);
+        BusinessTransaction::create(['type' => 'gold', 'description' => 'Leblanc 657 Dist', 'notes' => 'Converted from account: q@x.com', 'amount' => 1, 'date' => $day(20)]);
+
+        $this->assertSame([
+            ['level' => 621, 'category' => 'Distance', 'sold_on' => $day(16)],
+            ['level' => 657, 'category' => 'Distance', 'sold_on' => $day(20)],
+        ], WebsiteContent::recentSold());
+    }
+
     public function test_reply_time_is_the_median_from_request_to_marked_messaged(): void
     {
         $base = now()->subDays(5)->startOfHour();

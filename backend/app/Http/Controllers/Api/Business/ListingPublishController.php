@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api\Business;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Business\DiscordAutoPostRequest;
 use App\Http\Requests\Business\ListingImageRequest;
 use App\Http\Requests\Business\UpdateGoldRatesRequest;
 use App\Models\ActivityLog;
+use App\Services\DiscordAutoPost;
 use App\Services\ListingAnnouncer;
 use App\Services\ListingPerformance;
 use App\Services\ListingPublisher;
@@ -25,7 +27,8 @@ class ListingPublishController extends Controller
     public function preview(ListingPublisher $publisher): JsonResponse
     {
         // discord: the listings channel is set up (the app then offers "Post to Discord")
-        return response()->json([...$publisher->preview(), 'discord' => ListingAnnouncer::configured()]);
+        // discord_auto: auto-post every 12 hours (on/off, the saved picture, the next post)
+        return response()->json([...$publisher->preview(), 'discord' => ListingAnnouncer::configured(), 'discord_auto' => DiscordAutoPost::status()]);
     }
 
     /** Website visitors: online now, visits per day, views per listing, "Notify me" requests. */
@@ -48,6 +51,7 @@ class ListingPublishController extends Controller
             return response()->json(['message' => "Discord isn't set up: add LISTING_DISCORD_WEBHOOK to the backend .env, then run the after-deploy script."], 422);
         }
         $image = $request->kitImage();
+        DiscordAutoPost::remember($image); // the auto-posts use the newest picture
         ['sent' => $sent, 'total' => $total] = ListingAnnouncer::postImage($image['contents'], $image['name']);
         if ($sent === 0) {
             return response()->json(['message' => 'Discord refused the post. Check the webhook links (php artisan listings:discord tests them).'], 502);
@@ -59,6 +63,22 @@ class ListingPublishController extends Controller
             'sent'    => $sent,
             'total'   => $total,
         ]);
+    }
+
+    /** Switch Discord auto-post (10 AM and 10 PM) on or off; on saves the image it will post. */
+    public function discordAuto(DiscordAutoPostRequest $request): JsonResponse
+    {
+        $on = $request->boolean('enabled');
+        if ($on && ! ListingAnnouncer::configured()) {
+            return response()->json(['message' => "Discord isn't set up: add LISTING_DISCORD_WEBHOOK to the backend .env."], 422);
+        }
+        if ($on) {
+            DiscordAutoPost::remember($request->kitImage());
+        }
+        DiscordAutoPost::setEnabled($on);
+        ActivityLog::note('business', 'updated', 'Discord auto-post ' . ($on ? 'on (10 AM and 10 PM)' : 'off'));
+
+        return response()->json(DiscordAutoPost::status());
     }
 
     /** How each listed account is doing: days listed, views, requests and a verdict. */
@@ -97,9 +117,13 @@ class ListingPublishController extends Controller
     public function publish(ListingImageRequest $request, ListingPublisher $publisher): JsonResponse
     {
         try {
-            $result = $publisher->publish($request->kitImage());
+            $kit    = $request->kitImage();
+            $result = $publisher->publish($kit);
         } catch (RuntimeException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
+        }
+        if ($kit !== null) {
+            DiscordAutoPost::remember($kit); // what's for sale now: the auto-posts use this picture
         }
         ActivityLog::note('business', 'published', 'Published listings to the website');
 

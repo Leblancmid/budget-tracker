@@ -127,6 +127,7 @@ Route::prefix('v1')->group(function () {
                     Route::get('listing/publish', [ListingPublishController::class, 'preview'])->name('listing.preview');
                     Route::post('listing/publish', [ListingPublishController::class, 'publish'])->middleware('throttle:6,1')->name('listing.publish');
                     Route::post('listing/discord', [ListingPublishController::class, 'postToDiscord'])->middleware('throttle:6,1')->name('listing.discord');
+                    Route::post('listing/discord-auto', [ListingPublishController::class, 'discordAuto'])->middleware('throttle:6,1')->name('listing.discord-auto');
                     Route::get('website-stats', [ListingPublishController::class, 'stats'])->name('website-stats');
                     Route::get('listing-performance', [ListingPublishController::class, 'performance'])->name('listing-performance');
                     // Leads from the website (I want this, gold orders, accounts offered to you)

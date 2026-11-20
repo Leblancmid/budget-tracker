@@ -18,6 +18,18 @@ export interface ListingPublishPreview {
   skipped: { id: number; name: string; reason: string }[]
   /** The Discord listings channel is set up (LISTING_DISCORD_WEBHOOK) */
   discord?: boolean
+  discord_auto?: DiscordAutoPost
+}
+
+/** Discord auto-post: the saved Listing Kit image at 10 AM and 10 PM */
+export interface DiscordAutoPost {
+  enabled: boolean
+  /** When the saved picture was made / last posted (ISO), and the next post while on */
+  image_at: string | null
+  posted_at: string | null
+  next_at: string | null
+  /** What's for sale changed since the picture: it won't post until you post or publish again */
+  stale: boolean
 }
 
 /** The Listing Kit image and its caption, for the Discord listings channel */
@@ -44,6 +56,12 @@ export const listingPublishApi = {
   /** Post the Listing Kit image to Discord now */
   postToDiscord: (kit: KitImage) =>
     api.post<{ message: string; sent: number; total: number }>('/business/listing/discord', kitForm(kit), { headers: { 'Content-Type': 'multipart/form-data' } }).then((r) => r.data),
+  /** Auto-post on (with the image it will post) or off */
+  discordAuto: (enabled: boolean, kit: KitImage | null) => {
+    const form = kitForm(kit)
+    form.append('enabled', enabled ? '1' : '0')
+    return api.post<DiscordAutoPost>('/business/listing/discord-auto', form, { headers: { 'Content-Type': 'multipart/form-data' } }).then((r) => r.data)
+  },
 }
 
 export interface WebsiteStats {

@@ -1,0 +1,122 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\RucoyAccount;
+use App\Models\User;
+use App\Services\DiscordAutoPost;
+use App\Services\PhoneAlerts;
+use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
+use Laravel\Sanctum\Sanctum;
+use Tests\TestCase;
+
+/** Discord auto-post: the saved Listing Kit image at 10 AM and 10 PM Manila. */
+class DiscordAutoPostTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private User $trader;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->trader = User::factory()->create(['role' => 'trader']);
+        Sanctum::actingAs($this->trader);
+        Storage::fake('public');
+        Storage::fake('local');
+        config(['listing.site_url' => 'https://site.test', 'listing.discord_webhook' => 'https://discord.test/api/webhooks/1/abc']);
+        config(['services.webpush.public_key' => null]);
+        PhoneAlerts::$sender = fn ($devices) => $devices->count();
+        Http::fake(fn (Request $r) => str_contains($r->url(), 'discord.test') ? Http::response(null, 204) : Http::response([], 404));
+    }
+
+    protected function tearDown(): void
+    {
+        PhoneAlerts::$sender = null;
+        parent::tearDown();
+    }
+
+    private function listed(string $name): RucoyAccount
+    {
+        Storage::disk('public')->put("accounts/{$name}.jpg", 'img');
+
+        return RucoyAccount::create(['description' => $name, 'email' => strtolower(str_replace(' ', '', $name)) . '@x.com', 'screenshot' => "accounts/{$name}.jpg", 'listed_at' => now()]);
+    }
+
+    private function switchOn()
+    {
+        return $this->post('/api/v1/business/listing/discord-auto', ['enabled' => '1', 'image' => UploadedFile::fake()->image('mine.png', 800, 600)], ['Accept' => 'application/json']);
+    }
+
+    private function discordPosts(): int
+    {
+        return Http::recorded()->filter(fn ($pair) => str_contains($pair[0]->url(), 'discord.test'))->count();
+    }
+
+    public function test_switching_on_saves_the_image_and_the_schedule_posts_it(): void
+    {
+        $this->listed('Lv 650 Melee');
+        $this->switchOn()->assertOk()->assertJsonPath('enabled', true)->assertJsonPath('stale', false);
+        $this->getJson('/api/v1/business/listing/publish')->assertJsonPath('discord_auto.enabled', true);
+
+        $this->artisan('listings:discord-auto')->expectsOutputToContain('Posted to 1 of 1')->assertSuccessful();
+        $this->assertSame(1, $this->discordPosts());
+        $this->assertNotNull(DiscordAutoPost::status()['posted_at']);
+
+        // Off: nothing goes out
+        $this->postJson('/api/v1/business/listing/discord-auto', ['enabled' => false])->assertOk()->assertJsonPath('enabled', false);
+        $this->artisan('listings:discord-auto')->expectsOutputToContain('off')->assertSuccessful();
+        $this->assertSame(1, $this->discordPosts());
+    }
+
+    public function test_it_runs_at_10_am_and_10_pm_manila(): void
+    {
+        $event = collect(app(Schedule::class)->events())->first(fn ($e) => str_contains($e->command, 'listings:discord-auto'));
+        $this->assertSame('0 10,22 * * *', $event->expression);
+        $this->assertSame('Asia/Manila', $event->timezone);
+
+        $this->travelTo(now('Asia/Manila')->setTime(15, 30));
+        $this->assertSame('22:00', DiscordAutoPost::nextAt()->format('H:i'));
+        $this->travelTo(now('Asia/Manila')->setTime(23, 0));
+        $this->assertSame('10:00', DiscordAutoPost::nextAt()->format('H:i'));
+    }
+
+    public function test_a_sold_account_stops_the_old_picture_and_alerts_you(): void
+    {
+        $sold = $this->listed('Lv 650 Melee');
+        $this->listed('Lv 600 Dist');
+        $this->switchOn()->assertOk();
+
+        $sold->forceFill(['archived_at' => now()])->save(); // sold: the saved picture still shows it
+        $this->assertTrue(DiscordAutoPost::status()['stale']);
+        $this->artisan('listings:discord-auto')->expectsOutputToContain('Skipped')->assertSuccessful();
+        $this->assertSame(0, $this->discordPosts());
+        $this->assertSame('Discord auto-post skipped', $this->trader->fresh()->notifications()->first()?->data['title']);
+
+        // Posting a fresh picture from the app refreshes it
+        $this->post('/api/v1/business/listing/discord', ['image' => UploadedFile::fake()->image('x.png', 800, 600)], ['Accept' => 'application/json'])->assertOk();
+        $this->assertFalse(DiscordAutoPost::status()['stale']);
+        $this->artisan('listings:discord-auto')->expectsOutputToContain('Posted')->assertSuccessful();
+    }
+
+    public function test_switching_on_needs_the_image_and_discord_set_up(): void
+    {
+        $this->postJson('/api/v1/business/listing/discord-auto', ['enabled' => true])->assertStatus(422)->assertJsonValidationErrors('image');
+        $this->postJson('/api/v1/business/listing/discord-auto', [])->assertStatus(422)->assertJsonValidationErrors('enabled');
+
+        config(['listing.discord_webhook' => '']);
+        $this->switchOn()->assertStatus(422);
+        $this->assertFalse(DiscordAutoPost::status()['enabled']);
+    }
+
+    public function test_a_daily_only_user_cant_switch_it(): void
+    {
+        Sanctum::actingAs(User::factory()->create(['role' => 'daily_only']));
+        $this->switchOn()->assertForbidden();
+    }
+}

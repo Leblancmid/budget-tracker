@@ -8,14 +8,11 @@ use Throwable;
 
 /**
  * Posts the Listing Kit image (all accounts for sale in one picture, drawn in the app) to your
- * Discord listings channels (LISTING_DISCORD_WEBHOOK), inside a card that sends buyers to the
+ * Discord listings channels (LISTING_DISCORD_WEBHOOK), with buttons that send buyers to the
  * website. Publish posts it when what's for sale changed; "Post image to Discord" any time.
  */
 class ListingAnnouncer
 {
-    /** Discord's limit for a message's text */
-    public const CAPTION_MAX = 2000;
-
     /**
      * The channels to post to: LISTING_DISCORD_WEBHOOK holds one webhook link per server's
      * channel, separated by commas. Anything that isn't a https:// link is ignored.
@@ -51,27 +48,7 @@ class ListingAnnouncer
         return $key($listings) !== $key($published);
     }
 
-    /** Gold, the card's side bar */
-    public const COLOR = 0xD4A54A;
-
-    /**
-     * The card around the Listing Kit image: just Leblanc's name on top (linking to the accounts),
-     * the whole image full size, and the website underneath. The buttons below do the rest.
-     */
-    public static function embed(string $imageName): array
-    {
-        $site = rtrim((string) config('listing.site_url'), '/');
-
-        return [
-            'author'    => ['name' => 'Leblanc · Rucoy middleman', 'url' => "{$site}/for-sale", 'icon_url' => "{$site}/leblancmid.png"],
-            'color'     => self::COLOR,
-            'image'     => ['url' => 'attachment://' . $imageName],
-            'footer'    => ['text' => preg_replace('#^https?://#', '', $site) . ' · tap a button below', 'icon_url' => "{$site}/leblancmid.png"],
-            'timestamp' => now()->toIso8601String(),
-        ];
-    }
-
-    /** Link buttons under the post: to the accounts, gold, and selling to you */
+    /** Link buttons under the image: to the accounts, gold, and selling to you */
     public static function buttons(): array
     {
         $site = rtrim((string) config('listing.site_url'), '/');
@@ -84,16 +61,17 @@ class ListingAnnouncer
     }
 
     /**
-     * Post the image (PNG or JPEG bytes) to every channel: inside the card ($embed) when given,
-     * with link buttons; otherwise with the caption as plain text. If a channel won't take the
-     * buttons (Discord only allows them on some webhooks), it's sent again without them.
+     * Post the image (PNG or JPEG bytes) to every channel: just the image, full size, with the
+     * link buttons under it. If a channel won't take buttons (Discord only allows them on some
+     * webhooks), it gets the image with a one-line link instead, so buyers can still reach the site.
      *
      * @return array{sent: int, total: int} how many channels it reached, of how many
      */
-    public static function postImage(string $contents, string $filename, string $caption, ?array $embed = null): array
+    public static function postImage(string $contents, string $filename): array
     {
         $hooks = self::webhooks();
         $sent  = 0;
+        $site  = rtrim((string) config('listing.site_url'), '/');
         $send  = fn (string $url, array $payload) => Http::timeout(30)
             ->attach('files[0]', $contents, $filename)
             ->post($url, ['payload_json' => json_encode($payload)]);
@@ -102,13 +80,9 @@ class ListingAnnouncer
             // Logged as "channel 2", never the link itself (it's a secret)
             $which = 'channel ' . ($i + 1);
             try {
-                if ($embed) {
-                    $res = $send($url . (str_contains($url, '?') ? '&' : '?') . 'with_components=true', ['embeds' => [$embed], 'components' => self::buttons()]);
-                    if ($res->status() === 400) {
-                        $res = $send($url, ['embeds' => [$embed]]); // no buttons there: the links are in the card anyway
-                    }
-                } else {
-                    $res = $send($url, ['content' => mb_substr($caption, 0, self::CAPTION_MAX)]);
+                $res = $send($url . (str_contains($url, '?') ? '&' : '?') . 'with_components=true', ['components' => self::buttons()]);
+                if ($res->status() === 400) {
+                    $res = $send($url, ['content' => "🛒 {$site}/for-sale"]);
                 }
                 if ($res->successful()) {
                     $sent++;

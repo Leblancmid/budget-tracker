@@ -161,14 +161,11 @@ class StorefrontInsightsTest extends TestCase
             }
             $parts   = collect($r->data())->keyBy('name');
             $payload = json_decode($parts['payload_json']['contents'], true);
-            $card    = $payload['embeds'][0];
 
+            // Just the image and the buttons: no card, no text
             return $parts['files[0]']['filename'] === 'Leblanc.png' // never the uploaded name
                 && str_contains($r->url(), 'with_components=true')
-                // Just the name on top, the whole image, and the website: no title, text or boxes
-                && $card['author']['url'] === 'https://site.test/for-sale'
-                && $card['image']['url'] === 'attachment://Leblanc.png'
-                && ! isset($card['title'], $card['description'], $card['fields'])
+                && array_keys($payload) === ['components']
                 && $payload['components'][0]['components'][0]['url'] === 'https://site.test/for-sale';
         });
 
@@ -196,10 +193,10 @@ class StorefrontInsightsTest extends TestCase
 
     public function test_a_channel_that_refuses_buttons_still_gets_the_card(): void
     {
-        $this->assertSame(['sent' => 0, 'total' => 0], ListingAnnouncer::postImage('img', 'Leblanc.png', 'caption', ['title' => 'x']), 'no webhook set');
+        $this->assertSame(['sent' => 0, 'total' => 0], ListingAnnouncer::postImage('img', 'Leblanc.png'), 'no webhook set');
 
         config(['listing.discord_webhook' => 'https://nobuttons.test/api/webhooks/1/abc']);
-        $this->assertSame(['sent' => 1, 'total' => 1], ListingAnnouncer::postImage('img', 'Leblanc.png', 'caption', ['title' => 'x']));
+        $this->assertSame(['sent' => 1, 'total' => 1], ListingAnnouncer::postImage('img', 'Leblanc.png'));
         $urls = Http::recorded()->map(fn ($pair) => $pair[0]->url())->filter(fn ($u) => str_contains($u, 'nobuttons.test'))->values()->all();
         $this->assertSame(['https://nobuttons.test/api/webhooks/1/abc?with_components=true', 'https://nobuttons.test/api/webhooks/1/abc'], $urls);
     }

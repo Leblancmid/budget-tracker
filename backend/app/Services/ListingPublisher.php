@@ -186,8 +186,7 @@ class ListingPublisher
         // The Listing Kit image → your Discord listings channel, when what's for sale changed
         // (also never blocks the publish)
         $result = $forSaleChanged && $kitImage !== null && ListingAnnouncer::configured()
-            ? ListingAnnouncer::postImage($kitImage['contents'], $kitImage['name'], $kitImage['caption'],
-                ListingAnnouncer::embed($kitImage['name']))
+            ? ListingAnnouncer::postImage($kitImage['contents'], $kitImage['name'])
             : ['sent' => 0, 'total' => count(ListingAnnouncer::webhooks())];
 
         return [

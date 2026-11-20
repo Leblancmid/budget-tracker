@@ -48,8 +48,7 @@ class ListingPublishController extends Controller
             return response()->json(['message' => "Discord isn't set up: add LISTING_DISCORD_WEBHOOK to the backend .env, then run the after-deploy script."], 422);
         }
         $image = $request->kitImage();
-        $embed = ListingAnnouncer::embed($image['name']);
-        ['sent' => $sent, 'total' => $total] = ListingAnnouncer::postImage($image['contents'], $image['name'], $image['caption'], $embed);
+        ['sent' => $sent, 'total' => $total] = ListingAnnouncer::postImage($image['contents'], $image['name']);
         if ($sent === 0) {
             return response()->json(['message' => 'Discord refused the post. Check the webhook links (php artisan listings:discord tests them).'], 502);
         }

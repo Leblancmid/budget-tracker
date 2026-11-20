@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, ExternalLink, ImageIcon, MessageCircle, Minus, Pencil, RefreshCw, Send, X } from 'lucide-react'
+import { Check, ExternalLink, Eye, ImageIcon, MessageCircle, Minus, Pencil, RefreshCw, Send, X } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { discordPostsApi, type DiscordPostsPage, type DiscordSlot } from '@/api/business'
@@ -108,6 +108,22 @@ function ServerName({ channel, onEdit }: { channel: Channel; onEdit: () => void 
         </a>
       )}
     </span>
+  )
+}
+
+/** Who a server's posts brought to the website in the last 30 days (tap for the last 7) */
+function ServerReach({ reach }: { reach: NonNullable<Channel['reach']> }) {
+  const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
+  const detail = `Last 30 days: ${plural(reach.visitors_30, 'visitor')} and ${plural(reach.requests_30, 'request')} from this server's posts. Last 7 days: ${plural(reach.visitors_7, 'visitor')}.`
+  return (
+    <button
+      type="button"
+      onClick={() => toast.success(detail)}
+      title={detail}
+      className={`flex items-center gap-1 text-[10px] font-semibold ${reach.requests_30 > 0 ? 'text-emerald-600 dark:text-emerald-400' : reach.visitors_30 > 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-500'}`}
+    >
+      <Eye size={10} /> {plural(reach.visitors_30, 'visitor')} · {plural(reach.requests_30, 'request')} <span className="font-normal opacity-75">· 30d</span>
+    </button>
   )
 }
 
@@ -261,6 +277,7 @@ export default function DiscordPosts() {
                             <span className={`block text-[10px] ${c.alive === false ? 'font-semibold text-red-600 dark:text-red-400' : 'text-gray-400 dark:text-gray-500'}`}>
                               {c.alive === false ? 'Webhook deleted' : `#${c.no} · ${scheduleLabel(c.schedule)} · ${c.last_sent_at ? `last ${manilaTime(c.last_sent_at)}` : 'nothing sent yet'}`}
                             </span>
+                            {c.reach && <ServerReach reach={c.reach} />}
                           </div>
                           <button
                             type="button"

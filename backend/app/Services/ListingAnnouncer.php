@@ -54,16 +54,34 @@ class ListingAnnouncer
     }
 
     /**
-     * Link buttons under the image: the accounts on the website, and buying gold / selling to you
-     * straight on your Discord profile (to message you there).
+     * A channel's tag on the website (?from=d-3fa9c2), so its visitors and requests count for that
+     * server. Taken from the channel key: stable while the webhook link stays the same, and it
+     * says nothing about the link itself.
      */
-    public static function buttons(): array
+    public static function sourceTag(string $channelKey): string
+    {
+        return 'd-' . substr($channelKey, 0, 6);
+    }
+
+    /** The accounts page, tagged with the channel the buyer came from (when one is given) */
+    public static function forSaleUrl(?string $channelKey = null): string
+    {
+        $site = rtrim((string) config('listing.site_url'), '/');
+
+        return "{$site}/for-sale" . ($channelKey ? '?from=' . self::sourceTag($channelKey) : '');
+    }
+
+    /**
+     * Link buttons under the image: the accounts on the website (tagged with this channel), and
+     * buying gold / selling to you straight on your Discord profile (to message you there).
+     */
+    public static function buttons(?string $channelKey = null): array
     {
         $site    = rtrim((string) config('listing.site_url'), '/');
         $profile = (string) config('listing.discord_profile');
 
         return [['type' => 1, 'components' => [
-            ['type' => 2, 'style' => 5, 'label' => 'Browse accounts', 'emoji' => ['name' => '🛒'], 'url' => "{$site}/for-sale"],
+            ['type' => 2, 'style' => 5, 'label' => 'Browse accounts', 'emoji' => ['name' => '🛒'], 'url' => self::forSaleUrl($channelKey)],
             ['type' => 2, 'style' => 5, 'label' => 'Buy gold', 'emoji' => ['name' => '💰'], 'url' => $profile ?: "{$site}/gold-calculator"],
             ['type' => 2, 'style' => 5, 'label' => 'Sell to Leblanc', 'emoji' => ['name' => '🤝'], 'url' => $profile ?: "{$site}/for-sale#sell"],
         ]]];
@@ -88,14 +106,15 @@ class ListingAnnouncer
     {
         // Keyed by position, so channel numbers stay the same when only some are posted to
         $hooks   = array_filter(self::webhooks(), fn ($url) => $only === null || in_array(self::channelKey($url), $only, true));
-        $site    = rtrim((string) config('listing.site_url'), '/');
-        $buttons = ['components' => self::buttons()];
-        $plain   = ['content' => "🛒 {$site}/for-sale"];
+        // Each channel's own links (tagged ?from=, to see which server brings buyers)
+        $buttons = fn (string $url) => ['components' => self::buttons(self::channelKey($url))];
+        $plain   = fn (string $url) => ['content' => '🛒 ' . self::forSaleUrl(self::channelKey($url))];
         $request = fn ($http, string $url, array $payload) => $http->timeout(30)
             ->attach('files[0]', $contents, $filename)
             ->post($url, ['payload_json' => json_encode($payload)]);
-        $all = fn (array $urls, array $payload) => $urls === [] ? [] : Http::pool(fn (Pool $pool) => array_map(
-            fn ($i) => $request($pool->as((string) $i), $urls[$i], $payload),
+        // $payload: the message for a channel, from its webhook link
+        $all = fn (array $urls, callable $payload) => $urls === [] ? [] : Http::pool(fn (Pool $pool) => array_map(
+            fn ($i) => $request($pool->as((string) $i), $urls[$i], $payload($hooks[$i])),
             array_keys($urls),
         ));
 

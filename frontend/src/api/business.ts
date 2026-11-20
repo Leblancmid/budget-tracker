@@ -45,6 +45,8 @@ export interface DiscordChannel {
   schedule: DiscordSchedule
   /** A new post deletes your previous one there */
   replace: boolean
+  /** Who its posts bring to the website (?from=); null when website stats aren't connected */
+  reach: { visitors_7: number; visitors_30: number; requests_30: number } | null
 }
 
 export interface DiscordPostsPage {

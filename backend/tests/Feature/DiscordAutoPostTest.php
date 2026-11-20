@@ -6,6 +6,7 @@ use App\Models\DiscordPost;
 use App\Models\RucoyAccount;
 use App\Models\User;
 use App\Services\DiscordAutoPost;
+use App\Services\ListingAnnouncer;
 use App\Services\PhoneAlerts;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -26,6 +27,9 @@ class DiscordAutoPostTest extends TestCase
     /** The fake Discord's message numbers */
     private int $messageNo = 0;
 
+    /** What the fake website reports per Discord server */
+    private array $sources = [];
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -38,6 +42,8 @@ class DiscordAutoPostTest extends TestCase
         PhoneAlerts::$sender = fn ($devices) => $devices->count();
         Http::fake(fn (Request $r) => match (true) {
             str_contains($r->url(), 'webhooks/7/deleted') => Http::response(['message' => 'Unknown Webhook'], 404), // a webhook someone deleted
+            // The website's stats: visitors and requests per Discord server
+            str_contains($r->url(), 'site.test/api/stats') => Http::response(['sources' => $this->sources, 'listing_views' => []]),
             // Reading a webhook: its name and where it posts
             $r->method() === 'GET' && str_contains($r->url(), 'discord.test') => Http::response(['name' => 'Leblanc', 'guild_id' => '111', 'channel_id' => '222']),
             // Deleting an earlier post
@@ -288,6 +294,34 @@ class DiscordAutoPostTest extends TestCase
         }
         $this->travelTo(now('Asia/Manila')->addDay()->setTime(10, 0));
         $this->artisan('listings:discord-auto')->expectsOutputToContain('No server is set')->assertSuccessful();
+    }
+
+    public function test_each_server_links_with_its_own_tag_and_shows_who_it_brings(): void
+    {
+        config(['listing.discord_webhook' => 'https://discord.test/api/webhooks/1/abc,https://discord.test/api/webhooks/2/def']);
+        $this->listed('Lv 650 Melee');
+        $this->switchOn()->assertOk();
+        $this->artisan('listings:discord-auto')->assertSuccessful();
+
+        // Each server's "Browse accounts" (and plain link) carries its own tag
+        $tag  = fn (string $hook) => 'd-' . substr(ListingAnnouncer::channelKey($hook), 0, 6);
+        $urls = Http::recorded()->filter(fn ($pair) => $pair[0]->method() === 'POST')->mapWithKeys(fn ($pair) => [
+            (string) preg_replace('#^.*/webhooks/(\d+)/.*$#', '$1', $pair[0]->url()) => json_decode(collect($pair[0]->data())->keyBy('name')['payload_json']['contents'], true)['components'][0]['components'][0]['url'],
+        ]);
+        $this->assertSame('https://site.test/for-sale?from=' . $tag('https://discord.test/api/webhooks/1/abc'), $urls['1']);
+        $this->assertSame('https://site.test/for-sale?from=' . $tag('https://discord.test/api/webhooks/2/def'), $urls['2']);
+        $this->assertNotSame($urls['1'], $urls['2']);
+        $this->assertStringNotContainsString('abc', $urls['1']); // nothing of the webhook link
+
+        // Website stats off: no numbers
+        $this->assertNull($this->getJson('/api/v1/business/discord-posts')->json('channels.0.reach'));
+
+        // On: each server's visitors and requests (a server with none shows zeros)
+        config(['listing.site_token' => str_repeat('t', 40)]);
+        $this->sources = [['source' => $tag('https://discord.test/api/webhooks/1/abc'), 'visitors_7' => 4, 'visitors_30' => 12, 'requests_30' => 2]];
+        $channels = $this->getJson('/api/v1/business/discord-posts')->json('channels');
+        $this->assertSame(['visitors_7' => 4, 'visitors_30' => 12, 'requests_30' => 2], $channels[0]['reach']);
+        $this->assertSame(['visitors_7' => 0, 'visitors_30' => 0, 'requests_30' => 0], $channels[1]['reach']);
     }
 
     public function test_servers_can_be_named_in_the_app_and_opened_in_discord(): void

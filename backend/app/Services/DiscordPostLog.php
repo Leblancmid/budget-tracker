@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\DiscordPost;
 use Carbon\CarbonImmutable;
+use RuntimeException;
 
 /**
  * Which Discord channels each Listing Kit post reached, for the Discord page: the 10 AM and
@@ -55,10 +56,13 @@ class DiscordPostLog
         $lastSent = DiscordPost::where('ok', true)->whereNotNull('channel_key')
             ->selectRaw('channel_key, max(created_at) as at')->groupBy('channel_key')->pluck('at', 'channel_key');
         $labels   = ListingAnnouncer::channelLabels();
+        $reach    = self::reachBySource();
         $channels = array_map(fn (array $c) => [...$c,
             'label'        => $labels[$c['key']] ?? null, // your name for it, e.g. "Asian Market"
             ...ListingAnnouncer::channelSettings($c['key']), // schedule, replace
             'last_sent_at' => isset($lastSent[$c['key']]) ? CarbonImmutable::parse($lastSent[$c['key']])->toIso8601String() : null,
+            // Who it brings to the website (null: website stats aren't connected)
+            'reach'        => $reach === null ? null : ($reach[ListingAnnouncer::sourceTag($c['key'])] ?? ['visitors_7' => 0, 'visitors_30' => 0, 'requests_30' => 0]),
         ], ListingAnnouncer::channels($fresh));
 
         $days = [];
@@ -92,6 +96,32 @@ class DiscordPostLog
             ])->values()->all();
 
         return ['auto' => DiscordAutoPost::status(), 'channels' => $channels, 'days' => $days, 'own' => $own];
+    }
+
+    /**
+     * Visitors and requests per Discord server, from the website (its posts link there with
+     * ?from=<tag>). Null when the website stats aren't connected or can't be reached.
+     *
+     * @return array<string, array{visitors_7: int, visitors_30: int, requests_30: int}>|null
+     */
+    private static function reachBySource(): ?array
+    {
+        if (! WebsiteStats::configured()) {
+            return null;
+        }
+        try {
+            $rows = WebsiteStats::fetch()['sources'] ?? [];
+        } catch (RuntimeException) {
+            return null;
+        }
+
+        return collect(is_array($rows) ? $rows : [])
+            ->filter(fn ($r) => is_array($r) && is_string($r['source'] ?? null))
+            ->mapWithKeys(fn (array $r) => [$r['source'] => [
+                'visitors_7'  => (int) ($r['visitors_7'] ?? 0),
+                'visitors_30' => (int) ($r['visitors_30'] ?? 0),
+                'requests_30' => (int) ($r['requests_30'] ?? 0),
+            ]])->all();
     }
 
     /** @return array{0: string, 1: string} the Manila day and am / pm */

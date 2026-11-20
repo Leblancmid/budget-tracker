@@ -75,13 +75,15 @@ class DiscordPostLog
         }
 
         // Your own posts ("Post image to Discord", publish): one line per post
-        $own = DiscordPost::whereIn('kind', ['manual', 'publish'])->whereNotNull('channel_key')
+        // (a Send to one server is its own line, naming the server)
+        $own = DiscordPost::whereIn('kind', ['manual', 'publish', 'single'])->whereNotNull('channel_key')
             ->where('created_at', '>=', now()->subDays(self::DAYS))->orderByDesc('id')->limit(200)->get()
-            ->groupBy(fn (DiscordPost $p) => $p->kind . '|' . $p->created_at->format('Y-m-d H:i'))
-            ->take(10)
+            ->groupBy(fn (DiscordPost $p) => $p->kind === 'single' ? 'single|' . $p->id : $p->kind . '|' . $p->created_at->format('Y-m-d H:i'))
+            ->take(15)
             ->map(fn ($rows) => [
                 'kind' => $rows->first()->kind, 'at' => $rows->first()->created_at->toIso8601String(),
                 'sent' => $rows->where('ok', true)->count(), 'total' => $rows->count(),
+                'channel_key' => $rows->first()->kind === 'single' ? $rows->first()->channel_key : null,
             ])->values()->all();
 
         return ['auto' => DiscordAutoPost::status(), 'channels' => $channels, 'days' => $days, 'own' => $own];

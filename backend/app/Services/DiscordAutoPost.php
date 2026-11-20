@@ -135,6 +135,39 @@ class DiscordAutoPost
         return $now->addDay()->setTime(self::HOURS[0], 0); // not reached
     }
 
+    /**
+     * Send the saved picture to one channel now (the Send button on the Discord page).
+     *
+     * @return array{ok: bool, message: string, status: int} status: the HTTP code for the app
+     */
+    public static function sendTo(string $key): array
+    {
+        $channel = collect(ListingAnnouncer::webhooks())->search(fn ($url) => ListingAnnouncer::channelKey($url) === $key);
+        if ($channel === false) {
+            return ['ok' => false, 'message' => 'That server is no longer in LISTING_DISCORD_WEBHOOK.', 'status' => 404];
+        }
+        $image = self::image();
+        if ($image === null) {
+            return ['ok' => false, 'message' => 'No saved picture yet: tap "Post image to Discord" or publish once from the Listing Kit.', 'status' => 422];
+        }
+        if (self::stale()) {
+            return ['ok' => false, 'message' => 'What\'s for sale changed since the saved picture. Refresh it from the Listing Kit first.', 'status' => 422];
+        }
+        ['sent' => $sent] = ListingAnnouncer::postImage($image['contents'], $image['name'], 'single', $key);
+        if ($sent === 0) {
+            return ['ok' => false, 'message' => 'Not sent: Discord refused it or couldn\'t be reached. Try again; if it keeps failing, the webhook may have been deleted.', 'status' => 502];
+        }
+        ActivityLog::note('business', 'published', 'Sent the listing image to Discord channel ' . ($channel + 1));
+
+        return ['ok' => true, 'message' => 'Sent.', 'status' => 200];
+    }
+
+    /** The saved picture's bytes, to show on the Discord page */
+    public static function savedImage(): ?array
+    {
+        return self::image();
+    }
+
     /** Did an account get sold, added or repriced since the picture was saved? */
     private static function stale(): bool
     {

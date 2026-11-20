@@ -160,10 +160,44 @@ class DiscordAutoPostTest extends TestCase
         $this->assertFalse($page['days'][1]['am']['results'] !== [], 'nothing the day before');
     }
 
+    public function test_send_posts_the_saved_picture_to_just_that_server(): void
+    {
+        config(['listing.discord_webhook' => 'https://discord.test/api/webhooks/1/abc,https://discord.test/api/webhooks/2/def,https://discord.test/api/webhooks/7/deleted']);
+        $this->listed('Lv 650 Melee');
+        $channels = fn () => $this->getJson('/api/v1/business/discord-posts')->json('channels');
+        [, $two, $seven] = $channels();
+
+        // Nothing saved yet
+        $this->postJson("/api/v1/business/discord-posts/{$two['key']}/send")->assertStatus(422);
+        $this->getJson('/api/v1/business/discord-posts/image')->assertNotFound();
+
+        $this->switchOn()->assertOk(); // saves the picture
+        $this->get('/api/v1/business/discord-posts/image')->assertOk()->assertHeader('Content-Type', 'image/png');
+
+        $this->postJson("/api/v1/business/discord-posts/{$two['key']}/send")->assertOk()->assertJsonPath('message', 'Sent.');
+        $posted = Http::recorded()->map(fn ($pair) => $pair[0])->filter(fn ($r) => $r->method() === 'POST' && str_contains($r->url(), 'discord.test'))->values();
+        $this->assertCount(1, $posted);
+        $this->assertStringContainsString('webhooks/2/def', $posted[0]->url()); // only that one
+
+        $this->postJson("/api/v1/business/discord-posts/{$seven['key']}/send")->assertStatus(502); // deleted webhook
+        $this->postJson('/api/v1/business/discord-posts/0123456789abcdef/send')->assertNotFound();  // not one of yours
+
+        $own = $this->getJson('/api/v1/business/discord-posts')->json('own');
+        $this->assertSame([['single', 0, 1, $seven['key']], ['single', 1, 1, $two['key']]],
+            array_map(fn ($p) => [$p['kind'], $p['sent'], $p['total'], $p['channel_key']], $own));
+        $this->assertNotNull(collect($channels())->firstWhere('no', 2)['last_sent_at']);
+
+        // Sold since: it won't send the old picture
+        RucoyAccount::query()->update(['archived_at' => now()]);
+        $this->postJson("/api/v1/business/discord-posts/{$two['key']}/send")->assertStatus(422)->assertJsonPath('message', fn ($m) => str_contains($m, 'changed'));
+    }
+
     public function test_a_daily_only_user_cant_switch_it_or_see_the_posts(): void
     {
         Sanctum::actingAs(User::factory()->create(['role' => 'daily_only']));
         $this->switchOn()->assertForbidden();
         $this->getJson('/api/v1/business/discord-posts')->assertForbidden();
+        $this->getJson('/api/v1/business/discord-posts/image')->assertForbidden();
+        $this->postJson('/api/v1/business/discord-posts/0123456789abcdef/send')->assertForbidden();
     }
 }

@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AlertTriangle, Check, Clock, Minus, RefreshCw, Send, X } from 'lucide-react'
+import { AlertTriangle, Check, Clock, ImageIcon, Minus, RefreshCw, Send, X } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { discordPostsApi, type DiscordPostsPage, type DiscordSlot } from '@/api/business'
 import { useAsyncData } from '@/hooks/useAsyncData'
@@ -44,6 +44,46 @@ function SlotCell({ slot, channel, label }: { slot: DiscordSlot; channel: string
   )
 }
 
+/**
+ * The picture Send and auto-post use (saved when you post or publish from the Listing Kit).
+ * Reloads when a newer one is saved (imageAt).
+ */
+function SavedPicture({ imageAt, stale }: { imageAt: string | null; stale: boolean }) {
+  const [url, setUrl] = useState<string | null>(null)
+  const [failed, setFailed] = useState(false)
+
+  useEffect(() => {
+    if (!imageAt) return
+    let objectUrl: string | null = null
+    let live = true
+    discordPostsApi.image()
+      .then((blob) => { if (live) { objectUrl = URL.createObjectURL(blob); setUrl(objectUrl); setFailed(false) } })
+      .catch(() => { if (live) setFailed(true) })
+    return () => { live = false; if (objectUrl) URL.revokeObjectURL(objectUrl) }
+  }, [imageAt])
+
+  return (
+    <Card className="flex items-center gap-3 p-3">
+      {imageAt && url && !failed ? (
+        <a href={url} target="_blank" rel="noreferrer" title="Open the full picture" className="shrink-0">
+          <img src={url} alt="The saved listing picture" className="h-16 w-24 rounded-md object-cover object-top ring-1 ring-gray-200 dark:ring-gray-700" />
+        </a>
+      ) : (
+        <span className="flex h-16 w-24 shrink-0 items-center justify-center rounded-md bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500">
+          <ImageIcon size={20} />
+        </span>
+      )}
+      <p className="flex-1 text-xs text-gray-600 dark:text-gray-300">
+        {!imageAt
+          ? <>No saved picture yet. Tap <b>Post image to Discord</b> or publish from the <Link to="/business/listing" className="font-semibold text-indigo-600 dark:text-indigo-400">Listing Kit</Link>, then Send works here.</>
+          : stale
+            ? <span className="text-amber-700 dark:text-amber-300">This picture is out of date: what's for sale changed. Post or publish from the <Link to="/business/listing" className="font-semibold underline">Listing Kit</Link> to refresh it before sending.</span>
+            : <>What <b>Send</b> and auto-post post. Saved {manilaTime(imageAt)}; posting or publishing from the Listing Kit updates it.</>}
+      </p>
+    </Card>
+  )
+}
+
 /** How many servers a run reached, e.g. "9/10" */
 function slotCount(slot: DiscordSlot, keys: string[]): string {
   if (slot.skipped) return 'skip'
@@ -73,8 +113,28 @@ export default function DiscordPosts() {
     }
   }
 
+  // Send the saved picture to one server (the key being sent, for its spinner)
+  const [sending, setSending] = useState<string | null>(null)
+  const send = async (key: string, name: string) => {
+    setSending(key)
+    try {
+      await discordPostsApi.send(key)
+      toast.success(`Sent to ${name}.`)
+      await refetch()
+    } catch (err) {
+      toast.error(errorMessage(err, `Could not send to ${name}.`))
+      await refetch()
+    } finally {
+      setSending(null)
+    }
+  }
+
   const keys = data?.channels.map((c) => c.key) ?? []
   const auto = data?.auto
+  const nameOf = (key: string | null) => {
+    const c = data?.channels.find((x) => x.key === key)
+    return c ? c.name ?? `Channel ${c.no}` : 'a removed server'
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -122,6 +182,8 @@ export default function DiscordPosts() {
             </p>
           </Card>
 
+          {auto && <SavedPicture imageAt={auto.image_at} stale={auto.stale} />}
+
           {/* The grid: a row per server, two runs per day */}
           <Card className="p-0">
             <div className="scrollbar-thin overflow-x-auto">
@@ -145,12 +207,27 @@ export default function DiscordPosts() {
                   {data.channels.map((c) => (
                     <tr key={c.key}>
                       <th scope="row" className="sticky left-0 z-10 bg-white px-3 py-1.5 text-left font-normal dark:bg-gray-900">
-                        <span className="block max-w-44 truncate font-semibold text-gray-800 dark:text-gray-100" title={c.name ?? undefined}>
-                          {c.name ?? `Channel ${c.no}`}
-                        </span>
-                        <span className={`block text-[10px] ${c.alive === false ? 'font-semibold text-red-600 dark:text-red-400' : 'text-gray-400 dark:text-gray-500'}`}>
-                          {c.alive === false ? 'Webhook deleted' : c.last_sent_at ? `#${c.no} · last sent ${manilaTime(c.last_sent_at)}` : `#${c.no} · nothing sent yet`}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <div className="min-w-0 flex-1">
+                            <span className="block max-w-40 truncate font-semibold text-gray-800 dark:text-gray-100" title={c.name ?? undefined}>
+                              {c.name ?? `Channel ${c.no}`}
+                            </span>
+                            <span className={`block text-[10px] ${c.alive === false ? 'font-semibold text-red-600 dark:text-red-400' : 'text-gray-400 dark:text-gray-500'}`}>
+                              {c.alive === false ? 'Webhook deleted' : c.last_sent_at ? `#${c.no} · last sent ${manilaTime(c.last_sent_at)}` : `#${c.no} · nothing sent yet`}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => send(c.key, c.name ?? `Channel ${c.no}`)}
+                            disabled={sending !== null}
+                            title={`Send the picture to ${c.name ?? `Channel ${c.no}`} now`}
+                            aria-label={`Send to ${c.name ?? `Channel ${c.no}`}`}
+                            className="flex shrink-0 items-center gap-1 rounded-md bg-indigo-50 px-2 py-1 text-[11px] font-semibold text-indigo-700 hover:bg-indigo-100 disabled:opacity-50 dark:bg-indigo-900/30 dark:text-indigo-300 dark:hover:bg-indigo-900/50"
+                          >
+                            {sending === c.key ? <RefreshCw size={12} className="animate-spin" /> : <Send size={12} />}
+                            <span className="hidden sm:inline">Send</span>
+                          </button>
+                        </div>
                       </th>
                       {data.days.map((d) => [
                         <SlotCell key={`${d.date}-am`} slot={d.am} channel={c.key} label={`${dayLabel(d.date, 1)} 10 AM`} />,
@@ -191,7 +268,9 @@ export default function DiscordPosts() {
               <ul className="flex flex-col divide-y divide-gray-100 text-sm dark:divide-gray-800">
                 {data.own.map((p) => (
                   <li key={`${p.kind}-${p.at}`} className="flex items-center gap-2 py-1.5">
-                    <span className="flex-1 text-gray-700 dark:text-gray-200">{p.kind === 'publish' ? 'Publish' : 'Post image to Discord'}</span>
+                    <span className="flex-1 text-gray-700 dark:text-gray-200">
+                      {p.kind === 'publish' ? 'Publish' : p.kind === 'single' ? `Sent to ${nameOf(p.channel_key)}` : 'Post image to Discord'}
+                    </span>
                     <span className="text-xs text-gray-400 dark:text-gray-500">{manilaTime(p.at)}</span>
                     <span className={`w-12 text-right text-xs font-semibold ${p.sent === p.total ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>{p.sent}/{p.total}</span>
                   </li>

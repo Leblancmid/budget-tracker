@@ -74,14 +74,16 @@ class ListingAnnouncer
      *
      * All channels are posted to at the same time, so ten servers take about as long as one.
      *
-     * Each channel's result is kept for the Discord page ($kind: auto, manual or publish).
+     * Each channel's result is kept for the Discord page ($kind: auto, manual, publish or single).
+     * $onlyKey: just that one channel (sending server by server from the Discord page).
      *
      * @return array{sent: int, total: int, failed: list<int>} how many channels it reached, of
      *                                                         how many, and the numbers of those it didn't
      */
-    public static function postImage(string $contents, string $filename, string $kind = 'manual'): array
+    public static function postImage(string $contents, string $filename, string $kind = 'manual', ?string $onlyKey = null): array
     {
-        $hooks   = self::webhooks();
+        // Keyed by position, so channel numbers stay the same when only one is posted to
+        $hooks   = array_filter(self::webhooks(), fn ($url) => $onlyKey === null || self::channelKey($url) === $onlyKey);
         $site    = rtrim((string) config('listing.site_url'), '/');
         $buttons = ['components' => self::buttons()];
         $plain   = ['content' => "🛒 {$site}/for-sale"];

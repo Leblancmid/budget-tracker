@@ -17,6 +17,7 @@ use App\Services\WebsiteContent;
 use App\Services\WebsiteStats;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use RuntimeException;
 
 /**
@@ -86,6 +87,26 @@ class ListingPublishController extends Controller
     public function discordPosts(Request $request): JsonResponse
     {
         return response()->json(DiscordPostLog::page($request->boolean('fresh')));
+    }
+
+    /** Send the saved listing picture to one server now (its channel key from the Discord page). */
+    public function sendToChannel(string $channel): JsonResponse
+    {
+        $r = DiscordAutoPost::sendTo($channel);
+
+        return response()->json(['message' => $r['message']], $r['status']);
+    }
+
+    /** The saved listing picture (what auto-post and Send post), to show on the Discord page. */
+    public function savedImage(): Response
+    {
+        $image = DiscordAutoPost::savedImage();
+        abort_if($image === null, 404);
+
+        return response($image['contents'], 200, [
+            'Content-Type'  => str_ends_with($image['name'], '.jpg') ? 'image/jpeg' : 'image/png',
+            'Cache-Control' => 'no-store',
+        ]);
     }
 
     /** How each listed account is doing: days listed, views, requests and a verdict. */

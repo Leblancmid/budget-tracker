@@ -37,12 +37,16 @@ export interface DiscordPostsPage {
   channels: { no: number; key: string; name: string | null; alive: boolean | null; last_sent_at: string | null }[]
   /** Newest first */
   days: { date: string; am: DiscordSlot; pm: DiscordSlot }[]
-  /** Posts you made ("Post image to Discord", publish) */
-  own: { kind: 'manual' | 'publish'; at: string; sent: number; total: number }[]
+  /** Posts you made ("Post image to Discord", publish, Send to one server: channel_key) */
+  own: { kind: 'manual' | 'publish' | 'single'; at: string; sent: number; total: number; channel_key: string | null }[]
 }
 
 export const discordPostsApi = {
   get: (fresh = false) => api.get<DiscordPostsPage>('/business/discord-posts', { params: fresh ? { fresh: 1 } : {} }).then((r) => r.data),
+  /** Send the saved picture to one server now */
+  send: (channelKey: string) => api.post<{ message: string }>(`/business/discord-posts/${channelKey}/send`).then((r) => r.data),
+  /** The saved picture (what auto-post and Send post) */
+  image: () => api.get<Blob>('/business/discord-posts/image', { responseType: 'blob' }).then((r) => r.data),
 }
 
 /** Discord auto-post: the saved Listing Kit image at 10 AM and 10 PM */

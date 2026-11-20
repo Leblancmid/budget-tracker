@@ -165,13 +165,10 @@ class StorefrontInsightsTest extends TestCase
 
             return $parts['files[0]']['filename'] === 'Leblanc.png' // never the uploaded name
                 && str_contains($r->url(), 'with_components=true')
-                && $card['title'] === '🛒 Rucoy accounts for sale'
-                && $card['url'] === 'https://site.test/for-sale'
-                && $card['image']['url'] === 'attachment://Leblanc.png' // the whole image, full size
-                && str_contains($card['description'], '**1 account** ready to trade')
-                && str_contains($card['description'], '🆕 **1** new this week')
-                && str_contains($card['description'], '✅ SELL GOLD')
-                && str_contains($card['description'], '(https://site.test/for-sale)')
+                // Just the name on top, the whole image, and the website: no title, text or boxes
+                && $card['author']['url'] === 'https://site.test/for-sale'
+                && $card['image']['url'] === 'attachment://Leblanc.png'
+                && ! isset($card['title'], $card['description'], $card['fields'])
                 && $payload['components'][0]['components'][0]['url'] === 'https://site.test/for-sale';
         });
 

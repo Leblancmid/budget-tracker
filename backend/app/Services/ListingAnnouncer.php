@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -55,67 +54,20 @@ class ListingAnnouncer
     /** Gold, the card's side bar */
     public const COLOR = 0xD4A54A;
 
-    /** Listed this recently counts as new (same as the website's "New" badge) */
-    public const NEW_DAYS = 7;
-
     /**
-     * The card around the Listing Kit image: who's selling, what's for sale at a glance (how many,
-     * from what price, per build, what's new or cheaper), your promo lines, and a big link to the
-     * website. The image shows full size underneath.
-     *
-     * @param  list<array<string, mixed>>  $listings  what's on the website (with price_dropped_at)
-     * @param  string  $caption  the Listing Kit caption: its first line is the headline, its ✅ lines the promos
+     * The card around the Listing Kit image: just Leblanc's name on top (linking to the accounts),
+     * the whole image full size, and the website underneath. The buttons below do the rest.
      */
-    public static function embed(array $listings, string $caption, ?int $replyMinutes, string $imageName, ?string $today = null): array
+    public static function embed(string $imageName): array
     {
-        $site  = rtrim((string) config('listing.site_url'), '/');
-        $today ??= now(BalanceInterest::ZONE)->toDateString();
-        $lines = preg_split('/\R/u', $caption) ?: [];
-        $headline = trim((string) collect($lines)->first(fn ($l) => trim($l) !== '' && ! str_starts_with(trim($l), '•') && ! str_starts_with(trim($l), '✅'))) ?: 'Rucoy accounts for sale';
-        $promos = collect($lines)->map('trim')->filter(fn ($l) => str_starts_with($l, '✅'))->values();
-
-        $count = count($listings);
-        // Cheapest gold price, for "from 650KK"
-        $from = collect($listings)
-            ->map(fn ($l) => isset($l['price']) ? [ListingPublisher::priceValue((string) $l['price']), $l['price']] : null)
-            ->filter(fn ($p) => $p && $p[0] && $p[0][0] === 'G')
-            ->sortBy(fn ($p) => $p[0][1])
-            ->first()[1] ?? null;
-        $builds = collect(['Melee' => '🗡️', 'Distance' => '🏹', 'Magic' => '🔮'])
-            ->map(fn ($icon, $build) => [$icon, $build, collect($listings)->where('category', $build)->count()])
-            ->filter(fn ($b) => $b[2] > 0)
-            ->map(fn ($b) => "{$b[0]} {$b[1]} **{$b[2]}**")
-            ->join(' · ');
-        $days = fn (?string $date) => $date ? CarbonImmutable::parse($date)->diffInDays(CarbonImmutable::parse($today)) : null;
-        $new  = collect($listings)->filter(fn ($l) => ($d = $days($l['listed_at'] ?? null)) !== null && $d < self::NEW_DAYS)->count();
-        $drops = collect($listings)->filter(fn ($l) => ($d = $days($l['price_dropped_at'] ?? null)) !== null && $d < ListingPublisher::PRICE_DROP_DAYS)->count();
-
-        $description = collect([
-            "**{$count} account" . ($count === 1 ? '' : 's') . '** ready to trade' . ($from ? " · from **{$from}**" : ''),
-            $builds ?: null,
-            collect([$new ? "🆕 **{$new}** new this week" : null, $drops ? "📉 **{$drops}** price drop" . ($drops === 1 ? '' : 's') : null])->filter()->join(' · ') ?: null,
-            $promos->isNotEmpty() ? '' : null,
-            ...$promos->all(),
-            '',
-            "### [👉 See every account, stats & prices]({$site}/for-sale)",
-        ])->filter(fn ($l) => $l !== null)->join("\n");
-
-        $fields = [['name' => '🛒 How to buy', 'value' => 'Open a listing → **I want this**', 'inline' => true]];
-        if ($reply = self::replyLabel($replyMinutes)) {
-            $fields[] = ['name' => '⚡ Replies', 'value' => $reply, 'inline' => true];
-        }
-        $fields[] = ['name' => '🛡️ Safe trades', 'value' => 'Leblanc middles every deal', 'inline' => true];
+        $site = rtrim((string) config('listing.site_url'), '/');
 
         return [
-            'author'      => ['name' => 'Leblanc · Rucoy middleman', 'url' => $site, 'icon_url' => "{$site}/leblancmid.png"],
-            'title'       => mb_substr("🛒 {$headline}", 0, 250),
-            'url'         => "{$site}/for-sale",
-            'description' => mb_substr($description, 0, 4000),
-            'color'       => self::COLOR,
-            'fields'      => $fields,
-            'image'       => ['url' => 'attachment://' . $imageName],
-            'footer'      => ['text' => preg_replace('#^https?://#', '', $site) . ' · tap the title or a button below', 'icon_url' => "{$site}/leblancmid.png"],
-            'timestamp'   => now()->toIso8601String(),
+            'author'    => ['name' => 'Leblanc · Rucoy middleman', 'url' => "{$site}/for-sale", 'icon_url' => "{$site}/leblancmid.png"],
+            'color'     => self::COLOR,
+            'image'     => ['url' => 'attachment://' . $imageName],
+            'footer'    => ['text' => preg_replace('#^https?://#', '', $site) . ' · tap a button below', 'icon_url' => "{$site}/leblancmid.png"],
+            'timestamp' => now()->toIso8601String(),
         ];
     }
 
@@ -129,17 +81,6 @@ class ListingAnnouncer
             ['type' => 2, 'style' => 5, 'label' => 'Buy gold', 'emoji' => ['name' => '💰'], 'url' => "{$site}/gold-calculator"],
             ['type' => 2, 'style' => 5, 'label' => 'Sell to Leblanc', 'emoji' => ['name' => '🤝'], 'url' => "{$site}/for-sale#sell"],
         ]]];
-    }
-
-    /** "within 2 hours" (same wording as the website), or null */
-    private static function replyLabel(?int $minutes): ?string
-    {
-        return match (true) {
-            $minutes === null || $minutes < 0 => null,
-            $minutes <= 60                    => 'within an hour',
-            $minutes < 24 * 60                => 'within ' . (int) ceil($minutes / 60) . ' hours',
-            default                           => 'within ' . (int) ceil($minutes / 1440) . ' days',
-        };
     }
 
     /**

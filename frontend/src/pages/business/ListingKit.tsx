@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Clipboard, Download, FileText, Megaphone } from 'lucide-react'
+import { Clipboard, Download, FileText, Megaphone, Share2 } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -151,6 +151,37 @@ export default function ListingKit() {
     return { blob, caption: listingCaption(included, { headline: settings.headline, link: settings.link, promos }) }
   }
 
+  /**
+   * Share to WhatsApp groups. Phone: the phone's share sheet with the image and caption, so you
+   * pick WhatsApp and tick several groups at once (you send it yourself: no bot, no risk to your
+   * number). Computer (no share sheet for files): copies the image and opens WhatsApp Web.
+   */
+  const shareToWhatsApp = async () => {
+    if (!canvasRef.current) return
+    const caption = listingCaption(included, { headline: settings.headline, link: settings.link, promos })
+    try {
+      const blob = await canvasToBlob(canvasRef.current, 'image/jpeg', 0.92)
+      const file = new File([blob], 'Leblanc.jpg', { type: 'image/jpeg' })
+      if (navigator.canShare?.({ files: [file] })) {
+        // Some phones drop the text when sharing a picture: keep it on the clipboard to paste
+        try { await navigator.clipboard.writeText(caption) } catch { /* the share still works */ }
+        try {
+          await navigator.share({ files: [file], text: caption })
+        } catch (err) {
+          if (err instanceof DOMException && err.name === 'AbortError') return // closed the share sheet
+          throw err
+        }
+        return
+      }
+      const { blob: png } = await pngUnder(canvasRef.current)
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': png })])
+      window.open('https://web.whatsapp.com/', '_blank', 'noopener')
+      toast.success('Image copied. In WhatsApp Web, open a group and press Ctrl+V, then use Copy caption for the text.')
+    } catch {
+      toast.error('Your browser blocked sharing. Use Download and send the image in WhatsApp instead.')
+    }
+  }
+
   const copyCaption = async () => {
     try {
       await navigator.clipboard.writeText(listingCaption(included, { headline: settings.headline, link: settings.link, promos }))
@@ -289,7 +320,11 @@ export default function ListingKit() {
           <Card className="flex flex-col gap-4 p-4">
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="mr-auto text-sm font-semibold text-gray-800 dark:text-gray-100">Preview</h2>
-              <Button size="sm" icon={<Clipboard size={14} />} onClick={copyImage} disabled={!tiles.length || imagesLoading}>
+              <Button size="sm" icon={<Share2 size={14} />} onClick={shareToWhatsApp} disabled={!tiles.length || imagesLoading}
+                title="Phone: pick WhatsApp and tick your groups. Computer: copies the image and opens WhatsApp Web.">
+                Share to WhatsApp
+              </Button>
+              <Button size="sm" variant="secondary" icon={<Clipboard size={14} />} onClick={copyImage} disabled={!tiles.length || imagesLoading}>
                 Copy image
               </Button>
               <Button size="sm" variant="secondary" icon={<FileText size={14} />} onClick={copyCaption} disabled={!included.length}>

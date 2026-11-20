@@ -34,6 +34,8 @@ class DiscordAutoPostTest extends TestCase
         PhoneAlerts::$sender = fn ($devices) => $devices->count();
         Http::fake(fn (Request $r) => match (true) {
             str_contains($r->url(), 'webhooks/7/deleted') => Http::response(['message' => 'Unknown Webhook'], 404), // a webhook someone deleted
+            // Reading a webhook: its name and where it posts
+            $r->method() === 'GET' && str_contains($r->url(), 'discord.test') => Http::response(['name' => 'Leblanc', 'guild_id' => '111', 'channel_id' => '222']),
             str_contains($r->url(), 'discord.test')       => Http::response(null, 204),
             default                                         => Http::response([], 404),
         });
@@ -192,6 +194,24 @@ class DiscordAutoPostTest extends TestCase
         $this->postJson("/api/v1/business/discord-posts/{$two['key']}/send")->assertStatus(422)->assertJsonPath('message', fn ($m) => str_contains($m, 'changed'));
     }
 
+    public function test_servers_can_be_named_in_the_app_and_opened_in_discord(): void
+    {
+        config(['listing.discord_webhook' => 'https://discord.test/api/webhooks/1/abc,https://discord.test/api/webhooks/2/def']);
+        [$one, $two] = $this->getJson('/api/v1/business/discord-posts')->json('channels');
+        $this->assertSame(['Leblanc', null, 'https://discord.com/channels/111/222'], [$one['name'], $one['label'], $one['open_url']]);
+
+        $this->putJson("/api/v1/business/discord-posts/{$one['key']}", ['name' => '  Asian Market '])->assertOk()->assertJsonPath('label', 'Asian Market');
+        $this->putJson("/api/v1/business/discord-posts/{$two['key']}", ['name' => 'Latam Market'])->assertOk();
+        $labels = collect($this->getJson('/api/v1/business/discord-posts')->json('channels'))->pluck('label')->all();
+        $this->assertSame(['Asian Market', 'Latam Market'], $labels);
+
+        // Empty: back to the default; too long or missing: refused; not one of yours: 404
+        $this->putJson("/api/v1/business/discord-posts/{$two['key']}", ['name' => ''])->assertOk()->assertJsonPath('label', null);
+        $this->putJson("/api/v1/business/discord-posts/{$one['key']}", ['name' => str_repeat('x', 41)])->assertStatus(422)->assertJsonValidationErrors('name');
+        $this->putJson("/api/v1/business/discord-posts/{$one['key']}", [])->assertStatus(422);
+        $this->putJson('/api/v1/business/discord-posts/0123456789abcdef', ['name' => 'X'])->assertNotFound();
+    }
+
     public function test_a_daily_only_user_cant_switch_it_or_see_the_posts(): void
     {
         Sanctum::actingAs(User::factory()->create(['role' => 'daily_only']));
@@ -199,5 +219,6 @@ class DiscordAutoPostTest extends TestCase
         $this->getJson('/api/v1/business/discord-posts')->assertForbidden();
         $this->getJson('/api/v1/business/discord-posts/image')->assertForbidden();
         $this->postJson('/api/v1/business/discord-posts/0123456789abcdef/send')->assertForbidden();
+        $this->putJson('/api/v1/business/discord-posts/0123456789abcdef', ['name' => 'X'])->assertForbidden();
     }
 }

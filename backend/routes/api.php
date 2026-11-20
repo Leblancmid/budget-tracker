@@ -131,6 +131,8 @@ Route::prefix('v1')->group(function () {
                     Route::get('discord-posts/image', [ListingPublishController::class, 'savedImage'])->name('discord-posts.image');
                     Route::post('discord-posts/{channel}/send', [ListingPublishController::class, 'sendToChannel'])
                         ->where('channel', '[0-9a-f]{16}')->middleware('throttle:30,1')->name('discord-posts.send');
+                    Route::put('discord-posts/{channel}', [ListingPublishController::class, 'renameChannel'])
+                        ->where('channel', '[0-9a-f]{16}')->name('discord-posts.rename');
                     Route::post('listing/discord-auto', [ListingPublishController::class, 'discordAuto'])->middleware('throttle:6,1')->name('listing.discord-auto');
                     Route::get('website-stats', [ListingPublishController::class, 'stats'])->name('website-stats');
                     Route::get('listing-performance', [ListingPublishController::class, 'performance'])->name('listing-performance');

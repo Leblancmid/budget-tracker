@@ -33,8 +33,14 @@ export interface DiscordSlot {
 
 export interface DiscordPostsPage {
   auto: DiscordAutoPost
-  /** name: the webhook's name in Discord · alive: false when Discord says it was deleted */
-  channels: { no: number; key: string; name: string | null; alive: boolean | null; last_sent_at: string | null }[]
+  /**
+   * label: your name for it (e.g. "Asian Market") · name: the webhook's name in Discord (what posts
+   * show) · open_url: opens its channel in Discord · alive: false when Discord says it was deleted
+   */
+  channels: {
+    no: number; key: string; label: string | null; name: string | null; open_url?: string | null
+    alive: boolean | null; last_sent_at: string | null
+  }[]
   /** Newest first */
   days: { date: string; am: DiscordSlot; pm: DiscordSlot }[]
   /** Posts you made ("Post image to Discord", publish, Send to one server: channel_key) */
@@ -45,6 +51,8 @@ export const discordPostsApi = {
   get: (fresh = false) => api.get<DiscordPostsPage>('/business/discord-posts', { params: fresh ? { fresh: 1 } : {} }).then((r) => r.data),
   /** Send the saved picture to one server now */
   send: (channelKey: string) => api.post<{ message: string }>(`/business/discord-posts/${channelKey}/send`).then((r) => r.data),
+  /** Your name for a server, only in this app (empty: back to the default) */
+  rename: (channelKey: string, name: string) => api.put<{ label: string | null }>(`/business/discord-posts/${channelKey}`, { name }).then((r) => r.data),
   /** The saved picture (what auto-post and Send post) */
   image: () => api.get<Blob>('/business/discord-posts/image', { responseType: 'blob' }).then((r) => r.data),
 }

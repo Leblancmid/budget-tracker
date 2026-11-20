@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Business;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Business\DiscordAutoPostRequest;
 use App\Http\Requests\Business\ListingImageRequest;
+use App\Http\Requests\Business\RenameDiscordChannelRequest;
 use App\Http\Requests\Business\UpdateGoldRatesRequest;
 use App\Models\ActivityLog;
 use App\Services\DiscordAutoPost;
@@ -95,6 +96,17 @@ class ListingPublishController extends Controller
         $r = DiscordAutoPost::sendTo($channel);
 
         return response()->json(['message' => $r['message']], $r['status']);
+    }
+
+    /** Name a server on the Discord page (only in this app: Discord still shows "Leblanc"). */
+    public function renameChannel(RenameDiscordChannelRequest $request, string $channel): JsonResponse
+    {
+        abort_unless(ListingAnnouncer::hasChannel($channel), 404, 'That server is no longer in LISTING_DISCORD_WEBHOOK.');
+        $name = $request->validated('name');
+        ListingAnnouncer::setChannelLabel($channel, $name);
+        ActivityLog::note('business', 'updated', 'Named a Discord channel: ' . (trim((string) $name) ?: '(default)'));
+
+        return response()->json(['label' => ListingAnnouncer::channelLabels()[$channel] ?? null]);
     }
 
     /** The saved listing picture (what auto-post and Send post), to show on the Discord page. */

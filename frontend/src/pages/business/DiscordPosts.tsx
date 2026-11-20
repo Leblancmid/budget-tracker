@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AlertTriangle, Check, Clock, ImageIcon, Minus, RefreshCw, Send, X } from 'lucide-react'
+import { AlertTriangle, Check, Clock, ExternalLink, ImageIcon, Minus, Pencil, RefreshCw, Send, X } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { discordPostsApi, type DiscordPostsPage, type DiscordSlot } from '@/api/business'
 import { useAsyncData } from '@/hooks/useAsyncData'
@@ -84,6 +84,70 @@ function SavedPicture({ imageAt, stale }: { imageAt: string | null; stale: boole
   )
 }
 
+type Channel = DiscordPostsPage['channels'][number]
+
+/** Your name for a server, else "Channel 3" (every webhook is called Leblanc in Discord) */
+const serverName = (c: Channel) => c.label ?? `Channel ${c.no}`
+
+/** A server's name with a pencil to rename it (Enter saves, Escape cancels) and a link to open it in Discord */
+function ServerName({ channel, onSaved }: { channel: Channel; onSaved: () => unknown }) {
+  const [editing, setEditing] = useState(false)
+  const [value, setValue]     = useState('')
+  const [saving, setSaving]   = useState(false)
+
+  const start = () => { setValue(channel.label ?? ''); setEditing(true) }
+  const save = async () => {
+    if (saving) return
+    if (value.trim() === (channel.label ?? '')) { setEditing(false); return }
+    setSaving(true)
+    try {
+      const r = await discordPostsApi.rename(channel.key, value)
+      toast.success(r.label ? `Named it ${r.label}.` : `Back to Channel ${channel.no}.`)
+      setEditing(false)
+      await onSaved()
+    } catch (err) {
+      toast.error(errorMessage(err, 'Could not rename it.'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (editing) {
+    return (
+      <input
+        autoFocus
+        value={value}
+        maxLength={40}
+        disabled={saving}
+        placeholder={`Channel ${channel.no}`}
+        aria-label={`Name for channel ${channel.no}`}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={save}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') { e.preventDefault(); void save() }
+          if (e.key === 'Escape') { e.preventDefault(); setEditing(false) }
+        }}
+        className="w-40 rounded-md border border-indigo-300 bg-white px-1.5 py-0.5 text-xs font-semibold text-gray-800 outline-none focus:ring-2 focus:ring-indigo-400 dark:border-indigo-700 dark:bg-gray-800 dark:text-gray-100"
+      />
+    )
+  }
+  return (
+    <span className="flex items-center gap-1">
+      <span className={`max-w-32 truncate font-semibold ${channel.label ? 'text-gray-800 dark:text-gray-100' : 'text-gray-500 italic dark:text-gray-400'}`} title={serverName(channel)}>
+        {serverName(channel)}
+      </span>
+      <button type="button" onClick={start} title="Rename" aria-label={`Rename ${serverName(channel)}`} className="rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-200">
+        <Pencil size={11} />
+      </button>
+      {channel.open_url && (
+        <a href={channel.open_url} target="_blank" rel="noreferrer" title="Open this channel in Discord" aria-label={`Open ${serverName(channel)} in Discord`} className="rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-indigo-600 dark:hover:bg-gray-800 dark:hover:text-indigo-400">
+          <ExternalLink size={11} />
+        </a>
+      )}
+    </span>
+  )
+}
+
 /** How many servers a run reached, e.g. "9/10" */
 function slotCount(slot: DiscordSlot, keys: string[]): string {
   if (slot.skipped) return 'skip'
@@ -133,7 +197,7 @@ export default function DiscordPosts() {
   const auto = data?.auto
   const nameOf = (key: string | null) => {
     const c = data?.channels.find((x) => x.key === key)
-    return c ? c.name ?? `Channel ${c.no}` : 'a removed server'
+    return c ? serverName(c) : 'a removed server'
   }
 
   return (
@@ -209,19 +273,17 @@ export default function DiscordPosts() {
                       <th scope="row" className="sticky left-0 z-10 bg-white px-3 py-1.5 text-left font-normal dark:bg-gray-900">
                         <div className="flex items-center gap-2">
                           <div className="min-w-0 flex-1">
-                            <span className="block max-w-40 truncate font-semibold text-gray-800 dark:text-gray-100" title={c.name ?? undefined}>
-                              {c.name ?? `Channel ${c.no}`}
-                            </span>
+                            <ServerName channel={c} onSaved={refetch} />
                             <span className={`block text-[10px] ${c.alive === false ? 'font-semibold text-red-600 dark:text-red-400' : 'text-gray-400 dark:text-gray-500'}`}>
                               {c.alive === false ? 'Webhook deleted' : c.last_sent_at ? `#${c.no} · last sent ${manilaTime(c.last_sent_at)}` : `#${c.no} · nothing sent yet`}
                             </span>
                           </div>
                           <button
                             type="button"
-                            onClick={() => send(c.key, c.name ?? `Channel ${c.no}`)}
+                            onClick={() => send(c.key, serverName(c))}
                             disabled={sending !== null}
-                            title={`Send the picture to ${c.name ?? `Channel ${c.no}`} now`}
-                            aria-label={`Send to ${c.name ?? `Channel ${c.no}`}`}
+                            title={`Send the picture to ${serverName(c)} now`}
+                            aria-label={`Send to ${serverName(c)}`}
                             className="flex shrink-0 items-center gap-1 rounded-md bg-indigo-50 px-2 py-1 text-[11px] font-semibold text-indigo-700 hover:bg-indigo-100 disabled:opacity-50 dark:bg-indigo-900/30 dark:text-indigo-300 dark:hover:bg-indigo-900/50"
                           >
                             {sending === c.key ? <RefreshCw size={12} className="animate-spin" /> : <Send size={12} />}
@@ -256,7 +318,7 @@ export default function DiscordPosts() {
           </Card>
 
           <p className="-mt-2 text-[11px] text-gray-400 dark:text-gray-500">
-            Names come from each webhook's name in Discord: rename a webhook to its server's name (Server Settings → Integrations → Webhooks), then refresh.
+            Not sure which server is which? Tap <ExternalLink size={10} className="inline" /> to open its channel in Discord, then name it with the pencil. Names stay in this app: Discord still shows your posts as Leblanc.
           </p>
 
           {/* Posts you made yourself */}

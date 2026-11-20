@@ -52,8 +52,10 @@ class DiscordPostLog
 
         $lastSent = DiscordPost::where('ok', true)->whereNotNull('channel_key')
             ->selectRaw('channel_key, max(created_at) as at')->groupBy('channel_key')->pluck('at', 'channel_key');
-        $channels = array_map(fn (array $c) => [...$c, 'last_sent_at' => isset($lastSent[$c['key']])
-            ? CarbonImmutable::parse($lastSent[$c['key']])->toIso8601String() : null,
+        $labels   = ListingAnnouncer::channelLabels();
+        $channels = array_map(fn (array $c) => [...$c,
+            'label'        => $labels[$c['key']] ?? null, // your name for it, e.g. "Asian Market"
+            'last_sent_at' => isset($lastSent[$c['key']]) ? CarbonImmutable::parse($lastSent[$c['key']])->toIso8601String() : null,
         ], ListingAnnouncer::channels($fresh));
 
         $days = [];

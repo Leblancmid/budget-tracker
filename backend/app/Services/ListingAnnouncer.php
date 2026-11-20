@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\SiteSetting;
 use Illuminate\Http\Client\Pool;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
@@ -131,10 +132,11 @@ class ListingAnnouncer
     }
 
     /**
-     * The channels as Discord names them (the webhook's name: rename it in Discord to the server's
-     * name), and whether the webhook still exists. Asked of Discord at most once an hour.
+     * The channels as Discord knows them: the webhook's name (the name posts show, e.g. "Leblanc"),
+     * a link that opens its channel in Discord, and whether the webhook still exists. Asked of
+     * Discord at most once an hour. Your own names for them are kept apart (channelLabels).
      *
-     * @return list<array{no: int, key: string, name: ?string, alive: ?bool}>
+     * @return list<array{no: int, key: string, name: ?string, open_url: ?string, alive: ?bool}>
      */
     public static function channels(bool $fresh = false): array
     {
@@ -142,7 +144,7 @@ class ListingAnnouncer
         if ($hooks === []) {
             return [];
         }
-        $cacheKey = 'discord-channels-' . self::channelKey(implode(',', $hooks));
+        $cacheKey = 'discord-channels-v2-' . self::channelKey(implode(',', $hooks));
         if ($fresh) {
             Cache::forget($cacheKey);
         }
@@ -155,16 +157,49 @@ class ListingAnnouncer
 
             return array_map(function ($i) use ($hooks, $answers) {
                 $res = $answers[(string) $i] ?? null;
+                $ok  = $res instanceof Response && $res->successful();
+                // Server and channel ids (not secret): a link that opens the channel in Discord
+                $guild   = $ok ? (string) $res->json('guild_id') : '';
+                $channel = $ok ? (string) $res->json('channel_id') : '';
 
                 return [
-                    'no'    => $i + 1,
-                    'key'   => self::channelKey($hooks[$i]),
-                    'name'  => $res instanceof Response && $res->successful() ? ($res->json('name') ?: null) : null,
+                    'no'       => $i + 1,
+                    'key'      => self::channelKey($hooks[$i]),
+                    'name'     => $ok ? ($res->json('name') ?: null) : null,
+                    'open_url' => ctype_digit($guild) && ctype_digit($channel) ? "https://discord.com/channels/{$guild}/{$channel}" : null,
                     // false: Discord says the webhook is gone; null: couldn't tell
                     'alive' => $res instanceof Response ? ($res->successful() ? true : ($res->status() === 404 ? false : null)) : null,
                 ];
             }, array_keys($hooks));
         });
+    }
+
+    /** Your own names for the channels (e.g. "Asian Market"), by channel key */
+    public const LABELS_KEY = 'discord_channel_names';
+
+    /** @return array<string, string> */
+    public static function channelLabels(): array
+    {
+        return (array) SiteSetting::read(self::LABELS_KEY, []);
+    }
+
+    /** Name a channel in the app (empty: back to the default name). */
+    public static function setChannelLabel(string $key, ?string $label): void
+    {
+        $labels = self::channelLabels();
+        $label  = trim((string) $label);
+        if ($label === '') {
+            unset($labels[$key]);
+        } else {
+            $labels[$key] = $label;
+        }
+        SiteSetting::write(self::LABELS_KEY, $labels);
+    }
+
+    /** Is this key one of the channels in LISTING_DISCORD_WEBHOOK? */
+    public static function hasChannel(string $key): bool
+    {
+        return collect(self::webhooks())->contains(fn ($url) => self::channelKey($url) === $key);
     }
 
     /** Discord's answer in plain words */

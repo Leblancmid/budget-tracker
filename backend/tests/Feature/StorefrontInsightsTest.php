@@ -201,7 +201,7 @@ class StorefrontInsightsTest extends TestCase
         config(['listing.discord_webhook' => 'https://nobuttons.test/api/webhooks/1/abc']);
         $this->assertSame(['sent' => 1, 'total' => 1, 'failed' => []], ListingAnnouncer::postImage('img', 'Leblanc.png'));
         $urls = Http::recorded()->map(fn ($pair) => $pair[0]->url())->filter(fn ($u) => str_contains($u, 'nobuttons.test'))->values()->all();
-        $this->assertSame(['https://nobuttons.test/api/webhooks/1/abc?with_components=true', 'https://nobuttons.test/api/webhooks/1/abc'], $urls);
+        $this->assertSame(['https://nobuttons.test/api/webhooks/1/abc?with_components=true&wait=true', 'https://nobuttons.test/api/webhooks/1/abc?wait=true'], $urls);
     }
 
     public function test_the_image_goes_to_every_server_and_a_failing_one_doesnt_stop_the_others(): void

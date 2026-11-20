@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\DiscordPost;
 use App\Models\SiteSetting;
 use Illuminate\Http\Client\Pool;
 use Illuminate\Http\Client\Response;
@@ -96,10 +97,14 @@ class ListingAnnouncer
             array_keys($urls),
         ));
 
-        $withButtons = array_map(fn ($url) => $url . (str_contains($url, '?') ? '&' : '?') . 'with_components=true', $hooks);
+        // wait=true: Discord answers with the message, whose id lets the next post delete it
+        $withButtons = array_map(fn ($url) => self::withQuery($url, 'with_components=true&wait=true'), $hooks);
         $results     = $all($withButtons, $buttons);
         // Channels that won't take buttons get the image with a link instead
-        $noButtons = array_filter($hooks, fn ($i) => self::status($results[(string) $i] ?? null) === 400, ARRAY_FILTER_USE_KEY);
+        $noButtons = array_map(
+            fn ($url) => self::withQuery($url, 'wait=true'),
+            array_filter($hooks, fn ($i) => self::status($results[(string) $i] ?? null) === 400, ARRAY_FILTER_USE_KEY),
+        );
         foreach ($all($noButtons, $plain) as $i => $res) {
             $results[$i] = $res;
         }
@@ -109,7 +114,9 @@ class ListingAnnouncer
         foreach ($hooks as $i => $url) {
             $res = $results[(string) $i] ?? null;
             $ok  = $res instanceof Response && $res->successful();
+            $id  = $ok ? (string) $res->json('id') : '';
             $channel[] = ['key' => self::channelKey($url), 'no' => $i + 1, 'ok' => $ok, 'status' => self::status($res),
+                'message_id' => ctype_digit($id) ? $id : null,
                 'note' => $ok ? null : ($res instanceof Response ? self::problem($res->status()) : 'Couldn\'t reach Discord')];
             if ($ok) {
                 continue;
@@ -121,8 +128,58 @@ class ListingAnnouncer
                 : ($res instanceof Throwable ? $res->getMessage() : 'no answer')));
         }
         DiscordPostLog::record($kind, $channel);
+        self::deleteEarlierPosts($hooks, $channel);
 
         return ['sent' => count($hooks) - count($failed), 'total' => count($hooks), 'failed' => $failed];
+    }
+
+    /**
+     * One listing post per channel: where the new post went through, delete the ones before it
+     * (Discord lets a webhook delete its own messages). A message already gone counts as deleted;
+     * one that couldn't be deleted now is tried again after the next post.
+     *
+     * @param  array<int, string>  $hooks  the webhooks just posted to, by position
+     * @param  list<array{key: string, ok: bool, message_id: ?string}>  $posted
+     */
+    private static function deleteEarlierPosts(array $hooks, array $posted): void
+    {
+        $byKey = collect($hooks)->mapWithKeys(fn ($url) => [self::channelKey($url) => $url]);
+        $fresh = collect($posted)->filter(fn ($p) => $p['ok'] && $p['message_id'] !== null)->keyBy('key');
+        if ($fresh->isEmpty()) {
+            return;
+        }
+        $old = DiscordPost::whereIn('channel_key', $fresh->keys())->whereNotNull('message_id')
+            ->get(['id', 'channel_key', 'message_id'])
+            ->reject(fn (DiscordPost $p) => $p->message_id === $fresh[$p->channel_key]['message_id'])
+            ->values();
+        if ($old->isEmpty()) {
+            return;
+        }
+
+        $answers = Http::pool(fn (Pool $pool) => $old->map(fn (DiscordPost $p, $i) => $pool->as((string) $i)->timeout(15)
+            ->delete(self::messageUrl($byKey[$p->channel_key], $p->message_id)))->all());
+        $done = $old->filter(function (DiscordPost $p, $i) use ($answers) {
+            $res = $answers[(string) $i] ?? null;
+
+            return $res instanceof Response && ($res->successful() || $res->status() === 404);
+        });
+        if ($done->isNotEmpty()) {
+            DiscordPost::whereIn('id', $done->pluck('id'))->update(['message_id' => null]);
+        }
+    }
+
+    /** A webhook link with extra query parameters, e.g. ?wait=true */
+    private static function withQuery(string $url, string $query): string
+    {
+        return $url . (str_contains($url, '?') ? '&' : '?') . $query;
+    }
+
+    /** The link to one of a webhook's messages (keeps a ?thread_id= the webhook link has) */
+    private static function messageUrl(string $webhook, string $messageId): string
+    {
+        [$base, $query] = array_pad(explode('?', $webhook, 2), 2, null);
+
+        return rtrim($base, '/') . '/messages/' . $messageId . ($query ? '?' . $query : '');
     }
 
     /** A short fingerprint of a webhook link: tells channels apart without keeping the secret */

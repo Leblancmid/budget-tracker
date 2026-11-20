@@ -20,7 +20,7 @@ class DiscordPostLog
     /** Before this hour (Manila) a post counts as the morning run, from it the evening run */
     private const EVENING_FROM = 16;
 
-    /** @param list<array{key: string, no: int, ok: bool, status: ?int, note: ?string}> $channels */
+    /** @param list<array{key: string, no: int, ok: bool, status: ?int, note: ?string, message_id?: ?string}> $channels */
     public static function record(string $kind, array $channels): void
     {
         [$date, $slot] = self::slotNow();
@@ -28,9 +28,11 @@ class DiscordPostLog
             DiscordPost::create([
                 'kind' => $kind, 'slot_date' => $date, 'slot' => $slot,
                 'channel_key' => $c['key'], 'channel_no' => $c['no'], 'ok' => $c['ok'], 'status' => $c['status'], 'note' => $c['note'],
+                'message_id' => $c['message_id'] ?? null,
             ]);
         }
-        DiscordPost::where('created_at', '<', now()->subDays(self::KEEP_DAYS))->delete();
+        // Old rows go, except ones whose message is still up (the next post deletes it)
+        DiscordPost::where('created_at', '<', now()->subDays(self::KEEP_DAYS))->whereNull('message_id')->delete();
     }
 
     /** An auto-post that didn't go out at all (what's for sale changed, no picture, ...) */

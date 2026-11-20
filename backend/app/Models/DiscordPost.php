@@ -9,7 +9,7 @@ class DiscordPost extends Model
 {
     public const UPDATED_AT = null;
 
-    protected $fillable = ['kind', 'slot_date', 'slot', 'channel_key', 'channel_no', 'ok', 'status', 'note'];
+    protected $fillable = ['kind', 'slot_date', 'slot', 'channel_key', 'channel_no', 'ok', 'status', 'message_id', 'note'];
 
     protected function casts(): array
     {

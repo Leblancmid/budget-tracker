@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\DiscordPost;
 use App\Models\RucoyAccount;
 use App\Models\User;
 use App\Services\DiscordAutoPost;
@@ -22,6 +23,9 @@ class DiscordAutoPostTest extends TestCase
 
     private User $trader;
 
+    /** The fake Discord's message numbers */
+    private int $messageNo = 0;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -36,7 +40,10 @@ class DiscordAutoPostTest extends TestCase
             str_contains($r->url(), 'webhooks/7/deleted') => Http::response(['message' => 'Unknown Webhook'], 404), // a webhook someone deleted
             // Reading a webhook: its name and where it posts
             $r->method() === 'GET' && str_contains($r->url(), 'discord.test') => Http::response(['name' => 'Leblanc', 'guild_id' => '111', 'channel_id' => '222']),
-            str_contains($r->url(), 'discord.test')       => Http::response(null, 204),
+            // Deleting an earlier post
+            $r->method() === 'DELETE' && str_contains($r->url(), 'discord.test') => Http::response(null, 204),
+            // A post: Discord answers with the new message (wait=true)
+            str_contains($r->url(), 'discord.test') => Http::response(['id' => (string) (++$this->messageNo + 1000)]),
             default                                         => Http::response([], 404),
         });
     }
@@ -61,7 +68,33 @@ class DiscordAutoPostTest extends TestCase
 
     private function discordPosts(): int
     {
-        return Http::recorded()->filter(fn ($pair) => str_contains($pair[0]->url(), 'discord.test'))->count();
+        return Http::recorded()->filter(fn ($pair) => $pair[0]->method() === 'POST' && str_contains($pair[0]->url(), 'discord.test'))->count();
+    }
+
+    /** The messages deleted on the fake Discord, as "webhook/message" */
+    private function deleted(): array
+    {
+        return Http::recorded()->filter(fn ($pair) => $pair[0]->method() === 'DELETE')
+            ->map(fn ($pair) => preg_replace('#^https://discord\.test/api/webhooks/(\d+)/\w+/messages/(\d+)$#', '$1/$2', $pair[0]->url()))
+            ->values()->all();
+    }
+
+    public function test_each_post_replaces_the_one_before_it_in_that_channel(): void
+    {
+        config(['listing.discord_webhook' => 'https://discord.test/api/webhooks/1/abc,https://discord.test/api/webhooks/2/def']);
+        $this->listed('Lv 650 Melee');
+        $this->switchOn()->assertOk();
+
+        $this->artisan('listings:discord-auto')->assertSuccessful(); // messages 1001 (ch 1), 1002 (ch 2)
+        $this->assertSame([], $this->deleted(), 'nothing before the first post');
+
+        $two = collect($this->getJson('/api/v1/business/discord-posts')->json('channels'))->firstWhere('no', 2)['key'];
+        $this->postJson("/api/v1/business/discord-posts/{$two}/send")->assertOk(); // 1003 in channel 2 only
+        $this->assertSame(['2/1002'], $this->deleted());
+
+        $this->artisan('listings:discord-auto')->assertSuccessful(); // 1004, 1005: replace 1001 and 1003
+        $this->assertEqualsCanonicalizing(['2/1002', '1/1001', '2/1003'], $this->deleted());
+        $this->assertSame(2, DiscordPost::whereNotNull('message_id')->count(), 'only the latest post per channel is still up');
     }
 
     public function test_switching_on_saves_the_image_and_the_schedule_posts_it(): void

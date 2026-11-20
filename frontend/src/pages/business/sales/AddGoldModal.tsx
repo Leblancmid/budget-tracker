@@ -70,7 +70,7 @@ export function AddGoldModal({ target, wallets = [], onClose, onAdded }: {
   }
 
   return (
-    <Modal open onClose={onClose} title="Add Gold" size="md">
+    <Modal open onClose={onClose} title="Buy Gold" size="md">
       <div className="flex flex-col gap-4">
         <div className="flex items-center gap-3 rounded-xl border border-amber-100 dark:border-amber-900/40 bg-amber-50/60 dark:bg-amber-900/10 px-4 py-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/40">
@@ -159,7 +159,7 @@ export function AddGoldModal({ target, wallets = [], onClose, onAdded }: {
 
         <div className="modal-footer flex justify-end gap-3 pt-1">
           <Button variant="secondary" onClick={onClose} disabled={adding}>Cancel</Button>
-          <Button onClick={handleAdd} loading={adding} icon={<Plus className="h-4 w-4" />}>Add Gold</Button>
+          <Button onClick={handleAdd} loading={adding} icon={<Plus className="h-4 w-4" />}>Buy Gold</Button>
         </div>
       </div>
     </Modal>

@@ -1,4 +1,4 @@
-import { Coins, HandCoins, Pencil, Pin, Plus, RotateCcw, Trash2 } from 'lucide-react'
+import { Coins, HandCoins, Pencil, Pin, RotateCcw, ShoppingCart, Trash2 } from 'lucide-react'
 import { Amt } from '@/components/ui/Amt'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { formatCurrency, formatDate } from '@/utils/format'
@@ -116,11 +116,11 @@ export function GoldTradeRow({ tx, archived = false, onEdit, onSell, onAddGold, 
         {!archived && (
           <button
             onClick={onAddGold}
-            title="Add gold to the price / cost"
+            title="Buy more gold: adds to the price / cost"
             className="flex items-center gap-1 rounded-lg border border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-900/20 h-9 px-3 text-xs sm:h-auto sm:px-2.5 sm:py-1 sm:text-[11px] font-semibold text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
           >
-            <Plus size={12} />
-            Add
+            <ShoppingCart size={12} />
+            Buy
           </button>
         )}
 

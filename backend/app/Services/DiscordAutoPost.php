@@ -79,10 +79,13 @@ class DiscordAutoPost
         }
         $image = self::image();
         if ($image === null) {
+            DiscordPostLog::skipped('No saved picture');
+
             return 'No saved image: post or publish once from the Listing Kit.';
         }
         $slot = now(BalanceInterest::ZONE)->format('Y-m-d-H');
         if (self::stale()) {
+            DiscordPostLog::skipped('What\'s for sale changed since the saved picture');
             Alerts::toEveryoneWith('storefront', new AppAlert(
                 'listings', 'Discord auto-post skipped',
                 'What\'s for sale changed since the saved picture. Open the Listing Kit and tap "Post image to Discord" (or publish) to refresh it.',
@@ -92,20 +95,20 @@ class DiscordAutoPost
             return 'Skipped: what\'s for sale changed since the saved picture (alert sent).';
         }
 
-        ['sent' => $sent, 'total' => $total, 'failed' => $failed] = ListingAnnouncer::postImage($image['contents'], $image['name']);
+        ['sent' => $sent, 'total' => $total, 'failed' => $failed] = ListingAnnouncer::postImage($image['contents'], $image['name'], 'auto');
         if ($sent > 0 && $failed !== []) {
             // Some servers missed it: a webhook deleted or the channel gone. Once a day is enough.
             Alerts::toEveryoneWith('storefront', new AppAlert(
                 'listings', "Discord auto-post reached {$sent} of {$total} channels",
                 'Channel ' . implode(', ', $failed) . ' refused it: its webhook may have been deleted. php artisan listings:discord checks each one.',
-                '/business/listing', key: 'discord-auto-partial-' . implode('-', $failed) . '-' . now(BalanceInterest::ZONE)->toDateString(),
+                '/business/discord', key: 'discord-auto-partial-' . implode('-', $failed) . '-' . now(BalanceInterest::ZONE)->toDateString(),
             ));
         }
         if ($sent === 0) {
             Alerts::toEveryoneWith('storefront', new AppAlert(
                 'listings', 'Discord auto-post failed',
                 'Discord refused the listing image. Check the webhook links (php artisan listings:discord tests them).',
-                '/business/listing', key: 'discord-auto-failed-' . $slot,
+                '/business/discord', key: 'discord-auto-failed-' . $slot,
             ));
 
             return "Discord refused the post (0 of {$total} channels).";

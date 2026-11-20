@@ -8,6 +8,7 @@ use App\Http\Requests\Business\ListingImageRequest;
 use App\Http\Requests\Business\UpdateGoldRatesRequest;
 use App\Models\ActivityLog;
 use App\Services\DiscordAutoPost;
+use App\Services\DiscordPostLog;
 use App\Services\ListingAnnouncer;
 use App\Services\ListingPerformance;
 use App\Services\ListingPublisher;
@@ -79,6 +80,12 @@ class ListingPublishController extends Controller
         ActivityLog::note('business', 'updated', 'Discord auto-post ' . ($on ? 'on (10 AM and 10 PM)' : 'off'));
 
         return response()->json(DiscordAutoPost::status());
+    }
+
+    /** The Discord page: each server's 10 AM and 10 PM auto-posts over the last week. ?fresh=1 re-asks Discord for the names. */
+    public function discordPosts(Request $request): JsonResponse
+    {
+        return response()->json(DiscordPostLog::page($request->boolean('fresh')));
     }
 
     /** How each listed account is doing: days listed, views, requests and a verdict. */

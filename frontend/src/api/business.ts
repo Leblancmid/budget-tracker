@@ -21,6 +21,30 @@ export interface ListingPublishPreview {
   discord_auto?: DiscordAutoPost
 }
 
+/** One run (10 AM or 10 PM) of one day on the Discord page */
+export interface DiscordSlot {
+  /** Its time has come (no results then: auto-post was off, or the server PC was) */
+  due: boolean
+  /** Why the whole run didn't post, if it didn't */
+  skipped: string | null
+  /** By channel key */
+  results: Record<string, { ok: boolean; note: string | null; at: string }>
+}
+
+export interface DiscordPostsPage {
+  auto: DiscordAutoPost
+  /** name: the webhook's name in Discord · alive: false when Discord says it was deleted */
+  channels: { no: number; key: string; name: string | null; alive: boolean | null; last_sent_at: string | null }[]
+  /** Newest first */
+  days: { date: string; am: DiscordSlot; pm: DiscordSlot }[]
+  /** Posts you made ("Post image to Discord", publish) */
+  own: { kind: 'manual' | 'publish'; at: string; sent: number; total: number }[]
+}
+
+export const discordPostsApi = {
+  get: (fresh = false) => api.get<DiscordPostsPage>('/business/discord-posts', { params: fresh ? { fresh: 1 } : {} }).then((r) => r.data),
+}
+
 /** Discord auto-post: the saved Listing Kit image at 10 AM and 10 PM */
 export interface DiscordAutoPost {
   enabled: boolean

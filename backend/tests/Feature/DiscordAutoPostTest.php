@@ -132,9 +132,38 @@ class DiscordAutoPostTest extends TestCase
         $this->assertStringNotContainsString('webhooks', $alert['body']); // never the link
     }
 
-    public function test_a_daily_only_user_cant_switch_it(): void
+    public function test_the_discord_page_shows_each_server_morning_and_evening(): void
+    {
+        config(['listing.discord_webhook' => 'https://discord.test/api/webhooks/1/abc,https://discord.test/api/webhooks/7/deleted']);
+        $this->listed('Lv 650 Melee');
+        $this->switchOn()->assertOk();
+
+        $this->travelTo(now('Asia/Manila')->setTime(10, 0));
+        $this->artisan('listings:discord-auto')->assertSuccessful();   // morning: 1 of 2
+        $this->travelTo(now('Asia/Manila')->setTime(22, 0));
+        RucoyAccount::query()->update(['archived_at' => now()]);       // sold: the evening run is skipped
+        $this->artisan('listings:discord-auto')->assertSuccessful();
+
+        $page = $this->getJson('/api/v1/business/discord-posts')->assertOk()->json();
+        [$one, $seven] = $page['channels'];
+        $this->assertSame([1, 2], [$one['no'], $seven['no']]);
+        $this->assertFalse($seven['alive']);                           // Discord says it's gone
+        $this->assertNotNull($one['last_sent_at']);
+        $this->assertStringNotContainsString('webhooks', json_encode($page)); // never the links
+
+        $today = $page['days'][0];
+        $this->assertSame(now('Asia/Manila')->toDateString(), $today['date']);
+        $this->assertTrue($today['am']['results'][$one['key']]['ok']);
+        $this->assertSame('Webhook deleted', $today['am']['results'][$seven['key']]['note']);
+        $this->assertStringContainsString('changed', $today['pm']['skipped']);
+        $this->assertTrue($today['am']['due'] && $today['pm']['due']);
+        $this->assertFalse($page['days'][1]['am']['results'] !== [], 'nothing the day before');
+    }
+
+    public function test_a_daily_only_user_cant_switch_it_or_see_the_posts(): void
     {
         Sanctum::actingAs(User::factory()->create(['role' => 'daily_only']));
         $this->switchOn()->assertForbidden();
+        $this->getJson('/api/v1/business/discord-posts')->assertForbidden();
     }
 }

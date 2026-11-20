@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Http\Client\Pool;
 use Illuminate\Http\Client\Response;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -73,10 +74,12 @@ class ListingAnnouncer
      *
      * All channels are posted to at the same time, so ten servers take about as long as one.
      *
+     * Each channel's result is kept for the Discord page ($kind: auto, manual or publish).
+     *
      * @return array{sent: int, total: int, failed: list<int>} how many channels it reached, of
      *                                                         how many, and the numbers of those it didn't
      */
-    public static function postImage(string $contents, string $filename): array
+    public static function postImage(string $contents, string $filename, string $kind = 'manual'): array
     {
         $hooks   = self::webhooks();
         $site    = rtrim((string) config('listing.site_url'), '/');
@@ -98,10 +101,14 @@ class ListingAnnouncer
             $results[$i] = $res;
         }
 
-        $failed = [];
-        foreach (array_keys($hooks) as $i) {
+        $failed  = [];
+        $channel = [];
+        foreach ($hooks as $i => $url) {
             $res = $results[(string) $i] ?? null;
-            if ($res instanceof Response && $res->successful()) {
+            $ok  = $res instanceof Response && $res->successful();
+            $channel[] = ['key' => self::channelKey($url), 'no' => $i + 1, 'ok' => $ok, 'status' => self::status($res),
+                'note' => $ok ? null : ($res instanceof Response ? self::problem($res->status()) : 'Couldn\'t reach Discord')];
+            if ($ok) {
                 continue;
             }
             $failed[] = $i + 1;
@@ -110,8 +117,65 @@ class ListingAnnouncer
                 ? 'HTTP ' . $res->status() . ' ' . mb_substr($res->body(), 0, 300)
                 : ($res instanceof Throwable ? $res->getMessage() : 'no answer')));
         }
+        DiscordPostLog::record($kind, $channel);
 
         return ['sent' => count($hooks) - count($failed), 'total' => count($hooks), 'failed' => $failed];
+    }
+
+    /** A short fingerprint of a webhook link: tells channels apart without keeping the secret */
+    public static function channelKey(string $url): string
+    {
+        return substr(hash('sha256', $url), 0, 16);
+    }
+
+    /**
+     * The channels as Discord names them (the webhook's name: rename it in Discord to the server's
+     * name), and whether the webhook still exists. Asked of Discord at most once an hour.
+     *
+     * @return list<array{no: int, key: string, name: ?string, alive: ?bool}>
+     */
+    public static function channels(bool $fresh = false): array
+    {
+        $hooks = self::webhooks();
+        if ($hooks === []) {
+            return [];
+        }
+        $cacheKey = 'discord-channels-' . self::channelKey(implode(',', $hooks));
+        if ($fresh) {
+            Cache::forget($cacheKey);
+        }
+
+        return Cache::remember($cacheKey, now()->addHour(), function () use ($hooks) {
+            $answers = Http::pool(fn (Pool $pool) => array_map(
+                fn ($i) => $pool->as((string) $i)->timeout(10)->get($hooks[$i]),
+                array_keys($hooks),
+            ));
+
+            return array_map(function ($i) use ($hooks, $answers) {
+                $res = $answers[(string) $i] ?? null;
+
+                return [
+                    'no'    => $i + 1,
+                    'key'   => self::channelKey($hooks[$i]),
+                    'name'  => $res instanceof Response && $res->successful() ? ($res->json('name') ?: null) : null,
+                    // false: Discord says the webhook is gone; null: couldn't tell
+                    'alive' => $res instanceof Response ? ($res->successful() ? true : ($res->status() === 404 ? false : null)) : null,
+                ];
+            }, array_keys($hooks));
+        });
+    }
+
+    /** Discord's answer in plain words */
+    private static function problem(int $status): string
+    {
+        return match (true) {
+            $status === 404 => 'Webhook deleted',
+            $status === 401 || $status === 403 => 'Not allowed',
+            $status === 429 => 'Too many posts (rate limited)',
+            $status === 413 => 'Image too large',
+            $status >= 500  => 'Discord was down',
+            default         => "Refused (HTTP {$status})",
+        };
     }
 
     /** A pooled answer's HTTP status, or null when the request itself failed */

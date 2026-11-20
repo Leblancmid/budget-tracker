@@ -59,7 +59,7 @@ describe('navigation', () => {
     expect(sections[0].tabs.map((t) => t.label)).not.toContain('Balance')
     expect(sections.at(-1)?.tabs.map((t) => t.label)).toEqual(['Profile'])
     expect(sections[1].tabs.map((t) => t.label)).toEqual(['Stats', 'Sales', 'Buyers', 'Report'])
-    expect(sections[2].tabs.map((t) => t.label)).toEqual(['Listing Kit', 'Leads'])
+    expect(sections[2].tabs.map((t) => t.label)).toEqual(['Listing Kit', 'Leads', 'Discord'])
   })
 
   it('hides the Storefront (Listing Kit and Leads) from a trader without it', () => {
@@ -69,6 +69,7 @@ describe('navigation', () => {
   it('puts the Listing Kit and Leads under Storefront', () => {
     expect(locate('/business/listing')).toMatchObject({ title: 'Listing Kit', section: { id: 'storefront' } })
     expect(locate('/business/leads')).toMatchObject({ title: 'Leads', section: { id: 'storefront' } })
+    expect(locate('/business/discord')).toMatchObject({ title: 'Discord', section: { id: 'storefront' } })
     expect(locate('/business')).toMatchObject({ title: 'Stats', section: { id: 'business' } })
   })
 

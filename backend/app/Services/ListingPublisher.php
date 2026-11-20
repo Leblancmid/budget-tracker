@@ -115,6 +115,16 @@ class ListingPublisher
         ];
     }
 
+    /** What's for sale now, as the website shows it (with price drops): for the Discord card. */
+    public function forSale(): array
+    {
+        $listings = array_map(fn ($l) => array_diff_key($l, ['_screenshot' => true]), $this->build()['listings']);
+
+        return $this->configured()
+            ? self::markPriceDrops($listings, $this->readJson(self::JSON), now(BalanceInterest::ZONE)->toDateString())
+            : $listings;
+    }
+
     /**
      * Write, commit and push. $kitImage: the Listing Kit image drawn in the app (with its caption),
      * posted to your Discord listings channel when what's for sale changed.
@@ -161,7 +171,8 @@ class ListingPublisher
         $forSaleChanged = ListingAnnouncer::listingsChanged($json, $published);
         $this->writeJson(self::JSON, $json);
         $this->writeJson(self::GOLD, WebsiteContent::gold());
-        $this->writeJson(self::STATS, WebsiteContent::stats());
+        $stats = WebsiteContent::stats();
+        $this->writeJson(self::STATS, $stats);
 
         // Commit only these files, never anything else you're working on in that repo
         $this->git(['add', '-A', '--', ...self::PATHS]);
@@ -186,7 +197,8 @@ class ListingPublisher
         // The Listing Kit image → your Discord listings channel, when what's for sale changed
         // (also never blocks the publish)
         $result = $forSaleChanged && $kitImage !== null && ListingAnnouncer::configured()
-            ? ListingAnnouncer::postImage($kitImage['contents'], $kitImage['name'], $kitImage['caption'])
+            ? ListingAnnouncer::postImage($kitImage['contents'], $kitImage['name'], $kitImage['caption'],
+                ListingAnnouncer::embed($json, $kitImage['caption'], $stats['reply_minutes'] ?? null, $kitImage['name'], $today))
             : ['sent' => 0, 'total' => count(ListingAnnouncer::webhooks())];
 
         return [

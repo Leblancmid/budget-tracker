@@ -49,6 +49,9 @@ class StorefrontInsightsTest extends TestCase
             if (str_contains($r->url(), '/api/leads')) {
                 return Http::response(['leads' => $this->leads]);
             }
+            if (str_contains($r->url(), 'nobuttons.test')) { // a channel that won't take link buttons
+                return str_contains($r->url(), 'with_components') ? Http::response(['message' => 'Invalid Form Body'], 400) : Http::response(null, 204);
+            }
             if (str_contains($r->url(), 'discord.test/api/webhooks/9/deleted')) {
                 return Http::response(['message' => 'Unknown Webhook'], 404); // a webhook someone deleted
             }
@@ -149,15 +152,27 @@ class StorefrontInsightsTest extends TestCase
             ->assertStatus(422)->assertJsonPath('message', fn ($m) => str_contains($m, 'LISTING_DISCORD_WEBHOOK'));
 
         config(['listing.discord_webhook' => 'https://discord.test/api/webhooks/1/abc']);
-        $this->post('/api/v1/business/listing/discord', ['image' => $image(), 'caption' => 'Rucoy accounts for sale'], ['Accept' => 'application/json'])->assertOk();
+        $this->listed('Lv 650 Melee', 2);
+        $caption = "Rucoy accounts for sale\n\n• Lv 650 Melee — DM for price\n\n✅ SELL GOLD\n\nMore details: https://site.test";
+        $this->post('/api/v1/business/listing/discord', ['image' => $image(), 'caption' => $caption], ['Accept' => 'application/json'])->assertOk();
         Http::assertSent(function (Request $r) {
             if (! str_contains($r->url(), 'discord.test')) {
                 return false;
             }
-            $parts = collect($r->data())->keyBy('name');
+            $parts   = collect($r->data())->keyBy('name');
+            $payload = json_decode($parts['payload_json']['contents'], true);
+            $card    = $payload['embeds'][0];
 
             return $parts['files[0]']['filename'] === 'Leblanc.png' // never the uploaded name
-                && json_decode($parts['payload_json']['contents'], true)['content'] === 'Rucoy accounts for sale';
+                && str_contains($r->url(), 'with_components=true')
+                && $card['title'] === '🛒 Rucoy accounts for sale'
+                && $card['url'] === 'https://site.test/for-sale'
+                && $card['image']['url'] === 'attachment://Leblanc.png' // the whole image, full size
+                && str_contains($card['description'], '**1 account** ready to trade')
+                && str_contains($card['description'], '🆕 **1** new this week')
+                && str_contains($card['description'], '✅ SELL GOLD')
+                && str_contains($card['description'], '(https://site.test/for-sale)')
+                && $payload['components'][0]['components'][0]['url'] === 'https://site.test/for-sale';
         });
 
         // Only images, and one is needed
@@ -180,6 +195,16 @@ class StorefrontInsightsTest extends TestCase
             ->expectsOutputToContain('Channel 2 of 2: Discord refused it')
             ->doesntExpectOutputToContain('webhooks/9')
             ->assertFailed();
+    }
+
+    public function test_a_channel_that_refuses_buttons_still_gets_the_card(): void
+    {
+        $this->assertSame(['sent' => 0, 'total' => 0], ListingAnnouncer::postImage('img', 'Leblanc.png', 'caption', ['title' => 'x']), 'no webhook set');
+
+        config(['listing.discord_webhook' => 'https://nobuttons.test/api/webhooks/1/abc']);
+        $this->assertSame(['sent' => 1, 'total' => 1], ListingAnnouncer::postImage('img', 'Leblanc.png', 'caption', ['title' => 'x']));
+        $urls = Http::recorded()->map(fn ($pair) => $pair[0]->url())->filter(fn ($u) => str_contains($u, 'nobuttons.test'))->values()->all();
+        $this->assertSame(['https://nobuttons.test/api/webhooks/1/abc?with_components=true', 'https://nobuttons.test/api/webhooks/1/abc'], $urls);
     }
 
     public function test_the_image_goes_to_every_server_and_a_failing_one_doesnt_stop_the_others(): void

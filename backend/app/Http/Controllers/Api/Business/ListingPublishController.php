@@ -42,13 +42,14 @@ class ListingPublishController extends Controller
     }
 
     /** Post the Listing Kit image to your Discord listings channel now. */
-    public function postToDiscord(ListingImageRequest $request): JsonResponse
+    public function postToDiscord(ListingImageRequest $request, ListingPublisher $publisher): JsonResponse
     {
         if (! ListingAnnouncer::configured()) {
             return response()->json(['message' => "Discord isn't set up: add LISTING_DISCORD_WEBHOOK to the backend .env, then run the after-deploy script."], 422);
         }
         $image = $request->kitImage();
-        ['sent' => $sent, 'total' => $total] = ListingAnnouncer::postImage($image['contents'], $image['name'], $image['caption']);
+        $embed = ListingAnnouncer::embed($publisher->forSale(), $image['caption'], WebsiteContent::replyMinutes(), $image['name']);
+        ['sent' => $sent, 'total' => $total] = ListingAnnouncer::postImage($image['contents'], $image['name'], $image['caption'], $embed);
         if ($sent === 0) {
             return response()->json(['message' => 'Discord refused the post. Check the webhook links (php artisan listings:discord tests them).'], 502);
         }

@@ -248,6 +248,48 @@ class DiscordAutoPostTest extends TestCase
         $this->postJson('/api/v1/business/discord-posts/send-all')->assertStatus(422);
     }
 
+    public function test_each_server_gets_auto_posts_on_its_own_schedule(): void
+    {
+        config(['listing.discord_webhook' => collect(range(1, 4))->map(fn ($n) => "https://discord.test/api/webhooks/{$n}/abc")->join(',')]);
+        $this->listed('Lv 650 Melee');
+        $this->switchOn()->assertOk();
+        $keys = collect($this->getJson('/api/v1/business/discord-posts')->json('channels'))->pluck('key', 'no');
+        $this->assertSame(['both', true], [$this->getJson('/api/v1/business/discord-posts')->json('channels.0.schedule'), $this->getJson('/api/v1/business/discord-posts')->json('channels.0.replace')]);
+
+        // 1: both (default) · 2: mornings only · 3: evenings only · 4: never auto-posted, keeps every post
+        $this->putJson("/api/v1/business/discord-posts/{$keys[2]}", ['schedule' => 'am'])->assertOk()->assertJsonPath('schedule', 'am')->assertJsonPath('replace', true);
+        $this->putJson("/api/v1/business/discord-posts/{$keys[3]}", ['schedule' => 'pm'])->assertOk();
+        $this->putJson("/api/v1/business/discord-posts/{$keys[4]}", ['schedule' => 'manual', 'replace' => false])->assertOk()->assertJsonPath('replace', false);
+        $this->putJson("/api/v1/business/discord-posts/{$keys[1]}", ['schedule' => 'weekly'])->assertStatus(422)->assertJsonValidationErrors('schedule');
+
+        $postedTo = function () {
+            $hooks = Http::recorded()->filter(fn ($pair) => $pair[0]->method() === 'POST' && str_contains($pair[0]->url(), 'discord.test'))
+                ->map(fn ($pair) => (int) preg_replace('#^.*/webhooks/(\d+)/.*$#', '$1', $pair[0]->url()))->sort()->values()->all();
+
+            return $hooks;
+        };
+
+        $this->travelTo(now('Asia/Manila')->setTime(10, 0));
+        $this->artisan('listings:discord-auto')->expectsOutputToContain('Posted to 2 of 2')->assertSuccessful();
+        $this->assertSame([1, 2], $postedTo());
+
+        $this->travelTo(now('Asia/Manila')->setTime(22, 0));
+        $this->artisan('listings:discord-auto')->expectsOutputToContain('Posted to 2 of 2')->assertSuccessful();
+        $this->assertSame([1, 1, 2, 3], $postedTo());
+
+        // A manual-only server still gets Send and Post to all, and keeps its earlier post
+        $this->postJson("/api/v1/business/discord-posts/{$keys[4]}/send")->assertOk();
+        $this->postJson("/api/v1/business/discord-posts/{$keys[4]}/send")->assertOk();
+        $this->assertFalse(Http::recorded()->contains(fn ($pair) => $pair[0]->method() === 'DELETE' && str_contains($pair[0]->url(), 'webhooks/4/')));
+
+        // Nobody set for mornings: that run posts nothing
+        foreach ([1, 2] as $n) {
+            $this->putJson("/api/v1/business/discord-posts/{$keys[$n]}", ['schedule' => 'pm'])->assertOk();
+        }
+        $this->travelTo(now('Asia/Manila')->addDay()->setTime(10, 0));
+        $this->artisan('listings:discord-auto')->expectsOutputToContain('No server is set')->assertSuccessful();
+    }
+
     public function test_servers_can_be_named_in_the_app_and_opened_in_discord(): void
     {
         config(['listing.discord_webhook' => 'https://discord.test/api/webhooks/1/abc,https://discord.test/api/webhooks/2/def']);
@@ -262,7 +304,7 @@ class DiscordAutoPostTest extends TestCase
         // Empty: back to the default; too long or missing: refused; not one of yours: 404
         $this->putJson("/api/v1/business/discord-posts/{$two['key']}", ['name' => ''])->assertOk()->assertJsonPath('label', null);
         $this->putJson("/api/v1/business/discord-posts/{$one['key']}", ['name' => str_repeat('x', 41)])->assertStatus(422)->assertJsonValidationErrors('name');
-        $this->putJson("/api/v1/business/discord-posts/{$one['key']}", [])->assertStatus(422);
+        $this->putJson("/api/v1/business/discord-posts/{$one['key']}", [])->assertOk()->assertJsonPath('label', 'Asian Market'); // nothing sent: nothing changes
         $this->putJson('/api/v1/business/discord-posts/0123456789abcdef', ['name' => 'X'])->assertNotFound();
     }
 

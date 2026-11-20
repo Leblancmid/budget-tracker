@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api\Business;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Business\DiscordAutoPostRequest;
 use App\Http\Requests\Business\ListingImageRequest;
-use App\Http\Requests\Business\RenameDiscordChannelRequest;
+use App\Http\Requests\Business\UpdateDiscordChannelRequest;
 use App\Http\Requests\Business\UpdateGoldRatesRequest;
 use App\Models\ActivityLog;
 use App\Services\DiscordAutoPost;
@@ -113,15 +113,31 @@ class ListingPublishController extends Controller
         return response()->json(['message' => $r['message'], 'sent' => $r['sent'] ?? 0, 'total' => $r['total'] ?? 0], $r['status']);
     }
 
-    /** Name a server on the Discord page (only in this app: Discord still shows "Leblanc"). */
-    public function renameChannel(RenameDiscordChannelRequest $request, string $channel): JsonResponse
+    /**
+     * A server's settings on the Discord page: its name (only in this app: Discord still shows
+     * "Leblanc"), when it gets auto-posts, and whether a new post replaces the previous one.
+     * Only what's sent changes.
+     */
+    public function updateChannel(UpdateDiscordChannelRequest $request, string $channel): JsonResponse
     {
         abort_unless(ListingAnnouncer::hasChannel($channel), 404, 'That server is no longer in LISTING_DISCORD_WEBHOOK.');
-        $name = $request->validated('name');
-        ListingAnnouncer::setChannelLabel($channel, $name);
-        ActivityLog::note('business', 'updated', 'Named a Discord channel: ' . (trim((string) $name) ?: '(default)'));
+        $data    = $request->validated();
+        $before  = [...ListingAnnouncer::channelSettings($channel), 'label' => ListingAnnouncer::channelLabels()[$channel] ?? null];
+        if (array_key_exists('name', $data)) {
+            ListingAnnouncer::setChannelLabel($channel, $data['name']);
+        }
+        $settings = array_intersect_key($data, ['schedule' => 1, 'replace' => 1]);
+        if ($settings !== []) {
+            ListingAnnouncer::setChannelSettings($channel, ['schedule' => $settings['schedule'] ?? $before['schedule'], 'replace' => (bool) ($settings['replace'] ?? $before['replace'])]);
+        }
+        $after = [...ListingAnnouncer::channelSettings($channel), 'label' => ListingAnnouncer::channelLabels()[$channel] ?? null];
+        if ($after !== $before) {
+            ActivityLog::note('business', 'updated', 'Discord channel settings: ' . collect($after)
+                ->filter(fn ($v, $k) => $v !== $before[$k])
+                ->map(fn ($v, $k) => "{$k} " . var_export($before[$k], true) . ' → ' . var_export($v, true))->join(', '));
+        }
 
-        return response()->json(['label' => ListingAnnouncer::channelLabels()[$channel] ?? null]);
+        return response()->json($after);
     }
 
     /** The saved listing picture (what auto-post and Send post), to show on the Discord page. */

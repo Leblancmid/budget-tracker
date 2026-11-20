@@ -9,6 +9,8 @@ import { toast } from '@/lib/toast'
 import { errorMessage } from '@/utils/api'
 import { manilaWeekdayTime as manilaTime } from '@/utils/format'
 import { DiscordAutoPostToggle } from './listing/DiscordAutoPostToggle'
+import { EditServerModal } from './discord/EditServerModal'
+import { getsRun, scheduleLabel } from './discord/schedule'
 
 const NO_PAGE = null as DiscordPostsPage | null
 const load = () => discordPostsApi.get()
@@ -20,14 +22,16 @@ function dayLabel(date: string, i: number): string {
   return `${d.toLocaleDateString('en-US', { timeZone: 'Asia/Manila', weekday: 'short' })} ${d.toLocaleDateString('en-US', { timeZone: 'Asia/Manila', day: 'numeric' })}`
 }
 
-/** One server in one run: sent, failed (why), skipped, missed, or not yet */
-function SlotCell({ slot, channel, label }: { slot: DiscordSlot; channel: string; label: string }) {
+/** One server in one run: sent, failed (why), not its run, skipped, missed, or not yet */
+function SlotCell({ slot, channel, label, scheduled }: { slot: DiscordSlot; channel: string; label: string; scheduled: boolean }) {
   const r = slot.results[channel]
   const [Icon, tone, title] = r
     ? r.ok
       ? [Check, 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300', `${label}: sent at ${manilaTime(r.at)}`]
       : [X, 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300', `${label}: not sent: ${r.note ?? 'refused'}`]
-    : slot.skipped
+    : !scheduled
+      ? [null, 'text-gray-300 dark:text-gray-700', `${label}: this server isn't set to get this post`]
+      : slot.skipped
       ? [Minus, 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300', `${label}: skipped: ${slot.skipped}`]
       : slot.due
         ? [Minus, 'bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500', `${label}: no post (auto-post was off, or the server PC was)`]
@@ -88,54 +92,14 @@ type Channel = DiscordPostsPage['channels'][number]
 /** Your name for a server, else "Channel 3" (every webhook is called Leblanc in Discord) */
 const serverName = (c: Channel) => c.label ?? `Channel ${c.no}`
 
-/** A server's name with a pencil to rename it (Enter saves, Escape cancels) and a link to open it in Discord */
-function ServerName({ channel, onSaved }: { channel: Channel; onSaved: () => unknown }) {
-  const [editing, setEditing] = useState(false)
-  const [value, setValue]     = useState('')
-  const [saving, setSaving]   = useState(false)
-
-  const start = () => { setValue(channel.label ?? ''); setEditing(true) }
-  const save = async () => {
-    if (saving) return
-    if (value.trim() === (channel.label ?? '')) { setEditing(false); return }
-    setSaving(true)
-    try {
-      const r = await discordPostsApi.rename(channel.key, value)
-      toast.success(r.label ? `Named it ${r.label}.` : `Back to Channel ${channel.no}.`)
-      setEditing(false)
-      await onSaved()
-    } catch (err) {
-      toast.error(errorMessage(err, 'Could not rename it.'))
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  if (editing) {
-    return (
-      <input
-        autoFocus
-        value={value}
-        maxLength={40}
-        disabled={saving}
-        placeholder={`Channel ${channel.no}`}
-        aria-label={`Name for channel ${channel.no}`}
-        onChange={(e) => setValue(e.target.value)}
-        onBlur={save}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') { e.preventDefault(); void save() }
-          if (e.key === 'Escape') { e.preventDefault(); setEditing(false) }
-        }}
-        className="w-40 rounded-md border border-indigo-300 bg-white px-1.5 py-0.5 text-xs font-semibold text-gray-800 outline-none focus:ring-2 focus:ring-indigo-400 dark:border-indigo-700 dark:bg-gray-800 dark:text-gray-100"
-      />
-    )
-  }
+/** A server's name, a pencil for its settings (name, schedule, replace) and a link to open it in Discord */
+function ServerName({ channel, onEdit }: { channel: Channel; onEdit: () => void }) {
   return (
     <span className="flex items-center gap-1">
       <span className={`max-w-32 truncate font-semibold ${channel.label ? 'text-gray-800 dark:text-gray-100' : 'text-gray-500 italic dark:text-gray-400'}`} title={serverName(channel)}>
         {serverName(channel)}
       </span>
-      <button type="button" onClick={start} title="Rename" aria-label={`Rename ${serverName(channel)}`} className="rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-200">
+      <button type="button" onClick={onEdit} title="Name and schedule" aria-label={`Edit ${serverName(channel)}`} className="rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-200">
         <Pencil size={11} />
       </button>
       {channel.open_url && (
@@ -147,12 +111,12 @@ function ServerName({ channel, onSaved }: { channel: Channel; onSaved: () => unk
   )
 }
 
-/** How many servers a run reached, e.g. "9/10" */
+/** How many servers a run reached, of those set to get it, e.g. "9/10" */
 function slotCount(slot: DiscordSlot, keys: string[]): string {
   if (slot.skipped) return 'skip'
   const tried = keys.filter((k) => slot.results[k])
   if (tried.length === 0) return slot.due ? '–' : ''
-  return `${tried.filter((k) => slot.results[k].ok).length}/${keys.length}`
+  return `${tried.filter((k) => slot.results[k].ok).length}/${Math.max(keys.length, tried.length)}`
 }
 
 /**
@@ -208,7 +172,11 @@ export default function DiscordPosts() {
     }
   }
 
-  const keys = data?.channels.map((c) => c.key) ?? []
+  // The server whose settings are open (name, schedule, replace)
+  const [editing, setEditing] = useState<Channel | null>(null)
+
+  /** The servers set to get the 10 AM / 10 PM run (the "Reached" row counts against these) */
+  const keysFor = (run: 'am' | 'pm') => (data?.channels ?? []).filter((c) => getsRun(c.schedule, run)).map((c) => c.key)
   const auto = data?.auto
   const nameOf = (key: string | null) => {
     const c = data?.channels.find((x) => x.key === key)
@@ -289,9 +257,9 @@ export default function DiscordPosts() {
                       <th scope="row" className="sticky left-0 z-10 bg-white px-3 py-1.5 text-left font-normal dark:bg-gray-900">
                         <div className="flex items-center gap-2">
                           <div className="min-w-0 flex-1">
-                            <ServerName channel={c} onSaved={refetch} />
+                            <ServerName channel={c} onEdit={() => setEditing(c)} />
                             <span className={`block text-[10px] ${c.alive === false ? 'font-semibold text-red-600 dark:text-red-400' : 'text-gray-400 dark:text-gray-500'}`}>
-                              {c.alive === false ? 'Webhook deleted' : c.last_sent_at ? `#${c.no} · last sent ${manilaTime(c.last_sent_at)}` : `#${c.no} · nothing sent yet`}
+                              {c.alive === false ? 'Webhook deleted' : `#${c.no} · ${scheduleLabel(c.schedule)} · ${c.last_sent_at ? `last ${manilaTime(c.last_sent_at)}` : 'nothing sent yet'}`}
                             </span>
                           </div>
                           <button
@@ -308,8 +276,8 @@ export default function DiscordPosts() {
                         </div>
                       </th>
                       {data.days.map((d) => [
-                        <SlotCell key={`${d.date}-am`} slot={d.am} channel={c.key} label={`${dayLabel(d.date, 1)} 10 AM`} />,
-                        <SlotCell key={`${d.date}-pm`} slot={d.pm} channel={c.key} label={`${dayLabel(d.date, 1)} 10 PM`} />,
+                        <SlotCell key={`${d.date}-am`} slot={d.am} channel={c.key} label={`${dayLabel(d.date, 1)} 10 AM`} scheduled={getsRun(c.schedule, 'am')} />,
+                        <SlotCell key={`${d.date}-pm`} slot={d.pm} channel={c.key} label={`${dayLabel(d.date, 1)} 10 PM`} scheduled={getsRun(c.schedule, 'pm')} />,
                       ])}
                     </tr>
                   ))}
@@ -318,8 +286,8 @@ export default function DiscordPosts() {
                   <tr className="border-t border-gray-200 text-[10px] font-semibold text-gray-500 dark:border-gray-700 dark:text-gray-400">
                     <th scope="row" className="sticky left-0 z-10 bg-white px-3 py-2 text-left dark:bg-gray-900">Reached</th>
                     {data.days.map((d) => [
-                      <td key={`${d.date}-am`} className="px-0.5 text-center">{slotCount(d.am, keys)}</td>,
-                      <td key={`${d.date}-pm`} className="px-0.5 text-center">{slotCount(d.pm, keys)}</td>,
+                      <td key={`${d.date}-am`} className="px-0.5 text-center">{slotCount(d.am, keysFor('am'))}</td>,
+                      <td key={`${d.date}-pm`} className="px-0.5 text-center">{slotCount(d.pm, keysFor('pm'))}</td>,
                     ])}
                   </tr>
                 </tfoot>
@@ -330,11 +298,12 @@ export default function DiscordPosts() {
               <span className="flex items-center gap-1"><X size={12} className="text-red-600" /> Not sent (tap for why)</span>
               <span className="flex items-center gap-1"><Minus size={12} className="text-amber-600" /> Skipped (listings changed)</span>
               <span className="flex items-center gap-1"><Minus size={12} className="text-gray-400" /> No post (off, or the PC was off)</span>
+              <span className="flex items-center gap-1"><span className="w-3 text-center text-gray-400">·</span> Not this server's time</span>
             </div>
           </Card>
 
           <p className="-mt-2 text-[11px] text-gray-400 dark:text-gray-500">
-            Not sure which server is which? Tap <ExternalLink size={10} className="inline" /> to open its channel in Discord, then name it with the pencil. Names stay in this app: Discord still shows your posts as Leblanc.
+            Not sure which server is which? Tap <ExternalLink size={10} className="inline" /> to open its channel in Discord. The pencil sets its name (only in this app: Discord still shows Leblanc), when it gets auto-posts, and whether a new post replaces your last one.
           </p>
 
           {/* Posts you made yourself */}
@@ -358,6 +327,9 @@ export default function DiscordPosts() {
           </Card>
         </>
       )}
+
+      {/* Keyed by server: opens with that server's settings */}
+      {editing && <EditServerModal key={editing.key} channel={editing} onClose={() => setEditing(null)} onSaved={refetch} />}
     </div>
   )
 }

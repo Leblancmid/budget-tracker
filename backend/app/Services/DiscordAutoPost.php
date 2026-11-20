@@ -83,6 +83,11 @@ class DiscordAutoPost
 
             return 'No saved image: post or publish once from the Listing Kit.';
         }
+        // The servers set to get this run (10 AM or 10 PM): some allow one ad a day
+        $keys = ListingAnnouncer::scheduledFor(DiscordPostLog::slotNow()[1]);
+        if ($keys === []) {
+            return 'No server is set to get this run.';
+        }
         $slot = now(BalanceInterest::ZONE)->format('Y-m-d-H');
         if (self::stale()) {
             DiscordPostLog::skipped('What\'s for sale changed since the saved picture');
@@ -95,7 +100,7 @@ class DiscordAutoPost
             return 'Skipped: what\'s for sale changed since the saved picture (alert sent).';
         }
 
-        ['sent' => $sent, 'total' => $total, 'failed' => $failed] = ListingAnnouncer::postImage($image['contents'], $image['name'], 'auto');
+        ['sent' => $sent, 'total' => $total, 'failed' => $failed] = ListingAnnouncer::postImage($image['contents'], $image['name'], 'auto', $keys);
         if ($sent > 0 && $failed !== []) {
             // Some servers missed it: a webhook deleted or the channel gone. Once a day is enough.
             Alerts::toEveryoneWith('storefront', new AppAlert(
@@ -157,7 +162,7 @@ class DiscordAutoPost
         if (self::stale()) {
             return ['ok' => false, 'message' => 'What\'s for sale changed since the saved picture. Refresh it from the Listing Kit first.', 'status' => 422];
         }
-        ['sent' => $sent, 'total' => $total] = ListingAnnouncer::postImage($image['contents'], $image['name'], $key === null ? 'manual' : 'single', $key);
+        ['sent' => $sent, 'total' => $total] = ListingAnnouncer::postImage($image['contents'], $image['name'], $key === null ? 'manual' : 'single', $key === null ? null : [$key]);
         if ($sent === 0) {
             return ['ok' => false, 'message' => 'Not sent: Discord refused it or couldn\'t be reached. Try again; if it keeps failing, the webhook may have been deleted.', 'status' => 502, 'sent' => 0, 'total' => $total];
         }

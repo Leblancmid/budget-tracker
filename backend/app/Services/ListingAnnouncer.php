@@ -77,15 +77,17 @@ class ListingAnnouncer
      * All channels are posted to at the same time, so ten servers take about as long as one.
      *
      * Each channel's result is kept for the Discord page ($kind: auto, manual, publish or single).
-     * $onlyKey: just that one channel (sending server by server from the Discord page).
+     * $only: just these channel keys (one server from the Discord page, or the ones an auto-post
+     * run is scheduled for); null = every channel.
      *
+     * @param  list<string>|null  $only
      * @return array{sent: int, total: int, failed: list<int>} how many channels it reached, of
      *                                                         how many, and the numbers of those it didn't
      */
-    public static function postImage(string $contents, string $filename, string $kind = 'manual', ?string $onlyKey = null): array
+    public static function postImage(string $contents, string $filename, string $kind = 'manual', ?array $only = null): array
     {
-        // Keyed by position, so channel numbers stay the same when only one is posted to
-        $hooks   = array_filter(self::webhooks(), fn ($url) => $onlyKey === null || self::channelKey($url) === $onlyKey);
+        // Keyed by position, so channel numbers stay the same when only some are posted to
+        $hooks   = array_filter(self::webhooks(), fn ($url) => $only === null || in_array(self::channelKey($url), $only, true));
         $site    = rtrim((string) config('listing.site_url'), '/');
         $buttons = ['components' => self::buttons()];
         $plain   = ['content' => "🛒 {$site}/for-sale"];
@@ -144,7 +146,8 @@ class ListingAnnouncer
     private static function deleteEarlierPosts(array $hooks, array $posted): void
     {
         $byKey = collect($hooks)->mapWithKeys(fn ($url) => [self::channelKey($url) => $url]);
-        $fresh = collect($posted)->filter(fn ($p) => $p['ok'] && $p['message_id'] !== null)->keyBy('key');
+        // (not in channels set to keep every post)
+        $fresh = collect($posted)->filter(fn ($p) => $p['ok'] && $p['message_id'] !== null && self::channelSettings($p['key'])['replace'])->keyBy('key');
         if ($fresh->isEmpty()) {
             return;
         }
@@ -251,6 +254,47 @@ class ListingAnnouncer
             $labels[$key] = $label;
         }
         SiteSetting::write(self::LABELS_KEY, $labels);
+    }
+
+    /** Per-channel posting settings, by channel key */
+    public const SETTINGS_KEY = 'discord_channel_settings';
+
+    /**
+     * When a channel gets auto-posts: both runs, the 10 AM or 10 PM one only, or never (you post
+     * there yourself). For servers that allow one ad a day.
+     */
+    public const SCHEDULES = ['both', 'am', 'pm', 'manual'];
+
+    /**
+     * A channel's settings: schedule (see SCHEDULES) and replace (delete your previous post there
+     * when posting a new one). Defaults: both runs, replace.
+     *
+     * @return array{schedule: string, replace: bool}
+     */
+    public static function channelSettings(string $key): array
+    {
+        $saved = ((array) SiteSetting::read(self::SETTINGS_KEY, []))[$key] ?? [];
+
+        return [
+            'schedule' => in_array($saved['schedule'] ?? null, self::SCHEDULES, true) ? $saved['schedule'] : 'both',
+            'replace'  => (bool) ($saved['replace'] ?? true),
+        ];
+    }
+
+    /** @param array{schedule?: string, replace?: bool} $changes */
+    public static function setChannelSettings(string $key, array $changes): void
+    {
+        $all       = (array) SiteSetting::read(self::SETTINGS_KEY, []);
+        $all[$key] = [...self::channelSettings($key), ...array_intersect_key($changes, ['schedule' => 1, 'replace' => 1])];
+        SiteSetting::write(self::SETTINGS_KEY, $all);
+    }
+
+    /** The channels set to get the 10 AM ('am') or 10 PM ('pm') auto-post */
+    public static function scheduledFor(string $slot): array
+    {
+        return collect(self::webhooks())->map(fn ($url) => self::channelKey($url))
+            ->filter(fn ($key) => in_array(self::channelSettings($key)['schedule'], ['both', $slot], true))
+            ->values()->all();
     }
 
     /** Is this key one of the channels in LISTING_DISCORD_WEBHOOK? */

@@ -57,6 +57,7 @@ class DiscordPostLog
         $labels   = ListingAnnouncer::channelLabels();
         $channels = array_map(fn (array $c) => [...$c,
             'label'        => $labels[$c['key']] ?? null, // your name for it, e.g. "Asian Market"
+            ...ListingAnnouncer::channelSettings($c['key']), // schedule, replace
             'last_sent_at' => isset($lastSent[$c['key']]) ? CarbonImmutable::parse($lastSent[$c['key']])->toIso8601String() : null,
         ], ListingAnnouncer::channels($fresh));
 
@@ -94,7 +95,7 @@ class DiscordPostLog
     }
 
     /** @return array{0: string, 1: string} the Manila day and am / pm */
-    private static function slotNow(): array
+    public static function slotNow(): array
     {
         $now = CarbonImmutable::now(BalanceInterest::ZONE);
 

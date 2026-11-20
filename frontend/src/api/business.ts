@@ -31,16 +31,29 @@ export interface DiscordSlot {
   results: Record<string, { ok: boolean; note: string | null; at: string }>
 }
 
+/** When a server gets auto-posts: both runs, the 10 AM or 10 PM one, or never (Send only) */
+export type DiscordSchedule = 'both' | 'am' | 'pm' | 'manual'
+
+export interface DiscordChannel {
+  no: number
+  key: string
+  label: string | null
+  name: string | null
+  open_url?: string | null
+  alive: boolean | null
+  last_sent_at: string | null
+  schedule: DiscordSchedule
+  /** A new post deletes your previous one there */
+  replace: boolean
+}
+
 export interface DiscordPostsPage {
   auto: DiscordAutoPost
   /**
    * label: your name for it (e.g. "Asian Market") · name: the webhook's name in Discord (what posts
    * show) · open_url: opens its channel in Discord · alive: false when Discord says it was deleted
    */
-  channels: {
-    no: number; key: string; label: string | null; name: string | null; open_url?: string | null
-    alive: boolean | null; last_sent_at: string | null
-  }[]
+  channels: DiscordChannel[]
   /** Newest first */
   days: { date: string; am: DiscordSlot; pm: DiscordSlot }[]
   /** Posts you made ("Post image to Discord", publish, Send to one server: channel_key) */
@@ -53,8 +66,9 @@ export const discordPostsApi = {
   sendAll: () => api.post<{ message: string; sent: number; total: number }>('/business/discord-posts/send-all').then((r) => r.data),
   /** Send the saved picture to one server now */
   send: (channelKey: string) => api.post<{ message: string }>(`/business/discord-posts/${channelKey}/send`).then((r) => r.data),
-  /** Your name for a server, only in this app (empty: back to the default) */
-  rename: (channelKey: string, name: string) => api.put<{ label: string | null }>(`/business/discord-posts/${channelKey}`, { name }).then((r) => r.data),
+  /** A server's settings: your name for it (only in this app; empty: the default), schedule, replace. Only what's sent changes. */
+  update: (channelKey: string, changes: { name?: string; schedule?: DiscordSchedule; replace?: boolean }) =>
+    api.put<{ label: string | null; schedule: DiscordSchedule; replace: boolean }>(`/business/discord-posts/${channelKey}`, changes).then((r) => r.data),
   /** The saved picture (what auto-post and Send post) */
   image: () => api.get<Blob>('/business/discord-posts/image', { responseType: 'blob' }).then((r) => r.data),
 }

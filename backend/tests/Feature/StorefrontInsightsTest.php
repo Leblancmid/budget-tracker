@@ -166,7 +166,10 @@ class StorefrontInsightsTest extends TestCase
             return $parts['files[0]']['filename'] === 'Leblanc.png' // never the uploaded name
                 && str_contains($r->url(), 'with_components=true')
                 && array_keys($payload) === ['components']
-                && $payload['components'][0]['components'][0]['url'] === 'https://site.test/for-sale';
+                && $payload['components'][0]['components'][0]['url'] === 'https://site.test/for-sale'
+                // Buy gold and Sell to Leblanc open your Discord profile
+                && $payload['components'][0]['components'][1]['url'] === config('listing.discord_profile')
+                && $payload['components'][0]['components'][2]['url'] === config('listing.discord_profile');
         });
 
         // Only images, and one is needed

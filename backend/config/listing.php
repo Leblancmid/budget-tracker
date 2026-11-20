@@ -28,4 +28,7 @@ return [
     | It's a secret: keep it only in .env.
     */
     'discord_webhook' => env('LISTING_DISCORD_WEBHOOK'),
+
+    // Your Discord profile: the Buy gold and Sell to Leblanc buttons under each post open it
+    'discord_profile' => env('LISTING_DISCORD_PROFILE', 'https://discord.com/users/338681076635533313'),
 ];

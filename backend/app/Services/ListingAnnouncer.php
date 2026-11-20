@@ -48,15 +48,19 @@ class ListingAnnouncer
         return $key($listings) !== $key($published);
     }
 
-    /** Link buttons under the image: to the accounts, gold, and selling to you */
+    /**
+     * Link buttons under the image: the accounts on the website, and buying gold / selling to you
+     * straight on your Discord profile (to message you there).
+     */
     public static function buttons(): array
     {
-        $site = rtrim((string) config('listing.site_url'), '/');
+        $site    = rtrim((string) config('listing.site_url'), '/');
+        $profile = (string) config('listing.discord_profile');
 
         return [['type' => 1, 'components' => [
             ['type' => 2, 'style' => 5, 'label' => 'Browse accounts', 'emoji' => ['name' => '🛒'], 'url' => "{$site}/for-sale"],
-            ['type' => 2, 'style' => 5, 'label' => 'Buy gold', 'emoji' => ['name' => '💰'], 'url' => "{$site}/gold-calculator"],
-            ['type' => 2, 'style' => 5, 'label' => 'Sell to Leblanc', 'emoji' => ['name' => '🤝'], 'url' => "{$site}/for-sale#sell"],
+            ['type' => 2, 'style' => 5, 'label' => 'Buy gold', 'emoji' => ['name' => '💰'], 'url' => $profile ?: "{$site}/gold-calculator"],
+            ['type' => 2, 'style' => 5, 'label' => 'Sell to Leblanc', 'emoji' => ['name' => '🤝'], 'url' => $profile ?: "{$site}/for-sale#sell"],
         ]]];
     }
 

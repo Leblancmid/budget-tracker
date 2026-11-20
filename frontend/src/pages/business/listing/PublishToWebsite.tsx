@@ -45,7 +45,8 @@ function DiscordAutoPostToggle({ status, image, busy, onChanged }: {
 
   return (
     <div className="mt-1 flex flex-col gap-1 rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-800/60">
-      <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
+      {/* relative: keeps the hidden checkbox inside the label, so focusing it doesn't scroll the page away */}
+      <label className="relative flex cursor-pointer items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
         <Clock size={14} className="shrink-0 text-indigo-500" />
         <span className="flex-1">Auto-post every 12 hours</span>
         <input

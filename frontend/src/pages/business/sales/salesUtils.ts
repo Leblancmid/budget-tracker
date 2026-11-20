@@ -1,5 +1,6 @@
 import type { AccountPaymentStatus, BusinessTransaction, RucoyAccount } from '@/types'
 import { MONTHS } from '@/utils/format'
+import { costPaidInPhp } from '@/utils/goldTrade'
 
 export const fmtGold = (n: number) => `${n.toLocaleString()} G`
 
@@ -57,14 +58,21 @@ export function sellPreview(target: BusinessTransaction, sellNum: number) {
   const fraction  = sellTotal > 0 ? Math.min(sellNum / sellTotal, 1) : 0
   const costTotal = Number(target.cost_gold ?? 0)
   const costGold  = fraction >= 1 ? costTotal : Math.min(sellNum, costTotal)
-  const costShare = costTotal > 0 ? costGold / costTotal : 0
+  // Bought with money (₱ cost, 0 G): the ₱ cost goes with the share of gold sold, like the server
+  const phpCost   = costPaidInPhp(target.cost_gold, target.cost_php)
+  const costShare = phpCost ? fraction : costTotal > 0 ? costGold / costTotal : 0
+  const costPhpTotal = Number(target.cost_php ?? 0)
+  const costPhp   = costPhpTotal * costShare
   return {
     sellTotal,
     fraction,
     pricePhp:      Number(target.price_php ?? 0) * fraction,
-    costPhp:       Number(target.cost_php ?? 0) * costShare,
+    costPhp,
     costGold,
     remaining:     Math.max(sellTotal - sellNum, 0),
     remainingCost: Math.max(costTotal - costGold, 0),
+    /** The cost was paid in ₱, not gold: show the ₱ cost on both sides */
+    phpCost,
+    remainingCostPhp: Math.max(costPhpTotal - costPhp, 0),
   }
 }

@@ -103,7 +103,7 @@ export function SellGoldModal({ target, onClose, onSold }: {
           <div className="rounded-lg border border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/50 dark:bg-emerald-900/10 px-3 py-2.5">
             <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">Sold now</p>
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Price <span className="font-semibold text-gray-700 dark:text-gray-200"><Amt value={formatCurrency(preview.pricePhp)} /></span></p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Cost <span className="font-semibold text-gray-700 dark:text-gray-200"><Amt value={formatCurrency(preview.costPhp)} /></span> · {preview.costGold.toLocaleString()} G</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Cost <span className="font-semibold text-gray-700 dark:text-gray-200"><Amt value={formatCurrency(preview.costPhp)} /></span>{!preview.phpCost && <> · {preview.costGold.toLocaleString()} G</>}</p>
             <p className={['mt-1 text-sm font-bold', preview.pricePhp - preview.costPhp >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'].join(' ')}>
               <Amt value={formatCurrency(preview.pricePhp - preview.costPhp)} /> profit
             </p>
@@ -111,7 +111,7 @@ export function SellGoldModal({ target, onClose, onSold }: {
           <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 px-3 py-2.5">
             <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Stays pending</p>
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Price <span className="font-bold text-gray-700 dark:text-gray-200">{preview.remaining.toLocaleString()} G</span></p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Cost <span className="font-bold text-gray-700 dark:text-gray-200">{preview.remainingCost.toLocaleString()} G</span></p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Cost <span className="font-bold text-gray-700 dark:text-gray-200">{preview.phpCost ? <Amt value={formatCurrency(preview.remainingCostPhp)} /> : `${preview.remainingCost.toLocaleString()} G`}</span></p>
             <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
               {preview.remaining > 0 ? 'Keeps the same rates' : 'Whole trade moves to Sold Golds'}
             </p>

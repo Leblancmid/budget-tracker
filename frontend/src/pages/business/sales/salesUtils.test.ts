@@ -26,6 +26,16 @@ describe('sellPreview', () => {
     expect(p.pricePhp).toBeCloseTo(3.6) // 14.40 × 300 / 1,200
     expect(p.costPhp).toBeCloseTo(3.6)  // 8.40 × 300 / 700
   })
+
+  it('takes a ₱-paid cost (0 G) with the share of gold sold, like the server', () => {
+    // Bought with money: 1,918.5M G for ₱21,294.23; selling 315M takes 16.4% of the ₱ cost
+    const bought = tx({ price_gold: '1918500000', cost_gold: '0', price_php: '24384.14', cost_php: '21294.23' })
+    const p = sellPreview(bought, 315_000_000)
+    expect(p.phpCost).toBe(true)
+    expect(p.costPhp).toBeCloseTo(21294.23 * 315 / 1918.5, 2)
+    expect(p.pricePhp - p.costPhp).toBeCloseTo((24384.14 - 21294.23) * 315 / 1918.5, 2) // the profit, not the whole price
+    expect(p.remainingCostPhp).toBeCloseTo(21294.23 - p.costPhp, 2)
+  })
 })
 
 describe('txProfitPhp', () => {

@@ -129,6 +129,7 @@ Route::prefix('v1')->group(function () {
                     Route::post('listing/discord', [ListingPublishController::class, 'postToDiscord'])->middleware('throttle:6,1')->name('listing.discord');
                     Route::get('discord-posts', [ListingPublishController::class, 'discordPosts'])->name('discord-posts');
                     Route::get('discord-posts/image', [ListingPublishController::class, 'savedImage'])->name('discord-posts.image');
+                    Route::post('discord-posts/send-all', [ListingPublishController::class, 'sendToAll'])->middleware('throttle:6,1')->name('discord-posts.send-all');
                     Route::post('discord-posts/{channel}/send', [ListingPublishController::class, 'sendToChannel'])
                         ->where('channel', '[0-9a-f]{16}')->middleware('throttle:30,1')->name('discord-posts.send');
                     Route::put('discord-posts/{channel}', [ListingPublishController::class, 'renameChannel'])

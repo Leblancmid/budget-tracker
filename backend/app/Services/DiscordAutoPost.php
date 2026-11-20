@@ -136,13 +136,17 @@ class DiscordAutoPost
     }
 
     /**
-     * Send the saved picture to one channel now (the Send button on the Discord page).
+     * Send the saved picture now: to one channel (Send on its row) or, with no key, to all of
+     * them (Post to all servers). Never an out-of-date picture.
      *
-     * @return array{ok: bool, message: string, status: int} status: the HTTP code for the app
+     * @return array{ok: bool, message: string, status: int, sent?: int, total?: int} status: the HTTP code for the app
      */
-    public static function sendTo(string $key): array
+    public static function sendTo(?string $key = null): array
     {
-        $channel = collect(ListingAnnouncer::webhooks())->search(fn ($url) => ListingAnnouncer::channelKey($url) === $key);
+        if (! ListingAnnouncer::configured()) {
+            return ['ok' => false, 'message' => 'Discord isn\'t set up: add LISTING_DISCORD_WEBHOOK to the backend .env.', 'status' => 422];
+        }
+        $channel = $key === null ? null : collect(ListingAnnouncer::webhooks())->search(fn ($url) => ListingAnnouncer::channelKey($url) === $key);
         if ($channel === false) {
             return ['ok' => false, 'message' => 'That server is no longer in LISTING_DISCORD_WEBHOOK.', 'status' => 404];
         }
@@ -153,13 +157,15 @@ class DiscordAutoPost
         if (self::stale()) {
             return ['ok' => false, 'message' => 'What\'s for sale changed since the saved picture. Refresh it from the Listing Kit first.', 'status' => 422];
         }
-        ['sent' => $sent] = ListingAnnouncer::postImage($image['contents'], $image['name'], 'single', $key);
+        ['sent' => $sent, 'total' => $total] = ListingAnnouncer::postImage($image['contents'], $image['name'], $key === null ? 'manual' : 'single', $key);
         if ($sent === 0) {
-            return ['ok' => false, 'message' => 'Not sent: Discord refused it or couldn\'t be reached. Try again; if it keeps failing, the webhook may have been deleted.', 'status' => 502];
+            return ['ok' => false, 'message' => 'Not sent: Discord refused it or couldn\'t be reached. Try again; if it keeps failing, the webhook may have been deleted.', 'status' => 502, 'sent' => 0, 'total' => $total];
         }
-        ActivityLog::note('business', 'published', 'Sent the listing image to Discord channel ' . ($channel + 1));
+        ActivityLog::note('business', 'published', $key === null
+            ? "Posted the listing image to Discord ({$sent} of {$total} channels)"
+            : 'Sent the listing image to Discord channel ' . ($channel + 1));
 
-        return ['ok' => true, 'message' => 'Sent.', 'status' => 200];
+        return ['ok' => true, 'message' => $sent === $total ? 'Sent.' : "Sent to {$sent} of {$total} servers: see the grid for the others.", 'status' => 200, 'sent' => $sent, 'total' => $total];
     }
 
     /** The saved picture's bytes, to show on the Discord page */

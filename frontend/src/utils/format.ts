@@ -56,6 +56,10 @@ export const formatTime = (iso: string | null): string => {
   return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
 }
 
+/** Weekday and time in Manila, e.g. "Fri 10:00 PM" (schedules that run on Manila time) */
+export const manilaWeekdayTime = (iso: string): string =>
+  new Date(iso).toLocaleString('en-US', { timeZone: 'Asia/Manila', weekday: 'short', hour: 'numeric', minute: '2-digit' })
+
 export function formatDateLong(iso: string | null): string {
   if (!iso) return '—'
   const [year, month, day] = iso.split('T')[0].split('-').map(Number)

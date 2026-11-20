@@ -1,18 +1,17 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AlertTriangle, Check, Clock, ExternalLink, ImageIcon, Minus, Pencil, RefreshCw, Send, X } from 'lucide-react'
+import { Check, ExternalLink, ImageIcon, MessageCircle, Minus, Pencil, RefreshCw, Send, X } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
 import { discordPostsApi, type DiscordPostsPage, type DiscordSlot } from '@/api/business'
 import { useAsyncData } from '@/hooks/useAsyncData'
 import { toast } from '@/lib/toast'
 import { errorMessage } from '@/utils/api'
+import { manilaWeekdayTime as manilaTime } from '@/utils/format'
+import { DiscordAutoPostToggle } from './listing/DiscordAutoPostToggle'
 
 const NO_PAGE = null as DiscordPostsPage | null
 const load = () => discordPostsApi.get()
-
-/** e.g. "Fri 10:00 PM", in Manila time like the schedule */
-const manilaTime = (iso: string) =>
-  new Date(iso).toLocaleString('en-US', { timeZone: 'Asia/Manila', weekday: 'short', hour: 'numeric', minute: '2-digit' })
 
 /** "Today", else "Thu 19" */
 function dayLabel(date: string, i: number): string {
@@ -63,7 +62,7 @@ function SavedPicture({ imageAt, stale }: { imageAt: string | null; stale: boole
   }, [imageAt])
 
   return (
-    <Card className="flex items-center gap-3 p-3">
+    <div className="flex items-center gap-3">
       {imageAt && url && !failed ? (
         <a href={url} target="_blank" rel="noreferrer" title="Open the full picture" className="shrink-0">
           <img src={url} alt="The saved listing picture" className="h-16 w-24 rounded-md object-cover object-top ring-1 ring-gray-200 dark:ring-gray-700" />
@@ -78,9 +77,9 @@ function SavedPicture({ imageAt, stale }: { imageAt: string | null; stale: boole
           ? <>No saved picture yet. Tap <b>Post image to Discord</b> or publish from the <Link to="/business/listing" className="font-semibold text-indigo-600 dark:text-indigo-400">Listing Kit</Link>, then Send works here.</>
           : stale
             ? <span className="text-amber-700 dark:text-amber-300">This picture is out of date: what's for sale changed. Post or publish from the <Link to="/business/listing" className="font-semibold underline">Listing Kit</Link> to refresh it before sending.</span>
-            : <>What <b>Send</b> and auto-post post. Saved {manilaTime(imageAt)}; posting or publishing from the Listing Kit updates it.</>}
+            : <>The picture these buttons and auto-post send. Saved {manilaTime(imageAt)}; posting or publishing from the <Link to="/business/listing" className="font-semibold text-indigo-600 dark:text-indigo-400">Listing Kit</Link> updates it.</>}
       </p>
-    </Card>
+    </div>
   )
 }
 
@@ -193,6 +192,22 @@ export default function DiscordPosts() {
     }
   }
 
+  // The saved picture to every server at once
+  const [postingAll, setPostingAll] = useState(false)
+  const postAll = async () => {
+    setPostingAll(true)
+    try {
+      const r = await discordPostsApi.sendAll()
+      if (r.sent === r.total) toast.success(r.total === 1 ? 'Posted to your server.' : `Posted to all ${r.total} servers.`)
+      else toast.error(r.message)
+    } catch (err) {
+      toast.error(errorMessage(err, 'Could not post to Discord.'))
+    } finally {
+      setPostingAll(false)
+      await refetch()
+    }
+  }
+
   const keys = data?.channels.map((c) => c.key) ?? []
   const auto = data?.auto
   const nameOf = (key: string | null) => {
@@ -232,21 +247,22 @@ export default function DiscordPosts() {
         </Card>
       ) : (
         <>
-          {/* Auto-post: on / off / paused, and the next run */}
-          <Card className="flex items-center gap-3 p-4">
-            <span className={`flex size-9 shrink-0 items-center justify-center rounded-full ${auto?.enabled && !auto.stale ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-300'}`}>
-              {auto?.enabled && !auto.stale ? <Clock size={17} /> : <AlertTriangle size={17} />}
-            </span>
-            <p className="flex-1 text-sm text-gray-700 dark:text-gray-200">
-              {!auto?.enabled
-                ? <>Auto-post is off. Turn it on in the <Link to="/business/listing" className="font-semibold text-indigo-600 dark:text-indigo-400">Listing Kit</Link>.</>
-                : auto.stale
-                  ? <>Auto-post is paused: what's for sale changed since the saved picture. Post or publish from the <Link to="/business/listing" className="font-semibold text-indigo-600 dark:text-indigo-400">Listing Kit</Link> to refresh it.</>
-                  : <>Auto-post is on. Next post <b>{auto.next_at ? manilaTime(auto.next_at) : '10:00 AM'}</b> to {data.channels.length} server{data.channels.length === 1 ? '' : 's'}.</>}
-            </p>
-          </Card>
-
-          {auto && <SavedPicture imageAt={auto.image_at} stale={auto.stale} />}
+          {/* The saved picture, post it to every server now, and auto-post */}
+          {auto && (
+            <Card className="flex flex-col gap-3 p-4">
+              <SavedPicture imageAt={auto.image_at} stale={auto.stale} />
+              <Button
+                variant="secondary"
+                icon={<MessageCircle className="h-4 w-4" />}
+                onClick={postAll}
+                loading={postingAll}
+                disabled={sending !== null}
+              >
+                Post to all {data.channels.length} server{data.channels.length === 1 ? '' : 's'}
+              </Button>
+              <DiscordAutoPostToggle status={auto} busy={postingAll || sending !== null} onChanged={refetch} />
+            </Card>
+          )}
 
           {/* The grid: a row per server, two runs per day */}
           <Card className="p-0">

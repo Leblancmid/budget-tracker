@@ -68,15 +68,22 @@ class ListingPublishController extends Controller
         ]);
     }
 
-    /** Switch Discord auto-post (10 AM and 10 PM) on or off; on saves the image it will post. */
+    /**
+     * Switch Discord auto-post (10 AM and 10 PM) on or off. From the Listing Kit, on saves the
+     * image as drawn; from the Discord page (no image sent) it uses the saved picture.
+     */
     public function discordAuto(DiscordAutoPostRequest $request): JsonResponse
     {
         $on = $request->boolean('enabled');
         if ($on && ! ListingAnnouncer::configured()) {
             return response()->json(['message' => "Discord isn't set up: add LISTING_DISCORD_WEBHOOK to the backend .env."], 422);
         }
-        if ($on) {
-            DiscordAutoPost::remember($request->kitImage());
+        $kit = $request->kitImage();
+        if ($on && $kit === null && DiscordAutoPost::savedImage() === null) {
+            return response()->json(['message' => 'No saved picture yet: tap "Post image to Discord" or publish once from the Listing Kit.', 'errors' => ['image' => ['No saved picture yet.']]], 422);
+        }
+        if ($on && $kit !== null) {
+            DiscordAutoPost::remember($kit);
         }
         DiscordAutoPost::setEnabled($on);
         ActivityLog::note('business', 'updated', 'Discord auto-post ' . ($on ? 'on (10 AM and 10 PM)' : 'off'));
@@ -96,6 +103,14 @@ class ListingPublishController extends Controller
         $r = DiscordAutoPost::sendTo($channel);
 
         return response()->json(['message' => $r['message']], $r['status']);
+    }
+
+    /** Send the saved listing picture to every server now (Post to all servers on the Discord page). */
+    public function sendToAll(): JsonResponse
+    {
+        $r = DiscordAutoPost::sendTo();
+
+        return response()->json(['message' => $r['message'], 'sent' => $r['sent'] ?? 0, 'total' => $r['total'] ?? 0], $r['status']);
     }
 
     /** Name a server on the Discord page (only in this app: Discord still shows "Leblanc"). */

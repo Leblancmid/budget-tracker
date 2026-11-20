@@ -2,10 +2,9 @@
 
 namespace App\Http\Requests\Business;
 
-use Illuminate\Validation\Rule;
-
 /**
- * Switch Discord auto-post on or off. Switching it on sends the Listing Kit image it will post.
+ * Switch Discord auto-post on or off. From the Listing Kit, switching on sends the image as drawn;
+ * from the Discord page it sends none and the saved picture is used (the controller checks there is one).
  */
 class DiscordAutoPostRequest extends ListingImageRequest
 {
@@ -13,13 +12,8 @@ class DiscordAutoPostRequest extends ListingImageRequest
     {
         return [
             'enabled' => ['required', 'boolean'],
-            'image'   => [Rule::requiredIf(fn () => $this->boolean('enabled')), 'nullable', 'file', 'mimes:png,jpg,jpeg', 'mimetypes:image/png,image/jpeg', 'max:' . self::MAX_KB],
+            'image'   => ['nullable', 'file', 'mimes:png,jpg,jpeg', 'mimetypes:image/png,image/jpeg', 'max:' . self::MAX_KB],
             'caption' => ['nullable', 'string', 'max:2000'],
         ];
-    }
-
-    public function messages(): array
-    {
-        return ['image.required' => 'The Listing Kit image is empty: add an account to it first.'];
     }
 }

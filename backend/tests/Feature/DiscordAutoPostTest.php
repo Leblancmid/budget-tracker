@@ -194,6 +194,27 @@ class DiscordAutoPostTest extends TestCase
         $this->postJson("/api/v1/business/discord-posts/{$two['key']}/send")->assertStatus(422)->assertJsonPath('message', fn ($m) => str_contains($m, 'changed'));
     }
 
+    public function test_the_discord_page_posts_the_saved_picture_to_all_and_switches_auto_post(): void
+    {
+        config(['listing.discord_webhook' => 'https://discord.test/api/webhooks/1/abc,https://discord.test/api/webhooks/2/def']);
+        $this->listed('Lv 650 Melee');
+        $this->postJson('/api/v1/business/discord-posts/send-all')->assertStatus(422); // no picture yet
+
+        // A picture saved from the Listing Kit ("Post image to Discord")
+        $this->post('/api/v1/business/listing/discord', ['image' => UploadedFile::fake()->image('x.png', 800, 600)], ['Accept' => 'application/json'])->assertOk();
+        $this->postJson('/api/v1/business/listing/discord-auto', ['enabled' => false])->assertOk();
+
+        // Switch on from the Discord page: no image sent, the saved one is used
+        $this->postJson('/api/v1/business/listing/discord-auto', ['enabled' => true])->assertOk()->assertJsonPath('enabled', true);
+        $this->artisan('listings:discord-auto')->expectsOutputToContain('Posted to 2 of 2')->assertSuccessful();
+
+        $this->postJson('/api/v1/business/discord-posts/send-all')->assertOk()->assertJsonPath('sent', 2)->assertJsonPath('total', 2);
+        $this->assertSame('manual', $this->getJson('/api/v1/business/discord-posts')->json('own.0.kind'));
+
+        RucoyAccount::query()->update(['archived_at' => now()]); // sold: the picture is out of date
+        $this->postJson('/api/v1/business/discord-posts/send-all')->assertStatus(422);
+    }
+
     public function test_servers_can_be_named_in_the_app_and_opened_in_discord(): void
     {
         config(['listing.discord_webhook' => 'https://discord.test/api/webhooks/1/abc,https://discord.test/api/webhooks/2/def']);
@@ -220,5 +241,6 @@ class DiscordAutoPostTest extends TestCase
         $this->getJson('/api/v1/business/discord-posts/image')->assertForbidden();
         $this->postJson('/api/v1/business/discord-posts/0123456789abcdef/send')->assertForbidden();
         $this->putJson('/api/v1/business/discord-posts/0123456789abcdef', ['name' => 'X'])->assertForbidden();
+        $this->postJson('/api/v1/business/discord-posts/send-all')->assertForbidden();
     }
 }

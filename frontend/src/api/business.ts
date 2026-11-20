@@ -49,6 +49,8 @@ export interface DiscordPostsPage {
 
 export const discordPostsApi = {
   get: (fresh = false) => api.get<DiscordPostsPage>('/business/discord-posts', { params: fresh ? { fresh: 1 } : {} }).then((r) => r.data),
+  /** Send the saved picture to every server now */
+  sendAll: () => api.post<{ message: string; sent: number; total: number }>('/business/discord-posts/send-all').then((r) => r.data),
   /** Send the saved picture to one server now */
   send: (channelKey: string) => api.post<{ message: string }>(`/business/discord-posts/${channelKey}/send`).then((r) => r.data),
   /** Your name for a server, only in this app (empty: back to the default) */

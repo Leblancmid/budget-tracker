@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use Illuminate\Http\Client\Pool;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -69,35 +71,52 @@ class ListingAnnouncer
      * link buttons under it. If a channel won't take buttons (Discord only allows them on some
      * webhooks), it gets the image with a one-line link instead, so buyers can still reach the site.
      *
-     * @return array{sent: int, total: int} how many channels it reached, of how many
+     * All channels are posted to at the same time, so ten servers take about as long as one.
+     *
+     * @return array{sent: int, total: int, failed: list<int>} how many channels it reached, of
+     *                                                         how many, and the numbers of those it didn't
      */
     public static function postImage(string $contents, string $filename): array
     {
-        $hooks = self::webhooks();
-        $sent  = 0;
-        $site  = rtrim((string) config('listing.site_url'), '/');
-        $send  = fn (string $url, array $payload) => Http::timeout(30)
+        $hooks   = self::webhooks();
+        $site    = rtrim((string) config('listing.site_url'), '/');
+        $buttons = ['components' => self::buttons()];
+        $plain   = ['content' => "🛒 {$site}/for-sale"];
+        $request = fn ($http, string $url, array $payload) => $http->timeout(30)
             ->attach('files[0]', $contents, $filename)
             ->post($url, ['payload_json' => json_encode($payload)]);
+        $all = fn (array $urls, array $payload) => $urls === [] ? [] : Http::pool(fn (Pool $pool) => array_map(
+            fn ($i) => $request($pool->as((string) $i), $urls[$i], $payload),
+            array_keys($urls),
+        ));
 
-        foreach ($hooks as $i => $url) {
-            // Logged as "channel 2", never the link itself (it's a secret)
-            $which = 'channel ' . ($i + 1);
-            try {
-                $res = $send($url . (str_contains($url, '?') ? '&' : '?') . 'with_components=true', ['components' => self::buttons()]);
-                if ($res->status() === 400) {
-                    $res = $send($url, ['content' => "🛒 {$site}/for-sale"]);
-                }
-                if ($res->successful()) {
-                    $sent++;
-                } else {
-                    Log::warning("Discord listings post failed ({$which}): HTTP " . $res->status() . ' ' . mb_substr($res->body(), 0, 300));
-                }
-            } catch (Throwable $e) {
-                Log::warning("Discord listings post failed ({$which}): " . $e->getMessage());
-            }
+        $withButtons = array_map(fn ($url) => $url . (str_contains($url, '?') ? '&' : '?') . 'with_components=true', $hooks);
+        $results     = $all($withButtons, $buttons);
+        // Channels that won't take buttons get the image with a link instead
+        $noButtons = array_filter($hooks, fn ($i) => self::status($results[(string) $i] ?? null) === 400, ARRAY_FILTER_USE_KEY);
+        foreach ($all($noButtons, $plain) as $i => $res) {
+            $results[$i] = $res;
         }
 
-        return ['sent' => $sent, 'total' => count($hooks)];
+        $failed = [];
+        foreach (array_keys($hooks) as $i) {
+            $res = $results[(string) $i] ?? null;
+            if ($res instanceof Response && $res->successful()) {
+                continue;
+            }
+            $failed[] = $i + 1;
+            // Logged as "channel 2", never the link itself (it's a secret)
+            Log::warning('Discord listings post failed (channel ' . ($i + 1) . '): ' . ($res instanceof Response
+                ? 'HTTP ' . $res->status() . ' ' . mb_substr($res->body(), 0, 300)
+                : ($res instanceof Throwable ? $res->getMessage() : 'no answer')));
+        }
+
+        return ['sent' => count($hooks) - count($failed), 'total' => count($hooks), 'failed' => $failed];
+    }
+
+    /** A pooled answer's HTTP status, or null when the request itself failed */
+    private static function status(mixed $res): ?int
+    {
+        return $res instanceof Response ? $res->status() : null;
     }
 }

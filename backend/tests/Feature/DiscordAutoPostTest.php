@@ -32,7 +32,11 @@ class DiscordAutoPostTest extends TestCase
         config(['listing.site_url' => 'https://site.test', 'listing.discord_webhook' => 'https://discord.test/api/webhooks/1/abc']);
         config(['services.webpush.public_key' => null]);
         PhoneAlerts::$sender = fn ($devices) => $devices->count();
-        Http::fake(fn (Request $r) => str_contains($r->url(), 'discord.test') ? Http::response(null, 204) : Http::response([], 404));
+        Http::fake(fn (Request $r) => match (true) {
+            str_contains($r->url(), 'webhooks/7/deleted') => Http::response(['message' => 'Unknown Webhook'], 404), // a webhook someone deleted
+            str_contains($r->url(), 'discord.test')       => Http::response(null, 204),
+            default                                         => Http::response([], 404),
+        });
     }
 
     protected function tearDown(): void
@@ -112,6 +116,20 @@ class DiscordAutoPostTest extends TestCase
         config(['listing.discord_webhook' => '']);
         $this->switchOn()->assertStatus(422);
         $this->assertFalse(DiscordAutoPost::status()['enabled']);
+    }
+
+    public function test_ten_servers_all_get_it_and_a_deleted_webhook_is_reported_by_number(): void
+    {
+        config(['listing.discord_webhook' => collect(range(1, 10))->map(fn ($n) => "https://discord.test/api/webhooks/{$n}/" . ($n === 7 ? 'deleted' : 'abc'))->join(',')]);
+        $this->listed('Lv 650 Melee');
+        $this->switchOn()->assertOk();
+
+        $this->artisan('listings:discord-auto')->expectsOutputToContain('Posted to 9 of 10')->assertSuccessful();
+        $this->assertSame(10, $this->discordPosts());
+        $alert = $this->trader->fresh()->notifications()->first()?->data;
+        $this->assertSame('Discord auto-post reached 9 of 10 channels', $alert['title']);
+        $this->assertStringContainsString('Channel 7 refused', $alert['body']);
+        $this->assertStringNotContainsString('webhooks', $alert['body']); // never the link
     }
 
     public function test_a_daily_only_user_cant_switch_it(): void

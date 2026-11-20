@@ -92,7 +92,15 @@ class DiscordAutoPost
             return 'Skipped: what\'s for sale changed since the saved picture (alert sent).';
         }
 
-        ['sent' => $sent, 'total' => $total] = ListingAnnouncer::postImage($image['contents'], $image['name']);
+        ['sent' => $sent, 'total' => $total, 'failed' => $failed] = ListingAnnouncer::postImage($image['contents'], $image['name']);
+        if ($sent > 0 && $failed !== []) {
+            // Some servers missed it: a webhook deleted or the channel gone. Once a day is enough.
+            Alerts::toEveryoneWith('storefront', new AppAlert(
+                'listings', "Discord auto-post reached {$sent} of {$total} channels",
+                'Channel ' . implode(', ', $failed) . ' refused it: its webhook may have been deleted. php artisan listings:discord checks each one.',
+                '/business/listing', key: 'discord-auto-partial-' . implode('-', $failed) . '-' . now(BalanceInterest::ZONE)->toDateString(),
+            ));
+        }
         if ($sent === 0) {
             Alerts::toEveryoneWith('storefront', new AppAlert(
                 'listings', 'Discord auto-post failed',

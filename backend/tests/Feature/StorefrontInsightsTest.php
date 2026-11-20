@@ -196,10 +196,10 @@ class StorefrontInsightsTest extends TestCase
 
     public function test_a_channel_that_refuses_buttons_still_gets_the_card(): void
     {
-        $this->assertSame(['sent' => 0, 'total' => 0], ListingAnnouncer::postImage('img', 'Leblanc.png'), 'no webhook set');
+        $this->assertSame(['sent' => 0, 'total' => 0, 'failed' => []], ListingAnnouncer::postImage('img', 'Leblanc.png'), 'no webhook set');
 
         config(['listing.discord_webhook' => 'https://nobuttons.test/api/webhooks/1/abc']);
-        $this->assertSame(['sent' => 1, 'total' => 1], ListingAnnouncer::postImage('img', 'Leblanc.png'));
+        $this->assertSame(['sent' => 1, 'total' => 1, 'failed' => []], ListingAnnouncer::postImage('img', 'Leblanc.png'));
         $urls = Http::recorded()->map(fn ($pair) => $pair[0]->url())->filter(fn ($u) => str_contains($u, 'nobuttons.test'))->values()->all();
         $this->assertSame(['https://nobuttons.test/api/webhooks/1/abc?with_components=true', 'https://nobuttons.test/api/webhooks/1/abc'], $urls);
     }

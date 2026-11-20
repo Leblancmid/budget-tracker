@@ -60,6 +60,8 @@ export default function ListingKit() {
   const [savingPriceId, setSavingPriceId] = useState<number | null>(null)
   const [nowMs] = useState(() => Date.now())
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  /** The preview as a JPEG, ready for the phone's share sheet (see the drawing effect) */
+  const shareFile = useRef<File | null>(null)
 
   const patch = (p: Partial<KitSettings>) => {
     const next = { ...settings, ...p }
@@ -93,9 +95,17 @@ export default function ListingKit() {
 
   // Paint the canvas (an external system) whenever what's on it changes
   useEffect(() => {
-    if (canvasRef.current && tiles.length) {
-      drawListing(canvasRef.current, tiles, { columns: settings.columns, promos, crop: settings.crop })
-    }
+    const canvas = canvasRef.current
+    if (!canvas || !tiles.length) return
+    drawListing(canvas, tiles, { columns: settings.columns, promos, crop: settings.crop })
+    // Ready the picture for "Share to WhatsApp" now: a phone only opens its share sheet if it's
+    // asked right on the tap, with no time spent preparing
+    shareFile.current = null
+    let current = true
+    canvasToBlob(canvas, 'image/jpeg', 0.92)
+      .then((blob) => { if (current) shareFile.current = new File([blob], 'Leblanc.jpg', { type: 'image/jpeg' }) })
+      .catch(() => {})
+    return () => { current = false }
   }, [tiles, settings.columns, settings.crop, promos])
 
   const toggleInclude = (id: number) => setExcluded((prev) => {
@@ -156,29 +166,41 @@ export default function ListingKit() {
    * pick WhatsApp and tick several groups at once (you send it yourself: no bot, no risk to your
    * number). Computer (no share sheet for files): copies the image and opens WhatsApp Web.
    */
-  const shareToWhatsApp = async () => {
-    if (!canvasRef.current) return
+  const shareToWhatsApp = () => {
     const caption = listingCaption(included, { headline: settings.headline, link: settings.link, promos })
-    try {
-      const blob = await canvasToBlob(canvasRef.current, 'image/jpeg', 0.92)
-      const file = new File([blob], 'Leblanc.jpg', { type: 'image/jpeg' })
-      if (navigator.canShare?.({ files: [file] })) {
-        // Some phones drop the text when sharing a picture: keep it on the clipboard to paste
-        try { await navigator.clipboard.writeText(caption) } catch { /* the share still works */ }
-        try {
-          await navigator.share({ files: [file], text: caption })
-        } catch (err) {
-          if (err instanceof DOMException && err.name === 'AbortError') return // closed the share sheet
-          throw err
-        }
+    const phone = window.matchMedia('(pointer: coarse)').matches
+    if (phone) {
+      // The share sheet must open right on the tap (the browser refuses it after a delay), so the
+      // image was prepared beforehand, when the preview was drawn
+      const file = shareFile.current
+      if (!file) { toast.error('The image is still being prepared. Try again in a second.'); return }
+      if (!navigator.canShare?.({ files: [file] })) {
+        toast.error("This browser can't share pictures. Use Download, then send it in WhatsApp.")
         return
       }
-      const { blob: png } = await pngUnder(canvasRef.current)
-      await navigator.clipboard.write([new ClipboardItem({ 'image/png': png })])
+      // Some phones drop the text when sharing a picture: keep it on the clipboard to paste
+      navigator.clipboard?.writeText(caption).catch(() => {})
+      navigator.share({ files: [file], text: caption }).catch((err: unknown) => {
+        const name = err instanceof DOMException ? err.name : 'Error'
+        if (name === 'AbortError') return // closed the share sheet
+        toast.error(`Sharing didn't open (${name}). Use Download, then send it in WhatsApp.`)
+      })
+      return
+    }
+    void copyForWhatsAppWeb()
+  }
+
+  /** Computer: copy the image and open WhatsApp Web, to paste it into each group */
+  const copyForWhatsAppWeb = async () => {
+    if (!canvasRef.current) return
+    try {
+      const { blob } = await pngUnder(canvasRef.current)
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
       window.open('https://web.whatsapp.com/', '_blank', 'noopener')
       toast.success('Image copied. In WhatsApp Web, open a group and press Ctrl+V, then use Copy caption for the text.')
-    } catch {
-      toast.error('Your browser blocked sharing. Use Download and send the image in WhatsApp instead.')
+    } catch (err) {
+      const name = err instanceof DOMException ? err.name : 'Error'
+      toast.error(`Couldn't copy the image (${name}). Use Download, then send it in WhatsApp.`)
     }
   }
 

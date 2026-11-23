@@ -19,9 +19,15 @@ the disk instead:
 2. In that folder, make a folder for the backups, e.g. `C:\Users\<you>\My Drive\Budget backups`.
 3. On the server, in `backend\.env`:
    ```
-   BACKUP_FOLDER="C:\Users\<you>\My Drive\Budget backups"
+   BACKUP_FOLDER='C:\Users\<you>\My Drive\Budget backups'
    BACKUP_PASSWORD=a long passphrase only you know
    ```
+   Use **single quotes** around a Windows path: inside double quotes `.env` reads `\` as an escape,
+   and the whole file stops loading ("Encountered an unexpected escape sequence").
+
+   Or skip Mirror files: in Drive's setup (or Preferences → **My Computer** → **Add folder**) pick one
+   plain folder such as `C:\backups` and tick **Sync with Google Drive**; then
+   `BACKUP_FOLDER='C:\backups'`. Its copies show on drive.google.com under **Computers**.
    **Save `BACKUP_PASSWORD` somewhere off the server** (your phone's password manager). Without it the
    backups can't be opened, and it isn't stored anywhere else.
 4. Run the after-deploy script (config is cached), then test it once:

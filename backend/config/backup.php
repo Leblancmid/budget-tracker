@@ -17,7 +17,8 @@ return [
     /*
     | Or (or as well): a Google Drive / OneDrive folder the Drive app syncs to the cloud. Free, no
     | card. The scheduler runs as SYSTEM, so use Drive's "Mirror files" folder
-    | (e.g. C:\Users\you\My Drive\Budget backups), not its G: drive. See docs/BACKUP.md.
+    | (e.g. C:\Users\you\My Drive\Budget backups), not its G: drive. In .env put a Windows path in
+    | single quotes: BACKUP_FOLDER='C:\backups' (in double quotes \ is an escape). See docs/BACKUP.md.
     */
     'folder' => env('BACKUP_FOLDER'),
 

@@ -9,8 +9,8 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Monthly: restores the newest off-site backup (or, without R2, the newest export on this PC) into
- * a scratch database and checks it. If something
+ * Monthly: restores the newest off-site backup (Drive folder, else R2, else the newest export on
+ * this PC) into a scratch database and checks it. If something
  * is wrong, admins get an alert (bell + phone) and the weekly brief says so.
  */
 class BackupVerify extends Command
@@ -21,7 +21,7 @@ class BackupVerify extends Command
 
     public function handle(): int
     {
-        if (! config('backup.r2.account_id')) {
+        if (! BackupOffsite::configured()) {
             $this->warn('Off-site backup isn\'t set up (see docs/BACKUP.md): checking the newest export on this PC instead.');
         }
 

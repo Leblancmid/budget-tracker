@@ -14,6 +14,18 @@ return [
         'bucket'     => env('BACKUP_R2_BUCKET', 'budget-backups'),
     ],
 
+    /*
+    | Or (or as well): a Google Drive / OneDrive folder the Drive app syncs to the cloud. Free, no
+    | card. The scheduler runs as SYSTEM, so use Drive's "Mirror files" folder
+    | (e.g. C:\Users\you\My Drive\Budget backups), not its G: drive. See docs/BACKUP.md.
+    */
+    'folder' => env('BACKUP_FOLDER'),
+
+    // How many weekly copies of the uploaded files (screenshots, profile pictures) to keep there
+    'keep_files' => (int) env('BACKUP_KEEP_FILES', 4),
+    // The uploaded files that backup:files copies
+    'files_path' => storage_path('app/public'),
+
     'password' => env('BACKUP_PASSWORD'),
 
     // How many backups to keep in R2 (one a day ≈ a month)

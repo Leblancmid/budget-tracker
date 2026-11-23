@@ -7,14 +7,15 @@ use Illuminate\Console\Command;
 use RuntimeException;
 
 /**
- * Restore step 1: turn a backup downloaded from R2 (*.sql.gz.enc) back into a .sql file.
- * Then import it with mysql (see the restore notes in docs/BACKUP.md).
+ * Restore step 1: turn a backup from the Drive folder or R2 back into a plain file:
+ * *.sql.gz.enc → .sql (import it with mysql), *.tar.gz.enc → .tar (the uploaded files: Windows
+ * opens it, or tar -xf). See the restore notes in docs/BACKUP.md.
  */
 class BackupDecrypt extends Command
 {
-    protected $signature = 'backup:decrypt {file : The .sql.gz.enc file downloaded from R2} {--out= : Where to write the .sql (default: next to it)}';
+    protected $signature = 'backup:decrypt {file : The .sql.gz.enc or .tar.gz.enc backup} {--out= : Where to write it (default: next to it)}';
 
-    protected $description = 'Decrypt an off-site backup back into a .sql file (asks for BACKUP_PASSWORD if it is not in .env)';
+    protected $description = 'Decrypt a backup back into a .sql (database) or .tar (uploaded files) file (asks for BACKUP_PASSWORD if it is not in .env)';
 
     public function handle(): int
     {

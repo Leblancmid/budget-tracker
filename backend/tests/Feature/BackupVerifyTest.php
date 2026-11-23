@@ -176,6 +176,30 @@ class BackupVerifyTest extends TestCase
         array_map('unlink', glob($dir . DIRECTORY_SEPARATOR . '*.sql'));
     }
 
+    public function test_with_a_drive_folder_it_restores_the_newest_backup_there(): void
+    {
+        $drive = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'budget-drive-verify-' . uniqid();
+        mkdir($drive);
+        mkdir($drive . DIRECTORY_SEPARATOR . 'database');
+        config(['backup.folder' => $drive]);
+        $this->backupWith(['users' => 1]);
+        file_put_contents($drive . '/database/budget_tracker_2026-11-10_02-00-00.sql.gz.enc', $this->encrypted); // older and broken
+        $this->backupWith($this->fullBackup());
+        file_put_contents($drive . '/database/budget_tracker_2026-11-13_02-00-00.sql.gz.enc', $this->encrypted); // newest and good
+
+        try {
+            $this->artisan('backup:verify')->expectsOutputToContain('Backup restores fine')->assertSuccessful();
+        } finally {
+            array_map('unlink', glob($drive . '/database/*'));
+            rmdir($drive . '/database');
+            rmdir($drive);
+        }
+
+        $last = Cache::get(RestoreCheck::LAST_RESULT);
+        $this->assertSame(['folder', 'budget_tracker_2026-11-13_02-00-00.sql.gz.enc', true], [$last['source'], $last['file'], $last['ok']]);
+        Http::assertNothingSent(); // not R2, even though it's set up too
+    }
+
     public function test_without_r2_or_any_export_it_says_so(): void
     {
         config(['backup.r2.account_id' => null, 'backup.local_path' => sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'no-such-budget-backups']);

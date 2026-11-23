@@ -34,14 +34,15 @@ class RestoreCheck
     public static ?Closure $loader = null;
 
     /**
-     * Checks the newest off-site backup when R2 is set up, else the newest local export (so a PC
-     * without R2 still learns whether its own backups work).
+     * Checks the newest off-site backup: in the Drive folder (BACKUP_FOLDER) if set, else in R2,
+     * else the newest local export (so a PC with nothing off-site still learns whether its own
+     * backups work).
      *
      * @return array{ok: bool, source: string, checked_at: string, file: ?string, problems: list<string>, tables: array<string, array{live: int, backup: ?int}>}
      */
     public static function run(): array
     {
-        $source = config('backup.r2.account_id') ? 'r2' : 'local';
+        $source = BackupFolder::configured() ? 'folder' : (config('backup.r2.account_id') ? 'r2' : 'local');
         $result = ['ok' => false, 'source' => $source, 'checked_at' => now()->toIso8601String(), 'file' => null, 'problems' => [], 'tables' => []];
         $scratch = (string) config('backup.verify_database');
 
@@ -49,7 +50,11 @@ class RestoreCheck
             if ($scratch === '' || $scratch === config('database.connections.mysql.database')) {
                 throw new RuntimeException('The restore check needs its own scratch database (BACKUP_VERIFY_DATABASE), never the live one.');
             }
-            [$newest, $sql] = $source === 'r2' ? self::fromR2() : self::fromLocal();
+            [$newest, $sql] = match ($source) {
+                'folder' => self::fromFolder(),
+                'r2'     => self::fromR2(),
+                default  => self::fromLocal(),
+            };
             $result['file'] = $newest;
             self::load($sql, $scratch);
 
@@ -81,6 +86,21 @@ class RestoreCheck
         $newest = end($objects)['key'];
 
         return [$newest, BackupCrypto::decrypt($r2->get($newest), $password)];
+    }
+
+    /** @return array{0: string, 1: string} [the newest backup in the Drive folder, its SQL] */
+    private static function fromFolder(): array
+    {
+        $password = (string) config('backup.password');
+        BackupCrypto::checkPassword($password);
+
+        $names = BackupFolder::list(BackupFolder::DATABASE);
+        if (! $names) {
+            throw new RuntimeException('There are no backups in the Drive folder yet.');
+        }
+        $newest = end($names);
+
+        return [$newest, BackupCrypto::decrypt(BackupFolder::get(BackupFolder::DATABASE, $newest), $password)];
     }
 
     /** @return array{0: string, 1: string} the newest local export (made by db:export) and its SQL */

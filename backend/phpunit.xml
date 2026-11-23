@@ -32,5 +32,7 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <!-- Never write test backups into a real Google Drive folder -->
+        <env name="BACKUP_FOLDER" value=""/>
     </php>
 </phpunit>

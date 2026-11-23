@@ -13,9 +13,12 @@ Artisan::command('inspire', function () {
 // Auto-export database daily at 2:00 AM
 Schedule::command('db:export --keep=2')->twiceDaily(2, 14);
 
-// Copy the newest export to Cloudflare R2, encrypted (off-site: survives losing this PC). 03:00 UTC = 11:00 Manila,
-// an hour after the 02:00 export.
+// Copy the newest export off this PC, encrypted: to the Google Drive folder (BACKUP_FOLDER) and/or
+// Cloudflare R2 (survives losing this PC). 03:00 UTC = 11:00 Manila, an hour after the 02:00 export.
 Schedule::command('backup:offsite')->dailyAt('03:00')->withoutOverlapping();
+// The uploaded files (account screenshots, profile pictures) to the Drive folder: weekly, Sunday
+// 11:30 Manila (03:30 UTC). They aren't in the database backup.
+Schedule::command('backup:files')->weeklyOn(0, '03:30')->withoutOverlapping();
 
 // Daily interest on Balance accounts with a rate. Hourly is safe (each day is credited once)
 // and catches up quickly after the PC was off.

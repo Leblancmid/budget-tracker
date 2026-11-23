@@ -2,12 +2,14 @@
 
 namespace App\Services;
 
+use App\Console\Commands\BackupFiles;
 use App\Console\Commands\BackupOffsite;
 use App\Models\BalanceAccount;
 use App\Models\BalanceEntry;
 use App\Models\BusinessTransaction;
 use App\Models\Gold;
 use App\Models\RucoyAccount;
+use App\Services\Backup\BackupFolder;
 use App\Services\Backup\RestoreCheck;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
@@ -271,19 +273,30 @@ class BusinessBrief
     private static function offsiteBackup(CarbonImmutable $today): ?array
     {
         // Not set up at all: say so (once a week), rather than staying quiet about the biggest risk
-        if (! config('backup.r2.account_id')) {
+        if (! BackupOffsite::configured()) {
             return self::insight('backup', 'warn', 'Off-site backup isn\'t set up',
-                'Your records exist only on this PC: if its drive fails, they\'re gone. Setting up Cloudflare R2 (free) takes about 15 minutes: see docs/BACKUP.md.');
+                'Your records exist only on this PC: if its drive fails, they\'re gone. Point BACKUP_FOLDER at a Google Drive folder (free, about 10 minutes): see docs/BACKUP.md.');
         }
         $last = Cache::get(BackupOffsite::LAST_SUCCESS);
         $days = $last ? (int) CarbonImmutable::parse($last)->diffInDays($today->utc()) : null;
-        if ($days !== null && $days < 2) {
-            return null;
+        if ($days === null || $days >= 2) {
+            return self::insight('backup', 'bad',
+                $days === null ? 'Off-site backup has never run' : "Off-site backup last worked {$days} days ago",
+                'Your records are only on this PC until it works again. Run php artisan backup:offsite: it says what\'s wrong (often Google Drive not running or signed out).');
         }
 
-        return self::insight('backup', 'bad',
-            $days === null ? 'Off-site backup has never run' : "Off-site backup last worked {$days} days ago",
-            'Your records are only on this PC until it works again. Check storage/logs/laravel.log for "Off-site backup failed", or run php artisan backup:offsite.');
+        // The weekly copy of uploaded files (screenshots, profile pictures) to the Drive folder
+        if (BackupFolder::configured()) {
+            $files = Cache::get(BackupFiles::LAST_SUCCESS);
+            $fileDays = $files ? (int) CarbonImmutable::parse($files)->diffInDays($today->utc()) : null;
+            if ($fileDays === null || $fileDays > 9) {
+                return self::insight('backup', 'warn',
+                    $fileDays === null ? 'Your screenshots haven\'t been backed up yet' : "Screenshots last backed up {$fileDays} days ago",
+                    'Account screenshots and profile pictures aren\'t in the database backup. Run php artisan backup:files to copy them to the Drive folder now.');
+            }
+        }
+
+        return null;
     }
 
     /** The monthly restore check failed, or hasn't run in over 40 days: the backups may not be usable. */
@@ -295,8 +308,8 @@ class BusinessBrief
             return self::insight('backup-restore', 'bad', 'The last backup check failed',
                 ($last['problems'][0] ?? 'The newest backup could not be restored.') . ' Run php artisan backup:verify to try again.');
         }
-        // Without R2 the "set it up" warning already covers it
-        if (! config('backup.r2.account_id')) {
+        // With nothing off-site, the "set it up" warning already covers it
+        if (! BackupOffsite::configured()) {
             return null;
         }
         $days = $last ? (int) CarbonImmutable::parse($last['checked_at'])->diffInDays($today->utc()) : null;

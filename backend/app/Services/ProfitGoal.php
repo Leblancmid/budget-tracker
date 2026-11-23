@@ -31,13 +31,13 @@ class ProfitGoal
      *
      * @return array{goal_php: float, profit_php: float, percent: float, status: string, expected_php: ?float, needed_per_day: ?float, days_left: ?int}|null
      */
-    public static function progress(float $profit, int $year, int $month): ?array
+    public static function progress(float $profit, int $year, int $month, ?CarbonImmutable $now = null): ?array
     {
         $goal = self::get();
         if ($goal === null) {
             return null;
         }
-        $now   = CarbonImmutable::now(BalanceInterest::ZONE);
+        $now ??= CarbonImmutable::now(BalanceInterest::ZONE);
         $start = CarbonImmutable::create($year, $month, 1, 0, 0, 0, BalanceInterest::ZONE);
         $base  = ['goal_php' => $goal, 'profit_php' => round($profit, 2), 'percent' => round($profit / $goal * 100, 1), 'expected_php' => null, 'needed_per_day' => null, 'days_left' => null];
 

@@ -9,6 +9,7 @@ use App\Services\Alerts;
 use App\Services\BalanceInterest;
 use App\Services\CreditCards;
 use App\Services\ListingPerformance;
+use App\Services\MonthRecap;
 use App\Services\WebsiteStats;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
@@ -66,6 +67,13 @@ class BusinessAlerts extends Command
             $sent += Alerts::toEveryoneWith('trading', new AppAlert(
                 'brief', 'Your weekly brief is ready', 'Last week\'s profit, what sold, and what needs you this week.',
                 '/business', key: 'brief-' . $today->format('o-\WW'),
+            ));
+        }
+
+        // On the 1st: how last month went
+        if ($today->day === 1 && ($recap = MonthRecap::forMonthBefore($today))) {
+            $sent += Alerts::toEveryoneWith('trading', new AppAlert(
+                'brief', $recap['title'], $recap['body'], '/business', key: 'recap-' . $recap['month'],
             ));
         }
 

@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api\Business;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Business\IndexBuyersRequest;
+use App\Models\RucoyAccount;
 use App\Services\Buyers;
+use App\Services\LikelyBuyers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -28,5 +30,14 @@ class BuyerController extends Controller
 
         // Totals are for everyone, whatever the search
         return response()->json([...$paged->toArray(), 'summary' => Buyers::summary($all)]);
+    }
+
+    /**
+     * For each account for sale: past buyers of a similar one (same build, close level), to message
+     * first. Keyed by account id; an account with none has an empty list.
+     */
+    public function likely(): JsonResponse
+    {
+        return response()->json(['accounts' => (object) LikelyBuyers::forAccounts(RucoyAccount::active()->get())]);
     }
 }

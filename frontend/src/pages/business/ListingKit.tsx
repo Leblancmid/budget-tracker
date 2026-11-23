@@ -12,13 +12,15 @@ import { errorMessage } from '@/utils/api'
 import type { RucoyAccount } from '@/types'
 import type { KitImage } from '@/api/business'
 import {
-  DEFAULT_CROP, isNewListing, listingPrice, listingCaption, sameOriginPath, sortForListing,
+  DEFAULT_CROP, isNewListing, listingPrice, listingCaption, listingTitle, sameOriginPath, sortForListing,
   type CropInsets,
 } from '@/utils/listing'
 import { accessoriesFor } from '@/utils/accessories'
 import { AccountPickRow } from './listing/AccountPickRow'
 import { PublishToWebsite } from './listing/PublishToWebsite'
 import { GoldRatesCard } from './listing/GoldRatesCard'
+import { LikelyBuyersModal } from './listing/LikelyBuyersModal'
+import { useLikelyBuyers } from '@/hooks/useLikelyBuyers'
 import { canvasToBlob, drawListing, pngUnder, type ListingTile } from './listing/drawListing'
 
 interface KitSettings {
@@ -79,6 +81,9 @@ export default function ListingKit() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   /** The preview as a JPEG, ready for the phone's share sheet (see the drawing effect) */
   const shareFile = useRef<File | null>(null)
+  // Past buyers of a similar account, per account (message them first), and whose list is open
+  const likelyBuyers = useLikelyBuyers()
+  const [regularsFor, setRegularsFor] = useState<RucoyAccount | null>(null)
 
   const patch = (p: Partial<KitSettings>) => {
     const next = { ...settings, ...p }
@@ -287,12 +292,17 @@ export default function ListingKit() {
                     isNew={isNewListing(a.listed_at, nowMs, settings.newForDays)}
                     nowMs={nowMs}
                     savingPrice={savingPriceId === a.id}
+                    regulars={likelyBuyers[a.id]?.length ?? 0}
                     onToggleInclude={() => toggleInclude(a.id)}
                     onToggleShowPrice={() => toggleShowPrice(a)}
+                    onShowRegulars={() => setRegularsFor(a)}
                   />
                 ))}
               </ul>
             </Card>
+            {regularsFor && (
+              <LikelyBuyersModal title={listingTitle(regularsFor)} buyers={likelyBuyers[regularsFor.id] ?? []} onClose={() => setRegularsFor(null)} />
+            )}
 
             <Card className="flex flex-col gap-4 p-4">
               <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Image settings</h2>

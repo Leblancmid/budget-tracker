@@ -301,7 +301,21 @@ export interface BuyersSummary { buyers: number; repeat: number; repeat_share: n
 export type BuyerSort = 'recent' | 'purchases' | 'total'
 export interface BuyersPage extends PaginationMeta { data: Buyer[]; summary: BuyersSummary }
 
+/** Someone who bought an account like this one before: message them first */
+export interface LikelyBuyer {
+  name: string
+  /** How many similar accounts they bought */
+  similar: number
+  /** Their purchase closest in level to this account */
+  closest: { description: string; level: number; sold_on: string | null; price_php: number | null }
+  last_on: string | null
+  /** From their newest website request under the same name, if any */
+  contact: { method: string; contact: string } | null
+}
+
 export const buyersApi = {
   list: (params: { q?: string; sort?: BuyerSort; page?: number; per_page?: number }) =>
     api.get<BuyersPage>('/business/buyers', { params }).then((r) => r.data),
+  /** For each account for sale (by id): past buyers of a similar one */
+  likely: () => api.get<{ accounts: Record<string, LikelyBuyer[]> }>('/business/likely-buyers').then((r) => r.data.accounts),
 }

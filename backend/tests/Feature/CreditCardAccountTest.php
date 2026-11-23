@@ -5,6 +5,9 @@ namespace Tests\Feature;
 use App\Models\BalanceAccount;
 use App\Models\BalanceEntry;
 use App\Models\User;
+use App\Services\CreditCards;
+use App\Services\PhoneAlerts;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -14,10 +17,13 @@ class CreditCardAccountTest extends TestCase
 {
     use RefreshDatabase;
 
+    private User $user;
+
     protected function setUp(): void
     {
         parent::setUp();
-        Sanctum::actingAs(User::factory()->create());
+        $this->user = User::factory()->create();
+        Sanctum::actingAs($this->user);
     }
 
     private function card(array $extra = []): array
@@ -73,6 +79,50 @@ class CreditCardAccountTest extends TestCase
         $accounts = collect($this->getJson('/api/v1/master/balance-accounts')->assertOk()->json())->keyBy('code');
         $this->assertEquals(-7000, $accounts[$card['code']]['balance']);
         $this->assertEquals(25000, $accounts['MARIBANK']['balance']);
+    }
+
+    public function test_a_card_has_a_due_day_and_shows_its_next_due_date(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-11-23 09:00', 'Asia/Manila'));
+        $card = $this->card(['due_day' => 25]);
+        $this->assertSame(25, $card['due_day']);
+
+        $list = collect($this->getJson('/api/v1/master/balance-accounts')->json())->keyBy('code');
+        $this->assertSame('2026-11-25', $list[$card['code']]['next_due']);
+
+        // Past this month's: next month's. A short month uses its last day.
+        $this->putJson("/api/v1/master/balance-accounts/{$card['id']}", ['due_day' => 10])->assertOk();
+        $this->assertSame('2026-12-10', collect($this->getJson('/api/v1/master/balance-accounts')->json())->keyBy('code')[$card['code']]['next_due']);
+        $this->assertSame('2027-02-28', CreditCards::nextDue(31, CarbonImmutable::parse('2027-02-01', 'Asia/Manila'))->toDateString());
+
+        foreach ([0, 32, 'x'] as $bad) {
+            $this->putJson("/api/v1/master/balance-accounts/{$card['id']}", ['due_day' => $bad])->assertStatus(422)->assertJsonValidationErrors('due_day');
+        }
+        // A wallet has no due day
+        $this->putJson("/api/v1/master/balance-accounts/{$card['id']}", ['kind' => 'wallet'])->assertOk()->assertJsonPath('due_day', null);
+    }
+
+    public function test_morning_alerts_before_a_card_is_due_and_when_its_nearly_maxed(): void
+    {
+        config(['services.webpush.public_key' => null]);
+        PhoneAlerts::$sender = fn ($devices) => $devices->count();
+        $card = $this->card(['due_day' => 25]);                                 // ₱50,000 limit
+        $this->card(['name' => 'Unused card', 'due_day' => 25]);                 // owes nothing: no alerts
+        BalanceEntry::create(['account' => $card['code'], 'type' => 'sell', 'amount' => 42000, 'date' => '2026-11-02']); // 84% used
+        // The card alerts (Mondays also bring the weekly brief alert)
+        $titles = fn () => $this->user->fresh()->notifications()->get()->pluck('data.title')
+            ->filter(fn ($t) => str_contains($t, 'Visa') || str_contains($t, 'Unused'))->sort()->values()->all();
+
+        $this->artisan('business:alerts', ['--date' => '2026-11-21'])->assertSuccessful();  // 4 days before: not yet
+        $this->assertSame(['BPI Visa is at 84% of its limit'], $titles());
+
+        $this->artisan('business:alerts', ['--date' => '2026-11-22'])->assertSuccessful();  // 3 days before
+        $this->artisan('business:alerts', ['--date' => '2026-11-23'])->assertSuccessful();  // no repeat
+        $this->artisan('business:alerts', ['--date' => '2026-11-25'])->assertSuccessful();  // on the day
+        $this->assertSame(['BPI Visa is at 84% of its limit', 'BPI Visa payment due in 3 days', 'BPI Visa payment due today'], $titles());
+        $due = $this->user->fresh()->notifications()->get()->firstWhere('data.title', 'BPI Visa payment due today');
+        $this->assertStringContainsString('₱42,000.00', $due->data['body']);
+        PhoneAlerts::$sender = null;
     }
 
     public function test_switching_a_card_back_to_a_wallet_drops_the_limit(): void

@@ -1,9 +1,24 @@
 import { BadgeCheck, CreditCard, Minus, Plus, ScanSearch, ShoppingBag, Wifi } from 'lucide-react'
 import { Amt } from '@/components/ui/Amt'
-import { formatDate, todayManila } from '@/utils/format'
+import { formatDate, formatShortDate, todayManila } from '@/utils/format'
 import { cardGradientOf, colorOf, creditUsed, dailyInterest, fmtIn, fmtPhp, iconOf, isCredit, owedOn, spendable } from '@/utils/balanceAccounts'
 import type { BalanceAccountConfig, BalanceEntryType } from '@/types'
 import { formatShare, type AccountStats } from './balanceStats'
+
+/** A card past this share of its limit is flagged (the morning alert uses the same) */
+const HIGH_USE = 0.8
+
+/** "Due Nov 25 · in 2 days" for a card; highlighted when it's close and something is owed */
+function DueLine({ due, owed }: { due: string; owed: number }) {
+  const days = Math.round((Date.parse(due + 'T00:00:00Z') - Date.parse(todayManila() + 'T00:00:00Z')) / 86_400_000)
+  const when = days <= 0 ? 'today' : days === 1 ? 'tomorrow' : `in ${days} days`
+  const urgent = owed > 0 && days <= 3
+  return (
+    <p className={`mt-0.5 truncate text-[11px] ${urgent ? 'font-semibold text-amber-100' : 'text-white/70'}`}>
+      Due {formatShortDate(due)} · {when}
+    </p>
+  )
+}
 
 /** Days since the last bank check, or null if never checked. */
 function daysSinceCheck(checkedAt: string | null | undefined): number | null {
@@ -108,11 +123,13 @@ export function AccountTile({ account: a, stats: s, share, phpRate, active, onTo
               a.credit_limit ? (
                 <div className="mt-1.5">
                   <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/25">
-                    <div className={['h-full rounded-full', used >= 0.9 ? 'bg-red-300' : used >= 0.7 ? 'bg-amber-200' : 'bg-white'].join(' ')} style={{ width: `${used * 100}%` }} />
+                    <div className={['h-full rounded-full', used >= HIGH_USE ? 'bg-red-300' : used >= 0.7 ? 'bg-amber-200' : 'bg-white'].join(' ')} style={{ width: `${used * 100}%` }} />
                   </div>
                   <p className="mt-1 truncate text-[11px] text-white/80">
                     <Amt value={fmtIn(a, Math.max(0, left))} /> left of <Amt value={fmtIn(a, a.credit_limit)} />
+                    {used >= HIGH_USE && <b className="text-red-100"> · {Math.round(used * 100)}% used</b>}
                   </p>
+                  {a.next_due && <DueLine due={a.next_due} owed={owed} />}
                 </div>
               ) : (
                 <p className="text-[11px] text-white/80">No limit set</p>

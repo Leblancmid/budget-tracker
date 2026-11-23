@@ -22,7 +22,7 @@ interface ManageBalanceAccountsModalProps {
   onDelete:  (id: number) => Promise<unknown>
 }
 
-const BLANK: BalanceAccountPayload = { name: '', currency: 'PHP', kind: 'wallet', credit_limit: null, color: 'blue', icon: 'wallet', interest_rate: null, interest_tax: 20 }
+const BLANK: BalanceAccountPayload = { name: '', currency: 'PHP', kind: 'wallet', credit_limit: null, due_day: null, color: 'blue', icon: 'wallet', interest_rate: null, interest_tax: 20 }
 
 export function ManageBalanceAccountsModal({ open, onClose, accounts, startWithNew, onCreate, onUpdate, onReorder, onDelete }: ManageBalanceAccountsModalProps) {
   // null = list view; 'new' = create form; account = edit form
@@ -45,12 +45,15 @@ export function ManageBalanceAccountsModal({ open, onClose, accounts, startWithN
     setEditing(target)
     setForm(target === 'new'
       ? BLANK
-      : { name: target.name, currency: target.currency, kind: target.kind ?? 'wallet', credit_limit: target.credit_limit ?? null, color: target.color, icon: target.icon, interest_rate: target.interest_rate ?? null, interest_tax: target.interest_tax ?? 20 })
+      : { name: target.name, currency: target.currency, kind: target.kind ?? 'wallet', credit_limit: target.credit_limit ?? null, due_day: target.due_day ?? null, color: target.color, icon: target.icon, interest_rate: target.interest_rate ?? null, interest_tax: target.interest_tax ?? 20 })
   }
 
   const save = async () => {
     if (!form.name.trim()) { setErrors({ name: 'Give the account a name.' }); return }
     if (form.kind === 'credit' && !(Number(form.credit_limit) > 0)) { setErrors({ credit_limit: "Enter the card's credit limit." }); return }
+    if (form.kind === 'credit' && form.due_day != null && !(Number.isInteger(form.due_day) && form.due_day >= 1 && form.due_day <= 31)) {
+      setErrors({ due_day: 'A day of the month, 1 to 31.' }); return
+    }
     setSaving(true)
     try {
       if (editing === 'new') {
@@ -232,16 +235,30 @@ export function ManageBalanceAccountsModal({ open, onClose, accounts, startWithN
 
           {form.kind === 'credit' && (
             <div>
-              <Input
-                label={`Credit limit (${form.currency === 'PHP' ? '₱' : '$'})`}
-                inputMode="decimal"
-                value={form.credit_limit != null ? String(form.credit_limit) : ''}
-                onChange={(e) => handleAmountInput(e.target.value, (v) => { setForm((f) => ({ ...f, credit_limit: v === '' ? null : Number(v) })); setErrors({}) })}
-                placeholder="e.g. 50000"
-                error={errors.credit_limit}
-              />
+              <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-3">
+                <Input
+                  label={`Credit limit (${form.currency === 'PHP' ? '₱' : '$'})`}
+                  inputMode="decimal"
+                  value={form.credit_limit != null ? String(form.credit_limit) : ''}
+                  onChange={(e) => handleAmountInput(e.target.value, (v) => { setForm((f) => ({ ...f, credit_limit: v === '' ? null : Number(v) })); setErrors({}) })}
+                  placeholder="e.g. 50000"
+                  error={errors.credit_limit}
+                />
+                <Input
+                  label="Due day"
+                  inputMode="numeric"
+                  value={form.due_day != null ? String(form.due_day) : ''}
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/\D/g, '').slice(0, 2)
+                    setForm((f) => ({ ...f, due_day: v === '' ? null : Number(v) })); setErrors({})
+                  }}
+                  placeholder="e.g. 25"
+                  error={errors.due_day}
+                />
+              </div>
               <p className="mt-1.5 text-[11px] text-gray-500 dark:text-gray-400">
                 What you spend on the card shows as owed and counts against your net worth. Paying the bill from a bank brings it back down.
+                With a due day you're reminded 3 days before and on the day, and when the card passes 80% of its limit.
               </p>
             </div>
           )}

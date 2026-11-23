@@ -29,6 +29,8 @@ export interface BalanceAccountPayload {
   kind?: 'wallet' | 'credit'
   /** Credit cards: the most that can be owed */
   credit_limit?: number | null
+  /** Credit cards: payment due day of the month (1–31) */
+  due_day?: number | null
   color: string
   icon: string
   /** % a year, credited daily; null = no interest */

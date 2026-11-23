@@ -15,13 +15,14 @@ class BalanceAccount extends Model
     /** wallet: money you have. credit: a card you owe on (its balance goes below zero as you spend). */
     public const KINDS = ['wallet', 'credit'];
 
-    protected $fillable = ['code', 'name', 'currency', 'kind', 'credit_limit', 'color', 'icon', 'sort_order', 'hidden_at', 'interest_rate', 'interest_tax', 'interest_credited_through', 'checked_at', 'checked_balance'];
+    protected $fillable = ['code', 'name', 'currency', 'kind', 'credit_limit', 'due_day', 'color', 'icon', 'sort_order', 'hidden_at', 'interest_rate', 'interest_tax', 'interest_credited_through', 'checked_at', 'checked_balance'];
 
     protected function casts(): array
     {
         return [
             'sort_order' => 'integer',
             'credit_limit' => 'float',
+            'due_day'      => 'integer',
             'hidden_at'  => 'datetime',
             'interest_rate' => 'float',
             'interest_tax'  => 'float',

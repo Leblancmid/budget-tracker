@@ -133,6 +133,9 @@ export interface BalanceAccountConfig {
   kind?: 'wallet' | 'credit'
   /** Credit cards: how much can be owed at most */
   credit_limit?: number | null
+  /** Credit cards: payment due day of the month (1–31), and the next due date (Y-m-d) */
+  due_day?: number | null
+  next_due?: string | null
   color: string
   icon: string
   sort_order: number

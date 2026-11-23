@@ -7,6 +7,7 @@ use App\Models\Trade;
 use App\Notifications\AppAlert;
 use App\Services\Alerts;
 use App\Services\BalanceInterest;
+use App\Services\CreditCards;
 use App\Services\ListingPerformance;
 use App\Services\WebsiteStats;
 use Carbon\CarbonImmutable;
@@ -70,10 +71,46 @@ class BusinessAlerts extends Command
 
         $sent += $this->followUps($today);
         $sent += $this->slowListings($today);
+        $sent += $this->creditCards($today);
 
         $this->info("{$sent} alert(s) sent.");
 
         return self::SUCCESS;
+    }
+
+    /**
+     * People with Wallets: a card payment due within 3 days or today (when something is owed), once
+     * per due date at 3 days and again on the day; and a card past 80% of its limit, once a month.
+     */
+    private function creditCards(CarbonImmutable $today): int
+    {
+        $sent = 0;
+        foreach (CreditCards::status($today) as $c) {
+            $card = $c['account'];
+            $owed = ($card->currency === 'PHP' ? '₱' : '$') . number_format($c['owed'], 2);
+
+            if ($c['owed'] > 0 && $c['due_in'] !== null && $c['due_in'] <= CreditCards::DUE_SOON_DAYS) {
+                $when = $c['due_in'] === 0 ? 'today' : ($c['due_in'] === 1 ? 'tomorrow' : "in {$c['due_in']} days");
+                $sent += Alerts::toEveryoneWith('wallets', new AppAlert(
+                    'card', "{$card->name} payment due {$when}",
+                    "You owe {$owed} on it. Due " . $c['next_due']->format('M j') . '.',
+                    '/master/balance',
+                    // Once at "soon", once on the day
+                    key: 'card-due-' . $card->id . '-' . $c['next_due']->format('Y-m-d') . ($c['due_in'] === 0 ? '-today' : ''),
+                ));
+            }
+
+            if ($c['used'] !== null && $c['used'] >= CreditCards::HIGH_USE) {
+                $pct = (int) round($c['used'] * 100);
+                $sent += Alerts::toEveryoneWith('wallets', new AppAlert(
+                    'card', "{$card->name} is at {$pct}% of its limit",
+                    "You owe {$owed} of " . ($card->currency === 'PHP' ? '₱' : '$') . number_format($card->credit_limit, 2) . '. Pay some down before it\'s maxed out.',
+                    '/master/balance', key: 'card-limit-' . $card->id . '-' . $today->format('Y-m') . ($c['used'] >= 1 ? '-over' : ''),
+                ));
+            }
+        }
+
+        return $sent;
     }
 
     /** Leads you messaged this many days ago that still have no outcome */

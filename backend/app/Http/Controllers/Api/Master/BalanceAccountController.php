@@ -12,6 +12,8 @@ use App\Models\BalanceAccount;
 use App\Models\BalanceEntry;
 use App\Services\BalanceCheck;
 use App\Services\BalanceInterest;
+use App\Services\CreditCards;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
 
@@ -28,6 +30,10 @@ class BalanceAccountController extends Controller
                     ...$a->toArray(),
                     'entry_count' => (int) ($totals[$a->code]->c ?? 0),
                     'balance'     => round((float) ($totals[$a->code]->balance ?? 0), 2),
+                    // A card's next payment due date (Y-m-d, Manila), from its due day
+                    'next_due'    => $a->isCredit() && $a->due_day
+                        ? CreditCards::nextDue($a->due_day, CarbonImmutable::now(BalanceInterest::ZONE)->startOfDay())->toDateString()
+                        : null,
                 ])
         );
     }

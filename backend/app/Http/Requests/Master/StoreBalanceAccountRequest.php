@@ -27,6 +27,8 @@ class StoreBalanceAccountRequest extends FormRequest
             // A credit card needs its limit
             'kind'         => ['sometimes', Rule::in(BalanceAccount::KINDS)],
             'credit_limit' => ['nullable', 'required_if:kind,credit', 'numeric', 'gt:0', 'max:1000000000'],
+            // A card's payment due day (optional): alerts come before it
+            'due_day'      => ['sometimes', 'nullable', 'integer', 'between:1,31'],
             'color'    => [$presence, 'string', 'max:20', 'regex:/^[a-z]+$/'],
             'icon'     => [$presence, 'string', 'max:30', 'regex:/^[a-z0-9-]+$/'],
             // Optional: % a year, credited daily; and the % withheld as tax (20% in PH banks)
@@ -45,8 +47,9 @@ class StoreBalanceAccountRequest extends FormRequest
         if ($kind === 'credit') {
             $data['interest_rate'] = null;
             $data['interest_credited_through'] = null;
-        } elseif (array_key_exists('kind', $data) || array_key_exists('credit_limit', $data)) {
+        } elseif (array_key_exists('kind', $data) || array_key_exists('credit_limit', $data) || array_key_exists('due_day', $data)) {
             $data['credit_limit'] = null;
+            $data['due_day'] = null;
         }
 
         return $data;

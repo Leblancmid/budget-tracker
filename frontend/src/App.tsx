@@ -28,6 +28,7 @@ const Leads               = lazy(() => import('@/pages/business/Leads'))
 const Buyers              = lazy(() => import('@/pages/business/Buyers'))
 const DiscordPosts        = lazy(() => import('@/pages/business/DiscordPosts'))
 const Reviews             = lazy(() => import('@/pages/business/Reviews'))
+const ProofTrades         = lazy(() => import('@/pages/business/ProofTrades'))
 const DailyExpensesReport = lazy(() => import('@/pages/reports/DailyExpensesReport'))
 const BusinessReport      = lazy(() => import('@/pages/reports/BusinessReport'))
 const Logs                = lazy(() => import('@/pages/Logs'))
@@ -103,6 +104,7 @@ export default function App() {
                     <Route path="/business/leads"   element={<Leads />} />
                     <Route path="/business/discord" element={<DiscordPosts />} />
                     <Route path="/business/reviews" element={<Reviews />} />
+                    <Route path="/business/proofs" element={<ProofTrades />} />
                   </Route>
                 </Route>
               </Route>

@@ -334,6 +334,46 @@ export interface BuyersSummary { buyers: number; repeat: number; repeat_share: n
 export type BuyerSort = 'recent' | 'purchases' | 'total'
 export interface BuyersPage extends PaginationMeta { data: Buyer[]; summary: BuyersSummary }
 
+/** A screenshot of a proven trade (resized WebP; the thumbnail for lists) */
+export interface ProofImage { id: number; url: string; thumb_url: string; width: number; height: number }
+
+/** One of your best trades, shown on the website's showcase after Publish */
+export interface ProofTrade {
+  id: number
+  title: string
+  value: number
+  currency: 'EUR' | 'USD' | 'PHP'
+  traded_on: string | null
+  quote: string | null
+  quote_by: string | null
+  published: boolean
+  images: ProofImage[]
+}
+
+export type ProofTradeFields = Partial<Pick<ProofTrade, 'title' | 'value' | 'currency' | 'traded_on' | 'quote' | 'quote_by' | 'published'>>
+
+const proofForm = (fields: ProofTradeFields, files: File[]) => {
+  const form = new FormData()
+  for (const [k, v] of Object.entries(fields)) {
+    if (v === undefined) continue
+    form.append(k, typeof v === 'boolean' ? (v ? '1' : '0') : v === null ? '' : String(v))
+  }
+  files.forEach((f) => form.append('images[]', f))
+  return form
+}
+
+export const proofTradesApi = {
+  list: () => api.get<ProofTrade[]>('/business/proof-trades').then((r) => r.data),
+  create: (fields: ProofTradeFields, files: File[]) =>
+    api.post<ProofTrade>('/business/proof-trades', proofForm(fields, files), { headers: { 'Content-Type': 'multipart/form-data' } }).then((r) => r.data),
+  update: (id: number, fields: ProofTradeFields) => api.put<ProofTrade>(`/business/proof-trades/${id}`, fields).then((r) => r.data),
+  remove: (id: number) => api.delete<{ message: string }>(`/business/proof-trades/${id}`).then((r) => r.data),
+  addImages: (id: number, files: File[]) =>
+    api.post<ProofTrade>(`/business/proof-trades/${id}/images`, proofForm({}, files), { headers: { 'Content-Type': 'multipart/form-data' } }).then((r) => r.data),
+  makeCover: (imageId: number) => api.put<ProofTrade>(`/business/proof-images/${imageId}/cover`).then((r) => r.data),
+  removeImage: (imageId: number) => api.delete<ProofTrade>(`/business/proof-images/${imageId}`).then((r) => r.data),
+}
+
 /** A buyer's review on the website (shows there once approved) */
 export interface BuyerReview {
   id: number

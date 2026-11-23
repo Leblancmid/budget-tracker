@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\Business\BuyerController;
 use App\Http\Controllers\Api\Business\BusinessTransactionController;
 use App\Http\Controllers\Api\Business\InsightsController;
 use App\Http\Controllers\Api\Business\LeadController;
+use App\Http\Controllers\Api\Business\ProofTradeController;
 use App\Http\Controllers\Api\Business\ReviewController;
 use App\Http\Controllers\Api\Business\ListingPublishController;
 use App\Http\Controllers\Api\CategoryController;
@@ -148,6 +149,11 @@ Route::prefix('v1')->group(function () {
                     Route::get('reviews', [ReviewController::class, 'index'])->name('reviews.index');
                     Route::patch('reviews/{review}', [ReviewController::class, 'update'])->whereNumber('review')->name('reviews.update');
                     Route::post('transactions/{businessTransaction}/review-link', [ReviewController::class, 'link'])->name('reviews.link');
+                    // Proven trades: your best trades with screenshots, for the website's showcase
+                    Route::apiResource('proof-trades', ProofTradeController::class)->except(['show']);
+                    Route::post('proof-trades/{proofTrade}/images', [ProofTradeController::class, 'addImages'])->middleware('throttle:30,1')->name('proof-trades.images');
+                    Route::put('proof-images/{proofImage}/cover', [ProofTradeController::class, 'cover'])->name('proof-images.cover');
+                    Route::delete('proof-images/{proofImage}', [ProofTradeController::class, 'destroyImage'])->name('proof-images.destroy');
                     Route::get('website-gold', [ListingPublishController::class, 'goldRates'])->name('website-gold.show');
                     Route::put('website-gold', [ListingPublishController::class, 'updateGoldRates'])->name('website-gold.update');
                     Route::delete('website-alerts/{alert}', [ListingPublishController::class, 'deleteAlert'])->whereNumber('alert')->name('website-alerts.destroy');

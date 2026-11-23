@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\ProofImage;
+use App\Models\ProofTrade;
 use App\Models\RucoyAccount;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\File;
@@ -29,8 +31,13 @@ class ListingPublisher
     /** Trust numbers from your sales */
     public const STATS = 'src/data/site-stats.json';
 
+    /** Proven trades (the website's showcase) and their screenshots */
+    public const PROOFS = 'src/data/proofs.json';
+
+    public const PROOF_IMAGES = 'public/proofs';
+
     /** Everything this app writes in the website repo (and the only paths it ever commits) */
-    private const PATHS = [self::JSON, self::IMAGES, self::GOLD, self::STATS];
+    private const PATHS = [self::JSON, self::IMAGES, self::GOLD, self::STATS, self::PROOFS, self::PROOF_IMAGES];
 
     private const CATEGORY = ['melee' => 'Melee', 'distance' => 'Distance', 'magic' => 'Magic'];
 
@@ -162,15 +169,17 @@ class ListingPublisher
         $this->writeJson(self::JSON, $json);
         $this->writeJson(self::GOLD, WebsiteContent::gold());
         $this->writeJson(self::STATS, WebsiteContent::stats());
+        $this->writeJson(self::PROOFS, $this->publishProofs());
 
         // Commit only these files, never anything else you're working on in that repo
-        $this->git(['add', '-A', '--', ...self::PATHS]);
-        $changed = trim($this->git(['status', '--porcelain', '--', ...self::PATHS])) !== '';
-        $staged  = trim($this->git(['diff', '--cached', '--name-only', '--', ...self::PATHS])) !== '';
+        $paths = $this->commitPaths();
+        $this->git(['add', '-A', '--', ...$paths]);
+        $changed = trim($this->git(['status', '--porcelain', '--', ...$paths])) !== '';
+        $staged  = trim($this->git(['diff', '--cached', '--name-only', '--', ...$paths])) !== '';
         $commit  = null;
         if ($staged) {
             $count = count($json);
-            $this->git(['commit', '-m', "Update listings: {$count} for sale", '--', ...self::PATHS]);
+            $this->git(['commit', '-m', "Update listings: {$count} for sale", '--', ...$paths]);
             $commit = trim($this->git(['rev-parse', '--short', 'HEAD']));
         }
 
@@ -198,6 +207,77 @@ class ListingPublisher
                 'posted' => $result['sent'] > 0, 'sent' => $result['sent'], 'total' => $result['total'],
             ],
         ];
+    }
+
+    /**
+     * The paths to commit: ours that have files now or that git already tracks (to record their
+     * removal). Git refuses a path that matches nothing, e.g. a still-empty public/proofs.
+     *
+     * @return list<string>
+     */
+    private function commitPaths(): array
+    {
+        return array_values(array_filter(self::PATHS, function (string $p) {
+            $full = $this->sitePath . '/' . $p;
+            if (is_file($full) || (is_dir($full) && File::allFiles($full) !== [])) {
+                return true;
+            }
+
+            return trim($this->git(['ls-files', '--', $p])) !== '';
+        }));
+    }
+
+    /**
+     * The proven trades shown on the website (biggest first), with their screenshots copied to
+     * public/proofs/ (ones no longer shown are removed). Only what the site shows: no ids from this app.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function publishProofs(): array
+    {
+        $dir = $this->sitePath . '/' . self::PROOF_IMAGES;
+        File::ensureDirectoryExists($dir);
+        $keep = [];
+        $copy = function (string $from) use ($dir, &$keep): ?string {
+            $source = Storage::disk('public')->path($from);
+            if (! is_file($source)) {
+                return null;
+            }
+            $file   = basename($from);
+            $keep[] = $file;
+            $target = $dir . '/' . $file;
+            if (! is_file($target) || md5_file($target) !== md5_file($source)) {
+                File::copy($source, $target);
+            }
+
+            return '/proofs/' . $file;
+        };
+
+        $proofs = ProofTrade::with('images')->where('published', true)->orderByDesc('value')->orderByDesc('id')->get()
+            ->values()->map(fn (ProofTrade $t, int $i) => [
+                'id'        => 'trade-' . $t->id,
+                'rank'      => $i + 1,
+                'title'     => $t->title,
+                'value'     => $t->value,
+                'currency'  => $t->currency,
+                'traded_on' => $t->traded_on?->toDateString(),
+                'quote'     => $t->quote,
+                'quote_by'  => $t->quote_by,
+                'images'    => $t->images->map(fn (ProofImage $img) => array_filter([
+                    'src'    => $copy($img->path),
+                    'thumb'  => $copy($img->thumb_path),
+                    'width'  => $img->width,
+                    'height' => $img->height,
+                ]))->filter(fn ($img) => isset($img['src'], $img['thumb']))->values()->all(),
+            ])->all();
+
+        foreach (File::files($dir) as $f) {
+            if (! in_array($f->getFilename(), $keep, true)) {
+                File::delete($f->getPathname());
+            }
+        }
+
+        return $proofs;
     }
 
     /** How long a "Price dropped" badge stays up */

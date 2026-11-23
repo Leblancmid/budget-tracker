@@ -121,6 +121,7 @@ Route::prefix('v1')->group(function () {
                 Route::get('buyers', [BuyerController::class, 'index'])->name('buyers.index');
                 Route::get('likely-buyers', [BuyerController::class, 'likely'])->name('buyers.likely');
                 Route::get('price-guide', [InsightsController::class, 'priceGuide'])->name('price-guide');
+                Route::get('stock', [InsightsController::class, 'stock'])->name('stock');
                 // Storefront: what the public website shows and what comes in from it. Given separately
                 // (on top of Trading), since publishing and website prices are seen by buyers
                 Route::middleware('module:storefront')->group(function () {

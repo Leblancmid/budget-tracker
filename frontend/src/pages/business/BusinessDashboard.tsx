@@ -8,6 +8,7 @@ import { formatCurrency, formatDate, MONTHS } from '@/utils/format'
 import { Amt } from '@/components/ui/Amt'
 import type { LucideIcon } from 'lucide-react'
 import { WeeklyBrief } from './WeeklyBrief'
+import { MoneyInStock } from './MoneyInStock'
 
 const TYPES: Record<string, { label: string; color: string; Icon: LucideIcon }> = {
   account: { label: 'Accounts', color: '#6366f1', Icon: User },
@@ -154,6 +155,9 @@ export default function BusinessDashboard() {
 
       {/* ── This week: what changed and what needs you (under the hero, as on Daily Expenses) ── */}
       <WeeklyBrief />
+
+      {/* ── What's unsold: the money in it, its age, what it'd bring ── */}
+      <MoneyInStock />
 
       {/* ── Year chart ─────────────────────────────────────────────── */}
       <Card className="flex flex-col">

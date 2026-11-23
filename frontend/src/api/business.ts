@@ -203,6 +203,36 @@ export const businessInsightsApi = {
   brief:      () => api.get<BusinessBrief>('/business/brief').then((r) => r.data),
   priceGuide: (params: { level?: number | null; class?: AccountClass | null; exclude_id?: number | null }) =>
     api.get<PriceGuide>('/business/price-guide', { params }).then((r) => r.data),
+  /** Money in stock: unsold accounts and gold */
+  stock: () => api.get<StockAging>('/business/stock').then((r) => r.data),
+}
+
+/** One unsold account or gold trade: what it cost, how long it's sat, what it'd bring */
+export interface StockItem {
+  id: number
+  type: 'account' | 'gold'
+  name: string
+  held_days: number | null
+  /** How many days similar accounts took to sell (accounts only) */
+  usual_days: number | null
+  cost_php: number | null
+  value_php: number | null
+  /** price: the price you set · guide: what similar sold for / your recent gold rate */
+  value_from: 'price' | 'guide' | null
+}
+
+export interface StockAging {
+  items: StockItem[]
+  totals: {
+    count: number; cost_php: number; value_php: number; profit_php: number
+    /** Items with nothing to estimate a value from */
+    unvalued: number
+    oldest_days: number | null
+    /** Held over twice as long as similar accounts usually take */
+    overdue: number
+  }
+  /** Money by age: under 2 weeks, 2–4 weeks, 1–2 months, over 2 months */
+  buckets: { key: 'fresh' | 'weeks' | 'month' | 'old'; label: string; count: number; cost_php: number }[]
 }
 
 export const businessDashboardApi = {

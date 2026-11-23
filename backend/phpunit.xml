@@ -34,5 +34,7 @@
         <env name="NIGHTWATCH_ENABLED" value="false"/>
         <!-- Never write test backups into a real Google Drive folder -->
         <env name="BACKUP_FOLDER" value=""/>
+        <!-- ...or ping the real monitoring service -->
+        <env name="HEARTBEAT_URL" value=""/>
     </php>
 </phpunit>

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\DiscordPost;
 use App\Models\RucoyAccount;
 use App\Models\User;
+use App\Services\BusinessBrief;
 use App\Services\DiscordAutoPost;
 use App\Services\ListingAnnouncer;
 use App\Services\PhoneAlerts;
@@ -12,6 +13,7 @@ use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
@@ -30,6 +32,9 @@ class DiscordAutoPostTest extends TestCase
     /** What the fake website reports per Discord server */
     private array $sources = [];
 
+    /** The fake website's leads */
+    private array $leads = [];
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -44,6 +49,7 @@ class DiscordAutoPostTest extends TestCase
             str_contains($r->url(), 'webhooks/7/deleted') => Http::response(['message' => 'Unknown Webhook'], 404), // a webhook someone deleted
             // The website's stats: visitors and requests per Discord server
             str_contains($r->url(), 'site.test/api/stats') => Http::response(['sources' => $this->sources, 'listing_views' => []]),
+            str_contains($r->url(), 'site.test/api/leads') => Http::response(['leads' => $this->leads]),
             // Reading a webhook: its name and where it posts
             $r->method() === 'GET' && str_contains($r->url(), 'discord.test') => Http::response(['name' => 'Leblanc', 'guild_id' => '111', 'channel_id' => '222']),
             // Deleting an earlier post
@@ -322,6 +328,60 @@ class DiscordAutoPostTest extends TestCase
         $channels = $this->getJson('/api/v1/business/discord-posts')->json('channels');
         $this->assertSame(['visitors_7' => 4, 'visitors_30' => 12, 'requests_30' => 2], $channels[0]['reach']);
         $this->assertSame(['visitors_7' => 0, 'visitors_30' => 0, 'requests_30' => 0], $channels[1]['reach']);
+    }
+
+    /** Two servers ("Asian Market" named, the second not), first posted to $daysAgo days ago */
+    private function twoServersPostedTo(int $daysAgo): array
+    {
+        config(['listing.discord_webhook' => 'https://discord.test/api/webhooks/1/abc,https://discord.test/api/webhooks/2/def', 'listing.site_token' => str_repeat('t', 40)]);
+        $keys = [ListingAnnouncer::channelKey('https://discord.test/api/webhooks/1/abc'), ListingAnnouncer::channelKey('https://discord.test/api/webhooks/2/def')];
+        ListingAnnouncer::setChannelLabel($keys[0], 'Asian Market');
+        foreach ($keys as $i => $key) {
+            DiscordPost::create(['kind' => 'auto', 'slot_date' => now()->subDays($daysAgo)->toDateString(), 'slot' => 'am', 'channel_key' => $key, 'channel_no' => $i + 1, 'ok' => true])
+                ->forceFill(['created_at' => now()->subDays($daysAgo)])->save();
+        }
+
+        return array_map(fn ($k) => ListingAnnouncer::sourceTag($k), $keys);
+    }
+
+    public function test_leads_say_which_server_the_buyer_came_from(): void
+    {
+        [$asian, $second] = $this->twoServersPostedTo(3);
+        $this->leads = [
+            ['id' => 1, 'type' => 'gold', 'status' => 'new', 'name' => 'Mia', 'details' => ['amount_kk' => 500, 'from' => $asian], 'created_at' => 1, 'updated_at' => 1],
+            ['id' => 2, 'type' => 'gold', 'status' => 'new', 'name' => 'Kai', 'details' => ['amount_kk' => 100, 'from' => $second], 'created_at' => 1, 'updated_at' => 1],
+            ['id' => 3, 'type' => 'gold', 'status' => 'new', 'name' => 'Rho', 'details' => ['amount_kk' => 100, 'from' => 'd-000000'], 'created_at' => 1, 'updated_at' => 1],
+            ['id' => 4, 'type' => 'gold', 'status' => 'new', 'name' => 'Zed', 'details' => ['amount_kk' => 100], 'created_at' => 1, 'updated_at' => 1],
+        ];
+
+        $sources = collect($this->getJson('/api/v1/business/leads')->assertOk()->json('leads'))->pluck('source', 'name')->all();
+
+        $this->assertSame(['Mia' => 'Asian Market', 'Kai' => 'Channel 2', 'Rho' => 'a Discord server you removed', 'Zed' => null], $sources);
+    }
+
+    public function test_the_brief_flags_a_server_that_brought_nobody_in_two_weeks(): void
+    {
+        [$asian] = $this->twoServersPostedTo(20);
+        $this->sources = [['source' => $asian, 'visitors_7' => 9, 'visitors_30' => 31, 'requests_30' => 3]];
+
+        $insight = collect(BusinessBrief::build()['insights'])->firstWhere('key', 'discord');
+        $this->assertSame(['Channel 2 brought nobody to the website in 30 days', 'warn', '/business/discord'], [$insight['title'], $insight['level'], $insight['link']]);
+        $this->assertStringContainsString('Asian Market: 31 visitors, 3 requests', $insight['detail']);
+    }
+
+    public function test_the_brief_gives_new_servers_two_weeks_before_judging_them(): void
+    {
+        [$asian] = $this->twoServersPostedTo(5);
+        $this->sources = [['source' => $asian, 'visitors_7' => 9, 'visitors_30' => 31, 'requests_30' => 3]];
+
+        $insight = collect(BusinessBrief::build()['insights'])->firstWhere('key', 'discord');
+        $this->assertSame(['Your best Discord servers', 'info'], [$insight['title'], $insight['level']]);
+        $this->assertSame('Last 30 days: Asian Market: 31 visitors, 3 requests.', $insight['detail']);
+
+        // Nothing tracked yet: nothing to say
+        $this->sources = [];
+        Cache::flush();
+        $this->assertNull(collect(BusinessBrief::build()['insights'])->firstWhere('key', 'discord'));
     }
 
     public function test_servers_can_be_named_in_the_app_and_opened_in_discord(): void

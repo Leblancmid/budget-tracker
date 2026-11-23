@@ -176,6 +176,8 @@ export interface Lead {
   account_sold: boolean | null
   /** Price guide for an account offered to you */
   guide: { price_php: number | null; max_buy_php: number | null; max_buy_gold: number | null; sales: number } | null
+  /** The Discord server the buyer came through (your name for it), or null */
+  source?: string | null
 }
 
 /** Leads from the website (kept on the website's database) */

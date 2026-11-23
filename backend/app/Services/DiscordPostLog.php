@@ -104,7 +104,7 @@ class DiscordPostLog
      *
      * @return array<string, array{visitors_7: int, visitors_30: int, requests_30: int}>|null
      */
-    private static function reachBySource(): ?array
+    public static function reachBySource(): ?array
     {
         if (! WebsiteStats::configured()) {
             return null;

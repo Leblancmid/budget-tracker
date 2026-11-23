@@ -63,6 +63,23 @@ class ListingAnnouncer
         return 'd-' . substr($channelKey, 0, 6);
     }
 
+    /**
+     * Your name for each channel's website tag ("d-3fa9c2" → "Asian Market", else "Channel 3"),
+     * for the servers in LISTING_DISCORD_WEBHOOK now.
+     *
+     * @return array<string, string>
+     */
+    public static function sourceNames(): array
+    {
+        $labels = self::channelLabels();
+
+        return collect(self::webhooks())->values()->mapWithKeys(function ($url, $i) use ($labels) {
+            $key = self::channelKey($url);
+
+            return [self::sourceTag($key) => $labels[$key] ?? 'Channel ' . ($i + 1)];
+        })->all();
+    }
+
     /** The accounts page, tagged with the channel the buyer came from (when one is given) */
     public static function forSaleUrl(?string $channelKey = null): string
     {

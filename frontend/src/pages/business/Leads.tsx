@@ -169,6 +169,11 @@ export default function Leads() {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-gray-800 dark:text-gray-100">
                       {l.name} <span className="font-normal text-gray-400">· {t.label} · {ago(l.created_at)}</span>
+                      {l.source && (
+                        <span className="ml-1.5 inline-flex items-center gap-1 rounded-full bg-indigo-50 px-1.5 py-0.5 align-middle text-[10px] font-semibold text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300" title="The Discord server this buyer came from">
+                          <MessageCircle size={10} /> via {l.source}
+                        </span>
+                      )}
                     </p>
                     <p className="truncate text-xs text-gray-600 dark:text-gray-300">{summary(l)}</p>
                     {l.details.message && <p className="truncate text-xs italic text-gray-400">"{l.details.message}"</p>}

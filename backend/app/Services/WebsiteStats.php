@@ -101,8 +101,9 @@ class WebsiteStats
         $rows = self::call('get', '/api/leads')['leads'] ?? [];
         $ids  = collect($rows)->map(fn ($l) => preg_match('/^acc-(\d+)$/', (string) ($l['listing_id'] ?? ''), $m) ? (int) $m[1] : null)->filter();
         $accounts = RucoyAccount::whereIn('id', $ids)->get()->keyBy('id');
+        $servers  = ListingAnnouncer::sourceNames();
 
-        return collect($rows)->map(function ($l) use ($accounts) {
+        return collect($rows)->map(function ($l) use ($accounts, $servers) {
             $id = preg_match('/^acc-(\d+)$/', (string) ($l['listing_id'] ?? ''), $m) ? (int) $m[1] : null;
             $a  = $id ? $accounts->get($id) : null;
             $details = is_array($l['details'] ?? null) ? $l['details'] : [];
@@ -120,6 +121,9 @@ class WebsiteStats
                 'account_name' => $a ? ($a->description ?: $a->email) : null,
                 'account_sold' => $a ? $a->archived_at !== null : null,
                 'guide'        => $guide,
+                // The Discord server the buyer came through (?from= on your listing posts), by your
+                // name for it; a server no longer in the list still counts as Discord
+                'source'       => is_string($details['from'] ?? null) ? ($servers[$details['from']] ?? 'a Discord server you removed') : null,
             ];
         })->values()->all();
     }

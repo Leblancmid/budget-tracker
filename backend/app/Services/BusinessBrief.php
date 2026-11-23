@@ -7,6 +7,7 @@ use App\Console\Commands\BackupOffsite;
 use App\Models\BalanceAccount;
 use App\Models\BalanceEntry;
 use App\Models\BusinessTransaction;
+use App\Models\DiscordPost;
 use App\Models\Gold;
 use App\Models\RucoyAccount;
 use App\Services\Backup\BackupFolder;
@@ -56,6 +57,7 @@ class BusinessBrief
             ->push(self::offsiteBackup($today))
             ->push(self::backupRestore($today))
             ->push(self::waitingLeads())
+            ->push(self::discordServers($today))
             ->filter()->values();
 
         $order = ['bad' => 0, 'warn' => 1, 'good' => 2, 'info' => 3];
@@ -247,6 +249,57 @@ class BusinessBrief
     }
 
     /** Website leads nobody has answered yet (when the website is connected). */
+    /** Servers you've posted in this long with no visitors count as not working (newer ones get time) */
+    public const DISCORD_TRIAL_DAYS = 14;
+
+    /**
+     * Which Discord servers bring buyers (their posts link to the website with ?from=): the best
+     * ones over the last 30 days, and any you've posted in for 2 weeks that brought nobody.
+     */
+    private static function discordServers(CarbonImmutable $today): ?array
+    {
+        if (! ListingAnnouncer::configured()) {
+            return null;
+        }
+        $reach = DiscordPostLog::reachBySource();
+        if ($reach === null) {
+            return null; // website stats not connected
+        }
+        // When each server first got a post that went through
+        $firstPost = DiscordPost::where('ok', true)->whereNotNull('channel_key')
+            ->selectRaw('channel_key, min(created_at) as at')->groupBy('channel_key')->pluck('at', 'channel_key');
+        $names = ListingAnnouncer::sourceNames();
+
+        $servers = collect(ListingAnnouncer::webhooks())->map(function ($url) use ($reach, $firstPost, $names, $today) {
+            $key  = ListingAnnouncer::channelKey($url);
+            $tag  = ListingAnnouncer::sourceTag($key);
+            $r    = $reach[$tag] ?? ['visitors_30' => 0, 'requests_30' => 0];
+            $days = isset($firstPost[$key]) ? (int) CarbonImmutable::parse($firstPost[$key])->diffInDays($today->utc()) : 0;
+
+            return ['name' => $names[$tag], 'visitors' => $r['visitors_30'], 'requests' => $r['requests_30'], 'days' => $days];
+        });
+
+        $plural = fn (int $n, string $word) => $n . ' ' . $word . ($n === 1 ? '' : 's');
+        $dead = $servers->filter(fn ($s) => $s['visitors'] === 0 && $s['days'] >= self::DISCORD_TRIAL_DAYS)->pluck('name');
+        $best = $servers->filter(fn ($s) => $s['visitors'] > 0)
+            ->sortBy([['requests', 'desc'], ['visitors', 'desc']])->take(3)
+            ->map(fn ($s) => "{$s['name']}: {$plural($s['visitors'], 'visitor')}, {$plural($s['requests'], 'request')}")->join('; ');
+
+        if ($dead->isNotEmpty()) {
+            $which = $dead->count() === 1 ? $dead->first() . ' brought' : $dead->join(', ', ' and ') . ' brought';
+
+            return self::insight('discord', 'warn', "{$which} nobody to the website in 30 days",
+                'Its posts got no clicks in that time. Set it to Manual only, or drop it and post where buyers are.'
+                . ($best !== '' ? " Best last 30 days: {$best}." : ''),
+                '/business/discord');
+        }
+        if ($best === '') {
+            return null; // nothing tracked yet
+        }
+
+        return self::insight('discord', 'info', 'Your best Discord servers', "Last 30 days: {$best}.", '/business/discord');
+    }
+
     private static function waitingLeads(): ?array
     {
         if (! WebsiteStats::configured()) {

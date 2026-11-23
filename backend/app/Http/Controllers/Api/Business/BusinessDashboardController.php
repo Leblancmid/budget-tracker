@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Api\Business;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Business\UpdateProfitGoalRequest;
+use App\Models\ActivityLog;
 use App\Models\BusinessTransaction;
 use App\Models\Transaction;
 use App\Services\BusinessProfit;
+use App\Services\ProfitGoal;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -87,6 +90,8 @@ class BusinessDashboardController extends Controller
             'profit_by_type'      => $profitByType,
             'realized_trend'      => $realizedTrend,
             'pipeline'            => $pipeline,
+            // The monthly profit goal and how this month stands against it (null: no goal set)
+            'goal'                => ProfitGoal::progress($realized['profit'], $year, $month),
             'daily_business'      => [
                 'income'  => (float) $dailyBiz->income,
                 'expense' => (float) $dailyBiz->expense,
@@ -98,6 +103,21 @@ class BusinessDashboardController extends Controller
                 ['month' => $t['month'], 'year' => $year, 'type' => 'expense', 'total' => (string) $t['expense']],
             ] : [])->values(),
         ]);
+    }
+
+    /** Set (or with no amount, remove) the monthly profit goal. */
+    public function updateGoal(UpdateProfitGoalRequest $request): JsonResponse
+    {
+        $before = ProfitGoal::get();
+        $goal   = $request->validated('goal_php');
+        ProfitGoal::set($goal !== null ? (float) $goal : null);
+        $after = ProfitGoal::get();
+        if ($after !== $before) {
+            ActivityLog::note('business', 'updated', 'Monthly profit goal: '
+                . ($before !== null ? '₱' . number_format($before, 2) : 'none') . ' → ' . ($after !== null ? '₱' . number_format($after, 2) : 'none'));
+        }
+
+        return response()->json(['goal_php' => $after]);
     }
 
     private function soldIn(int $year, int $month): Collection

@@ -238,6 +238,9 @@ export interface StockAging {
 export const businessDashboardApi = {
   getStats: (month: number, year: number) =>
     api.get<BusinessDashboardStats>('/business/dashboard', { params: { month, year } }).then((r) => r.data),
+  /** Set the monthly profit goal (null removes it) */
+  setGoal: (goalPhp: number | null) =>
+    api.put<{ goal_php: number | null }>('/business/goal', { goal_php: goalPhp }).then((r) => r.data),
 }
 
 export interface BusinessTransactionPayload {

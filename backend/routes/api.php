@@ -116,6 +116,7 @@ Route::prefix('v1')->group(function () {
             // Business
             Route::prefix('business')->name('business.')->group(function () {
                 Route::get('dashboard', [BusinessDashboardController::class, 'index'])->name('dashboard');
+                Route::put('goal', [BusinessDashboardController::class, 'updateGoal'])->name('goal.update');
                 Route::get('brief', [InsightsController::class, 'brief'])->name('brief');
                 // The people you sell to (from Sold to)
                 Route::get('buyers', [BuyerController::class, 'index'])->name('buyers.index');

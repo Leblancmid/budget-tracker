@@ -251,6 +251,20 @@ export interface BusinessTransaction {
   updated_at: string
 }
 
+/**
+ * A month's sold profit against the monthly goal. on_pace / behind only for the current month,
+ * with what an even pace would have by today and the profit a day still needed.
+ */
+export interface ProfitGoalProgress {
+  goal_php: number
+  profit_php: number
+  percent: number
+  status: 'reached' | 'on_pace' | 'behind' | 'missed' | 'upcoming'
+  expected_php: number | null
+  needed_per_day: number | null
+  days_left: number | null
+}
+
 export interface BusinessDashboardStats {
   total_income: number
   total_expense: number
@@ -272,6 +286,8 @@ export interface BusinessDashboardStats {
   pipeline?: { count: number; awaiting_pricing: number; income: number; cost: number; profit: number; by_type: Array<{ type: string; count: number }> }
   /** Business-tagged daily transactions this month (Transactions page) */
   daily_business?: { income: number; expense: number; count: number }
+  /** The monthly profit goal and this month against it (null: no goal set) */
+  goal?: ProfitGoalProgress | null
   monthly_trend: Array<{
     month: number
     year: number

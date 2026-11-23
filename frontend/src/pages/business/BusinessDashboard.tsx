@@ -9,6 +9,7 @@ import { Amt } from '@/components/ui/Amt'
 import type { LucideIcon } from 'lucide-react'
 import { WeeklyBrief } from './WeeklyBrief'
 import { MoneyInStock } from './MoneyInStock'
+import { ProfitGoal } from './ProfitGoal'
 
 const TYPES: Record<string, { label: string; color: string; Icon: LucideIcon }> = {
   account: { label: 'Accounts', color: '#6366f1', Icon: User },
@@ -27,7 +28,7 @@ function TypeIcon({ type, size = 'md' }: { type: string; size?: 'sm' | 'md' }) {
 }
 
 export default function BusinessDashboard() {
-  const { stats, month, year, loading, setMonth, setYear } = useBusinessDashboard()
+  const { stats, month, year, loading, setMonth, setYear, refetch } = useBusinessDashboard()
   const changeMonth = (m: number, y: number) => { setMonth(m); setYear(y) }
 
   const profit   = stats?.total_profit ?? 0
@@ -101,6 +102,8 @@ export default function BusinessDashboard() {
                   {prev != null && <> · {prevLabel}: <Amt value={formatCurrency(prev)} /></>}
                 </p>
               </div>
+
+              <ProfitGoal goal={stats?.goal} onChanged={refetch} />
 
               <div className="grid grid-cols-3 gap-3 pt-4 border-t border-white/10">
                 <div>

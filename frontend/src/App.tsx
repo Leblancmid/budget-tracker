@@ -27,6 +27,7 @@ const ListingKit          = lazy(() => import('@/pages/business/ListingKit'))
 const Leads               = lazy(() => import('@/pages/business/Leads'))
 const Buyers              = lazy(() => import('@/pages/business/Buyers'))
 const DiscordPosts        = lazy(() => import('@/pages/business/DiscordPosts'))
+const Reviews             = lazy(() => import('@/pages/business/Reviews'))
 const DailyExpensesReport = lazy(() => import('@/pages/reports/DailyExpensesReport'))
 const BusinessReport      = lazy(() => import('@/pages/reports/BusinessReport'))
 const Logs                = lazy(() => import('@/pages/Logs'))
@@ -101,6 +102,7 @@ export default function App() {
                     <Route path="/business/listing" element={<ListingKit />} />
                     <Route path="/business/leads"   element={<Leads />} />
                     <Route path="/business/discord" element={<DiscordPosts />} />
+                    <Route path="/business/reviews" element={<Reviews />} />
                   </Route>
                 </Route>
               </Route>

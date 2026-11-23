@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\Business\BuyerController;
 use App\Http\Controllers\Api\Business\BusinessTransactionController;
 use App\Http\Controllers\Api\Business\InsightsController;
 use App\Http\Controllers\Api\Business\LeadController;
+use App\Http\Controllers\Api\Business\ReviewController;
 use App\Http\Controllers\Api\Business\ListingPublishController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\DashboardController;
@@ -143,6 +144,10 @@ Route::prefix('v1')->group(function () {
                     // Leads from the website (I want this, gold orders, accounts offered to you)
                     Route::get('leads', [LeadController::class, 'index'])->name('leads.index');
                     Route::patch('leads/{lead}', [LeadController::class, 'update'])->whereNumber('lead')->name('leads.update');
+                    // Buyer reviews: a link per sale, and approving them for the website
+                    Route::get('reviews', [ReviewController::class, 'index'])->name('reviews.index');
+                    Route::patch('reviews/{review}', [ReviewController::class, 'update'])->whereNumber('review')->name('reviews.update');
+                    Route::post('transactions/{businessTransaction}/review-link', [ReviewController::class, 'link'])->name('reviews.link');
                     Route::get('website-gold', [ListingPublishController::class, 'goldRates'])->name('website-gold.show');
                     Route::put('website-gold', [ListingPublishController::class, 'updateGoldRates'])->name('website-gold.update');
                     Route::delete('website-alerts/{alert}', [ListingPublishController::class, 'deleteAlert'])->whereNumber('alert')->name('website-alerts.destroy');

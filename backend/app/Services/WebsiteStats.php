@@ -140,6 +140,12 @@ class WebsiteStats
         Cache::forget('website_stats');
     }
 
+    /** A private API call to the website, for other services (reviews); throws a readable error. */
+    public static function callApi(string $method, string $path, array $data = []): array
+    {
+        return self::call($method, $path, $data);
+    }
+
     /** One private API call to the website; throws a readable error. */
     private static function call(string $method, string $path, array $data = []): array
     {

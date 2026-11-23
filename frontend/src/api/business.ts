@@ -334,6 +334,29 @@ export interface BuyersSummary { buyers: number; repeat: number; repeat_share: n
 export type BuyerSort = 'recent' | 'purchases' | 'total'
 export interface BuyersPage extends PaginationMeta { data: Buyer[]; summary: BuyersSummary }
 
+/** A buyer's review on the website (shows there once approved) */
+export interface BuyerReview {
+  id: number
+  sale_id: number
+  item: string
+  name: string
+  rating: number
+  message: string
+  status: 'pending' | 'approved' | 'hidden'
+  created_at: number
+}
+
+/** A recent sale to send a review link for */
+export interface ReviewableSale { id: number; item: string; sold_to: string | null; sold_on: string | null; reviewed: boolean }
+
+export const reviewsApi = {
+  list: () => api.get<{ configured: boolean; reviews: BuyerReview[]; recent_sales: ReviewableSale[] }>('/business/reviews').then((r) => r.data),
+  setStatus: (id: number, status: BuyerReview['status']) =>
+    api.patch<{ message: string }>(`/business/reviews/${id}`, { status }).then((r) => r.data),
+  /** The review link for a sold account or gold trade */
+  link: (saleId: number) => api.post<{ url: string; item: string; days: number }>(`/business/transactions/${saleId}/review-link`).then((r) => r.data),
+}
+
 /** Someone who bought an account like this one before: message them first */
 export interface LikelyBuyer {
   name: string

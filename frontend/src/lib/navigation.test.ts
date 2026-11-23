@@ -59,7 +59,7 @@ describe('navigation', () => {
     expect(sections[0].tabs.map((t) => t.label)).not.toContain('Balance')
     expect(sections.at(-1)?.tabs.map((t) => t.label)).toEqual(['Profile'])
     expect(sections[1].tabs.map((t) => t.label)).toEqual(['Stats', 'Sales', 'Buyers', 'Report'])
-    expect(sections[2].tabs.map((t) => t.label)).toEqual(['Listing Kit', 'Leads', 'Discord'])
+    expect(sections[2].tabs.map((t) => t.label)).toEqual(['Listing Kit', 'Leads', 'Discord', 'Reviews'])
   })
 
   it('hides the Storefront (Listing Kit and Leads) from a trader without it', () => {

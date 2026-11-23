@@ -76,6 +76,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { to: '/business/listing', label: 'Listing Kit', end: true },
       { to: '/business/leads', label: 'Leads' },
       { to: '/business/discord', label: 'Discord' },
+      { to: '/business/reviews', label: 'Reviews' },
     ],
   },
   {

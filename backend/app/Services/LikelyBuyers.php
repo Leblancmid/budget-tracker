@@ -32,31 +32,43 @@ class LikelyBuyers
         $sales    = self::pastSales();
         $contacts = $sales->isEmpty() ? [] : self::contacts();
 
-        return $accounts->mapWithKeys(function (RucoyAccount $a) use ($sales, $contacts) {
-            $level = PriceGuide::levelOf($a);
-            $class = PriceGuide::classOf($a);
-            if (! $level || ! $class) {
-                return [$a->id => []];
-            }
-            $similar = $sales->filter(fn ($s) => $s['class'] === $class && abs($s['level'] - $level) <= self::LEVEL_RANGE);
+        return $accounts->mapWithKeys(fn (RucoyAccount $a) => [
+            $a->id => self::match(PriceGuide::levelOf($a), PriceGuide::classOf($a), $sales, $contacts),
+        ])->all();
+    }
 
-            return [$a->id => $similar->groupBy('buyer')->map(function (Collection $bought, string $buyer) use ($level, $contacts) {
-                $closest = $bought->sortBy(fn ($s) => abs($s['level'] - $level))->first();
-                $latest  = $bought->sortByDesc('sold_on')->first();
+    /** Past buyers of an account of this level and build (e.g. one you're thinking of buying). */
+    public static function forLevel(int $level, string $class): array
+    {
+        $sales = self::pastSales();
 
-                return [
-                    'name'      => $latest['name'],
-                    'similar'   => $bought->count(),
-                    'closest'   => ['description' => $closest['description'], 'level' => $closest['level'], 'sold_on' => $closest['sold_on'], 'price_php' => $closest['price_php']],
-                    'last_on'   => $latest['sold_on'],
-                    'contact'   => $contacts[$buyer] ?? null,
-                    '_distance' => abs($closest['level'] - $level),
-                ];
-            })->sortBy([['similar', 'desc'], ['_distance', 'asc'], ['last_on', 'desc']])
-                ->take(self::LIMIT)
-                ->map(fn ($b) => array_diff_key($b, ['_distance' => true]))
-                ->values()->all()];
-        })->all();
+        return self::match($level, $class, $sales, $sales->isEmpty() ? [] : self::contacts());
+    }
+
+    /** @param Collection<int, array<string, mixed>> $sales */
+    private static function match(?int $level, ?string $class, Collection $sales, array $contacts): array
+    {
+        if (! $level || ! $class) {
+            return [];
+        }
+        $similar = $sales->filter(fn ($s) => $s['class'] === $class && abs($s['level'] - $level) <= self::LEVEL_RANGE);
+
+        return $similar->groupBy('buyer')->map(function (Collection $bought, string $buyer) use ($level, $contacts) {
+            $closest = $bought->sortBy(fn ($s) => abs($s['level'] - $level))->first();
+            $latest  = $bought->sortByDesc('sold_on')->first();
+
+            return [
+                'name'      => $latest['name'],
+                'similar'   => $bought->count(),
+                'closest'   => ['description' => $closest['description'], 'level' => $closest['level'], 'sold_on' => $closest['sold_on'], 'price_php' => $closest['price_php']],
+                'last_on'   => $latest['sold_on'],
+                'contact'   => $contacts[$buyer] ?? null,
+                '_distance' => abs($closest['level'] - $level),
+            ];
+        })->sortBy([['similar', 'desc'], ['_distance', 'asc'], ['last_on', 'desc']])
+            ->take(self::LIMIT)
+            ->map(fn ($b) => array_diff_key($b, ['_distance' => true]))
+            ->values()->all();
     }
 
     /**

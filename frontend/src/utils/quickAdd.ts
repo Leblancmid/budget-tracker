@@ -28,6 +28,8 @@ export type QuickAddResult =
   | { kind: 'daily'; type: 'income' | 'expense'; amount: number; description: string; categoryId: number | null; wallet: string | null; business: boolean; date: string }
   | { kind: 'transfer'; amount: number; from: string; to: string; fee: number | null; date: string; note: string | null }
   | { kind: 'gold'; gold: number; costRate: number | null; sellRate: number | null; phpPaid: number | null; wallet: string | null; description: string; date: string }
+  /** "check 650 melee 3500": should I buy this account at that price? (nothing is saved) */
+  | { kind: 'buycheck'; level: number; build: 'melee' | 'distance' | 'magic'; askPhp: number | null; askGold: number | null }
   | { kind: 'empty' }
   | { kind: 'error'; message: string }
 
@@ -96,9 +98,43 @@ function findCategory(words: string[], description: string, type: 'income' | 'ex
   return { category: null, usedWord: null }
 }
 
+/** Words that start a buy check ("check 650 melee 3500") */
+const CHECK_WORDS = new Set(['check', 'worth', 'buy?', 'should'])
+const BUILD_WORDS: Record<string, 'melee' | 'distance' | 'magic'> = {
+  melee: 'melee', knight: 'melee', warrior: 'melee', mel: 'melee',
+  dist: 'distance', distance: 'distance', archer: 'distance', ranged: 'distance', range: 'distance',
+  mage: 'magic', magic: 'magic', wizard: 'magic', mag: 'magic',
+}
+
+/** "check 650 melee 3500" / "check lv 650 dist 1.2kkk": an account offered to you, and its price. */
+function parseBuyCheck(tokens: string[], ctx: QuickAddContext): QuickAddResult {
+  if (!ctx.access.trading) return { kind: 'error', message: 'The buy check needs access to Trading.' }
+  let level: number | null = null
+  let build: 'melee' | 'distance' | 'magic' | null = null
+  let askPhp: number | null = null
+  let askGold: number | null = null
+  for (const t of tokens) {
+    const lower = t.toLowerCase()
+    if (lower === 'lv' || lower === 'level' || lower === 'for' || lower === 'at') continue
+    const lv = lower.match(/^(?:lv|lvl)?(\d{1,3})$/)
+    if (lv && level == null && !/^(₱|p\d)/i.test(t)) { level = Number(lv[1]); continue }
+    if (BUILD_WORDS[lower]) { build = BUILD_WORDS[lower]; continue }
+    const g = parseGold(t)
+    if (g != null) { askGold = g; continue }
+    const m = parseMoney(t)
+    if (m != null) { askPhp = m; continue }
+  }
+  if (!level) return { kind: 'error', message: 'Add the level, e.g. "check 650 melee 3500".' }
+  if (!build) return { kind: 'error', message: 'Add the build: melee, dist or magic.' }
+  return { kind: 'buycheck', level, build, askPhp, askGold }
+}
+
 export function parseQuickAdd(input: string, ctx: QuickAddContext): QuickAddResult {
   const raw = input.trim()
   if (!raw) return { kind: 'empty' }
+
+  const first = raw.split(/\s+/)[0].toLowerCase()
+  if (CHECK_WORDS.has(first)) return parseBuyCheck(raw.split(/\s+/).slice(1), ctx)
 
   // "+250 …" is income; split "@.17" glued to words and "x>y" arrows apart
   let tokens = raw.replace(/(\S)(->|→|>)(\S)/g, '$1 $2 $3').split(/\s+/)

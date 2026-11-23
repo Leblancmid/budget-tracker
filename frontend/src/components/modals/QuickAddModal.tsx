@@ -15,6 +15,7 @@ import { errorMessage, flattenApiErrors } from '@/utils/api'
 import { fmtIn } from '@/utils/balanceAccounts'
 import { formatCurrency, formatShortDate, todayManila } from '@/utils/format'
 import { formatGoldShort } from '@/utils/priceGuide'
+import { BuyCheckPreview } from './BuyCheckPreview'
 import { goldPhp, parseQuickAdd, type QuickAddContext, type QuickAddHistory, type QuickAddResult } from '@/utils/quickAdd'
 import type { BalanceAccountConfig, Category } from '@/types'
 
@@ -24,6 +25,7 @@ const EXAMPLES_ALL = [
   { text: '5000 maribank > gcash fee 15', hint: 'transfer' },
   { text: 'gold 500kk @.17 sell .19 gcash', hint: 'gold bought at .17, selling at .19' },
   { text: 'gold 500kk ₱5400 maya', hint: 'gold paid in ₱' },
+  { text: 'check 650 melee 3500', hint: 'should I buy this account? (nothing is saved)' },
 ]
 const EXAMPLES_DAILY = [
   { text: '250 lunch', hint: 'expense' },
@@ -173,6 +175,8 @@ export function QuickAddModal({ access, onClose }: { access: { trading: boolean;
         </div>
       )
     }
+
+    if (result.kind === 'buycheck') return <BuyCheckPreview level={result.level} build={result.build} askPhp={result.askPhp} askGold={result.askGold} />
 
     if (result.kind === 'transfer') {
       const from = walletByCode.get(result.from)

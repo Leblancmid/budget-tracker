@@ -81,6 +81,18 @@ class LikelyBuyersTest extends TestCase
         $this->assertSame(['Mika', 'Dark.Knight'], $this->getJson('/api/v1/business/transactions/buyers')->assertOk()->json());
     }
 
+    public function test_the_price_guide_counts_regulars_for_an_account_you_might_buy(): void
+    {
+        config(['listing.site_token' => null]);
+        $this->sold('Lv 640 Melee', 'Kai', 30);
+        $this->sold('Lv 660 Melee', 'Mika', 10);
+        $this->sold('Lv 650 Dist', 'Zed', 5);
+
+        $this->getJson('/api/v1/business/price-guide?level=650&class=melee')->assertOk()->assertJsonPath('regulars', 2);
+        $this->getJson('/api/v1/business/price-guide?level=650&class=magic')->assertJsonPath('regulars', 0);
+        $this->getJson('/api/v1/business/price-guide')->assertJsonPath('regulars', null);
+    }
+
     public function test_it_works_without_the_website_connected(): void
     {
         config(['listing.site_token' => null]);

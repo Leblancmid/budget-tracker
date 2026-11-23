@@ -591,4 +591,6 @@ export interface PriceGuide {
     usual_spread: number | null
     max_buy_rate: number | null
   }
+  /** Past buyers of an account like this (with level and class given), else null */
+  regulars?: number | null
 }

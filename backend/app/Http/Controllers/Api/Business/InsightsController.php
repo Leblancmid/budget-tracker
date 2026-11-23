@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Business;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Business\PriceGuideRequest;
 use App\Services\BusinessBrief;
+use App\Services\LikelyBuyers;
 use App\Services\PriceGuide;
 use App\Services\StockAging;
 use Illuminate\Http\JsonResponse;
@@ -27,9 +28,14 @@ class InsightsController extends Controller
     {
         $data = $request->validated();
 
+        $level = $data['level'] ?? null;
+        $class = $data['class'] ?? null;
+
         return response()->json([
-            'account' => PriceGuide::account($data['level'] ?? null, $data['class'] ?? null, $data['exclude_id'] ?? null),
+            'account' => PriceGuide::account($level, $class, $data['exclude_id'] ?? null),
             'gold'    => PriceGuide::gold(),
+            // Past buyers of one like it (who'd buy it from you): for "Should I buy this?"
+            'regulars' => $level && $class ? count(LikelyBuyers::forLevel((int) $level, $class)) : null,
         ]);
     }
 }

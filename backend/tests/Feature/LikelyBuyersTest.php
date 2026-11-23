@@ -66,6 +66,21 @@ class LikelyBuyersTest extends TestCase
         $this->assertSame([], $res->json("accounts.{$noLevel->id}"));
     }
 
+    public function test_a_name_typed_differently_is_still_one_buyer(): void
+    {
+        foreach (['Dark Knight' => 30, 'darkknight' => 20, 'Dark.Knight ' => 10, 'Mika' => 5] as $name => $ago) {
+            $this->sold('Lv 650 Melee', $name, $ago);
+        }
+        $forSale = RucoyAccount::create(['description' => 'Lv 652 Melee', 'email' => 'sell@x.com']);
+
+        // One buyer with 3 similar purchases, shown with the newest spelling
+        $buyers = $this->getJson('/api/v1/business/likely-buyers')->json("accounts.{$forSale->id}");
+        $this->assertSame([['Dark.Knight', 3], ['Mika', 1]], array_map(fn ($b) => [$b['name'], $b['similar']], $buyers));
+
+        // The "Sold to" suggestions list each buyer once, newest spelling, newest first
+        $this->assertSame(['Mika', 'Dark.Knight'], $this->getJson('/api/v1/business/transactions/buyers')->assertOk()->json());
+    }
+
     public function test_it_works_without_the_website_connected(): void
     {
         config(['listing.site_token' => null]);

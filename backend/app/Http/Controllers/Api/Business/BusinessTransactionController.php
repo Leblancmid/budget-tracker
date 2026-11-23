@@ -11,6 +11,7 @@ use App\Http\Requests\Business\UpdateBusinessTransactionRequest;
 use App\Models\BusinessTransaction;
 use App\Services\BusinessProfit;
 use App\Services\BusinessTransactionService;
+use App\Services\Buyers;
 use App\Services\MiddlemanFeeTrade;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -52,12 +53,18 @@ class BusinessTransactionController extends Controller
         return response()->json(BusinessTransaction::archived()->latest('archived_at')->get());
     }
 
-    /** Names you sold to before, most recent first (suggestions when marking a sale sold). */
+    /**
+     * Names you sold to before, most recent first (suggestions when marking a sale sold). One per
+     * buyer however it was typed ("Dark Knight" / "darkknight"), in the spelling used last.
+     */
     public function buyers(): JsonResponse
     {
-        return response()->json(BusinessTransaction::whereNotNull('sold_to')
+        return response()->json(BusinessTransaction::whereNotNull('sold_to')->where('sold_to', '!=', '')
             ->selectRaw('sold_to, MAX(archived_at) as last_sold')->groupBy('sold_to')
-            ->orderByDesc('last_sold')->limit(100)->pluck('sold_to'));
+            ->orderByDesc('last_sold')->limit(300)->pluck('sold_to')
+            ->map(fn ($name) => trim($name))
+            ->unique(fn ($name) => Buyers::key($name))
+            ->take(100)->values());
     }
 
     /** Mark sold, optionally saying who bought it. */

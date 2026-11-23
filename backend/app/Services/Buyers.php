@@ -7,8 +7,8 @@ use Illuminate\Support\Collection;
 
 /**
  * The people you sell to, from "Sold to" on sold accounts and gold trades: how often each one
- * buys, how much, and when last. Names are matched ignoring case and extra spaces, so "Kai" and
- * "kai " are one buyer (shown with the spelling used most recently).
+ * buys, how much, and when last. Names are matched ignoring case, spaces and punctuation, so "Kai"
+ * and "kai " are one buyer (shown with the spelling used most recently).
  */
 class Buyers
 {
@@ -72,10 +72,13 @@ class Buyers
         ];
     }
 
-    /** "  Kai " and "KAI" are the same buyer */
+    /**
+     * One buyer however the name was typed: "  Kai ", "KAI", "Dark Knight", "darkknight" and
+     * "Dark.Knight" match (case, spaces and punctuation ignored; letters and digits count).
+     */
     public static function key(string $name): string
     {
-        return mb_strtolower(preg_replace('/\s+/u', ' ', trim($name)));
+        return mb_strtolower(preg_replace('/[^\p{L}\p{N}]+/u', '', $name));
     }
 
     private static function day($at): ?string

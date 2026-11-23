@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\ListingAnnouncer;
 use App\Services\ListingPerformance;
 use App\Services\PhoneAlerts;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Http\UploadedFile;
@@ -114,6 +115,8 @@ class StorefrontInsightsTest extends TestCase
 
     public function test_morning_alerts_for_buyers_to_follow_up_and_slow_listings_once_per_set(): void
     {
+        // A Wednesday morning: on Mondays the weekly brief alert comes too
+        $this->travelTo(CarbonImmutable::parse('2026-11-25 09:00', 'Asia/Manila'));
         $slow = $this->listed('Lv 700 Melee', 40);
         $this->views = [['listing_id' => "acc-{$slow->id}", 'total' => 140, 'last7' => 20]];
         $old = now()->subDays(4)->getTimestampMs();
